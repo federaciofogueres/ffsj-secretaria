@@ -1,0 +1,12 @@
+<header class="topbar">
+  <div class="brand" routerLink="/">{{ title }}</div>
+  <nav aria-label="Navegación principal">
+    <a routerLink="/asociados" routerLinkActive="active">Asociados</a>
+    <a routerLink="/asociacion" routerLinkActive="active">Asociación</a>
+    <a routerLink="/inscripciones" routerLinkActive="active">Inscripciones</a>
+    <a routerLink="/registro" routerLinkActive="active">Registro</a>
+  </nav>
+</header>
+<main>
+  <router-outlet></router-outlet>
+</main>

@@ -1,0 +1,44 @@
+# See http://help.github.com/ignore-files/ for more about ignoring files.
+
+# compiled output
+dist/
+tmp/
+
+# dependencies
+node_modules/
+
+# IDEs and editors
+.idea/
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# IDE - VSCode
+.vscode/*
+!.vscode/extensions.json
+
+# misc
+/.angular/cache
+/.angular
+npm-debug.log
+package-lock.json
+yarn-error.log
+server.cert
+server.key
+
+# environment files
+/src/environments/environment*.ts
+
+# macOS
+.DS_Store
+
+# Optional npm cache directory
+.npm
+
+# Angular build output
+reports/
+coverage/

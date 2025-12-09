@@ -1,0 +1,46 @@
+import { CommonModule } from '@angular/common';
+import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+
+interface ModuleTile {
+  title: string;
+  description: string;
+  path: string;
+  accent: string;
+}
+
+@Component({
+  selector: 'app-home',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss']
+})
+export class HomeComponent {
+  readonly modules: ModuleTile[] = [
+    {
+      title: 'Asociados',
+      description: 'Altas, modificaciones y bajas de los miembros de la asociación.',
+      path: '/asociados',
+      accent: '#f9c74f'
+    },
+    {
+      title: 'Asociación',
+      description: 'Actualización de los datos oficiales de la entidad federada.',
+      path: '/asociacion',
+      accent: '#90be6d'
+    },
+    {
+      title: 'Inscripciones',
+      description: 'Apunta a las personas asociadas a eventos y actividades disponibles.',
+      path: '/inscripciones',
+      accent: '#00b4d8'
+    },
+    {
+      title: 'Registro',
+      description: 'Sube documentos para obtener un número de registro o envía comunicaciones.',
+      path: '/registro',
+      accent: '#f3722c'
+    }
+  ];
+}
