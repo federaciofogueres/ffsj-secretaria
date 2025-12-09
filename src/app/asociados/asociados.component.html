@@ -1,0 +1,94 @@
+<section class="asociados-layout">
+  <div class="panel-head">
+    <div class="title-line">
+      <mat-icon class="panel-icon" aria-hidden="true">group</mat-icon>
+      <h2 class="title m-0">Asociados</h2>
+    </div>
+    <button mat-icon-button [matMenuTriggerFor]="actionsMenu" aria-label="Más acciones">
+      <mat-icon>more_vert</mat-icon>
+    </button>
+    <mat-menu #actionsMenu="matMenu">
+      <button mat-menu-item (click)="downloadExcel()">
+        <mat-icon>download</mat-icon>
+        <span>Descargar Excel</span>
+      </button>
+    </mat-menu>
+  </div>
+
+  <div class="search-line">
+    <mat-form-field appearance="outline" class="search-field" floatLabel="never">
+      <mat-label>Buscar</mat-label>
+      <input
+        matInput
+        type="search"
+        placeholder="Nombre, apellidos o cargo"
+        (keyup)="applyFilter($event)"
+        aria-label="Buscar asociados"
+      />
+      <button mat-icon-button matSuffix aria-label="Buscar">
+        <mat-icon>search</mat-icon>
+      </button>
+    </mat-form-field>
+  </div>
+
+  <mat-tab-group (selectedIndexChange)="onTabChange(tabs[$event].key)" class="tab-container">
+    @for (tab of tabs; track tab.key) {
+      <mat-tab [label]="tab.label">
+        <div class="tab-panel">
+          <div class="table-wrapper mat-elevation-z2">
+            <table mat-table [dataSource]="dataSources[tab.key]" matSort>
+              <ng-container matColumnDef="nombre">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre completo</th>
+                <td mat-cell *matCellDef="let element">
+                  <div class="cell-main">
+                    <span class="avatar-placeholder">{{ (element.nombre | slice:0:1) + (element.apellidos | slice:0:1) }}</span>
+                    <div>
+                      <div class="cell-name">{{ element.nombre }} {{ element.apellidos }}</div>
+                      <div class="cell-sub">ID {{ element.id }}</div>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="cargo">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo</th>
+                <td mat-cell *matCellDef="let element">{{ element.cargo }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: displayedColumns"
+                (click)="openDetails(row)"
+                matRipple
+                class="clickable-row"
+              ></tr>
+              <tr class="no-data" *matNoDataRow>
+                <td colspan="2">No hay asociados en esta categoría.</td>
+              </tr>
+            </table>
+          </div>
+          <div class="paginator-line">
+            @if (tab.key === 'adultos') {
+              <mat-paginator
+                [pageSize]="5"
+                [pageSizeOptions]="[5, 10, 25]"
+                showFirstLastButtons
+                aria-label="Paginación de asociados"
+                #paginatorAdultos
+              ></mat-paginator>
+            } @else {
+              <mat-paginator
+                [pageSize]="5"
+                [pageSizeOptions]="[5, 10, 25]"
+                showFirstLastButtons
+                aria-label="Paginación de asociados infantiles"
+                #paginatorInfantiles
+              ></mat-paginator>
+            }
+          </div>
+        </div>
+      </mat-tab>
+    }
+  </mat-tab-group>
+</section>

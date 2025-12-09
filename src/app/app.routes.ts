@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { HomeComponent } from './home/home.component';
 import { ModulePageComponent } from './shared/module-page.component';
+import { AsociadosComponent } from './asociados/asociados.component';
 
 export const routes: Routes = [
   {
@@ -11,7 +12,7 @@ export const routes: Routes = [
   },
   {
     path: 'asociados',
-    component: ModulePageComponent,
+    component: AsociadosComponent,
     title: 'Asociados',
     data: {
       moduleName: 'Asociados',
