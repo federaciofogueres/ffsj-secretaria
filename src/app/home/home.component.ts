@@ -7,6 +7,7 @@ interface ModuleTile {
   description: string;
   path: string;
   accent: string;
+  icon: string;
 }
 
 @Component({
@@ -22,25 +23,29 @@ export class HomeComponent {
       title: 'Asociados',
       description: 'Altas, modificaciones y bajas de los miembros de la asociación.',
       path: '/asociados',
-      accent: '#f9c74f'
+      accent: '#f9c74f',
+      icon: 'bi-people-fill'
     },
     {
       title: 'Asociación',
       description: 'Actualización de los datos oficiales de la entidad federada.',
       path: '/asociacion',
-      accent: '#90be6d'
+      accent: '#90be6d',
+      icon: 'bi-building-fill'
     },
     {
       title: 'Inscripciones',
       description: 'Apunta a las personas asociadas a eventos y actividades disponibles.',
       path: '/inscripciones',
-      accent: '#00b4d8'
+      accent: '#00b4d8',
+      icon: 'bi-clipboard-check-fill'
     },
     {
       title: 'Registro',
       description: 'Sube documentos para obtener un número de registro o envía comunicaciones.',
       path: '/registro',
-      accent: '#f3722c'
+      accent: '#f3722c',
+      icon: 'bi-inbox-fill'
     }
   ];
 }

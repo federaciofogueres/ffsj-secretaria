@@ -1,12 +1,77 @@
-<header class="topbar">
-  <div class="brand" routerLink="/">{{ title }}</div>
-  <nav aria-label="Navegación principal">
-    <a routerLink="/asociados" routerLinkActive="active">Asociados</a>
-    <a routerLink="/asociacion" routerLinkActive="active">Asociación</a>
-    <a routerLink="/inscripciones" routerLinkActive="active">Inscripciones</a>
-    <a routerLink="/registro" routerLinkActive="active">Registro</a>
-  </nav>
-</header>
-<main>
-  <router-outlet></router-outlet>
-</main>
+<div class="app-shell">
+  <header class="app-header background-rojo text-light">
+    <div class="container-fluid py-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <a routerLink="/" class="logo-link d-inline-flex align-items-center me-2">
+          <img class="logo" src="assets/img/logo-intranet.png" alt="FFSJ" />
+        </a>
+        <div class="d-flex flex-column lh-sm">
+          <span class="fw-bold">FFSJ Secretaría</span>
+          <small class="text-white-50">Gestión interna</small>
+        </div>
+      </div>
+
+      <nav class="d-none d-md-flex align-items-center gap-2" aria-label="Navegación principal">
+        <a
+          *ngFor="let link of navLinks"
+          class="nav-link text-light px-3 py-2 rounded"
+          routerLink="{{ link.path }}"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+        >
+          <i class="bi" [ngClass]="link.icon"></i>
+          <span class="ms-2">{{ link.label }}</span>
+        </a>
+      </nav>
+
+      <button
+        class="btn btn-link text-light d-md-none menu-button"
+        type="button"
+        (click)="toggleMenu()"
+        [attr.aria-expanded]="menuOpen"
+        aria-label="Abrir menú"
+      >
+        <i class="bi" [ngClass]="menuOpen ? 'bi-x-lg' : 'bi-list'"></i>
+      </button>
+    </div>
+
+    <div class="mobile-menu d-md-none" [class.show]="menuOpen">
+      <a
+        *ngFor="let link of navLinks"
+        class="mobile-link"
+        routerLink="{{ link.path }}"
+        routerLinkActive="active"
+        [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeMenu()"
+      >
+        <span class="d-flex align-items-center gap-2">
+          <i class="bi" [ngClass]="link.icon"></i>
+          {{ link.label }}
+        </span>
+        <i class="bi bi-chevron-right"></i>
+      </a>
+    </div>
+  </header>
+
+  <main class="app-content">
+    <div class="content-container container">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+  <footer class="tab-bar d-md-none background-rojo text-light">
+    <button
+      *ngFor="let link of navLinks"
+      class="tab-button"
+      type="button"
+      [routerLink]="link.path"
+      routerLinkActive="active"
+      [routerLinkActiveOptions]="{ exact: true }"
+    >
+      <i class="bi" [ngClass]="link.icon"></i>
+      <span class="small">{{ link.label }}</span>
+    </button>
+  </footer>
+
+  <lib-ffsj-alert></lib-ffsj-alert>
+</div>

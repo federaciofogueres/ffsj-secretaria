@@ -1,0 +1,70 @@
+$azul-oscuro: #0033A0;
+$asociaciones-primary: #DC3545;
+$asociados-primary: #FAD557;
+$ejercicios-primary: #64F0FA;
+$cargos-primary: #6BFAB4;
+$historico-primary: #7D6BFA;
+$sincronizacion-primary: #f382f3;
+
+$naranja: #e3741c;
+$rojo: #c4141c;
+$salmon: #dc7c7c;
+
+.invalid-field {
+    color: $rojo;
+    font-size: small;
+}
+
+.text-rojo {
+    color: $rojo;
+}
+
+.text-naranja {
+    color: $naranja;
+}
+
+.border-rojo {
+    border-color: $rojo;
+}
+
+.border-naranja {
+    border-color: $naranja;
+}
+
+.border-salmon {
+    border-color: $salmon;
+}
+
+.border-white {
+    border-color: white;
+}
+
+.background-rojo {
+    background-color: $rojo !important;
+}
+
+.background-naranja {
+    background-color: $naranja;
+}
+
+.background-salmon {
+    background-color: $salmon;
+}
+
+.btn-foc-rojo {
+    background-color: $rojo;
+    border-color: $rojo;
+    color: white;
+}
+
+.btn-foc-naranja {
+    background-color: $naranja;
+    border-color: $naranja;
+    color: white;
+}
+
+.btn-foc-salmon {
+    background-color: $salmon;
+    border-color: $salmon;
+    color: white;
+}

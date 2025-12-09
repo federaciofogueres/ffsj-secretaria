@@ -2,7 +2,15 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "./out-tsc/app",
-    "types": []
+    "types": [
+      "node"
+    ],
+    "baseUrl": "./",
+    "paths": {
+      "ffsj-web-components": [
+        "./src/lib/ffsj-web-components"
+      ]
+    }
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.d.ts"]

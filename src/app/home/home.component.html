@@ -1,27 +1,47 @@
-<section class="hero">
-  <div class="copy">
-    <p class="eyebrow">Gestión integral</p>
-    <h1>ffsj-secretaria</h1>
-    <p class="lead">
-      Selecciona uno de los módulos para comenzar a trabajar con la información de tu asociación.
+<section class="hero card border-0 shadow-sm text-light mb-4">
+  <div class="card-body p-4 p-md-5">
+    <p class="eyebrow text-uppercase mb-2">Bienvenida</p>
+    <h1 class="mb-2">FFSJ Secretaría</h1>
+    <p class="lead mb-3">
+      Gestiona la información de tu asociación con el mismo estilo y solidez que la app de Asambleas.
     </p>
+    <div class="d-flex flex-wrap gap-2">
+      <span class="badge rounded-pill bg-light text-dark fw-semibold">Mobile first</span>
+      <span class="badge rounded-pill bg-light text-dark fw-semibold">Angular 20</span>
+    </div>
   </div>
-  <div class="badge">Angular 20</div>
 </section>
 
-<section class="modules">
-  <h2>Módulos disponibles</h2>
-  <div class="grid">
-    <a
-      *ngFor="let module of modules"
-      class="card"
-      [routerLink]="module.path"
-      [style.--accent]="module.accent"
-      aria-label="Ir al módulo {{ module.title }}"
-    >
-      <div class="pill">{{ module.title }}</div>
-      <p class="description">{{ module.description }}</p>
-      <span class="cta">Entrar →</span>
-    </a>
+<section class="modules card border-0 shadow-sm">
+  <div class="card-body p-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <p class="text-uppercase text-muted fw-bold small mb-1">Módulos</p>
+        <h2 class="h4 mb-0">Elige dónde trabajar</h2>
+      </div>
+      <button
+        type="button"
+        class="btn btn-light btn-sm border-rojo text-rojo fw-semibold d-none d-md-inline-flex"
+        routerLink="/registro"
+      >
+        Registro rápido
+      </button>
+    </div>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-6" *ngFor="let module of modules">
+        <a class="module-card d-flex align-items-start gap-3 p-3 rounded-3 border h-100" [routerLink]="module.path">
+          <span class="module-icon rounded-circle d-inline-flex align-items-center justify-content-center"
+            [style.background-color]="module.accent">
+            <i class="bi" [ngClass]="module.icon"></i>
+          </span>
+          <div class="flex-grow-1">
+            <p class="module-title h6 mb-1">{{ module.title }}</p>
+            <p class="module-description mb-2">{{ module.description }}</p>
+            <span class="text-rojo fw-semibold small">Entrar <i class="bi bi-arrow-right-short"></i></span>
+          </div>
+        </a>
+      </div>
+    </div>
   </div>
 </section>

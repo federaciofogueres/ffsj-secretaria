@@ -1,48 +1,128 @@
+@use '../variables' as *;
+
 :host {
   display: block;
   min-height: 100vh;
-  background: linear-gradient(180deg, #f7f9fc 0%, #eef3fb 100%);
-  color: #1f2f48;
+  background: #f6f6f6;
+  color: #1f1f1f;
 }
 
-.topbar {
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.logo {
+  height: 32px;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &.active,
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    color: white;
+  }
+}
+
+.menu-button {
+  font-size: 1.5rem;
+}
+
+.mobile-menu {
+  display: none;
+  flex-direction: column;
+  background: white;
+  color: #1f1f1f;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  margin: 0.25rem 0.5rem 0.75rem;
+
+  &.show {
+    display: flex;
+  }
+}
+
+.mobile-link {
+  padding: 0.85rem 1.25rem;
+  border-bottom: 1px solid #e9ecef;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.25rem;
-  background: #0f1523;
-  color: #f4f7fb;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  font-weight: 600;
+  color: #1f1f1f;
+
+  &.active {
+    color: $rojo;
+  }
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.brand {
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  cursor: pointer;
+.app-content {
+  flex: 1 1 auto;
+  width: 100%;
+  padding: 1.5rem 1rem 5rem;
 }
 
-nav {
+.content-container {
+  max-width: 960px;
+}
+
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
   display: flex;
-  gap: 0.75rem;
+  justify-content: space-around;
+  gap: 0.5rem;
+  padding: 0.4rem;
+  box-shadow: 0px -2px 5px 0px rgba(0, 0, 0, 0.3);
+}
+
+.tab-button {
+  flex: 1 1 0;
+  background: transparent;
+  border: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  gap: 0.2rem;
+  padding: 0.6rem 0.2rem;
+  border-radius: 12px;
+  font-weight: 600;
+
+  &.active {
+    background-color: rgba(255, 255, 255, 0.16);
+  }
 }
 
-nav a {
-  color: #dfe6f5;
-  text-decoration: none;
-  padding: 0.35rem 0.5rem;
-  border-radius: 8px;
-  transition: background 160ms ease, color 160ms ease;
-}
+@media (min-width: 768px) {
+  .app-content {
+    padding: 2rem 1.5rem;
+  }
 
-nav a:hover,
-nav a.active {
-  background: rgba(255, 255, 255, 0.12);
-  color: #ffffff;
-}
-
-main {
-  padding: 1rem;
+  .content-container {
+    max-width: 1140px;
+  }
 }
