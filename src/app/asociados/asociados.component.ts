@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableDataSource, MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
@@ -21,6 +22,7 @@ type TabKey = 'adultos' | 'infantiles';
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     MatTabsModule,
     MatTableModule,
     MatPaginatorModule,

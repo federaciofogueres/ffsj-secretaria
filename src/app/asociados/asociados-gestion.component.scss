@@ -1,0 +1,63 @@
+.gestion {
+  border-radius: 18px;
+}
+
+.nav .nav-link {
+  background: #f7f7f7;
+  border-radius: 999px;
+  color: #333;
+  padding: 0.5rem 1rem;
+  font-weight: 700;
+
+  &.active {
+    background: #c4141c;
+    color: #fff;
+  }
+}
+
+.overline {
+  letter-spacing: 0.08em;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section-title {
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.pending-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.pending-list li {
+  padding: 0.35rem 0;
+}
+
+.clickable {
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+
+  &:hover {
+    background-color: #f6f7fb;
+  }
+
+  &.selected {
+    background-color: #fdeaea;
+    border-color: #f3b4b4;
+  }
+}
+
+.info {
+  border-radius: 12px;
+}
+
+.actions .btn {
+  font-weight: 700;
+}

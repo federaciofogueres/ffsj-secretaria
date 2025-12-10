@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { AsociacionComponent } from './asociacion/asociacion.component';
+import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
@@ -19,16 +20,25 @@ export const routes: Routes = [
     data: {
       moduleName: 'Asociados',
       moduleDescription:
-        'Gestión de altas, modificaciones y bajas de los miembros de cada asociación federada.'
+        'GestiИn de altas, modificaciones y bajas de los miembros de cada asociaciИn federada.'
+    }
+  },
+  {
+    path: 'asociados/gestion',
+    component: AsociadosGestionComponent,
+    title: 'Gestión de asociados',
+    data: {
+      moduleName: 'Gestión de asociados',
+      moduleDescription: 'Altas, modificaciones y bajas de los miembros de la asociación.'
     }
   },
   {
     path: 'asociacion',
     component: AsociacionComponent,
-    title: 'Asociación',
+    title: 'AsociaciИn',
     data: {
-      moduleName: 'Asociación',
-      moduleDescription: 'Administración de los datos oficiales de la asociación.'
+      moduleName: 'AsociaciИn',
+      moduleDescription: 'AdministraciИn de los datos oficiales de la asociaciИn.'
     }
   },
   {
@@ -48,7 +58,7 @@ export const routes: Routes = [
     data: {
       moduleName: 'Registro',
       moduleDescription:
-        'Subida de documentos para registro de entrada y comunicaciones directas con la Federación.'
+        'Subida de documentos para registro de entrada y comunicaciones directas con la FederaciИn.'
     }
   },
   {

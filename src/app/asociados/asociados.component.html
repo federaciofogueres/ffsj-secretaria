@@ -8,6 +8,10 @@
       <mat-icon>more_vert</mat-icon>
     </button>
     <mat-menu #actionsMenu="matMenu">
+      <button mat-menu-item routerLink="/asociados/gestion">
+        <mat-icon>manage_accounts</mat-icon>
+        <span>Gestión de asociados</span>
+      </button>
       <button mat-menu-item (click)="downloadExcel()">
         <mat-icon>download</mat-icon>
         <span>Descargar Excel</span>

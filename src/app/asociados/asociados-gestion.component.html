@@ -1,0 +1,243 @@
+﻿<section class="gestion card border-0 shadow-sm">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Gestión de asociados</p>
+        <h1 class="h4 mb-1 text-rojo">Altas, modificaciones y bajas</h1>
+        <p class="text-muted mb-0">Administra los asociados y envía las solicitudes pendientes.</p>
+      </div>
+      <a routerLink="/asociados" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>
+        Volver al listado
+      </a>
+    </div>
+
+    <div class="nav nav-pills gap-2 mb-4">
+      <button class="nav-link" [class.active]="activeTab === 'altas'" (click)="setTab('altas')">Altas</button>
+      <button class="nav-link" [class.active]="activeTab === 'modificaciones'" (click)="setTab('modificaciones')">
+        Modificaciones
+      </button>
+      <button class="nav-link" [class.active]="activeTab === 'bajas'" (click)="setTab('bajas')">Bajas</button>
+    </div>
+
+    <ng-container *ngIf="activeTab === 'altas'">
+      <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'alta' }"></ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'modificaciones'">
+      <div *ngIf="!mostrarFormMod" class="mt-4">
+        <h5 class="section-title mb-2">Selecciona un asociado para modificar</h5>
+        <div class="row g-3">
+          <div class="col-12 col-lg-6">
+            <h6 class="fw-bold">Adultos</h6>
+            <ul class="list-group">
+              <li
+                *ngFor="let a of adultos"
+                class="list-group-item d-flex justify-content-between align-items-center clickable"
+                (click)="iniciarModificacion(a)"
+              >
+                <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                <i class="bi bi-pencil-square text-rojo"></i>
+              </li>
+            </ul>
+          </div>
+          <div class="col-12 col-lg-6">
+            <h6 class="fw-bold">Infantiles</h6>
+            <ul class="list-group">
+              <li
+                *ngFor="let a of infantiles"
+                class="list-group-item d-flex justify-content-between align-items-center clickable"
+                (click)="iniciarModificacion(a)"
+              >
+                <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                <i class="bi bi-pencil-square text-rojo"></i>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <ng-container *ngIf="mostrarFormMod">
+        <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'modificacion' }"></ng-container>
+      </ng-container>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'bajas'">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <div>
+          <h5 class="section-title mb-1">Selecciona los asociados que deseas dar de baja</h5>
+          <p class="text-muted mb-0">Puedes elegir varios y procesar la solicitud conjunta.</p>
+        </div>
+        <button class="btn btn-outline-primary" type="button" (click)="verPendientes('solicitudes')">
+          Ver solicitudes pendientes
+        </button>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-12 col-lg-6">
+          <h6 class="fw-bold">Adultos</h6>
+          <ul class="list-group">
+            <li
+              *ngFor="let a of adultos"
+              class="list-group-item d-flex align-items-center gap-2 clickable"
+              [class.selected]="seleccionBaja.has(a.id)"
+              (click)="toggleSeleccionBaja(a)"
+            >
+              <input
+                type="checkbox"
+                [checked]="seleccionBaja.has(a.id)"
+                (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
+              />
+              <span>{{ a.nombre }} {{ a.apellidos }}</span>
+            </li>
+          </ul>
+        </div>
+        <div class="col-12 col-lg-6">
+          <h6 class="fw-bold">Infantiles</h6>
+          <ul class="list-group">
+            <li
+              *ngFor="let a of infantiles"
+              class="list-group-item d-flex align-items-center gap-2 clickable"
+              [class.selected]="seleccionBaja.has(a.id)"
+              (click)="toggleSeleccionBaja(a)"
+            >
+              <input
+                type="checkbox"
+                [checked]="seleccionBaja.has(a.id)"
+                (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
+              />
+              <span>{{ a.nombre }} {{ a.apellidos }}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="actions mt-3">
+        <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0" (click)="procesarBaja()">
+          Procesar baja
+        </button>
+      </div>
+
+      <div class="mt-3">
+        <p class="small text-muted mb-1">Solicitudes de baja pendientes</p>
+        <ul class="pending-list">
+          <li *ngFor="let p of pendingBajas">
+            <i class="bi bi-clock-history me-1"></i>
+            {{ p.nombre }} {{ p.apellidos }}
+          </li>
+          <li *ngIf="pendingBajas.length === 0" class="text-muted small">Sin bajas pendientes</li>
+        </ul>
+      </div>
+    </ng-container>
+
+    <ng-template #formTemplate let-modo="modo">
+      <div class="row g-4">
+        <div class="col-12 col-lg-8">
+          <div class="info alert alert-info">
+            <strong>Información:</strong> Completa el formulario y al confirmar se añadirá a
+            <em>{{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}</em>.
+          </div>
+          <form [formGroup]="altaForm" class="form-grid" (ngSubmit)="enviarAlta()">
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Tipo de hoguera</label>
+                <select class="form-select" formControlName="tipo">
+                  <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">DNI/NIE</label>
+                <input class="form-control" formControlName="dni" placeholder="Documento" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">SIP</label>
+                <input class="form-control" formControlName="sip" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Fecha de nacimiento</label>
+                <input type="date" class="form-control" formControlName="nacimiento" />
+              </div>
+            </div>
+
+            <h5 class="section-title">Datos personales</h5>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label class="form-label">Nombre</label>
+                <input class="form-control" formControlName="nombre" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Apellidos</label>
+                <input class="form-control" formControlName="apellidos" />
+              </div>
+              <div class="col-12">
+                <label class="form-label">Dirección</label>
+                <input class="form-control" formControlName="direccion" />
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label">Código Postal</label>
+                <input class="form-control" formControlName="cp" />
+              </div>
+              <div class="col-6 col-md-4">
+                <label class="form-label">Localidad</label>
+                <input class="form-control" formControlName="localidad" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Provincia</label>
+                <input class="form-control" formControlName="provincia" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Teléfono</label>
+                <input class="form-control" formControlName="telefono" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" formControlName="email" />
+              </div>
+            </div>
+
+            <div class="actions mt-3 d-flex gap-2">
+              <button class="btn btn-foc-rojo" type="submit">
+                {{ modo === 'alta' ? 'Crear nuevo asociado' : 'Guardar cambios' }}
+              </button>
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                *ngIf="modo === 'modificacion'"
+                (click)="mostrarFormMod = false; resetFormulario()"
+              >
+                Volver al listado
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="col-12 col-lg-4">
+          <div class="card border-0 shadow-sm h-100">
+            <div class="card-body">
+              <h5 class="h6 text-uppercase text-muted">Solicitudes</h5>
+              <button class="btn btn-outline-primary w-100 mb-2" type="button" (click)="verPendientes('solicitudes')">
+                Ver solicitudes pendientes
+              </button>
+              <button class="btn btn-outline-primary w-100" type="button" (click)="verPendientes('asociados')">
+                {{ modo === 'alta' ? 'Ver nuevos asociados pendientes' : 'Ver cambios pendientes' }}
+              </button>
+
+              <div class="mt-3">
+                <p class="small text-muted mb-1">Pendientes recientes</p>
+                <ul class="pending-list">
+                  <li *ngFor="let p of modo === 'alta' ? pendingAltas : pendingCambios">
+                    <i class="bi bi-clock-history me-1"></i>
+                    {{ p.nombre || 'Asociado' }} {{ p.apellidos || '' }}
+                  </li>
+                  <li *ngIf="(modo === 'alta' ? pendingAltas : pendingCambios).length === 0" class="text-muted small">
+                    Sin pendientes
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-template>
+  </div>
+</section>
