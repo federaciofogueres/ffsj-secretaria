@@ -1,0 +1,120 @@
+.registro {
+  border-radius: 18px;
+  background: #fff;
+}
+
+.intro {
+  background: linear-gradient(180deg, #ffffff 0%, #f9fafc 100%);
+}
+
+.option-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.06);
+}
+
+.header {
+  border-bottom: 1px solid #ececec;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.status-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: 1rem;
+  background: #f8f9fb;
+}
+
+.referencias {
+  margin-top: 0.5rem;
+}
+
+.ref-pill {
+  border: 1px solid #c4141c;
+  background: #fdeaea;
+  color: #7a0d14;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.1s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(196, 20, 28, 0.18);
+    background: #fbd3d3;
+  }
+
+  &.active {
+    border-color: #157347;
+    background: #e6f4ea;
+    color: #0f5132;
+    box-shadow: 0 6px 16px rgba(21, 115, 71, 0.12);
+  }
+}
+
+.estado {
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  &.recibido {
+    background: #e6f4ea;
+    color: #0f5132;
+  }
+  &.leido {
+    background: #fff4e5;
+    color: #8a4b0f;
+  }
+  &.validado {
+    background: #e7f1ff;
+    color: #0b4fad;
+  }
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.adjuntos {
+  list-style: none;
+  padding: 0;
+  margin: 0.25rem 0 0;
+}
+
+.adjuntos li {
+  background: #f4f6f9;
+  border: 1px solid #e6e6e6;
+  padding: 0.4rem 0.6rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.actions .btn {
+  font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .body {
+    padding-right: 2rem;
+  }
+}

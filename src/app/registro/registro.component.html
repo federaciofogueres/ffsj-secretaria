@@ -1,0 +1,244 @@
+<section class="registro card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <ng-container *ngIf="mode === null; else formView">
+      <div class="intro p-4 p-md-5">
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
+        <h1 class="h4 mb-2 text-rojo">Registro</h1>
+        <p class="text-muted mb-4">
+          Presenta documentación oficial o envía comunicaciones internas a la Federación. Generaremos un registro
+          de entrada y podrás descargar un resguardo en PDF.
+        </p>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <div class="option-card h-100 d-flex flex-column">
+              <div class="p-3">
+                <h2 class="h5 mb-2">Presentar documentación</h2>
+                <p class="text-muted mb-3">Adjunta ficheros y envíalos a la Federación. Obtendrás un registro de entrada.</p>
+              </div>
+              <div class="mt-auto p-3">
+                <button class="btn btn-foc-rojo w-100" type="button" (click)="setMode('documentacion')">
+                  Abrir presentación
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="option-card h-100 d-flex flex-column">
+              <div class="p-3">
+                <h2 class="h5 mb-2">Realizar comunicación</h2>
+                <p class="text-muted mb-3">Envía un mensaje con destinatario y adjuntos opcionales. No es una vía oficial de documentación.</p>
+              </div>
+              <div class="mt-auto p-3">
+                <button class="btn btn-outline-secondary w-100" type="button" (click)="setMode('comunicacion')">
+                  Abrir comunicación
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #formView>
+      <div class="header px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+          <p class="overline text-uppercase text-muted fw-bold mb-1">Registro</p>
+          <h1 class="h4 mb-0 text-rojo">
+            {{ mode === 'documentacion' ? 'Presentar documentación' : 'Realizar comunicación' }}
+          </h1>
+        </div>
+        <button class="btn btn-link text-rojo" type="button" (click)="resetMode()">
+          <i class="bi bi-arrow-left"></i>
+          Volver
+        </button>
+      </div>
+
+      <div class="body px-4 pb-4">
+        <section class="status-card" *ngIf="mode === 'documentacion' ? docResultado : commResultado as resultado">
+          <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
+            <div>
+              <p class="text-muted mb-1">Registro de entrada</p>
+              <p class="h5 mb-0">{{ resultado.numero }}</p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+              <span class="text-muted">Estado</span>
+              <span class="badge estado" [ngClass]="resultado.estado === 'Leído' ? 'leido' : resultado.estado.toLowerCase()">
+                {{ resultado.estado }}
+              </span>
+            </div>
+            <div class="text-muted">{{ resultado.mensaje }}</div>
+          </div>
+
+          <div class="referencias" *ngIf="(mode === 'documentacion' ? docRefs : commRefs).length > 0">
+            <p class="text-muted mb-1">Referencias previas</p>
+            <div class="d-flex flex-wrap gap-2">
+              <button
+                type="button"
+                class="ref-pill"
+                *ngFor="let ref of mode === 'documentacion' ? docRefs : commRefs"
+                [class.active]="isCurrentRef(ref, mode!)"
+                (click)="openReferencia(ref, mode!)"
+              >
+                <span class="fw-semibold">{{ ref.numero }}</span>
+                <span class="text-muted">{{ ref.estado }}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <form
+          *ngIf="mode === 'documentacion'"
+          [formGroup]="docForm"
+          class="form-grid"
+          novalidate
+        >
+          <div class="field">
+            <label class="form-label">Responsable (destinatario) <span class="text-rojo">*</span></label>
+            <select class="form-select" formControlName="responsable">
+              <option value="" disabled>Selecciona un responsable</option>
+              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+            </select>
+            <div class="invalid-field" *ngIf="docForm.get('responsable')?.touched && docForm.get('responsable')?.invalid">
+              Campo obligatorio.
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Título <span class="text-rojo">*</span></label>
+            <input type="text" class="form-control" formControlName="titulo" placeholder="Ej. Memoria anual" />
+            <div class="invalid-field" *ngIf="docForm.get('titulo')?.touched && docForm.get('titulo')?.invalid">
+              Campo obligatorio.
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Mensaje / Descripción <span class="text-rojo">*</span></label>
+            <textarea class="form-control" rows="4" formControlName="mensaje" placeholder="Explica el objetivo del envío"></textarea>
+            <div class="invalid-field" *ngIf="docForm.get('mensaje')?.touched && docForm.get('mensaje')?.invalid">
+              Campo obligatorio (mín. 10 caracteres).
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Adjuntar documentos <span class="text-rojo">*</span></label>
+            <input type="file" class="form-control" multiple (change)="onDocFiles($event)" [disabled]="docLocked" />
+            <small class="text-muted d-block mt-1">Puedes arrastrar varios archivos y enviarlos juntos.</small>
+            <div class="invalid-field" *ngIf="docAdjuntos.length === 0 && docForm.touched">
+              Añade al menos un documento.
+            </div>
+            <ul class="adjuntos" *ngIf="docAdjuntos.length > 0">
+              <li *ngFor="let file of docAdjuntos">{{ file.name }}</li>
+            </ul>
+          </div>
+
+          <div class="actions d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              *ngIf="docResultado"
+              (click)="enableDocEdit()"
+              [disabled]="!docLocked"
+            >
+              Modificar documentación
+            </button>
+            <button
+              type="button"
+              class="btn btn-foc-rojo"
+              [disabled]="!canSubmitDoc"
+              (click)="submitDoc()"
+            >
+              <span *ngIf="submittingDoc" class="spinner-border spinner-border-sm me-2"></span>
+              Presentar documentación
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="!docResultado"
+              (click)="printDoc()"
+            >
+              <i class="bi bi-printer me-1"></i>
+              Imprimir resguardo
+            </button>
+          </div>
+        </form>
+
+        <form
+          *ngIf="mode === 'comunicacion'"
+          [formGroup]="commForm"
+          class="form-grid"
+          novalidate
+        >
+          <div class="alert alert-warning py-2">
+            Esta vía es para comunicaciones; para documentación oficial utiliza <strong>Presentar documentación</strong>.
+          </div>
+
+          <div class="field">
+            <label class="form-label">Destinatario <span class="text-rojo">*</span></label>
+            <select class="form-select" formControlName="responsable">
+              <option value="" disabled>Selecciona un responsable</option>
+              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+            </select>
+            <div class="invalid-field" *ngIf="commForm.get('responsable')?.touched && commForm.get('responsable')?.invalid">
+              Campo obligatorio.
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Título <span class="text-rojo">*</span></label>
+            <input type="text" class="form-control" formControlName="titulo" placeholder="Ej. Consulta sobre plazos" />
+            <div class="invalid-field" *ngIf="commForm.get('titulo')?.touched && commForm.get('titulo')?.invalid">
+              Campo obligatorio.
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Descripción / Mensaje <span class="text-rojo">*</span></label>
+            <textarea class="form-control" rows="4" formControlName="mensaje" placeholder="Escribe tu mensaje"></textarea>
+            <div class="invalid-field" *ngIf="commForm.get('mensaje')?.touched && commForm.get('mensaje')?.invalid">
+              Campo obligatorio (mín. 10 caracteres).
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="form-label">Adjuntar documentación (opcional)</label>
+            <input type="file" class="form-control" multiple (change)="onCommFiles($event)" [disabled]="commLocked" />
+            <small class="text-muted d-block mt-1">Recuerda: para registro oficial, usa la opción de documentación.</small>
+            <ul class="adjuntos" *ngIf="commAdjuntos.length > 0">
+              <li *ngFor="let file of commAdjuntos">{{ file.name }}</li>
+            </ul>
+          </div>
+
+          <div class="actions d-flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              *ngIf="commResultado"
+              (click)="enableCommEdit()"
+              [disabled]="!commLocked"
+            >
+              Modificar comunicación
+            </button>
+            <button
+              type="button"
+              class="btn btn-foc-rojo"
+              [disabled]="!canSubmitComm"
+              (click)="submitComm()"
+            >
+              <span *ngIf="submittingComm" class="spinner-border spinner-border-sm me-2"></span>
+              Enviar comunicación
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              [disabled]="!commResultado"
+              (click)="printComm()"
+            >
+              <i class="bi bi-printer me-1"></i>
+              Imprimir resguardo
+            </button>
+          </div>
+        </form>
+      </div>
+    </ng-template>
+  </div>
+</section>

@@ -1,10 +1,10 @@
 import { Routes } from '@angular/router';
 
-import { HomeComponent } from './home/home.component';
-import { AsociadosComponent } from './asociados/asociados.component';
 import { AsociacionComponent } from './asociacion/asociacion.component';
+import { AsociadosComponent } from './asociados/asociados.component';
+import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
-import { ModulePageComponent } from './shared/module-page.component';
+import { RegistroComponent } from './registro/registro.component';
 
 export const routes: Routes = [
   {
@@ -43,7 +43,7 @@ export const routes: Routes = [
   },
   {
     path: 'registro',
-    component: ModulePageComponent,
+    component: RegistroComponent,
     title: 'Registro',
     data: {
       moduleName: 'Registro',
