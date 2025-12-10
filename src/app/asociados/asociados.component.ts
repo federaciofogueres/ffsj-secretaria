@@ -102,7 +102,10 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   openDetails(asociado: Asociado): void {
     this.dialogService.openDialogAlert({
       title: 'Detalles del asociado',
-      content: `
+      content: `Nombre: ${asociado.nombre} ${asociado.apellidos}\nCargo: ${asociado.cargo}\nTipo: ${
+        asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'
+      }`,
+      innerHtml: `
         <p><strong>Nombre:</strong> ${asociado.nombre} ${asociado.apellidos}</p>
         <p><strong>Cargo:</strong> ${asociado.cargo}</p>
         <p><strong>Tipo:</strong> ${asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'}</p>

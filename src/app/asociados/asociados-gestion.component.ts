@@ -71,7 +71,8 @@ export class AsociadosGestionComponent implements OnInit {
   verPendientes(tipo: 'solicitudes' | 'asociados'): void {
     this.dialog.openDialogAlert({
       title: 'Pendientes',
-      content: `<p>Mostrando vista simulada de ${tipo === 'solicitudes' ? 'solicitudes' : 'asociados'} pendientes.</p>`,
+      content: `Mostrando vista simulada de ${tipo === 'solicitudes' ? 'solicitudes' : 'asociados'} pendientes.`,
+      innerHtml: `<p>Mostrando vista simulada de ${tipo === 'solicitudes' ? 'solicitudes' : 'asociados'} pendientes.</p>`,
       buttonsAlert: [AlertButtonType.Entendido]
     });
   }
@@ -117,14 +118,16 @@ export class AsociadosGestionComponent implements OnInit {
       this.pendingAltas.push(payload);
       this.dialog.openDialogAlert({
         title: 'Alta pendiente',
-        content: '<p>El asociado se ha anadido a Altas pendientes.</p>',
+        content: 'El asociado se ha añadido a Altas pendientes.',
+        innerHtml: '<p>El asociado se ha añadido a Altas pendientes.</p>',
         buttonsAlert: [AlertButtonType.Entendido]
       });
     } else {
       this.pendingCambios.push({ ...payload, origenId: this.asociadoEnEdicion?.id });
       this.dialog.openDialogAlert({
         title: 'Cambio pendiente',
-        content: '<p>La modificacion se ha anadido a Cambios pendientes.</p>',
+        content: 'La modificación se ha añadido a Cambios pendientes.',
+        innerHtml: '<p>La modificación se ha añadido a Cambios pendientes.</p>',
         buttonsAlert: [AlertButtonType.Entendido]
       });
     }
@@ -149,7 +152,9 @@ export class AsociadosGestionComponent implements OnInit {
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
     const ref = this.dialog.openDialogAlert({
       title: 'Confirmar bajas',
-      content: `Desea proceder con la solicitud de baja de los siguientes asociados?`,
+      content: `Desea proceder con la solicitud de baja de los siguientes asociados?\n${seleccionados
+        .map(a => `${a.nombre} ${a.apellidos}`)
+        .join('\n')}`,
       innerHtml: `<p>Desea proceder con la solicitud de baja de los siguientes asociados?</p><ul>${listado}</ul>`,
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
@@ -160,7 +165,8 @@ export class AsociadosGestionComponent implements OnInit {
       this.seleccionBaja.clear();
       this.dialog.openDialogAlert({
         title: 'Baja pendiente',
-        content: '<p>Las bajas seleccionadas se han anadido a solicitudes pendientes.</p>',
+        content: 'Las bajas seleccionadas se han añadido a solicitudes pendientes.',
+        innerHtml: '<p>Las bajas seleccionadas se han añadido a solicitudes pendientes.</p>',
         buttonsAlert: [AlertButtonType.Entendido]
       });
     });
