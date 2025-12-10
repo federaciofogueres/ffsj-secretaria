@@ -477,6 +477,7 @@ interface DataAlert {
     title: string;
     content: string;
     buttonsAlert: AlertButtonType[];
+    innerHtml?: string | null;
 }
 declare class FfsjDialogAlertComponent {
     dialogSelfRef: MatDialogRef<FfsjDialogAlertComponent>;

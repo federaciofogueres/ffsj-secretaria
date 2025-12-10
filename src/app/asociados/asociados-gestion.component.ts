@@ -2,7 +2,7 @@
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { FfsjDialogAlertService, AlertButtonType } from 'ffsj-web-components';
+import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 
 import { Asociado, AsociadosService } from './asociados.service';
 
@@ -52,7 +52,7 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly asociadosService: AsociadosService,
     private readonly dialog: FfsjDialogAlertService
-  ) {}
+  ) { }
 
   ngOnInit(): void {
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
@@ -77,25 +77,33 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   iniciarModificacion(asociado: Asociado): void {
-    const aceptar = confirm(`Deseas modificar el asociado ${asociado.nombre} ${asociado.apellidos}?`);
-    if (!aceptar) return;
-    this.activeTab = 'modificaciones';
-    this.modoFormulario = 'modificacion';
-    this.asociadoEnEdicion = asociado;
-    this.mostrarFormMod = true;
-    this.altaForm.patchValue({
-      tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
-      dni: String(asociado.id),
-      sip: '',
-      nacimiento: '',
-      nombre: asociado.nombre,
-      apellidos: asociado.apellidos,
-      direccion: '',
-      cp: '',
-      localidad: '',
-      provincia: '',
-      telefono: '',
-      email: ''
+    const ref = this.dialog.openDialogAlert({
+      title: 'Modificar asociado',
+      content: `Deseas modificar el asociado ${asociado.nombre} ${asociado.apellidos}?`,
+      innerHtml: `<p>Deseas modificar el asociado <strong>${asociado.nombre} ${asociado.apellidos}</strong>?</p>`,
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe(result => {
+      if (result !== AlertButtonType.Aceptar) return;
+      this.activeTab = 'modificaciones';
+      this.modoFormulario = 'modificacion';
+      this.asociadoEnEdicion = asociado;
+      this.mostrarFormMod = true;
+      this.altaForm.patchValue({
+        tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
+        dni: String(asociado.id),
+        sip: '',
+        nacimiento: '',
+        nombre: asociado.nombre,
+        apellidos: asociado.apellidos,
+        direccion: '',
+        cp: '',
+        localidad: '',
+        provincia: '',
+        telefono: '',
+        email: ''
+      });
     });
   }
 
@@ -138,18 +146,23 @@ export class AsociadosGestionComponent implements OnInit {
   procesarBaja(): void {
     if (this.seleccionBaja.size === 0) return;
     const seleccionados = [...this.seleccionBaja].map(id => this.buscarAsociado(id)).filter(Boolean) as Asociado[];
-    const confirmar = confirm(
-      `Desea proceder con la solicitud de baja de los siguientes asociados?\n${seleccionados
-        .map(a => `${a.nombre} ${a.apellidos}`)
-        .join('\n')}`
-    );
-    if (!confirmar) return;
-    this.pendingBajas.push(...seleccionados);
-    this.seleccionBaja.clear();
-    this.dialog.openDialogAlert({
-      title: 'Baja pendiente',
-      content: '<p>Las bajas seleccionadas se han anadido a solicitudes pendientes.</p>',
-      buttonsAlert: [AlertButtonType.Entendido]
+    const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
+    const ref = this.dialog.openDialogAlert({
+      title: 'Confirmar bajas',
+      content: `Desea proceder con la solicitud de baja de los siguientes asociados?`,
+      innerHtml: `<p>Desea proceder con la solicitud de baja de los siguientes asociados?</p><ul>${listado}</ul>`,
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe(result => {
+      if (result !== AlertButtonType.Aceptar) return;
+      this.pendingBajas.push(...seleccionados);
+      this.seleccionBaja.clear();
+      this.dialog.openDialogAlert({
+        title: 'Baja pendiente',
+        content: '<p>Las bajas seleccionadas se han anadido a solicitudes pendientes.</p>',
+        buttonsAlert: [AlertButtonType.Entendido]
+      });
     });
   }
 

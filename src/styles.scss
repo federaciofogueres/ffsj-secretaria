@@ -108,3 +108,43 @@ body {
   margin: 0;
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
+
+/* Mejora visual para los diálogos de FFSJ */
+.mat-mdc-dialog-surface {
+  border-radius: 16px !important;
+  padding: 1.25rem 1.5rem !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.22) !important;
+}
+
+.mat-mdc-dialog-surface h1,
+.mat-mdc-dialog-surface h2,
+.mat-mdc-dialog-surface h3,
+.mat-mdc-dialog-surface h4,
+.mat-mdc-dialog-surface h5,
+.mat-mdc-dialog-surface h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.mat-mdc-dialog-surface p {
+  margin-bottom: 0.25rem;
+}
+
+.mat-mdc-dialog-surface button {
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #d3d3d3;
+  background: #f7f7f7;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.mat-mdc-dialog-surface button:hover {
+  background: #ececec;
+}
+
+.mat-mdc-dialog-surface button:last-child {
+  background: #c4141c;
+  border-color: #c4141c;
+  color: #fff;
+}

@@ -57,19 +57,15 @@ class FfsjAlertService {
         this.alert$ = new Subject();
     }
     success(message, duration = 5000) {
-        console.log('Lanzando mensaje: ', message);
         this.alert$.next({ type: AlertType.Success, message, duration });
     }
     danger(message, duration = 5000) {
-        console.log('Lanzando mensaje: ', message);
         this.alert$.next({ type: AlertType.Danger, message, duration });
     }
     warning(message, duration = 5000) {
-        console.log('Lanzando mensaje: ', message);
         this.alert$.next({ type: AlertType.Warning, message, duration });
     }
     info(message, duration = 5000) {
-        console.log('Lanzando mensaje: ', message);
         this.alert$.next({ type: AlertType.Info, message, duration });
     }
     static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "20.3.12", ngImport: i0, type: FfsjAlertService, deps: [], target: i0.ɵɵFactoryTarget.Injectable }); }
@@ -86,7 +82,6 @@ class FfsjAlertComponent {
     constructor(alertService) {
         this.alertService = alertService;
         this.message = null;
-        console.log('FfsjAlertComponent construido');
         this.subscription = this.alertService.alert$.subscribe(alert => {
             this.message = alert.message;
             this.type = alert.type;
@@ -633,11 +628,11 @@ class FfsjDialogAlertComponent {
         this.data = data;
     }
     static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "20.3.12", ngImport: i0, type: FfsjDialogAlertComponent, deps: [{ token: i1$3.MatDialogRef }, { token: MAT_DIALOG_DATA }], target: i0.ɵɵFactoryTarget.Component }); }
-    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "20.3.12", type: FfsjDialogAlertComponent, isStandalone: true, selector: "lib-ffsj-dialog-alert", ngImport: i0, template: "<h2 mat-dialog-title>{{ data.title }}</h2>\r\n<mat-dialog-content>\r\n  {{ data.content }}\r\n</mat-dialog-content>\r\n<mat-dialog-actions>\r\n  @for (button of data.buttonsAlert; track $index) {\r\n    <button mat-button (click)=\"dialogSelfRef.close(button)\">{{ button }}</button>\r\n  }\r\n</mat-dialog-actions>\r\n", styles: [""], dependencies: [{ kind: "ngmodule", type: MatDialogModule }, { kind: "directive", type: i1$3.MatDialogTitle, selector: "[mat-dialog-title], [matDialogTitle]", inputs: ["id"], exportAs: ["matDialogTitle"] }, { kind: "directive", type: i1$3.MatDialogActions, selector: "[mat-dialog-actions], mat-dialog-actions, [matDialogActions]", inputs: ["align"] }, { kind: "directive", type: i1$3.MatDialogContent, selector: "[mat-dialog-content], mat-dialog-content, [matDialogContent]" }] }); }
+    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "20.3.12", type: FfsjDialogAlertComponent, isStandalone: true, selector: "lib-ffsj-dialog-alert", ngImport: i0, template: "<h2 mat-dialog-title>{{ data.title }}</h2>\n\n<mat-dialog-content>\n  @if (data.innerHtml) {\n  <div [innerHTML]=\"data.innerHtml\"></div>\n  } @else {\n  {{ data.content }}\n  }\n</mat-dialog-content>\n\n<mat-dialog-actions>\n  @for (button of data.buttonsAlert; track $index) {\n  <button mat-button (click)=\"dialogSelfRef.close(button)\">\n    {{ button }}\n  </button>\n  }\n</mat-dialog-actions>", styles: [""], dependencies: [{ kind: "ngmodule", type: MatDialogModule }, { kind: "directive", type: i1$3.MatDialogTitle, selector: "[mat-dialog-title], [matDialogTitle]", inputs: ["id"], exportAs: ["matDialogTitle"] }, { kind: "directive", type: i1$3.MatDialogActions, selector: "[mat-dialog-actions], mat-dialog-actions, [matDialogActions]", inputs: ["align"] }, { kind: "directive", type: i1$3.MatDialogContent, selector: "[mat-dialog-content], mat-dialog-content, [matDialogContent]" }] }); }
 }
 i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "20.3.12", ngImport: i0, type: FfsjDialogAlertComponent, decorators: [{
             type: Component,
-            args: [{ selector: 'lib-ffsj-dialog-alert', standalone: true, imports: [MatDialogModule], template: "<h2 mat-dialog-title>{{ data.title }}</h2>\r\n<mat-dialog-content>\r\n  {{ data.content }}\r\n</mat-dialog-content>\r\n<mat-dialog-actions>\r\n  @for (button of data.buttonsAlert; track $index) {\r\n    <button mat-button (click)=\"dialogSelfRef.close(button)\">{{ button }}</button>\r\n  }\r\n</mat-dialog-actions>\r\n" }]
+            args: [{ selector: 'lib-ffsj-dialog-alert', standalone: true, imports: [MatDialogModule], template: "<h2 mat-dialog-title>{{ data.title }}</h2>\n\n<mat-dialog-content>\n  @if (data.innerHtml) {\n  <div [innerHTML]=\"data.innerHtml\"></div>\n  } @else {\n  {{ data.content }}\n  }\n</mat-dialog-content>\n\n<mat-dialog-actions>\n  @for (button of data.buttonsAlert; track $index) {\n  <button mat-button (click)=\"dialogSelfRef.close(button)\">\n    {{ button }}\n  </button>\n  }\n</mat-dialog-actions>" }]
         }], ctorParameters: () => [{ type: i1$3.MatDialogRef }, { type: undefined, decorators: [{
                     type: Inject,
                     args: [MAT_DIALOG_DATA]
