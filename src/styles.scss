@@ -59,11 +59,12 @@ body {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  min-height: 100vh;
-  height: 100vh;
+  min-height: 100dvh;
+  height: auto;
   background: #f6f6f6;
   color: #1f1f1f;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 img {
@@ -79,14 +80,15 @@ a {
 router-outlet+* {
   width: 100%;
   display: block;
-  height: calc(100vh - var(--header-height) - var(--footer-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
-  overflow: hidden;
+  min-height: calc(100dvh - var(--header-height) - var(--footer-height) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 app-root {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - (var(--header-height) + var(--footer-height)));
+  min-height: calc(100dvh - (var(--header-height) + var(--footer-height)));
 }
 
 .app-content {

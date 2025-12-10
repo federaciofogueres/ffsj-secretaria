@@ -1,0 +1,152 @@
+<section class="association card border-0 shadow-sm">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
+        <h1 class="h4 mb-1 text-rojo">Datos de la asociación</h1>
+        <p class="text-muted mb-0">
+          Consulta la ficha completa de la entidad. Activa el modo edición sólo cuando necesites actualizar los datos.
+        </p>
+      </div>
+      <div class="actions d-flex flex-wrap align-items-center gap-2">
+        <button
+          *ngIf="!isEditing"
+          type="button"
+          class="btn btn-foc-rojo d-inline-flex align-items-center"
+          (click)="startEdit()"
+        >
+          <i class="bi bi-pencil-square me-2"></i>
+          Editar datos
+        </button>
+
+        <ng-container *ngIf="isEditing">
+          <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
+            Cancelar
+          </button>
+          <button type="button" class="btn btn-success" (click)="save()">
+            <i class="bi bi-check2 me-1"></i>
+            Guardar
+          </button>
+        </ng-container>
+      </div>
+    </div>
+
+    <form [formGroup]="form" class="d-flex flex-column gap-4">
+      <section class="section-card" formGroupName="basic">
+        <div class="section-header d-flex align-items-center justify-content-between gap-2 mb-3">
+          <div>
+            <p class="section-kicker mb-1">Información básica</p>
+            <p class="section-subtitle text-muted mb-0">Identificación oficial y ámbito de la asociación.</p>
+          </div>
+          <span class="badge rounded-pill bg-light text-rojo fw-semibold text-uppercase">
+            {{ form.get('basic.tag')?.value }}
+          </span>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Nombre oficial</label>
+            <input type="text" class="form-control" formControlName="name" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Ámbito / tipo</label>
+            <select class="form-select" formControlName="tag">
+              <option value="Foguera">Foguera</option>
+              <option value="Barraca">Barraca</option>
+            </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">CIF</label>
+            <input type="text" class="form-control" formControlName="cif" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Dirección</label>
+            <input type="text" class="form-control" formControlName="address" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Localidad</label>
+            <input type="text" class="form-control" formControlName="city" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Provincia</label>
+            <input type="text" class="form-control" formControlName="province" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card" formGroupName="publicInfo">
+        <div class="section-header mb-3">
+          <p class="section-kicker mb-1">Información pública (comercial)</p>
+          <p class="section-subtitle text-muted mb-0">Datos visibles para quienes consultan tu asociación.</p>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-4">
+            <label class="form-label">Año de fundación</label>
+            <input type="text" class="form-control" formControlName="foundationYear" />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Himno</label>
+            <input type="text" class="form-control" formControlName="hymn" />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Lema</label>
+            <input type="text" class="form-control" formControlName="motto" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Lugar de plantà de los monumentos</label>
+            <input type="text" class="form-control" formControlName="monumentLocation" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Lugar de plantà de la portada</label>
+            <input type="text" class="form-control" formControlName="gateLocation" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card" formGroupName="headquarters">
+        <div class="section-header mb-3">
+          <p class="section-kicker mb-1">Sede social</p>
+          <p class="section-subtitle text-muted mb-0">Ubicación de referencia para notificaciones.</p>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">Dirección</label>
+            <input type="text" class="form-control" formControlName="address" />
+          </div>
+          <div class="col-6 col-md-3">
+            <label class="form-label">Código postal</label>
+            <input type="text" class="form-control" formControlName="postalCode" />
+          </div>
+          <div class="col-12 col-md-5">
+            <label class="form-label">Población</label>
+            <input type="text" class="form-control" formControlName="city" />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Provincia</label>
+            <input type="text" class="form-control" formControlName="province" />
+          </div>
+        </div>
+      </section>
+
+      <section class="section-card" formGroupName="contact">
+        <div class="section-header mb-3">
+          <p class="section-kicker mb-1">Contacto</p>
+          <p class="section-subtitle text-muted mb-0">Datos de comunicación directa.</p>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="tel" class="form-control" formControlName="phone" />
+          </div>
+        </div>
+      </section>
+    </form>
+  </div>
+</section>

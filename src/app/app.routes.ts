@@ -1,8 +1,9 @@
 import { Routes } from '@angular/router';
 
 import { HomeComponent } from './home/home.component';
-import { ModulePageComponent } from './shared/module-page.component';
 import { AsociadosComponent } from './asociados/asociados.component';
+import { AsociacionComponent } from './asociacion/asociacion.component';
+import { ModulePageComponent } from './shared/module-page.component';
 
 export const routes: Routes = [
   {
@@ -22,7 +23,7 @@ export const routes: Routes = [
   },
   {
     path: 'asociacion',
-    component: ModulePageComponent,
+    component: AsociacionComponent,
     title: 'Asociación',
     data: {
       moduleName: 'Asociación',

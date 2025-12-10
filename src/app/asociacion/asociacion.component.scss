@@ -1,0 +1,98 @@
+@use '../../variables' as *;
+
+:host {
+  display: block;
+}
+
+.association {
+  border-radius: 18px;
+  background: #ffffff;
+  font-size: 1rem;
+}
+
+.overline {
+  letter-spacing: 0.08em;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.actions .btn {
+  font-weight: 700;
+}
+
+.card-body {
+  padding: clamp(1.5rem, 2vw + 1rem, 2.5rem);
+}
+
+.section-card {
+  border: 1px solid #e6e6e6;
+  border-radius: 14px;
+  padding: clamp(1.2rem, 1.5vw + 0.75rem, 1.75rem);
+  background: linear-gradient(180deg, #ffffff 0%, #fdfdfd 100%);
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.section-kicker {
+  font-weight: 700;
+  color: #1f1f1f;
+  font-size: 1.05rem;
+}
+
+.section-subtitle {
+  color: #6c757d;
+  font-size: 0.98rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #405066;
+  font-size: 0.98rem;
+}
+
+.form-control:disabled {
+  background-color: #f6f7fb;
+  color: #1f1f1f;
+  opacity: 1;
+}
+
+.form-control,
+.form-select {
+  font-size: 1rem;
+  min-height: 42px;
+}
+
+@media (min-width: 992px) {
+  .association {
+    font-size: 1.05rem;
+  }
+
+  .section-kicker {
+    font-size: 1.15rem;
+  }
+
+  .section-subtitle {
+    font-size: 1rem;
+  }
+
+  .form-label {
+    font-size: 1rem;
+  }
+
+  .form-control,
+  .form-select {
+    min-height: 46px;
+    font-size: 1.02rem;
+    padding-block: 0.65rem;
+  }
+}
+
+@media (max-width: 767px) {
+  .section-card {
+    padding: 1rem;
+  }
+}

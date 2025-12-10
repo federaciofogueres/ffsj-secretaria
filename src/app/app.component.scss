@@ -7,7 +7,7 @@
 
 :host {
   display: block;
-  min-height: 100vh;
+  min-height: 100dvh;
   background: #f6f6f6;
   color: #1f1f1f;
   padding-top: env(safe-area-inset-top, 0px);
@@ -99,7 +99,7 @@
 }
 
 .content-container {
-  max-width: 960px;
+  max-width: 1060px;
   flex: 1 1 auto;
   min-height: 0;
   width: 100%;
@@ -149,7 +149,7 @@
   }
 
   .content-container {
-    max-width: 1140px;
+    max-width: 1280px;
   }
 }
 
