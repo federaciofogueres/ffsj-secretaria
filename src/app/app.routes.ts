@@ -3,6 +3,7 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { AsociacionComponent } from './asociacion/asociacion.component';
+import { InscripcionesComponent } from './inscripciones/inscripciones.component';
 import { ModulePageComponent } from './shared/module-page.component';
 
 export const routes: Routes = [
@@ -32,7 +33,7 @@ export const routes: Routes = [
   },
   {
     path: 'inscripciones',
-    component: ModulePageComponent,
+    component: InscripcionesComponent,
     title: 'Inscripciones',
     data: {
       moduleName: 'Inscripciones',

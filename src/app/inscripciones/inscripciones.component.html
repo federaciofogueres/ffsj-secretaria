@@ -1,0 +1,149 @@
+<section class="inscripciones card border-0 shadow-sm">
+  <div class="card-body p-0">
+    <div class="layout">
+      <aside class="list">
+        <div class="list-header">
+          <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones</p>
+          <h2 class="h5 mb-0 text-rojo">Convocatorias abiertas</h2>
+        </div>
+
+        <div class="inscription-list">
+          <button
+            *ngFor="let item of inscriptions"
+            type="button"
+            class="list-item"
+            [class.active]="item.id === selectedInscription?.id"
+            (click)="selectInscription(item)"
+          >
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+              <img [src]="item.avatar" alt="Responsable" class="avatar" />
+              <div class="text-start">
+                <p class="title mb-1">{{ item.title }}</p>
+                <p class="subtitle mb-1 text-muted">{{ item.subtitle }}</p>
+                <div class="dates small text-muted">
+                  <span>Publicada: {{ item.publishedAt | date : 'd MMM y' }}</span>
+                  <span class="ms-2">Límite: {{ item.deadlineAt | date : 'd MMM y' }}</span>
+                  <span *ngIf="item.signupDate" class="ms-2">Inscrito: {{ item.signupDate | date : 'd MMM y' }}</span>
+                </div>
+              </div>
+            </div>
+            <span class="chevron" aria-hidden="true">›</span>
+          </button>
+        </div>
+      </aside>
+
+      <section class="detail" *ngIf="selectedInscription as inscription">
+        <div class="detail-header d-flex align-items-start justify-content-between gap-3 flex-wrap">
+          <div>
+            <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
+            <h1 class="h4 mb-1 text-rojo">{{ inscription.title }}</h1>
+            <p class="text-muted mb-0">{{ inscription.subtitle }}</p>
+          </div>
+          <div class="responsable d-flex align-items-center gap-2">
+            <img [src]="inscription.avatar" alt="Responsable" class="avatar" />
+            <div>
+              <p class="mb-0 fw-semibold">Responsable</p>
+              <small class="text-muted">{{ inscription.responsable }}</small>
+            </div>
+          </div>
+        </div>
+
+        <div class="dates-card">
+          <div>
+            <p class="label">Fecha publicación</p>
+            <p class="value">{{ inscription.publishedAt | date : 'd MMM y' }}</p>
+          </div>
+          <div>
+            <p class="label">Fecha límite</p>
+            <p class="value">{{ inscription.deadlineAt | date : 'd MMM y' }}</p>
+          </div>
+        </div>
+
+        <form [formGroup]="form" class="form-grid">
+          <h3 class="section-title">Formulario de inscripción</h3>
+
+          <div class="field-grid">
+            <ng-container *ngFor="let field of inscription.fields">
+              <div class="field" [class.full]="field.type === 'textarea'">
+                <label class="form-label">
+                  {{ field.label }}
+                  <span *ngIf="field.required" class="text-rojo">*</span>
+                </label>
+
+                <ng-container [ngSwitch]="field.type">
+                  <textarea
+                    *ngSwitchCase="'textarea'"
+                    class="form-control"
+                    rows="3"
+                    [attr.placeholder]="field.placeholder"
+                    [formControlName]="field.key"
+                  ></textarea>
+
+                  <select
+                    *ngSwitchCase="'select'"
+                    class="form-select"
+                    [formControlName]="field.key"
+                  >
+                    <option value="" disabled>Selecciona una opción</option>
+                    <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
+                  </select>
+
+                  <input
+                    *ngSwitchDefault
+                    class="form-control"
+                    [attr.type]="field.type"
+                    [attr.placeholder]="field.placeholder"
+                    [formControlName]="field.key"
+                  />
+                </ng-container>
+
+                <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
+                  Este campo es obligatorio.
+                </div>
+              </div>
+            </ng-container>
+          </div>
+        </form>
+
+        <div class="participants">
+          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+            <h3 class="section-title mb-0">Seleccionar asociados</h3>
+            <span class="badge bg-light text-rojo border border-rojo">
+              {{ inscription.allowedTypes.includes('adulto') ? 'Adultos' : '' }}
+              <ng-container *ngIf="inscription.allowedTypes.length === 2"> y </ng-container>
+              {{ inscription.allowedTypes.includes('infantil') ? 'Infantiles' : '' }}
+            </span>
+          </div>
+
+          <div class="participant-list">
+            <label
+              class="participant-item"
+              *ngFor="let person of availableParticipants"
+            >
+              <input
+                type="checkbox"
+                [checked]="isParticipantSelected(person)"
+                (change)="toggleParticipant(person)"
+              />
+              <div class="info">
+                <p class="name mb-0">{{ person.nombre }}</p>
+                <small class="text-muted">{{ person.cargo }} · {{ person.tipo === 'adulto' ? 'Adulto' : 'Infantil' }}</small>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="actions d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-outline-secondary" [disabled]="!canSubmit" (click)="print()">
+            <i class="bi bi-printer me-1"></i>
+            Imprimir
+          </button>
+          <button type="button" class="btn btn-foc-rojo" (click)="submit()">
+            <i class="bi bi-send me-1"></i>
+            Inscribirse
+          </button>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

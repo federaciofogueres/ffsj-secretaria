@@ -1,0 +1,182 @@
+.inscripciones {
+  border-radius: 18px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  min-height: 420px;
+}
+
+.list {
+  border-right: 1px solid #ececec;
+  padding: 1.25rem 1rem;
+  background: #f8f9fb;
+}
+
+.list-header {
+  margin-bottom: 0.75rem;
+}
+
+.inscription-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: calc(100vh - 240px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.list-item {
+  border: 1px solid #e6e6e6;
+  background: white;
+  border-radius: 12px;
+  padding: 0.75rem;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    border-color: #c4141c;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  }
+
+  &.active {
+    border-color: #c4141c;
+    box-shadow: 0 10px 22px rgba(196, 20, 28, 0.15);
+  }
+}
+
+.title {
+  font-weight: 700;
+}
+
+.subtitle {
+  font-size: 0.95rem;
+}
+
+.avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.chevron {
+  font-size: 1.2rem;
+  color: #c4141c;
+  font-weight: 700;
+}
+
+.detail {
+  padding: clamp(1.25rem, 2vw + 1rem, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-height: 100%;
+}
+
+.detail-header {
+  border-bottom: 1px solid #ececec;
+  padding-bottom: 0.75rem;
+}
+
+.dates-card {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fb;
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+}
+
+.dates-card .label {
+  margin-bottom: 0.2rem;
+  font-weight: 600;
+  color: #405066;
+}
+
+.dates-card .value {
+  margin: 0;
+  font-weight: 700;
+}
+
+.form-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1f1f1f;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.field.full {
+  grid-column: 1 / -1;
+}
+
+.participants {
+  border: 1px dashed #d9d9d9;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.participant-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.participant-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.participant-item input {
+  width: 18px;
+  height: 18px;
+}
+
+.participant-item .name {
+  font-weight: 600;
+}
+
+.actions .btn {
+  font-weight: 700;
+}
+
+@media (max-width: 991px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .list {
+    border-right: none;
+    border-bottom: 1px solid #ececec;
+  }
+
+  .inscription-list {
+    max-height: none;
+  }
+}
