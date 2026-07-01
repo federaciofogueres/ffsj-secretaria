@@ -6,12 +6,12 @@
           <img class="logo" src="assets/img/logo-intranet.png" alt="FFSJ" />
         </a>
         <div class="d-flex flex-column lh-sm">
-          <span class="fw-bold">FFSJ Secretaría</span>
-          <small class="text-white-50">Gestión interna</small>
+          <span class="fw-bold">FFSJ Secretaria</span>
+          <small class="text-white-50">Gestion interna</small>
         </div>
       </div>
 
-      <nav class="d-none d-md-flex align-items-center gap-2" aria-label="Navegación principal">
+      <nav class="d-none d-md-flex align-items-center gap-2" aria-label="Navegacion principal">
         <a
           *ngFor="let link of navLinks"
           class="nav-link text-light px-3 py-2 rounded"
@@ -25,11 +25,20 @@
       </nav>
 
       <button
+        *ngIf="auth.isLoggedIn()"
+        class="btn btn-sm btn-outline-light d-none d-md-inline-flex"
+        type="button"
+        (click)="logout()"
+      >
+        Salir
+      </button>
+
+      <button
         class="btn btn-link text-light d-md-none menu-button"
         type="button"
         (click)="toggleMenu()"
         [attr.aria-expanded]="menuOpen"
-        aria-label="Abrir menú"
+        aria-label="Abrir menu"
       >
         <i class="bi" [ngClass]="menuOpen ? 'bi-x-lg' : 'bi-list'"></i>
       </button>
@@ -50,6 +59,10 @@
         </span>
         <i class="bi bi-chevron-right"></i>
       </a>
+      <button *ngIf="auth.isLoggedIn()" class="mobile-link border-0 w-100" type="button" (click)="logout()">
+        <span>Salir</span>
+        <i class="bi bi-box-arrow-right"></i>
+      </button>
     </div>
   </header>
 
@@ -59,7 +72,7 @@
     </div>
   </main>
 
-  <footer class="tab-bar d-md-none background-rojo text-light">
+  <footer class="tab-bar d-md-none background-rojo text-light" *ngIf="auth.isLoggedIn()">
     <button
       *ngFor="let link of navLinks"
       class="tab-button"

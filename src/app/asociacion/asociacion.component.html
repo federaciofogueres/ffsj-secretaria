@@ -1,5 +1,7 @@
 <section class="association card border-0 shadow-sm">
   <div class="card-body p-4 p-md-5">
+    <div *ngIf="loading" class="alert alert-info">Cargando datos de la asociacion...</div>
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
     <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>

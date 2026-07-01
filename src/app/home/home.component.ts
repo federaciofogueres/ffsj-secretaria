@@ -21,14 +21,14 @@ export class HomeComponent {
   readonly modules: ModuleTile[] = [
     {
       title: 'Asociados',
-      description: 'Altas, modificaciones y bajas de los miembros de la asociación.',
+      description: 'Altas, modificaciones y bajas de los miembros de la asociacion.',
       path: '/asociados',
       accent: '#f9c74f',
       icon: 'bi-people-fill'
     },
     {
-      title: 'Asociación',
-      description: 'Actualización de los datos oficiales de la entidad federada.',
+      title: 'Asociacion',
+      description: 'Actualizacion de los datos oficiales de la entidad federada.',
       path: '/asociacion',
       accent: '#90be6d',
       icon: 'bi-building-fill'
@@ -42,7 +42,7 @@ export class HomeComponent {
     },
     {
       title: 'Registro',
-      description: 'Sube documentos para obtener un número de registro o envía comunicaciones.',
+      description: 'Sube documentos para obtener un numero de registro o envia comunicaciones.',
       path: '/registro',
       accent: '#f3722c',
       icon: 'bi-inbox-fill'

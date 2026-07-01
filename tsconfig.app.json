@@ -5,12 +5,7 @@
     "types": [
       "node"
     ],
-    "baseUrl": "./",
-    "paths": {
-      "ffsj-web-components": [
-        "./src/lib/ffsj-web-components"
-      ]
-    }
+    "baseUrl": "./"
   },
   "files": ["src/main.ts"],
   "include": ["src/**/*.d.ts"]

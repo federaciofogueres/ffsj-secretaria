@@ -20,6 +20,8 @@
   </div>
 
   <div class="search-line">
+    <div *ngIf="loading" class="alert alert-info w-100">Cargando asociados...</div>
+    <div *ngIf="error" class="alert alert-danger w-100">{{ error }}</div>
     <mat-form-field appearance="outline" class="search-field" floatLabel="never">
       <mat-label>Buscar</mat-label>
       <input

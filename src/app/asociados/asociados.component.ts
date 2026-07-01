@@ -13,6 +13,7 @@ import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { FfsjDialogAlertService, AlertButtonType } from 'ffsj-web-components';
 import * as XLSX from 'xlsx';
+import { ErrorService } from '../core/error.service';
 import { Asociado, AsociadosService } from './asociados.service';
 
 type TabKey = 'adultos' | 'infantiles';
@@ -50,6 +51,8 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   };
 
   activeTab: TabKey = 'adultos';
+  loading = false;
+  error = '';
 
   @ViewChild('paginatorAdultos') paginatorAdultos!: MatPaginator;
   @ViewChild('paginatorInfantiles') paginatorInfantiles!: MatPaginator;
@@ -57,6 +60,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
 
   constructor(
     private readonly asociadosService: AsociadosService,
+    private readonly errorService: ErrorService,
     private readonly dialogService: FfsjDialogAlertService
   ) {}
 
@@ -70,17 +74,26 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   }
 
   loadData(): void {
-    this.asociadosService.getAdultos().subscribe(adultos => {
+    this.loading = true;
+    this.error = '';
+    this.asociadosService.getAdultos().subscribe({
+      next: adultos => {
       this.dataSources.adultos.data = adultos;
       this.configureFilter(this.dataSources.adultos);
       this.attachPaginator();
       this.attachSort();
+      },
+      error: () => this.handleLoadError()
     });
 
-    this.asociadosService.getInfantiles().subscribe(infantiles => {
+    this.asociadosService.getInfantiles().subscribe({
+      next: infantiles => {
       this.dataSources.infantiles.data = infantiles;
       this.configureFilter(this.dataSources.infantiles);
       this.attachSort();
+      this.loading = false;
+      },
+      error: () => this.handleLoadError()
     });
   }
 
@@ -146,5 +159,11 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   private attachSort(): void {
     if (!this.sort) return;
     this.dataSources[this.activeTab].sort = this.sort;
+  }
+
+  private handleLoadError(): void {
+    this.loading = false;
+    this.error = 'No se han podido cargar los asociados desde la API de censo.';
+    this.errorService.show(this.error);
   }
 }

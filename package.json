@@ -32,7 +32,7 @@
     "bootstrap": "^5.3.3",
     "bootstrap-icons": "^1.11.3",
     "crypto-js": "^4.2.0",
-    "ffsj-web-components": "file:../ffsj-candidatas/src/lib/ffsj-web-components",
+    "ffsj-web-components": "file:../ffsj-workspace-2/dist/ffsj-web-components",
     "ngx-cookie-service": "^20.1.1",
     "rxjs": "~7.8.1",
     "tslib": "^2.6.2",

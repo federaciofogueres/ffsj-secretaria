@@ -287,7 +287,7 @@ Objetivo: corregir textos corruptos heredados.
 Instrucciones para Codex:
 
 ```text
-Revisa ffsj-secretaria buscando caracteres corruptos como Ã, Ð o Â. Corrige textos visibles en rutas, componentes y plantillas sin alterar logica. Mantén castellano/valenciano coherente con el resto de la aplicacion y ejecuta build al terminar.
+Revisa ffsj-secretaria buscando caracteres mojibake o textos con codificacion corrupta. Corrige textos visibles en rutas, componentes y plantillas sin alterar logica. Manten castellano/valenciano coherente con el resto de la aplicacion y ejecuta build al terminar.
 ```
 
 Criterios:

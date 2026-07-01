@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 
+import { SecretariaService } from '../core/secretaria.service';
 import { Asociado, AsociadosService } from './asociados.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas';
@@ -51,6 +52,7 @@ export class AsociadosGestionComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly asociadosService: AsociadosService,
+    private readonly secretariaService: SecretariaService,
     private readonly dialog: FfsjDialogAlertService
   ) { }
 
@@ -85,7 +87,7 @@ export class AsociadosGestionComponent implements OnInit {
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
 
-    ref.afterClosed().subscribe(result => {
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
       if (result !== AlertButtonType.Aceptar) return;
       this.activeTab = 'modificaciones';
       this.modoFormulario = 'modificacion';
@@ -114,6 +116,13 @@ export class AsociadosGestionComponent implements OnInit {
       return;
     }
     const payload = { ...this.altaForm.value, tipo: this.altaForm.value.tipo };
+    const tipoSolicitud = this.modoFormulario === 'alta' ? 'alta' : 'modificacion';
+    this.secretariaService.crearSolicitud({
+      asociacionId: 10,
+      tipo: tipoSolicitud,
+      asociados: [payload]
+    }).subscribe({ error: () => undefined });
+
     if (this.modoFormulario === 'alta') {
       this.pendingAltas.push(payload);
       this.dialog.openDialogAlert({
@@ -159,8 +168,13 @@ export class AsociadosGestionComponent implements OnInit {
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
 
-    ref.afterClosed().subscribe(result => {
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
       if (result !== AlertButtonType.Aceptar) return;
+      this.secretariaService.crearSolicitud({
+        asociacionId: 10,
+        tipo: 'baja',
+        asociados: seleccionados.map(asociado => ({ id: asociado.id }))
+      }).subscribe({ error: () => undefined });
       this.pendingBajas.push(...seleccionados);
       this.seleccionBaja.clear();
       this.dialog.openDialogAlert({

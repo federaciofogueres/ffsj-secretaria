@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { FfsjAlertComponent } from 'ffsj-web-components';
+import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
 
 @Component({
   selector: 'app-root',
@@ -15,12 +15,14 @@ export class AppComponent {
 
   readonly navLinks = [
     { path: '/asociados', label: 'Asociados', icon: 'bi-people-fill' },
-    { path: '/asociacion', label: 'Asociación', icon: 'bi-building-fill' },
+    { path: '/asociacion', label: 'Asociacion', icon: 'bi-building-fill' },
     { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill' },
     { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill' }
   ];
 
   menuOpen = false;
+
+  constructor(readonly auth: AuthService) {}
 
   toggleMenu(): void {
     this.menuOpen = !this.menuOpen;
@@ -28,5 +30,9 @@ export class AppComponent {
 
   closeMenu(): void {
     this.menuOpen = false;
+  }
+
+  logout(): void {
+    this.auth.logout();
   }
 }

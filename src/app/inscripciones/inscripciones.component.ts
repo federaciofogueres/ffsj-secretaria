@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { SecretariaService } from '../core/secretaria.service';
+
 type ParticipantType = 'adulto' | 'infantil';
 
 interface Participant {
@@ -110,10 +112,34 @@ export class InscripcionesComponent implements OnInit {
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
 
-  constructor(private readonly fb: FormBuilder) {}
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly secretariaService: SecretariaService
+  ) {}
 
   ngOnInit(): void {
-    this.selectInscription(this.inscriptions[0]);
+    this.secretariaService.getInscripciones(10).subscribe({
+      next: response => {
+        if (!response.inscripciones.length) {
+          this.selectInscription(this.inscriptions[0]);
+          return;
+        }
+
+        this.inscriptions = response.inscripciones.map(item => ({
+          id: item.id,
+          title: item.titulo,
+          subtitle: 'Secretaria',
+          responsable: 'Secretaria',
+          avatar: 'assets/img/logo-intranet.png',
+          publishedAt: item.fechaPublicacion,
+          deadlineAt: item.fechaLimite,
+          allowedTypes: item.tiposPermitidos,
+          fields: item.campos
+        }));
+        this.selectInscription(this.inscriptions[0]);
+      },
+      error: () => this.selectInscription(this.inscriptions[0])
+    });
   }
 
   selectInscription(inscription: Inscription): void {
@@ -159,11 +185,14 @@ export class InscripcionesComponent implements OnInit {
     }
 
     const payload = {
+      asociacionId: 10,
       inscriptionId: this.selectedInscription.id,
+      formularioId: this.selectedInscription.id,
       data: this.form.value,
+      datos: this.form.value,
       participants: [...this.selectedParticipants]
     };
-    console.log('Inscribirse', payload);
+    this.secretariaService.enviarInscripcion(payload).subscribe({ error: () => undefined });
   }
 
   private buildForm(inscription: Inscription): void {

@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
-type RegistroEstado = 'Recibido' | 'Leído' | 'Validado';
+import { SecretariaService } from '../core/secretaria.service';
+
+type RegistroEstado = 'Recibido' | 'Leido' | 'Validado';
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 
 interface RegistroResultado {
@@ -22,9 +24,9 @@ export class RegistroComponent {
   mode: RegistroMode = null;
 
   readonly responsables = [
-    { id: 'sec', label: 'Secretaría' },
+    { id: 'sec', label: 'Secretaria' },
     { id: 'pres', label: 'Presidencia' },
-    { id: 'inf', label: 'Delegación de Infantiles' },
+    { id: 'inf', label: 'Delegacion de Infantiles' },
     { id: 'act', label: 'Actividades' }
   ];
 
@@ -55,7 +57,10 @@ export class RegistroComponent {
   docLocked = false;
   commLocked = false;
 
-  constructor(private readonly fb: FormBuilder) {}
+  constructor(
+    private readonly fb: FormBuilder,
+    private readonly secretariaService: SecretariaService
+  ) {}
 
   setMode(mode: Exclude<RegistroMode, null>): void {
     this.mode = mode;
@@ -98,20 +103,32 @@ export class RegistroComponent {
       this.docForm.markAllAsTouched();
       return;
     }
+
     this.submittingDoc = true;
-    setTimeout(() => {
-      if (this.docActual) {
-        this.docReferencias.unshift(this.docActual);
+    this.secretariaService.crearRegistro({
+      asociacionId: 10,
+      tipo: 'documentacion',
+      titulo: this.docForm.value.titulo,
+      mensaje: this.docForm.value.mensaje,
+      adjuntos: this.docAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
+    }).subscribe({
+      next: registro => {
+        if (this.docActual) {
+          this.docReferencias.unshift(this.docActual);
+        }
+        this.docActual = {
+          numero: registro.id,
+          estado: 'Recibido',
+          mensaje: 'Documentacion enviada correctamente a la Federacion.'
+        };
+        this.docResultado = this.docActual;
+        this.lockDocForm();
+        this.submittingDoc = false;
+      },
+      error: () => {
+        this.submittingDoc = false;
       }
-      this.docActual = {
-        numero: this.generateRegistro(),
-        estado: 'Recibido',
-        mensaje: 'Documentación enviada correctamente a la Federación.'
-      };
-      this.docResultado = this.docActual;
-      this.lockDocForm();
-      this.submittingDoc = false;
-    }, 400);
+    });
   }
 
   submitComm(): void {
@@ -119,30 +136,42 @@ export class RegistroComponent {
       this.commForm.markAllAsTouched();
       return;
     }
+
     this.submittingComm = true;
-    setTimeout(() => {
-      if (this.commActual) {
-        this.commReferencias.unshift(this.commActual);
+    this.secretariaService.crearRegistro({
+      asociacionId: 10,
+      tipo: 'comunicacion',
+      titulo: this.commForm.value.titulo,
+      mensaje: this.commForm.value.mensaje,
+      adjuntos: this.commAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
+    }).subscribe({
+      next: registro => {
+        if (this.commActual) {
+          this.commReferencias.unshift(this.commActual);
+        }
+        this.commActual = {
+          numero: registro.id,
+          estado: 'Recibido',
+          mensaje: 'Comunicacion enviada correctamente.'
+        };
+        this.commResultado = this.commActual;
+        this.lockCommForm();
+        this.submittingComm = false;
+      },
+      error: () => {
+        this.submittingComm = false;
       }
-      this.commActual = {
-        numero: this.generateRegistro(),
-        estado: 'Recibido',
-        mensaje: 'Comunicación enviada correctamente.'
-      };
-      this.commResultado = this.commActual;
-      this.lockCommForm();
-      this.submittingComm = false;
-    }, 400);
+    });
   }
 
   printDoc(): void {
     if (!this.docResultado) return;
-    this.printSummary('Presentación de documentación', this.docForm.value, this.docAdjuntos, this.docResultado);
+    this.printSummary('Presentacion de documentacion', this.docForm.value, this.docAdjuntos, this.docResultado);
   }
 
   printComm(): void {
     if (!this.commResultado) return;
-    this.printSummary('Comunicación', this.commForm.value, this.commAdjuntos, this.commResultado);
+    this.printSummary('Comunicacion', this.commForm.value, this.commAdjuntos, this.commResultado);
   }
 
   openReferencia(ref: RegistroResultado, mode: Exclude<RegistroMode, null>): void {
@@ -157,6 +186,16 @@ export class RegistroComponent {
 
   isCurrentRef(ref: RegistroResultado, mode: Exclude<RegistroMode, null>): boolean {
     return mode === 'documentacion' ? ref === this.docActual : ref === this.commActual;
+  }
+
+  enableDocEdit(): void {
+    this.docLocked = false;
+    this.docForm.enable({ emitEvent: false });
+  }
+
+  enableCommEdit(): void {
+    this.commLocked = false;
+    this.commForm.enable({ emitEvent: false });
   }
 
   private printSummary(
@@ -192,21 +231,6 @@ export class RegistroComponent {
       </html>
     `);
     win.document.close();
-  }
-
-  private generateRegistro(): string {
-    const rand = Math.floor(100000 + Math.random() * 900000);
-    return `REG-${rand}`;
-  }
-
-  enableDocEdit(): void {
-    this.docLocked = false;
-    this.docForm.enable({ emitEvent: false });
-  }
-
-  enableCommEdit(): void {
-    this.commLocked = false;
-    this.commForm.enable({ emitEvent: false });
   }
 
   private lockDocForm(): void {
