@@ -4,9 +4,17 @@
   "private": true,
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
-    "build": "ng build",
-    "watch": "ng build --watch --configuration development",
+    "start": "ng serve --configuration=local",
+    "start:local": "ng serve --configuration=local",
+    "start:test": "ng serve --configuration=test",
+    "start:dev": "ng serve --configuration=development",
+    "start:prod": "ng serve --configuration=production",
+    "build": "ng build --configuration=production",
+    "build:local": "ng build --configuration=local",
+    "build:test": "ng build --configuration=test",
+    "build:dev": "ng build --configuration=development",
+    "build:prod": "ng build --configuration=production",
+    "watch": "ng build --watch --configuration local",
     "test": "ng test"
   },
   "dependencies": {

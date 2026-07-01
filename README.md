@@ -1,29 +1,60 @@
 # ffsj-secretaria
 
-Aplicación Angular 20 para la secretaría de la Federación de Federaciones de Scout de España.
+Aplicacion Angular 20 para la nueva gestion de secretaria de la Federacio de Les Fogueres de Sant Joan. Este proyecto sustituye progresivamente funcionalidades de la intranet antigua (`web-intranet`) relacionadas con asociaciones, asociados, inscripciones y registro documental.
 
 ## Desarrollo local
 
-1. Instala las dependencias (Angular CLI 20 y resto de paquetes):
+Instala dependencias:
 
-   ```bash
-   npm install
-   ```
+```bash
+npm install
+```
 
-2. Arranca el servidor de desarrollo:
+Arranca el servidor local:
 
-   ```bash
-   npm start
-   ```
+```bash
+npm start
+```
 
-3. Abre [http://localhost:4200](http://localhost:4200) en tu navegador.
+Tambien puedes usar explicitamente:
 
-## Estructura de la aplicación
+```bash
+npm run start:local
+```
 
-- **Home**: pantalla de inicio con accesos rápidos a los módulos.
-- **Asociados**: gestión de altas, modificaciones y bajas de miembros.
-- **Asociación**: mantenimiento de los datos de la asociación.
-- **Inscripciones**: inscripción de asociados en eventos existentes.
-- **Registro**: subida de documentos y comunicaciones con la Federación.
+Abre `http://localhost:4200/`. La aplicacion se recargara automaticamente al modificar archivos.
 
-El login corporativo se añadirá más adelante.
+## Entornos
+
+El proyecto tiene configuraciones Angular explicitas para local, test, desarrollo y produccion:
+
+| Entorno | Serve command | Build command | Fichero de entorno |
+| --- | --- | --- | --- |
+| Local | `npm run start:local` | `npm run build:local` | `src/environments/environment.local.ts` |
+| Test | `npm run start:test` | `npm run build:test` | `src/environments/environment.test.ts` |
+| Desarrollo | `npm run start:dev` | `npm run build:dev` | `src/environments/environment.development.ts` |
+| Produccion | `npm run start:prod` | `npm run build:prod` | `src/environments/environment.production.ts` |
+
+`npm run build` genera produccion por defecto. Las URLs de API y ficheros se configuran en cada entorno mediante `API_BASE_PATH` y `FILES_BASE_PATH`.
+
+## Modulos actuales
+
+- **Inicio**: pantalla de entrada con accesos a los modulos principales.
+- **Asociados**: listado, busqueda, paginacion, detalle y exportacion Excel de asociados adultos e infantiles. Actualmente usa datos mock.
+- **Gestion de asociados**: interfaz para preparar altas, modificaciones y bajas. Actualmente simula pendientes en cliente.
+- **Asociacion**: consulta y edicion de datos oficiales, contacto, sede y datos publicos de la asociacion. Actualmente usa datos mock.
+- **Inscripciones**: listado de formularios disponibles, seleccion de asociados y envio simulado de inscripciones.
+- **Registro**: presentacion de documentacion y comunicaciones con adjuntos, generando referencias simuladas.
+
+## Pendiente de integracion
+
+La aplicacion aun no esta conectada a una API de secretaria. La integracion debera sustituir mocks por servicios HTTP, reutilizando los valores de `src/environments/*` y manteniendo la separacion de entornos ya definida.
+
+Consulta `funcionalidades.MD` para el backlog funcional recomendado y prompts preparados para ir pasandoselos a Codex por fases.
+
+## Comandos utiles
+
+```bash
+npm run build
+npm test
+```
