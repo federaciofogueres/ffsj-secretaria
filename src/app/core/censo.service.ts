@@ -24,6 +24,16 @@ export class CensoService {
       .pipe(map(response => response.asociaciones?.[0] ?? (response as unknown as Asociacion)));
   }
 
+  updateAsociacion(id: number, asociacion: Asociacion): Observable<Asociacion> {
+    return this.http
+      .put<{ asociaciones?: Asociacion[] }>(
+        `${this.apiUrl.censoBasePath}/asociaciones/${id}`,
+        asociacion,
+        this.authOptions()
+      )
+      .pipe(map(response => response.asociaciones?.[0] ?? (response as unknown as Asociacion)));
+  }
+
   getAsociadosByAsociacion(asociacionId: number): Observable<Asociado[]> {
     return this.http
       .get<{ asociados?: unknown[] }>(
@@ -49,18 +59,67 @@ export class CensoService {
 
   private mapAsociado(raw: unknown): Asociado {
     const item = raw as Record<string, any>;
+    const fechaNacimiento = item.fechaNacimiento ?? item.nacimiento ?? item.fecha_nacimiento ?? item.date_birth ?? item.birthDate;
+    const tipoApi = item.tipo ?? item.tipoAsociado ?? item.type;
     return {
       id: Number(item.id),
       nombre: item.nombre ?? item.name ?? '',
       apellidos: item.apellidos ?? item.surnames ?? '',
       cargo: item.cargo ?? item.charge ?? item.cargoNombre ?? item.cargos?.[0]?.nombre ?? '',
-      tipo: item.tipo === 'infantil' || item.tipoAsociado === 'infantil' || item.child === true ? 'infantil' : 'adulto',
+      tipo: this.mapTipoAsociado(tipoApi, item.child, fechaNacimiento),
       dni: item.dni ?? item.nif,
       sip: item.sip,
       estado: item.estado,
       fechaAlta: item.fechaAlta ?? item.date_up,
+      fechaNacimiento,
       email: item.email,
       telefono: item.telefono ?? item.phone
     };
+  }
+
+  private mapTipoAsociado(tipoApi: unknown, child: unknown, fechaNacimiento: unknown): Asociado['tipo'] {
+    const normalized = String(tipoApi ?? '').toLowerCase();
+
+    if (normalized.includes('infantil') || child === true) {
+      return 'infantil';
+    }
+
+    if (normalized.includes('adult')) {
+      return 'adulto';
+    }
+
+    return this.isMenorDeEdad(fechaNacimiento) ? 'infantil' : 'adulto';
+  }
+
+  private isMenorDeEdad(value: unknown): boolean {
+    if (!value) {
+      return false;
+    }
+
+    const nacimiento = this.parseDate(value);
+    if (Number.isNaN(nacimiento.getTime())) {
+      return false;
+    }
+
+    const today = new Date(2026, 6, 1);
+    let edad = today.getFullYear() - nacimiento.getFullYear();
+    const monthDiff = today.getMonth() - nacimiento.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < nacimiento.getDate())) {
+      edad -= 1;
+    }
+
+    return edad < 18;
+  }
+
+  private parseDate(value: unknown): Date {
+    const raw = String(value).trim();
+    const localMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+
+    if (localMatch) {
+      return new Date(Number(localMatch[3]), Number(localMatch[2]) - 1, Number(localMatch[1]));
+    }
+
+    return new Date(raw);
   }
 }

@@ -1,13 +1,16 @@
-﻿import { CommonModule } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
+import { forkJoin } from 'rxjs';
 
+import { CensoService } from '../core/censo.service';
+import { RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { Asociado, AsociadosService } from './asociados.service';
 
-type GestionTab = 'altas' | 'modificaciones' | 'bajas';
+type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
 
 @Component({
   selector: 'app-asociados-gestion',
@@ -22,12 +25,15 @@ export class AsociadosGestionComponent implements OnInit {
   adultos: Asociado[] = [];
   infantiles: Asociado[] = [];
 
-  pendingAltas: any[] = [];
-  pendingCambios: any[] = [];
-  pendingBajas: Asociado[] = [];
+  registroPendiente: RegistroPendiente[] = [];
+  solicitudes: SolicitudSecretaria[] = [];
+  solicitudDetalle: SolicitudSecretaria | null = null;
 
   seleccionBaja = new Set<number>();
+  seleccionRegistro = new Set<number>();
   mostrarFormMod = false;
+  loading = false;
+  pendingViewTipo: SolicitudTipo | null = null;
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
@@ -51,32 +57,65 @@ export class AsociadosGestionComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
+    private readonly censoService: CensoService,
     private readonly asociadosService: AsociadosService,
     private readonly secretariaService: SecretariaService,
     private readonly dialog: FfsjDialogAlertService
-  ) { }
+  ) {}
 
   ngOnInit(): void {
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
     this.asociadosService.getInfantiles().subscribe(kids => (this.infantiles = kids));
+    this.cargarRegistroPendiente();
+    this.cargarSolicitudes();
+  }
+
+  get asociacionId(): number {
+    return this.censoService.asociacionId;
+  }
+
+  get registrosSeleccionados(): RegistroPendiente[] {
+    return this.registroPendiente.filter(item => this.seleccionRegistro.has(item.id));
+  }
+
+  get tipoSeleccionado(): SolicitudTipo | null {
+    const tipos = new Set(this.registrosSeleccionados.map(item => item.tipo));
+    return tipos.size === 1 ? [...tipos][0] : null;
+  }
+
+  get seleccionRegistroValida(): boolean {
+    return this.registrosSeleccionados.length > 0 && this.tipoSeleccionado !== null;
   }
 
   setTab(tab: GestionTab): void {
     this.activeTab = tab;
+    this.pendingViewTipo = null;
     this.resetFormulario();
     this.modoFormulario = tab === 'modificaciones' ? 'modificacion' : 'alta';
     this.asociadoEnEdicion = null;
     this.seleccionBaja.clear();
     this.mostrarFormMod = tab === 'altas';
+
+    if (tab === 'solicitudes') {
+      this.cargarSolicitudes();
+    } else {
+      this.cargarRegistroPendiente();
+    }
   }
 
-  verPendientes(tipo: 'solicitudes' | 'asociados'): void {
-    this.dialog.openDialogAlert({
-      title: 'Pendientes',
-      content: `Mostrando vista simulada de ${tipo === 'solicitudes' ? 'solicitudes' : 'asociados'} pendientes.`,
-      innerHtml: `<p>Mostrando vista simulada de ${tipo === 'solicitudes' ? 'solicitudes' : 'asociados'} pendientes.</p>`,
-      buttonsAlert: [AlertButtonType.Entendido]
-    });
+  abrirPendientes(tipo: SolicitudTipo): void {
+    this.pendingViewTipo = tipo;
+    this.seleccionRegistro.clear();
+    this.cargarRegistroPendiente();
+  }
+
+  volverDesdePendientes(): void {
+    this.pendingViewTipo = null;
+    this.seleccionRegistro.clear();
+  }
+
+  estaViendoPendientes(tipo: SolicitudTipo): boolean {
+    return this.pendingViewTipo === tipo;
   }
 
   iniciarModificacion(asociado: Asociado): void {
@@ -95,8 +134,8 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = true;
       this.altaForm.patchValue({
         tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
-        dni: String(asociado.id),
-        sip: '',
+        dni: asociado.dni ?? String(asociado.id),
+        sip: asociado.sip ?? '',
         nacimiento: '',
         nombre: asociado.nombre,
         apellidos: asociado.apellidos,
@@ -104,47 +143,51 @@ export class AsociadosGestionComponent implements OnInit {
         cp: '',
         localidad: '',
         provincia: '',
-        telefono: '',
-        email: ''
+        telefono: asociado.telefono ?? '',
+        email: asociado.email ?? ''
       });
     });
   }
 
-  enviarAlta(): void {
+  guardarRegistroAltaOCambio(): void {
     if (this.altaForm.invalid) {
       this.altaForm.markAllAsTouched();
       return;
     }
-    const payload = { ...this.altaForm.value, tipo: this.altaForm.value.tipo };
-    const tipoSolicitud = this.modoFormulario === 'alta' ? 'alta' : 'modificacion';
-    this.secretariaService.crearSolicitud({
-      asociacionId: 10,
-      tipo: tipoSolicitud,
-      asociados: [payload]
-    }).subscribe({ error: () => undefined });
 
-    if (this.modoFormulario === 'alta') {
-      this.pendingAltas.push(payload);
-      this.dialog.openDialogAlert({
-        title: 'Alta pendiente',
-        content: 'El asociado se ha añadido a Altas pendientes.',
-        innerHtml: '<p>El asociado se ha añadido a Altas pendientes.</p>',
-        buttonsAlert: [AlertButtonType.Entendido]
+    const tipo: SolicitudTipo = this.modoFormulario === 'alta' ? 'alta' : 'cambio';
+    const datos = { ...this.altaForm.value, tipoHoguera: this.altaForm.value.tipo };
+    const datosOriginales = this.asociadoEnEdicion ? { ...this.asociadoEnEdicion } : null;
+
+    this.loading = true;
+    this.secretariaService
+      .crearRegistroPendiente({
+        asociacionId: this.asociacionId,
+        tipo,
+        asociadoId: this.asociadoEnEdicion?.id ?? null,
+        datos,
+        datosOriginales,
+        observaciones: null
+      })
+      .subscribe({
+        next: item => {
+          this.registroPendiente.unshift(item);
+          this.loading = false;
+          this.resetFormulario();
+          this.asociadoEnEdicion = null;
+          this.mostrarFormMod = this.activeTab === 'altas';
+          this.dialog.openDialogAlert({
+            title: tipo === 'alta' ? 'Alta pendiente' : 'Cambio pendiente',
+            content: 'Se ha añadido al registro pendiente.',
+            innerHtml: '<p>Se ha añadido al registro pendiente.</p>',
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se ha podido añadir al registro pendiente.');
+        }
       });
-    } else {
-      this.pendingCambios.push({ ...payload, origenId: this.asociadoEnEdicion?.id });
-      this.dialog.openDialogAlert({
-        title: 'Cambio pendiente',
-        content: 'La modificación se ha añadido a Cambios pendientes.',
-        innerHtml: '<p>La modificación se ha añadido a Cambios pendientes.</p>',
-        buttonsAlert: [AlertButtonType.Entendido]
-      });
-    }
-    this.resetFormulario();
-    this.asociadoEnEdicion = null;
-    if (this.activeTab === 'modificaciones') {
-      this.mostrarFormMod = false;
-    }
   }
 
   toggleSeleccionBaja(asociado: Asociado): void {
@@ -155,42 +198,160 @@ export class AsociadosGestionComponent implements OnInit {
     }
   }
 
-  procesarBaja(): void {
+  guardarBajasPendientes(): void {
     if (this.seleccionBaja.size === 0) return;
     const seleccionados = [...this.seleccionBaja].map(id => this.buscarAsociado(id)).filter(Boolean) as Asociado[];
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
     const ref = this.dialog.openDialogAlert({
       title: 'Confirmar bajas',
-      content: `Desea proceder con la solicitud de baja de los siguientes asociados?\n${seleccionados
-        .map(a => `${a.nombre} ${a.apellidos}`)
-        .join('\n')}`,
-      innerHtml: `<p>Desea proceder con la solicitud de baja de los siguientes asociados?</p><ul>${listado}</ul>`,
+      content: `Desea añadir al registro pendiente las bajas seleccionadas?`,
+      innerHtml: `<p>Desea añadir al registro pendiente las bajas seleccionadas?</p><ul>${listado}</ul>`,
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
 
     ref.afterClosed().subscribe((result: AlertButtonType) => {
       if (result !== AlertButtonType.Aceptar) return;
-      this.secretariaService.crearSolicitud({
-        asociacionId: 10,
-        tipo: 'baja',
-        asociados: seleccionados.map(asociado => ({ id: asociado.id }))
-      }).subscribe({ error: () => undefined });
-      this.pendingBajas.push(...seleccionados);
-      this.seleccionBaja.clear();
-      this.dialog.openDialogAlert({
-        title: 'Baja pendiente',
-        content: 'Las bajas seleccionadas se han añadido a solicitudes pendientes.',
-        innerHtml: '<p>Las bajas seleccionadas se han añadido a solicitudes pendientes.</p>',
-        buttonsAlert: [AlertButtonType.Entendido]
+
+      this.loading = true;
+      forkJoin(
+        seleccionados.map(asociado =>
+          this.secretariaService.crearRegistroPendiente({
+            asociacionId: this.asociacionId,
+            tipo: 'baja',
+            asociadoId: asociado.id,
+            datos: { asociadoId: asociado.id, nombre: asociado.nombre, apellidos: asociado.apellidos },
+            datosOriginales: { ...asociado },
+            observaciones: null
+          })
+        )
+      ).subscribe({
+        next: items => {
+          this.registroPendiente.unshift(...items);
+          this.seleccionBaja.clear();
+          this.loading = false;
+          this.dialog.openDialogAlert({
+            title: 'Bajas pendientes',
+            content: 'Las bajas se han añadido al registro pendiente.',
+            innerHtml: '<p>Las bajas se han añadido al registro pendiente.</p>',
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se han podido añadir las bajas al registro pendiente.');
+        }
       });
     });
   }
 
-  private buscarAsociado(id: number): Asociado | undefined {
-    return [...this.adultos, ...this.infantiles].find(a => a.id === id);
+  toggleRegistro(item: RegistroPendiente): void {
+    const selectedTypes = new Set(this.registrosSeleccionados.map(registro => registro.tipo));
+    if (!this.seleccionRegistro.has(item.id) && selectedTypes.size > 0 && !selectedTypes.has(item.tipo)) {
+      this.seleccionRegistro.clear();
+    }
+
+    if (this.seleccionRegistro.has(item.id)) {
+      this.seleccionRegistro.delete(item.id);
+    } else {
+      this.seleccionRegistro.add(item.id);
+    }
   }
 
-  private resetFormulario(): void {
+  crearSolicitudSeleccionada(tipo: SolicitudTipo): void {
+    const ids = this.registroPendiente
+      .filter(item => item.tipo === tipo && this.seleccionRegistro.has(item.id))
+      .map(item => item.id);
+
+    if (!ids.length) {
+      this.showError('Selecciona uno o varios items pendientes.');
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService
+      .crearSolicitud({
+        asociacionId: this.asociacionId,
+        tipo,
+        registroPendienteIds: ids
+      })
+      .subscribe({
+        next: solicitud => {
+          const selectedIds = new Set(ids);
+          this.registroPendiente = this.registroPendiente.filter(item => !selectedIds.has(item.id));
+          this.seleccionRegistro.clear();
+          this.solicitudes.unshift(solicitud);
+          this.loading = false;
+          this.dialog.openDialogAlert({
+            title: 'Solicitud registrada',
+            content: `Se ha creado la solicitud ${solicitud.numero}.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong>.</p>`,
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se ha podido crear la solicitud.');
+        }
+      });
+  }
+
+  verSolicitud(solicitud: SolicitudSecretaria): void {
+    this.loading = true;
+    this.secretariaService.getSolicitud(solicitud.id).subscribe({
+      next: detalle => {
+        this.solicitudDetalle = detalle;
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.showError('No se ha podido cargar la solicitud.');
+      }
+    });
+  }
+
+  cargarRegistroPendiente(): void {
+    this.secretariaService.getRegistroPendiente(this.asociacionId).subscribe({
+      next: response => {
+        this.registroPendiente = response.items;
+        this.seleccionRegistro.clear();
+      },
+      error: () => this.showError('No se ha podido cargar el registro pendiente.')
+    });
+  }
+
+  cargarSolicitudes(): void {
+    this.secretariaService.getSolicitudes(this.asociacionId).subscribe({
+      next: response => (this.solicitudes = response.solicitudes),
+      error: () => this.showError('No se han podido cargar las solicitudes.')
+    });
+  }
+
+  labelTipo(tipo: SolicitudTipo | string): string {
+    return tipo === 'alta' ? 'Alta' : tipo === 'cambio' ? 'Cambio' : 'Baja';
+  }
+
+  tipoClass(tipo: SolicitudTipo | string): string {
+    return `tipo-${tipo}`;
+  }
+
+  pendientesPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
+    return this.registroPendiente.filter(item => item.tipo === tipo);
+  }
+
+  totalPendientes(tipo: SolicitudTipo): number {
+    return this.pendientesPorTipo(tipo).length;
+  }
+
+  seleccionadosPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
+    return this.pendientesPorTipo(tipo).filter(item => this.seleccionRegistro.has(item.id));
+  }
+
+  resumenItem(item: RegistroPendiente | { datos: Record<string, any> }): string {
+    const datos = item.datos || {};
+    return [datos.nombre, datos.apellidos].filter(Boolean).join(' ') || `Asociado ${datos.asociadoId ?? ''}`.trim();
+  }
+
+  public resetFormulario(): void {
     this.altaForm.reset({
       tipo: 'Hoguera adulta',
       dni: '',
@@ -204,6 +365,19 @@ export class AsociadosGestionComponent implements OnInit {
       provincia: '',
       telefono: '',
       email: ''
+    });
+  }
+
+  private buscarAsociado(id: number): Asociado | undefined {
+    return [...this.adultos, ...this.infantiles].find(a => a.id === id);
+  }
+
+  private showError(message: string): void {
+    this.dialog.openDialogAlert({
+      title: 'Error',
+      content: message,
+      innerHtml: `<p>${message}</p>`,
+      buttonsAlert: [AlertButtonType.Entendido]
     });
   }
 }

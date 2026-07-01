@@ -42,7 +42,39 @@
       <mat-tab [label]="tab.label">
         <div class="tab-panel">
           <div class="table-wrapper mat-elevation-z2">
-            <table mat-table [dataSource]="dataSources[tab.key]" matSort>
+            <table mat-table [dataSource]="dataSources[tab.key]" matSort #sortAdultos="matSort" *ngIf="tab.key === 'adultos'">
+              <ng-container matColumnDef="nombre">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre completo</th>
+                <td mat-cell *matCellDef="let element">
+                  <div class="cell-main">
+                    <span class="avatar-placeholder">{{ (element.nombre | slice:0:1) + (element.apellidos | slice:0:1) }}</span>
+                    <div>
+                      <div class="cell-name">{{ element.nombre }} {{ element.apellidos }}</div>
+                      <div class="cell-sub">ID {{ element.id }}</div>
+                    </div>
+                  </div>
+                </td>
+              </ng-container>
+
+              <ng-container matColumnDef="cargo">
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo</th>
+                <td mat-cell *matCellDef="let element">{{ element.cargo }}</td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: displayedColumns"
+                (click)="openDetails(row)"
+                matRipple
+                class="clickable-row"
+              ></tr>
+              <tr class="no-data" *matNoDataRow>
+                <td colspan="2">No hay asociados en esta categorÃ­a.</td>
+              </tr>
+            </table>
+
+            <table mat-table [dataSource]="dataSources[tab.key]" matSort #sortInfantiles="matSort" *ngIf="tab.key === 'infantiles'">
               <ng-container matColumnDef="nombre">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre completo</th>
                 <td mat-cell *matCellDef="let element">

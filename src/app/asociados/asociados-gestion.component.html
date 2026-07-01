@@ -1,10 +1,10 @@
-﻿<section class="gestion card border-0 shadow-sm">
+<section class="gestion card border-0 shadow-sm">
   <div class="card-body p-4 p-md-5">
     <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
       <div>
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Gestión de asociados</p>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Gestion de asociados</p>
         <h1 class="h4 mb-1 text-rojo">Altas, modificaciones y bajas</h1>
-        <p class="text-muted mb-0">Administra los asociados y envía las solicitudes pendientes.</p>
+        <p class="text-muted mb-0">Prepara registros pendientes y genera solicitudes desde cada tipo de tramite.</p>
       </div>
       <a routerLink="/asociados" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>
@@ -18,26 +18,113 @@
         Modificaciones
       </button>
       <button class="nav-link" [class.active]="activeTab === 'bajas'" (click)="setTab('bajas')">Bajas</button>
+      <button class="nav-link" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
+        Solicitudes pendientes
+      </button>
     </div>
 
     <ng-container *ngIf="activeTab === 'altas'">
-      <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'alta' }"></ng-container>
+      <ng-container *ngIf="estaViendoPendientes('alta'); else altaFormView">
+        <ng-container *ngTemplateOutlet="pendientesTemplate; context: { tipo: 'alta' }"></ng-container>
+      </ng-container>
+      <ng-template #altaFormView>
+        <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'alta' }"></ng-container>
+      </ng-template>
     </ng-container>
 
     <ng-container *ngIf="activeTab === 'modificaciones'">
-      <div *ngIf="!mostrarFormMod" class="mt-4">
-        <h5 class="section-title mb-2">Selecciona un asociado para modificar</h5>
+      <ng-container *ngIf="estaViendoPendientes('cambio'); else cambiosView">
+        <ng-container *ngTemplateOutlet="pendientesTemplate; context: { tipo: 'cambio' }"></ng-container>
+      </ng-container>
+      <ng-template #cambiosView>
+        <div class="pending-cta alert alert-info" *ngIf="totalPendientes('cambio') > 0">
+          <div>
+            <strong>Cambios pendientes</strong>
+            <span class="text-muted ms-1">Revisa los cambios preparados y genera una solicitud.</span>
+          </div>
+          <button class="btn btn-outline-primary btn-sm pending-button" type="button" (click)="abrirPendientes('cambio')">
+            Cambios pendientes
+            <span class="pending-badge">{{ totalPendientes('cambio') }}</span>
+          </button>
+        </div>
+
+        <div *ngIf="!mostrarFormMod" class="mt-4">
+          <h5 class="section-title mb-2">Selecciona un asociado para modificar</h5>
+          <div class="row g-3">
+            <div class="col-12 col-lg-6">
+              <h6 class="fw-bold">Adultos</h6>
+              <ul class="list-group">
+                <li
+                  *ngFor="let a of adultos"
+                  class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  (click)="iniciarModificacion(a)"
+                >
+                  <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                  <i class="bi bi-pencil-square text-rojo"></i>
+                </li>
+              </ul>
+            </div>
+            <div class="col-12 col-lg-6">
+              <h6 class="fw-bold">Infantiles</h6>
+              <ul class="list-group">
+                <li
+                  *ngFor="let a of infantiles"
+                  class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  (click)="iniciarModificacion(a)"
+                >
+                  <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                  <i class="bi bi-pencil-square text-rojo"></i>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <ng-container *ngIf="mostrarFormMod">
+          <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'modificacion' }"></ng-container>
+        </ng-container>
+      </ng-template>
+    </ng-container>
+
+    <ng-container *ngIf="activeTab === 'bajas'">
+      <ng-container *ngIf="estaViendoPendientes('baja'); else bajasView">
+        <ng-container *ngTemplateOutlet="pendientesTemplate; context: { tipo: 'baja' }"></ng-container>
+      </ng-container>
+      <ng-template #bajasView>
+        <div class="pending-cta alert alert-info" *ngIf="totalPendientes('baja') > 0">
+          <div>
+            <strong>Bajas pendientes</strong>
+            <span class="text-muted ms-1">Revisa las bajas preparadas y genera una solicitud.</span>
+          </div>
+          <button class="btn btn-outline-primary btn-sm pending-button" type="button" (click)="abrirPendientes('baja')">
+            Bajas pendientes
+            <span class="pending-badge">{{ totalPendientes('baja') }}</span>
+          </button>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="section-title mb-1">Selecciona asociados para dar de baja</h5>
+            <p class="text-muted mb-0">Se anadiran al registro pendiente de bajas.</p>
+          </div>
+        </div>
+
         <div class="row g-3">
           <div class="col-12 col-lg-6">
             <h6 class="fw-bold">Adultos</h6>
             <ul class="list-group">
               <li
                 *ngFor="let a of adultos"
-                class="list-group-item d-flex justify-content-between align-items-center clickable"
-                (click)="iniciarModificacion(a)"
+                class="list-group-item d-flex align-items-center gap-2 clickable"
+                [class.selected]="seleccionBaja.has(a.id)"
+                (click)="toggleSeleccionBaja(a)"
               >
+                <input
+                  type="checkbox"
+                  [checked]="seleccionBaja.has(a.id)"
+                  (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
+                />
                 <span>{{ a.nombre }} {{ a.apellidos }}</span>
-                <i class="bi bi-pencil-square text-rojo"></i>
               </li>
             </ul>
           </div>
@@ -46,196 +133,234 @@
             <ul class="list-group">
               <li
                 *ngFor="let a of infantiles"
-                class="list-group-item d-flex justify-content-between align-items-center clickable"
-                (click)="iniciarModificacion(a)"
+                class="list-group-item d-flex align-items-center gap-2 clickable"
+                [class.selected]="seleccionBaja.has(a.id)"
+                (click)="toggleSeleccionBaja(a)"
               >
+                <input
+                  type="checkbox"
+                  [checked]="seleccionBaja.has(a.id)"
+                  (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
+                />
                 <span>{{ a.nombre }} {{ a.apellidos }}</span>
-                <i class="bi bi-pencil-square text-rojo"></i>
               </li>
             </ul>
           </div>
         </div>
-      </div>
 
-      <ng-container *ngIf="mostrarFormMod">
-        <ng-container *ngTemplateOutlet="formTemplate; context: { modo: 'modificacion' }"></ng-container>
-      </ng-container>
+        <div class="actions mt-3">
+          <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0 || loading" (click)="guardarBajasPendientes()">
+            Anadir bajas al registro pendiente
+          </button>
+        </div>
+      </ng-template>
     </ng-container>
 
-    <ng-container *ngIf="activeTab === 'bajas'">
+    <ng-container *ngIf="activeTab === 'solicitudes'">
       <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
         <div>
-          <h5 class="section-title mb-1">Selecciona los asociados que deseas dar de baja</h5>
-          <p class="text-muted mb-0">Puedes elegir varios y procesar la solicitud conjunta.</p>
+          <h5 class="section-title mb-1">Solicitudes pendientes</h5>
+          <p class="text-muted mb-0">Solicitudes registradas y todavia no enviadas a secretaria.</p>
         </div>
-        <button class="btn btn-outline-primary" type="button" (click)="verPendientes('solicitudes')">
-          Ver solicitudes pendientes
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarSolicitudes()">
+          <i class="bi bi-arrow-clockwise me-1"></i>
+          Actualizar
         </button>
       </div>
 
       <div class="row g-3">
         <div class="col-12 col-lg-6">
-          <h6 class="fw-bold">Adultos</h6>
-          <ul class="list-group">
-            <li
-              *ngFor="let a of adultos"
-              class="list-group-item d-flex align-items-center gap-2 clickable"
-              [class.selected]="seleccionBaja.has(a.id)"
-              (click)="toggleSeleccionBaja(a)"
+          <div class="list-group">
+            <button
+              *ngFor="let solicitud of solicitudes"
+              type="button"
+              class="list-group-item list-group-item-action"
+              [class.active]="solicitudDetalle?.id === solicitud.id"
+              (click)="verSolicitud(solicitud)"
             >
-              <input
-                type="checkbox"
-                [checked]="seleccionBaja.has(a.id)"
-                (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
-              />
-              <span>{{ a.nombre }} {{ a.apellidos }}</span>
-            </li>
-          </ul>
+              <div class="d-flex w-100 justify-content-between gap-2">
+                <strong>{{ solicitud.numero }}</strong>
+                <small>{{ (solicitud.fechaRegistro || solicitud.fechaAlta) | date: 'dd/MM/yyyy HH:mm' }}</small>
+              </div>
+              <div class="d-flex justify-content-between gap-2 mt-1">
+                <span>
+                  <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
+                  {{ solicitud.totalRegistros }} item(s)
+                </span>
+                <span>{{ solicitud.estado }}</span>
+              </div>
+            </button>
+            <div *ngIf="solicitudes.length === 0" class="text-muted">No hay solicitudes registradas.</div>
+          </div>
         </div>
+
         <div class="col-12 col-lg-6">
-          <h6 class="fw-bold">Infantiles</h6>
-          <ul class="list-group">
-            <li
-              *ngFor="let a of infantiles"
-              class="list-group-item d-flex align-items-center gap-2 clickable"
-              [class.selected]="seleccionBaja.has(a.id)"
-              (click)="toggleSeleccionBaja(a)"
-            >
-              <input
-                type="checkbox"
-                [checked]="seleccionBaja.has(a.id)"
-                (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
-              />
-              <span>{{ a.nombre }} {{ a.apellidos }}</span>
-            </li>
-          </ul>
+          <div class="detail-panel">
+            <ng-container *ngIf="solicitudDetalle; else emptyDetail">
+              <h6 class="fw-bold mb-1">{{ solicitudDetalle.numero }}</h6>
+              <p class="text-muted mb-3">{{ labelTipo(solicitudDetalle.tipo) }} - {{ solicitudDetalle.estado }}</p>
+              <ul class="pending-list">
+                <li *ngFor="let item of solicitudDetalle.items || []">
+                  <i class="bi bi-file-earmark-text me-1"></i>
+                  {{ resumenItem(item) }}
+                </li>
+              </ul>
+            </ng-container>
+            <ng-template #emptyDetail>
+              <p class="text-muted mb-0">Selecciona una solicitud para ver su contenido.</p>
+            </ng-template>
+          </div>
         </div>
-      </div>
-
-      <div class="actions mt-3">
-        <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0" (click)="procesarBaja()">
-          Procesar baja
-        </button>
-      </div>
-
-      <div class="mt-3">
-        <p class="small text-muted mb-1">Solicitudes de baja pendientes</p>
-        <ul class="pending-list">
-          <li *ngFor="let p of pendingBajas">
-            <i class="bi bi-clock-history me-1"></i>
-            {{ p.nombre }} {{ p.apellidos }}
-          </li>
-          <li *ngIf="pendingBajas.length === 0" class="text-muted small">Sin bajas pendientes</li>
-        </ul>
       </div>
     </ng-container>
 
     <ng-template #formTemplate let-modo="modo">
-      <div class="row g-4">
-        <div class="col-12 col-lg-8">
-          <div class="info alert alert-info">
-            <strong>Información:</strong> Completa el formulario y al confirmar se añadirá a
-            <em>{{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}</em>.
+      <div class="pending-cta alert alert-info" *ngIf="totalPendientes(modo === 'alta' ? 'alta' : 'cambio') > 0">
+        <div>
+          <strong>{{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}</strong>
+          <span class="text-muted ms-1">Completa el formulario y revisa los items preparados antes de generar solicitud.</span>
+        </div>
+        <button
+          class="btn btn-outline-primary btn-sm pending-button"
+          type="button"
+          (click)="abrirPendientes(modo === 'alta' ? 'alta' : 'cambio')"
+        >
+          {{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}
+          <span class="pending-badge">{{ totalPendientes(modo === 'alta' ? 'alta' : 'cambio') }}</span>
+        </button>
+      </div>
+
+      <form [formGroup]="altaForm" class="form-grid" (ngSubmit)="guardarRegistroAltaOCambio()">
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Tipo de hoguera</label>
+            <select class="form-select" formControlName="tipo">
+              <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
+            </select>
           </div>
-          <form [formGroup]="altaForm" class="form-grid" (ngSubmit)="enviarAlta()">
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label class="form-label">Tipo de hoguera</label>
-                <select class="form-select" formControlName="tipo">
-                  <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">DNI/NIE</label>
-                <input class="form-control" formControlName="dni" placeholder="Documento" />
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">SIP</label>
-                <input class="form-control" formControlName="sip" />
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Fecha de nacimiento</label>
-                <input type="date" class="form-control" formControlName="nacimiento" />
-              </div>
-            </div>
-
-            <h5 class="section-title">Datos personales</h5>
-            <div class="row g-3">
-              <div class="col-12 col-md-6">
-                <label class="form-label">Nombre</label>
-                <input class="form-control" formControlName="nombre" />
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Apellidos</label>
-                <input class="form-control" formControlName="apellidos" />
-              </div>
-              <div class="col-12">
-                <label class="form-label">Dirección</label>
-                <input class="form-control" formControlName="direccion" />
-              </div>
-              <div class="col-6 col-md-4">
-                <label class="form-label">Código Postal</label>
-                <input class="form-control" formControlName="cp" />
-              </div>
-              <div class="col-6 col-md-4">
-                <label class="form-label">Localidad</label>
-                <input class="form-control" formControlName="localidad" />
-              </div>
-              <div class="col-12 col-md-4">
-                <label class="form-label">Provincia</label>
-                <input class="form-control" formControlName="provincia" />
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Teléfono</label>
-                <input class="form-control" formControlName="telefono" />
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-control" formControlName="email" />
-              </div>
-            </div>
-
-            <div class="actions mt-3 d-flex gap-2">
-              <button class="btn btn-foc-rojo" type="submit">
-                {{ modo === 'alta' ? 'Crear nuevo asociado' : 'Guardar cambios' }}
-              </button>
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                *ngIf="modo === 'modificacion'"
-                (click)="mostrarFormMod = false; resetFormulario()"
-              >
-                Volver al listado
-              </button>
-            </div>
-          </form>
+          <div class="col-12 col-md-6">
+            <label class="form-label">DNI/NIE</label>
+            <input class="form-control" formControlName="dni" placeholder="Documento" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">SIP</label>
+            <input class="form-control" formControlName="sip" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Fecha de nacimiento</label>
+            <input type="date" class="form-control" formControlName="nacimiento" />
+          </div>
         </div>
 
-        <div class="col-12 col-lg-4">
-          <div class="card border-0 shadow-sm h-100">
-            <div class="card-body">
-              <h5 class="h6 text-uppercase text-muted">Solicitudes</h5>
-              <button class="btn btn-outline-primary w-100 mb-2" type="button" (click)="verPendientes('solicitudes')">
-                Ver solicitudes pendientes
-              </button>
-              <button class="btn btn-outline-primary w-100" type="button" (click)="verPendientes('asociados')">
-                {{ modo === 'alta' ? 'Ver nuevos asociados pendientes' : 'Ver cambios pendientes' }}
-              </button>
-
-              <div class="mt-3">
-                <p class="small text-muted mb-1">Pendientes recientes</p>
-                <ul class="pending-list">
-                  <li *ngFor="let p of modo === 'alta' ? pendingAltas : pendingCambios">
-                    <i class="bi bi-clock-history me-1"></i>
-                    {{ p.nombre || 'Asociado' }} {{ p.apellidos || '' }}
-                  </li>
-                  <li *ngIf="(modo === 'alta' ? pendingAltas : pendingCambios).length === 0" class="text-muted small">
-                    Sin pendientes
-                  </li>
-                </ul>
-              </div>
-            </div>
+        <h5 class="section-title">Datos personales</h5>
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label class="form-label">Nombre</label>
+            <input class="form-control" formControlName="nombre" />
           </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Apellidos</label>
+            <input class="form-control" formControlName="apellidos" />
+          </div>
+          <div class="col-12">
+            <label class="form-label">Direccion</label>
+            <input class="form-control" formControlName="direccion" />
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label">Codigo Postal</label>
+            <input class="form-control" formControlName="cp" />
+          </div>
+          <div class="col-6 col-md-4">
+            <label class="form-label">Localidad</label>
+            <input class="form-control" formControlName="localidad" />
+          </div>
+          <div class="col-12 col-md-4">
+            <label class="form-label">Provincia</label>
+            <input class="form-control" formControlName="provincia" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Telefono</label>
+            <input class="form-control" formControlName="telefono" />
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" class="form-control" formControlName="email" />
+          </div>
+        </div>
+
+        <div class="actions mt-3 d-flex gap-2">
+          <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">
+            {{ modo === 'alta' ? 'Anadir alta al registro pendiente' : 'Anadir cambio al registro pendiente' }}
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            *ngIf="modo === 'modificacion'"
+            (click)="mostrarFormMod = false; resetFormulario()"
+          >
+            Volver al listado
+          </button>
+        </div>
+      </form>
+    </ng-template>
+
+    <ng-template #pendientesTemplate let-tipo="tipo">
+      <div class="pending-section">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+          <div>
+            <h5 class="section-title mb-1">Registro pendiente de {{ labelTipo(tipo) | lowercase }}</h5>
+            <p class="text-muted mb-0">Selecciona los items que quieres agrupar en una solicitud.</p>
+          </div>
+          <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="volverDesdePendientes()">
+              <i class="bi bi-arrow-left me-1"></i>
+              Volver atras
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarRegistroPendiente()">
+              <i class="bi bi-arrow-clockwise me-1"></i>
+              Actualizar
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th></th>
+                <th>Asociado</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let item of pendientesPorTipo(tipo)" [class.table-danger]="seleccionRegistro.has(item.id)">
+                <td>
+                  <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" (change)="toggleRegistro(item)" />
+                </td>
+                <td>{{ resumenItem(item) }}</td>
+                <td>{{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ item.estado }}</td>
+              </tr>
+              <tr *ngIf="pendientesPorTipo(tipo).length === 0">
+                <td colspan="4" class="text-muted">No hay items pendientes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="actions mt-3 d-flex align-items-center gap-2 flex-wrap">
+          <button
+            class="btn btn-foc-rojo"
+            type="button"
+            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading"
+            (click)="crearSolicitudSeleccionada(tipo)"
+          >
+            Generar solicitud
+          </button>
+          <span class="text-muted small" *ngIf="seleccionadosPorTipo(tipo).length > 0">
+            {{ seleccionadosPorTipo(tipo).length }} item(s) seleccionado(s).
+          </span>
         </div>
       </div>
     </ng-template>

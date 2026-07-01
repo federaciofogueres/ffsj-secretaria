@@ -10,19 +10,31 @@ export interface Asociado {
   sip?: string;
   estado?: string;
   fechaAlta?: string;
+  fechaNacimiento?: string;
   email?: string;
   telefono?: string;
 }
 
 export interface Asociacion {
   id: number;
-  name: string;
+  name?: string;
+  nombre?: string;
   cif: string;
   email?: string;
   phone?: string;
+  telefono?: string;
   address?: string;
+  direccion?: string;
   city?: string;
   state?: string;
+  lema?: string;
+  anyo_fundacion?: number | string | null;
+  anyoFundacion?: number | string | null;
+  tipo_asociacion?: number | string;
+  tipoAsociacion?: number | string;
+  active?: boolean | number;
+  img?: string | null;
+  password?: string | null;
 }
 
 export interface AuthContext {
@@ -33,15 +45,43 @@ export interface AuthContext {
   permisos: string[];
 }
 
-export interface SolicitudSecretaria {
-  id: string;
+export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
+
+export interface RegistroPendiente {
+  id: number;
   asociacionId: number;
-  tipo: 'alta' | 'modificacion' | 'baja';
+  tipo: SolicitudTipo;
+  asociadoId?: number | null;
+  estado: 'pendiente' | 'incluido_en_solicitud' | 'descartado';
+  datos: Record<string, any>;
+  datosOriginales?: Record<string, any> | null;
+  observaciones?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SolicitudItemSecretaria {
+  id: number;
+  solicitudId: number;
+  registroPendienteId: number;
+  datos: Record<string, any>;
+  datosOriginales?: Record<string, any> | null;
+  estado: string;
+}
+
+export interface SolicitudSecretaria {
+  id: number;
+  numero: string;
+  asociacionId: number;
+  tipo: SolicitudTipo;
   estado: string;
   totalRegistros: number;
   fechaAlta: string;
+  fechaRegistro?: string;
   fechaEntrada?: string | null;
   fechaValidacion?: string | null;
+  observaciones?: string | null;
+  items?: SolicitudItemSecretaria[];
 }
 
 export interface RegistroSecretaria {

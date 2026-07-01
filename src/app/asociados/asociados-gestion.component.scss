@@ -61,3 +61,85 @@
 .actions .btn {
   font-weight: 700;
 }
+
+.detail-panel {
+  min-height: 220px;
+  border: 1px solid #eceff4;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.pending-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 8px;
+}
+
+.pending-button {
+  position: relative;
+  min-width: 160px;
+  font-weight: 700;
+}
+
+.pending-badge {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  min-width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  padding: 0 7px;
+  background: #c4141c;
+  color: #fff;
+  font-size: 0.75rem;
+  line-height: 24px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  min-width: 72px;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  margin-right: 0.35rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.tipo-alta {
+  background: #e7f6ed;
+  color: #18713a;
+}
+
+.tipo-cambio {
+  background: #fff3d8;
+  color: #9a5a00;
+}
+
+.tipo-baja {
+  background: #fde7e9;
+  color: #a40f1c;
+}
+
+.pending-section {
+  border: 1px solid #eceff4;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fff;
+}
+
+@media (max-width: 767px) {
+  .pending-cta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .pending-button {
+    width: 100%;
+  }
+}

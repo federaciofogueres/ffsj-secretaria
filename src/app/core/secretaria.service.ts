@@ -8,8 +8,10 @@ import {
   CargoResumen,
   Incidencia,
   InscripcionSecretaria,
+  RegistroPendiente,
   RegistroSecretaria,
-  SolicitudSecretaria
+  SolicitudSecretaria,
+  SolicitudTipo
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -19,13 +21,45 @@ export class SecretariaService {
     private readonly apiUrl: ApiUrlService
   ) {}
 
+  getRegistroPendiente(asociacionId: number): Observable<{ items: RegistroPendiente[] }> {
+    return this.http.get<{ items: RegistroPendiente[] }>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, {
+      params: new HttpParams().set('asociacionId', asociacionId).set('estado', 'pendiente')
+    });
+  }
+
+  crearRegistroPendiente(payload: {
+    asociacionId: number;
+    tipo: SolicitudTipo;
+    asociadoId?: number | null;
+    datos: Record<string, any>;
+    datosOriginales?: Record<string, any> | null;
+    observaciones?: string | null;
+  }): Observable<RegistroPendiente> {
+    return this.http.post<RegistroPendiente>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, payload);
+  }
+
+  descartarRegistroPendiente(id: number, asociacionId: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl.secretariaBasePath}/registro-pendiente/${id}`, {
+      params: new HttpParams().set('asociacionId', asociacionId)
+    });
+  }
+
   getSolicitudes(asociacionId: number): Observable<{ solicitudes: SolicitudSecretaria[] }> {
     return this.http.get<{ solicitudes: SolicitudSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/solicitudes`, {
       params: new HttpParams().set('asociacionId', asociacionId)
     });
   }
 
-  crearSolicitud(payload: unknown): Observable<SolicitudSecretaria> {
+  getSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.get<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}`);
+  }
+
+  crearSolicitud(payload: {
+    asociacionId: number;
+    tipo: SolicitudTipo;
+    registroPendienteIds: number[];
+    observaciones?: string | null;
+  }): Observable<SolicitudSecretaria> {
     return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes`, payload);
   }
 

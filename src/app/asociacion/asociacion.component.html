@@ -25,9 +25,9 @@
           <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
             Cancelar
           </button>
-          <button type="button" class="btn btn-success" (click)="save()">
+          <button type="button" class="btn btn-success" [disabled]="saving" (click)="save()">
             <i class="bi bi-check2 me-1"></i>
-            Guardar
+            {{ saving ? 'Guardando...' : 'Guardar' }}
           </button>
         </ng-container>
       </div>
@@ -52,10 +52,7 @@
           </div>
           <div class="col-12 col-md-6">
             <label class="form-label">Ámbito / tipo</label>
-            <select class="form-select" formControlName="tag">
-              <option value="Foguera">Foguera</option>
-              <option value="Barraca">Barraca</option>
-            </select>
+            <input type="number" class="form-control" formControlName="tag" />
           </div>
           <div class="col-12 col-md-6">
             <label class="form-label">CIF</label>

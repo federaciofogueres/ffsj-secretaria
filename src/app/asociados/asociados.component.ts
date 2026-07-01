@@ -56,7 +56,8 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
 
   @ViewChild('paginatorAdultos') paginatorAdultos!: MatPaginator;
   @ViewChild('paginatorInfantiles') paginatorInfantiles!: MatPaginator;
-  @ViewChild(MatSort) sort!: MatSort;
+  @ViewChild('sortAdultos') sortAdultos!: MatSort;
+  @ViewChild('sortInfantiles') sortInfantiles!: MatSort;
 
   constructor(
     private readonly asociadosService: AsociadosService,
@@ -78,20 +79,21 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     this.error = '';
     this.asociadosService.getAdultos().subscribe({
       next: adultos => {
-      this.dataSources.adultos.data = adultos;
-      this.configureFilter(this.dataSources.adultos);
-      this.attachPaginator();
-      this.attachSort();
+        this.dataSources.adultos.data = adultos;
+        this.configureFilter(this.dataSources.adultos);
+        this.attachPaginator();
+        this.attachSort();
       },
       error: () => this.handleLoadError()
     });
 
     this.asociadosService.getInfantiles().subscribe({
       next: infantiles => {
-      this.dataSources.infantiles.data = infantiles;
-      this.configureFilter(this.dataSources.infantiles);
-      this.attachSort();
-      this.loading = false;
+        this.dataSources.infantiles.data = infantiles;
+        this.configureFilter(this.dataSources.infantiles);
+        this.attachPaginator();
+        this.attachSort();
+        this.loading = false;
       },
       error: () => this.handleLoadError()
     });
@@ -122,6 +124,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
         <p><strong>Nombre:</strong> ${asociado.nombre} ${asociado.apellidos}</p>
         <p><strong>Cargo:</strong> ${asociado.cargo}</p>
         <p><strong>Tipo:</strong> ${asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'}</p>
+        ${asociado.fechaNacimiento ? `<p><strong>Fecha de nacimiento:</strong> ${asociado.fechaNacimiento}</p>` : ''}
       `,
       buttonsAlert: [AlertButtonType.Entendido]
     });
@@ -150,15 +153,23 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   }
 
   private attachPaginator(): void {
-    const paginator = this.activeTab === 'adultos' ? this.paginatorAdultos : this.paginatorInfantiles;
-    if (paginator) {
-      this.dataSources[this.activeTab].paginator = paginator;
+    if (this.paginatorAdultos) {
+      this.dataSources.adultos.paginator = this.paginatorAdultos;
+    }
+
+    if (this.paginatorInfantiles) {
+      this.dataSources.infantiles.paginator = this.paginatorInfantiles;
     }
   }
 
   private attachSort(): void {
-    if (!this.sort) return;
-    this.dataSources[this.activeTab].sort = this.sort;
+    if (this.sortAdultos) {
+      this.dataSources.adultos.sort = this.sortAdultos;
+    }
+
+    if (this.sortInfantiles) {
+      this.dataSources.infantiles.sort = this.sortInfantiles;
+    }
   }
 
   private handleLoadError(): void {
