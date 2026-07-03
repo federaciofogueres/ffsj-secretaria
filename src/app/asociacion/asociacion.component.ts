@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angula
 import { CensoService } from '../core/censo.service';
 import { ErrorService } from '../core/error.service';
 import { Asociacion } from '../core/models';
+import { PermissionsService } from '../core/permissions.service';
 
 interface AssociationData {
   basic: {
@@ -53,7 +54,8 @@ export class AsociacionComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly censoService: CensoService,
-    private readonly errorService: ErrorService
+    private readonly errorService: ErrorService,
+    readonly permissions: PermissionsService
   ) {}
 
   ngOnInit(): void {
@@ -61,6 +63,10 @@ export class AsociacionComponent implements OnInit {
   }
 
   startEdit(): void {
+    if (!this.permissions.hasPermission('asociacion:write')) {
+      this.errorService.show('No tienes permiso para editar los datos de la asociacion.');
+      return;
+    }
     this.isEditing = true;
     this.form.enable({ emitEvent: false });
     this.disableUnsupportedControls();
@@ -73,6 +79,10 @@ export class AsociacionComponent implements OnInit {
   }
 
   save(): void {
+    if (!this.permissions.hasPermission('asociacion:write')) {
+      this.errorService.show('No tienes permiso para guardar los datos de la asociacion.');
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;

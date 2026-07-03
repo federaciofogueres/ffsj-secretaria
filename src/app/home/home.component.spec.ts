@@ -1,6 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { RouterTestingModule } from '@angular/router/testing';
 
 import { HomeComponent } from './home.component';
+import { PermissionsService } from '../core/permissions.service';
 
 describe('HomeComponent', () => {
   let component: HomeComponent;
@@ -8,7 +10,10 @@ describe('HomeComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [HomeComponent]
+      imports: [RouterTestingModule, HomeComponent],
+      providers: [
+        { provide: PermissionsService, useValue: { hasPermission: () => true } }
+      ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(HomeComponent);

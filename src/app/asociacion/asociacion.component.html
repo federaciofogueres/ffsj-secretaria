@@ -12,7 +12,7 @@
       </div>
       <div class="actions d-flex flex-wrap align-items-center gap-2">
         <button
-          *ngIf="!isEditing"
+          *ngIf="!isEditing && permissions.hasPermission('asociacion:write')"
           type="button"
           class="btn btn-foc-rojo d-inline-flex align-items-center"
           (click)="startEdit()"

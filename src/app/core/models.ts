@@ -143,3 +143,24 @@ export interface CargoResumen {
   validados: number;
   solicitados: number;
 }
+
+export interface PermisoSecretaria {
+  id: number;
+  codigo: string;
+  descripcion: string;
+  modulo: string;
+}
+
+export interface RolSecretaria {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string | null;
+  activo: boolean;
+  permisos: PermisoSecretaria[];
+}
+
+export interface CargoPermisosSecretaria {
+  cargoId: number;
+  permisos: PermisoSecretaria[];
+}

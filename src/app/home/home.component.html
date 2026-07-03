@@ -30,6 +30,7 @@
 
     <div class="row g-3">
       <div class="col-12 col-md-6" *ngFor="let module of modules">
+        <ng-container *ngIf="permissions.hasPermission(module.permission)">
         <a class="module-card d-flex align-items-start gap-3 p-3 rounded-3 border h-100" [routerLink]="module.path">
           <span class="module-icon rounded-circle d-inline-flex align-items-center justify-content-center"
             [style.background-color]="module.accent">
@@ -41,6 +42,7 @@
             <span class="text-rojo fw-semibold small">Entrar <i class="bi bi-arrow-right-short"></i></span>
           </div>
         </a>
+        </ng-container>
       </div>
     </div>
   </div>

@@ -16,7 +16,7 @@
                 <p class="text-muted mb-3">Adjunta ficheros y envíalos a la Federación. Obtendrás un registro de entrada.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-foc-rojo w-100" type="button" (click)="setMode('documentacion')">
+                <button class="btn btn-foc-rojo w-100" type="button" [disabled]="!permissions.hasPermission('registro:write')" (click)="setMode('documentacion')">
                   Abrir presentación
                 </button>
               </div>
@@ -29,7 +29,7 @@
                 <p class="text-muted mb-3">Envía un mensaje con destinatario y adjuntos opcionales. No es una vía oficial de documentación.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-outline-secondary w-100" type="button" (click)="setMode('comunicacion')">
+                <button class="btn btn-outline-secondary w-100" type="button" [disabled]="!permissions.hasPermission('registro:write')" (click)="setMode('comunicacion')">
                   Abrir comunicación
                 </button>
               </div>

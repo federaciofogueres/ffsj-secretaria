@@ -149,7 +149,7 @@
         </div>
 
         <div class="actions mt-3">
-          <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0 || loading" (click)="guardarBajasPendientes()">
+          <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0 || loading || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
             Anadir bajas al registro pendiente
           </button>
         </div>
@@ -289,7 +289,7 @@
         </div>
 
         <div class="actions mt-3 d-flex gap-2">
-          <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">
+          <button class="btn btn-foc-rojo" type="submit" [disabled]="loading || !permissions.hasPermission('solicitudes:write')">
             {{ modo === 'alta' ? 'Anadir alta al registro pendiente' : 'Anadir cambio al registro pendiente' }}
           </button>
           <button
@@ -353,7 +353,7 @@
           <button
             class="btn btn-foc-rojo"
             type="button"
-            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading"
+            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || !permissions.hasPermission('solicitudes:write')"
             (click)="crearSolicitudSeleccionada(tipo)"
           >
             Generar solicitud

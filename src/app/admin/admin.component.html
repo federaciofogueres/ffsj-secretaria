@@ -1,0 +1,150 @@
+<ng-container *ngIf="!auth.isLoggedIn(); else loggedAdmin">
+  <lib-ffsj-login
+    title="Administracion FFSJ"
+    subtitle="Acceso de personas"
+    (logStatus)="onLoginStatus($event)"
+  ></lib-ffsj-login>
+</ng-container>
+
+<ng-template #loggedAdmin>
+  <section *ngIf="!canShowAdmin(); else adminPanel" class="card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <h1 class="h4 text-rojo">Acceso administrativo</h1>
+      <p class="text-muted mb-3">El usuario autenticado no tiene el cargo administrativo requerido.</p>
+      <button class="btn btn-outline-secondary" type="button" (click)="auth.logout()">Cambiar usuario</button>
+    </div>
+  </section>
+</ng-template>
+
+<ng-template #adminPanel>
+  <section class="admin card border-0 shadow-sm">
+    <div class="card-body p-4 p-md-5">
+      <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
+        <div>
+          <p class="overline text-uppercase text-muted fw-bold mb-1">Administracion</p>
+          <h1 class="h4 mb-1 text-rojo">Permisos por cargo</h1>
+          <p class="text-muted mb-0">Configura permisos para el acceso de asociaciones y para el acceso de administracion.</p>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="load()">
+          <i class="bi bi-arrow-clockwise me-1"></i>
+          Actualizar
+        </button>
+      </div>
+
+      <div *ngIf="loading" class="alert alert-info">Cargando configuracion...</div>
+      <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+      <div class="admin-help mb-4">
+        <div>
+          <h2 class="h6 mb-2">Como se usa esta pantalla</h2>
+          <ol class="help-steps mb-0">
+            <li>
+              <strong>Acceso Asociaciones.</strong>
+              Entran con CIF y contrasena de asociacion. Usan permisos base comunes.
+            </li>
+            <li>
+              <strong>Acceso Administracion.</strong>
+              Entran personas con login normal. Sus permisos dependen de sus cargos.
+            </li>
+            <li>
+              <strong>Los permisos son fijos del sistema.</strong>
+              Son los codigos que comprueba la aplicacion, por ejemplo <code>solicitudes:write</code>.
+            </li>
+          </ol>
+        </div>
+        <div class="help-note">
+          <strong>Importante:</strong> los cargos solo aplican a administracion. El acceso de asociaciones no identifica a una persona concreta.
+        </div>
+      </div>
+
+      <div class="section-panel mb-4">
+        <button
+          type="button"
+          class="role-header role-toggle"
+          [attr.aria-expanded]="asociacionesPanelExpanded"
+          (click)="asociacionesPanelExpanded = !asociacionesPanelExpanded"
+        >
+          <div>
+            <h2 class="h6 mb-1">Acceso Asociaciones</h2>
+            <p class="text-muted mb-0 small">Permisos base para quien entra con CIF y contrasena de asociacion.</p>
+          </div>
+          <span class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark">{{ asociacionBasePermisos.length }} permisos</span>
+            <i class="bi" [ngClass]="asociacionesPanelExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+          </span>
+        </button>
+
+        <div class="permission-groups mt-3" *ngIf="asociacionesPanelExpanded">
+          <div *ngFor="let group of permisosPorModulo()" class="permission-group">
+            <p class="permission-module">{{ group.modulo }}</p>
+            <label *ngFor="let permiso of group.permisos" class="form-check permission-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                [checked]="asociacionBaseTienePermiso(permiso)"
+                (change)="toggleAsociacionBasePermiso(permiso, $any($event.target).checked)"
+              />
+              <span class="form-check-label">
+                <strong>{{ permiso.codigo }}</strong>
+                <small>{{ permiso.descripcion }}</small>
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-panel">
+        <button
+          type="button"
+          class="role-header role-toggle"
+          [attr.aria-expanded]="administracionPanelExpanded"
+          (click)="administracionPanelExpanded = !administracionPanelExpanded"
+        >
+          <div>
+            <h2 class="h6 mb-1">Acceso Administracion</h2>
+            <p class="text-muted mb-0 small">Permisos por cargo para personas que entran con login normal.</p>
+          </div>
+          <i class="bi" [ngClass]="administracionPanelExpanded ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+        </button>
+
+        <div class="accordion-list mt-3" *ngIf="administracionPanelExpanded">
+          <article *ngFor="let cargo of cargos" class="role-block">
+            <button
+              type="button"
+              class="role-header role-toggle"
+              [attr.aria-expanded]="isCargoExpanded(cargo.id)"
+              (click)="toggleCargo(cargo.id)"
+            >
+              <div>
+                <strong>{{ cargo.nombre }}</strong>
+                <p class="text-muted mb-0 small">Cargo id {{ cargo.id }}</p>
+              </div>
+              <span class="d-flex align-items-center gap-2">
+                <span class="badge bg-light text-dark">{{ permisosCargo(cargo.id).length }} permisos</span>
+                <i class="bi" [ngClass]="isCargoExpanded(cargo.id) ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </span>
+            </button>
+
+            <div class="permission-groups" *ngIf="isCargoExpanded(cargo.id)">
+              <div *ngFor="let group of permisosPorModulo()" class="permission-group">
+                <p class="permission-module">{{ group.modulo }}</p>
+                <label *ngFor="let permiso of group.permisos" class="form-check permission-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [checked]="cargoTienePermiso(cargo, permiso)"
+                    (change)="togglePermiso(cargo, permiso, $any($event.target).checked)"
+                  />
+                  <span class="form-check-label">
+                    <strong>{{ permiso.codigo }}</strong>
+                    <small>{{ permiso.descripcion }}</small>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+</ng-template>

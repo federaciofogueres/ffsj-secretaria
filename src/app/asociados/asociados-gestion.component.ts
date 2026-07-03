@@ -7,6 +7,7 @@ import { forkJoin } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { Asociado, AsociadosService } from './asociados.service';
 
@@ -60,7 +61,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly censoService: CensoService,
     private readonly asociadosService: AsociadosService,
     private readonly secretariaService: SecretariaService,
-    private readonly dialog: FfsjDialogAlertService
+    private readonly dialog: FfsjDialogAlertService,
+    readonly permissions: PermissionsService
   ) {}
 
   ngOnInit(): void {
@@ -150,6 +152,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   guardarRegistroAltaOCambio(): void {
+    if (!this.permissions.hasPermission('solicitudes:write')) {
+      this.showError('No tienes permiso para crear registros pendientes.');
+      return;
+    }
     if (this.altaForm.invalid) {
       this.altaForm.markAllAsTouched();
       return;
@@ -199,6 +205,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   guardarBajasPendientes(): void {
+    if (!this.permissions.hasPermission('solicitudes:write')) {
+      this.showError('No tienes permiso para crear registros pendientes.');
+      return;
+    }
     if (this.seleccionBaja.size === 0) return;
     const seleccionados = [...this.seleccionBaja].map(id => this.buscarAsociado(id)).filter(Boolean) as Asociado[];
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
@@ -258,6 +268,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   crearSolicitudSeleccionada(tipo: SolicitudTipo): void {
+    if (!this.permissions.hasPermission('solicitudes:write')) {
+      this.showError('No tienes permiso para crear solicitudes.');
+      return;
+    }
     const ids = this.registroPendiente
       .filter(item => item.tipo === tipo && this.seleccionRegistro.has(item.id))
       .map(item => item.id);

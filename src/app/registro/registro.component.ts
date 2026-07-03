@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { CensoService } from '../core/censo.service';
+import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
 type RegistroEstado = 'Recibido' | 'Leido' | 'Validado';
@@ -59,7 +61,9 @@ export class RegistroComponent {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly secretariaService: SecretariaService
+    private readonly secretariaService: SecretariaService,
+    private readonly censoService: CensoService,
+    readonly permissions: PermissionsService
   ) {}
 
   setMode(mode: Exclude<RegistroMode, null>): void {
@@ -83,11 +87,11 @@ export class RegistroComponent {
   }
 
   get canSubmitDoc(): boolean {
-    return this.docForm.enabled && this.docForm.valid && this.docAdjuntos.length > 0 && !this.submittingDoc;
+    return this.permissions.hasPermission('registro:write') && this.docForm.enabled && this.docForm.valid && this.docAdjuntos.length > 0 && !this.submittingDoc;
   }
 
   get canSubmitComm(): boolean {
-    return this.commForm.enabled && this.commForm.valid && !this.submittingComm;
+    return this.permissions.hasPermission('registro:write') && this.commForm.enabled && this.commForm.valid && !this.submittingComm;
   }
 
   get docRefs(): RegistroResultado[] {
@@ -106,7 +110,7 @@ export class RegistroComponent {
 
     this.submittingDoc = true;
     this.secretariaService.crearRegistro({
-      asociacionId: 10,
+      asociacionId: this.censoService.asociacionId,
       tipo: 'documentacion',
       titulo: this.docForm.value.titulo,
       mensaje: this.docForm.value.mensaje,
@@ -139,7 +143,7 @@ export class RegistroComponent {
 
     this.submittingComm = true;
     this.secretariaService.crearRegistro({
-      asociacionId: 10,
+      asociacionId: this.censoService.asociacionId,
       tipo: 'comunicacion',
       titulo: this.commForm.value.titulo,
       mensaje: this.commForm.value.mensaje,

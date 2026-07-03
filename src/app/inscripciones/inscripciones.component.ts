@@ -2,6 +2,8 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { CensoService } from '../core/censo.service';
+import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
 type ParticipantType = 'adulto' | 'infantil';
@@ -114,11 +116,13 @@ export class InscripcionesComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly secretariaService: SecretariaService
+    private readonly secretariaService: SecretariaService,
+    private readonly censoService: CensoService,
+    readonly permissions: PermissionsService
   ) {}
 
   ngOnInit(): void {
-    this.secretariaService.getInscripciones(10).subscribe({
+    this.secretariaService.getInscripciones(this.censoService.asociacionId).subscribe({
       next: response => {
         if (!response.inscripciones.length) {
           this.selectInscription(this.inscriptions[0]);
@@ -168,7 +172,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   get canSubmit(): boolean {
-    return this.form.valid && this.selectedParticipants.size > 0;
+    return this.permissions.hasPermission('inscripciones:write') && this.form.valid && this.selectedParticipants.size > 0;
   }
 
   print(): void {
@@ -185,7 +189,7 @@ export class InscripcionesComponent implements OnInit {
     }
 
     const payload = {
-      asociacionId: 10,
+      asociacionId: this.censoService.asociacionId,
       inscriptionId: this.selectedInscription.id,
       formularioId: this.selectedInscription.id,
       data: this.form.value,
