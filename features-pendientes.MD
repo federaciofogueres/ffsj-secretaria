@@ -202,6 +202,8 @@ Estado actual: completado para el alcance actual.
 - Se filtran por asociacion activa usando `idAsociacion`.
 - Hay pestanas de adultos e infantiles.
 - Hay paginacion por pestana.
+- Hay filtrado por nombre, apellidos, cargo, ID y datos basicos disponibles.
+- El listado queda ordenado alfabeticamente por nombre por defecto.
 - Hay exportacion Excel.
 - La columna `Cargo` muestra el cargo del ejercicio actual calculado desde el historico permitido.
 - Si la API no marca infantiles, se clasifican provisionalmente como infantiles los menores de 18 anos a fecha `01/07/2026`.

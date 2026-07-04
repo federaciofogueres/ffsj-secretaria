@@ -81,7 +81,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     this.asociadosService.getAdultos().subscribe({
       next: adultos => {
         this.dataSources.adultos.data = adultos;
-        this.configureFilter(this.dataSources.adultos);
+        this.configureDataSource(this.dataSources.adultos);
         this.attachPaginator();
         this.attachSort();
       },
@@ -91,7 +91,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     this.asociadosService.getInfantiles().subscribe({
       next: infantiles => {
         this.dataSources.infantiles.data = infantiles;
-        this.configureFilter(this.dataSources.infantiles);
+        this.configureDataSource(this.dataSources.infantiles);
         this.attachPaginator();
         this.attachSort();
         this.loading = false;
@@ -107,7 +107,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
 
   applyFilter(event: Event): void {
     const value = (event.target as HTMLInputElement).value ?? '';
-    const normalized = value.trim().toLowerCase();
+    const normalized = this.normalizeSearchText([value.trim()]);
     const ds = this.dataSources[this.activeTab];
     ds.filter = normalized;
     if (ds.paginator) {
@@ -181,10 +181,44 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
       });
   }
 
-  private configureFilter(ds: MatTableDataSource<Asociado>): void {
+  private configureDataSource(ds: MatTableDataSource<Asociado>): void {
     ds.filterPredicate = (data, filter) => {
-      const full = `${data.nombre} ${data.apellidos} ${data.cargo}`.toLowerCase();
+      const full = this.normalizeSearchText([
+        data.id,
+        data.nombre,
+        data.apellidos,
+        data.cargo,
+        data.dni,
+        data.sip,
+        data.email,
+        data.telefono,
+        data.estado
+      ]);
       return full.includes(filter);
+    };
+
+    ds.sortingDataAccessor = (item, property) => {
+      if (property === 'nombre') {
+        return this.normalizeSearchText([item.nombre, item.apellidos]);
+      }
+
+      if (property === 'cargo') {
+        return this.normalizeSearchText([item.cargo]);
+      }
+
+      return this.normalizeSearchText([(item as any)[property]]);
+    };
+
+    ds.sortData = (data, sort) => {
+      const active = sort.active || 'nombre';
+      const direction = sort.direction || 'asc';
+
+      return data.slice().sort((a, b) => {
+        const valueA = String(ds.sortingDataAccessor(a, active));
+        const valueB = String(ds.sortingDataAccessor(b, active));
+        const result = valueA.localeCompare(valueB, 'es', { sensitivity: 'base' });
+        return direction === 'desc' ? -result : result;
+      });
     };
   }
 
@@ -201,10 +235,20 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   private attachSort(): void {
     if (this.sortAdultos) {
       this.dataSources.adultos.sort = this.sortAdultos;
+      this.applyDefaultSort(this.sortAdultos);
     }
 
     if (this.sortInfantiles) {
       this.dataSources.infantiles.sort = this.sortInfantiles;
+      this.applyDefaultSort(this.sortInfantiles);
+    }
+  }
+
+  private applyDefaultSort(sort: MatSort): void {
+    if (!sort.active) {
+      sort.active = 'nombre';
+      sort.direction = 'asc';
+      sort.sortChange.emit({ active: 'nombre', direction: 'asc' });
     }
   }
 
@@ -297,5 +341,15 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
       };
       return entities[char];
     });
+  }
+
+  private normalizeSearchText(values: unknown[]): string {
+    return values
+      .filter(value => value !== null && value !== undefined)
+      .map(value => String(value))
+      .join(' ')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
   }
 }
