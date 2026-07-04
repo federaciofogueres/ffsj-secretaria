@@ -277,7 +277,7 @@ Estado actual: completado para el alcance actual.
 - Una solicitud enviada, en revision o con incidencias puede cancelar el envio y volver a `registrada`.
 - Una solicitud registrada no enviada puede cancelarse.
 - El detalle muestra fechas de alta, entrada y validacion cuando existen.
-- Al cancelar una solicitud registrada, sus items vuelven al registro pendiente para poder revisarlos de nuevo.
+- Al cancelar una solicitud registrada, sus items se descartan y dejan de bloquear al asociado en cambios/bajas pendientes.
 - Las acciones usan permisos:
   - `solicitudes:write` para cancelar solicitudes registradas,
   - `solicitudes:send` para enviar y cancelar envio.
@@ -326,18 +326,32 @@ Motivo del orden:
 
 - Debe entrar antes de cerrar por completo altas/cambios/bajas, porque sus reglas pueden bloquear solicitudes.
 
-Estado actual:
+Estado actual: completado parcialmente para el alcance actual.
 
 - Existe endpoint `/cargos/resumen`.
 - Existe servicio front preparado.
+- `ffsj-secretaria` carga cargos desde censo.
+- En bajas, se detectan cargos obligatorios del ejercicio actual usando:
+  - `requerido` si el cargo lo trae,
+  - y, provisionalmente, nombres que contengan presidencia/presidente o secretaria/secretario.
+- Si una baja afecta a un cargo obligatorio:
+  - se abre un dialogo para seleccionar sustituto,
+  - no se deja continuar sin sustituto,
+  - se crea el registro pendiente de baja,
+  - se crea tambien un registro pendiente de cambio de cargo para el sustituto,
+  - se genera una solicitud conjunta de baja + cambio de cargo obligatorio,
+  - se envia automaticamente a secretaria.
+- El detalle de la solicitud en administracion muestra el item de baja y el item de cambio de cargo.
 
 Pendiente:
 
+- Definir la matriz oficial de cargos obligatorios/maximos por tipo de asociacion.
+- Sustituir la deteccion provisional por datos configurables desde BD.
 - Crear UI de resumen de cargos.
-- Cargar cargos reales desde censo.
 - Combinar cargos validados con solicitudes pendientes de secretaria.
 - Validar maximos y requeridos.
-- Avisar antes de generar solicitudes que incumplan cupos.
+- Aplicar la sustitucion real en `ffsj-new-censo-api` cuando administracion valide la solicitud.
+- Cubrir tambien modificaciones de cargo cuando exista UI especifica para cambiar cargos.
 - Diferenciar visualmente cargos validados, pendientes y faltantes.
 
 ## 14. Incidencias

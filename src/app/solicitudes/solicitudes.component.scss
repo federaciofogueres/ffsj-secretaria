@@ -221,6 +221,17 @@
   border-bottom: 1px solid #f0f1f4;
 }
 
+.item-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.item-heading > div {
+  display: grid;
+  gap: 0.1rem;
+}
+
 .items-list span,
 .items-list small {
   color: #687386;

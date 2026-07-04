@@ -220,6 +220,70 @@
   background: #fff;
 }
 
+.sustitucion-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(13, 19, 31, 0.46);
+}
+
+.sustitucion-dialog {
+  width: min(760px, 100%);
+  max-height: min(720px, calc(100vh - 2.5rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.sustitucion-header,
+.sustitucion-footer {
+  padding: 1.1rem 1.25rem;
+}
+
+.sustitucion-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid #eceff4;
+}
+
+.sustitucion-body {
+  display: grid;
+  gap: 0.85rem;
+  overflow: auto;
+  padding: 1.25rem;
+}
+
+.sustitucion-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.9fr);
+  gap: 1rem;
+  align-items: center;
+  border: 1px solid #eceff4;
+  border-radius: 8px;
+  padding: 0.85rem;
+}
+
+.sustitucion-row span {
+  display: block;
+  color: #687386;
+  font-size: 0.9rem;
+}
+
+.sustitucion-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  border-top: 1px solid #eceff4;
+  background: #fafbfc;
+}
+
 @media (max-width: 767px) {
   .pending-cta {
     align-items: stretch;
@@ -228,5 +292,10 @@
 
   .pending-button {
     width: 100%;
+  }
+
+  .sustitucion-row,
+  .sustitucion-footer {
+    display: grid;
   }
 }

@@ -97,6 +97,7 @@ export interface SolicitudItemSecretaria {
   id: number;
   solicitudId: number;
   registroPendienteId: number;
+  tipo?: SolicitudTipo;
   datos: Record<string, any>;
   datosOriginales?: Record<string, any> | null;
   estado: string;

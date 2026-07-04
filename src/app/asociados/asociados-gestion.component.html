@@ -301,6 +301,9 @@
                 <li *ngFor="let item of solicitudDetalle.items || []">
                   <i class="bi bi-file-earmark-text me-1"></i>
                   {{ resumenItem(item) }}
+                  <ul class="pending-detail-list" *ngIf="detalleItem(item).length">
+                    <li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li>
+                  </ul>
                 </li>
               </ul>
             </ng-container>
@@ -482,3 +485,38 @@
     </ng-template>
   </div>
 </section>
+
+<div *ngIf="sustitucionesDialogOpen" class="sustitucion-backdrop" role="presentation" (click)="cerrarSustitucionesDialog()">
+  <section class="sustitucion-dialog" role="dialog" aria-modal="true" aria-labelledby="sustitucionTitle" (click)="$event.stopPropagation()">
+    <header class="sustitucion-header">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Cargos obligatorios</p>
+        <h2 id="sustitucionTitle" class="h5 mb-1 text-rojo">Selecciona sustitutos</h2>
+        <p class="text-muted mb-0">La baja afecta a cargos obligatorios. Indica quien debe ocupar cada cargo antes de enviar la solicitud.</p>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarSustitucionesDialog()"></button>
+    </header>
+
+    <div class="sustitucion-body">
+      <div class="sustitucion-row" *ngFor="let sustitucion of sustitucionesCargo">
+        <div>
+          <strong>{{ cargoRequeridoLabel(sustitucion.cargo) }}</strong>
+          <span>{{ sustitucion.asociado.nombre }} {{ sustitucion.asociado.apellidos }}</span>
+        </div>
+        <select class="form-select" [(ngModel)]="sustitucion.sustitutoId">
+          <option [ngValue]="null">Selecciona sustituto</option>
+          <option *ngFor="let asociado of sustitutosDisponibles(sustitucion)" [ngValue]="asociado.id">
+            {{ asociado.nombre }} {{ asociado.apellidos }}
+          </option>
+        </select>
+      </div>
+    </div>
+
+    <footer class="sustitucion-footer">
+      <button class="btn btn-outline-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
+      <button class="btn btn-foc-rojo" type="button" [disabled]="loading" (click)="confirmarSolicitudConSustituciones()">
+        Crear y enviar solicitud
+      </button>
+    </footer>
+  </section>
+</div>

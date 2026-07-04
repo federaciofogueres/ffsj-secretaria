@@ -146,12 +146,15 @@
       <h3 class="h6 mt-4 mb-2">Contenido de la solicitud</h3>
       <ul class="items-list">
         <li *ngFor="let item of detalle.items || []">
-          <div>
-            <strong>{{ resumenItem(item) }}</strong>
-            <span>{{ identifierItem(item) }}</span>
+          <div class="item-heading">
+            <span class="tipo-badge" [ngClass]="tipoClass(tipoItem(item))">{{ labelTipoItem(item) }}</span>
+            <div>
+              <strong>{{ resumenItem(item) }}</strong>
+              <span>{{ identifierItem(item) }}</span>
+            </div>
           </div>
           <small *ngIf="cambiosItem(item).length">
-            Cambios: {{ cambiosItem(item).join(', ') }}
+            {{ cambiosItem(item).join(' · ') }}
           </small>
         </li>
       </ul>

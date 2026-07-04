@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 
-import { SolicitudSecretaria } from '../core/models';
+import { SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -177,6 +177,18 @@ export class SolicitudesComponent implements OnInit {
     return [datos.nombre, datos.apellidos].filter(Boolean).join(' ') || `Asociado ${datos.asociadoId ?? ''}`.trim();
   }
 
+  tipoItem(item: SolicitudItemSecretaria): string {
+    return item.tipo || (item.datos?.['tipoCambio'] === 'cargo' ? 'cambio' : this.detalle?.tipo || '');
+  }
+
+  labelTipoItem(item: SolicitudItemSecretaria): string {
+    const tipo = this.tipoItem(item);
+    if (tipo === 'cambio' && item.datos?.['tipoCambio'] === 'cargo') {
+      return 'Cambio de cargo';
+    }
+    return this.labelTipo(tipo);
+  }
+
   identifierItem(item: { datos: Record<string, any> }): string {
     const datos = item.datos || {};
     return datos.dni || datos.nif || datos.sip || '-';
@@ -184,10 +196,23 @@ export class SolicitudesComponent implements OnInit {
 
   cambiosItem(item: { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string[] {
     const datos = item.datos || {};
+    if (datos['tipoCambio'] === 'cargo') {
+      return [
+        `Cargo: ${datos['cargoNombre'] || datos['cargoId'] || '-'}`,
+        `Ejercicio: ${datos['ejercicio'] || '-'}`,
+        `Sustituye a: ${datos['sustituyeANombre'] || datos['sustituyeAId'] || '-'}`
+      ];
+    }
+    const sustituciones = Array.isArray(datos['sustitucionesCargo'])
+      ? datos['sustitucionesCargo'].map((sustitucion: any) =>
+          `Cambio de cargo asociado: ${sustitucion.cargoNombre || '-'} -> ${sustitucion.sustitutoNombre || '-'}`
+        )
+      : [];
     const originales = item.datosOriginales || {};
-    return Object.keys(datos)
-      .filter(key => key !== 'asociadoId' && String(datos[key] ?? '') !== String(originales[key] ?? ''))
+    const cambios = Object.keys(datos)
+      .filter(key => !['asociadoId', 'sustitucionesCargo'].includes(key) && String(datos[key] ?? '') !== String(originales[key] ?? ''))
       .slice(0, 5);
+    return [...cambios, ...sustituciones];
   }
 
   private cambiarEstado(action: () => any): void {

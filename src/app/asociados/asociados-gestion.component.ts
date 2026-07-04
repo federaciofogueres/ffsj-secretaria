@@ -1,12 +1,12 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
-import { forkJoin } from 'rxjs';
+import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
-import { RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { Asociado, AsociadosService } from './asociados.service';
@@ -15,10 +15,16 @@ type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
 type AsociadoGrupo = 'adultos' | 'infantiles';
 type ListadoContexto = 'modificaciones' | 'bajas';
 
+interface SustitucionCargoRequerido {
+  asociado: Asociado;
+  cargo: HistoricoAsociado;
+  sustitutoId: number | null;
+}
+
 @Component({
   selector: 'app-asociados-gestion',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })
@@ -27,6 +33,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   adultos: Asociado[] = [];
   infantiles: Asociado[] = [];
+  cargos: CargoResumen[] = [];
 
   registroPendiente: RegistroPendiente[] = [];
   solicitudes: SolicitudSecretaria[] = [];
@@ -37,6 +44,9 @@ export class AsociadosGestionComponent implements OnInit {
   mostrarFormMod = false;
   loading = false;
   pendingViewTipo: SolicitudTipo | null = null;
+  sustitucionesDialogOpen = false;
+  sustitucionesCargo: SustitucionCargoRequerido[] = [];
+  bajasPendientesSustitucion: Asociado[] = [];
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
@@ -79,6 +89,7 @@ export class AsociadosGestionComponent implements OnInit {
   ngOnInit(): void {
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
     this.asociadosService.getInfantiles().subscribe(kids => (this.infantiles = kids));
+    this.censoService.getCargos().subscribe(cargos => (this.cargos = cargos));
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
   }
@@ -240,6 +251,141 @@ export class AsociadosGestionComponent implements OnInit {
       this.showError(`Ya existe una baja pendiente para: ${duplicados.map(a => `${a.nombre} ${a.apellidos}`).join(', ')}.`);
       return;
     }
+
+    this.loading = true;
+    this.detectarSustitucionesRequeridas(seleccionados).subscribe({
+      next: sustituciones => {
+        this.loading = false;
+        if (sustituciones.length) {
+          this.bajasPendientesSustitucion = seleccionados;
+          this.sustitucionesCargo = sustituciones;
+          this.sustitucionesDialogOpen = true;
+          return;
+        }
+
+        this.confirmarBajasPendientes(seleccionados);
+      },
+      error: () => {
+        this.loading = false;
+        this.showError('No se han podido comprobar los cargos obligatorios.');
+      }
+    });
+  }
+
+  cerrarSustitucionesDialog(): void {
+    this.sustitucionesDialogOpen = false;
+    this.sustitucionesCargo = [];
+    this.bajasPendientesSustitucion = [];
+  }
+
+  confirmarSolicitudConSustituciones(): void {
+    if (!this.sustitucionesCargo.every(item => item.sustitutoId)) {
+      this.showError('Selecciona sustituto para todos los cargos obligatorios.');
+      return;
+    }
+
+    this.loading = true;
+    const sustitucionesByAsociado = this.sustitucionesCargo.reduce<Record<number, any[]>>((acc, item) => {
+      const sustituto = this.buscarAsociado(Number(item.sustitutoId));
+      acc[item.asociado.id] = acc[item.asociado.id] || [];
+      acc[item.asociado.id].push({
+        cargoId: item.cargo.idCargo,
+        cargoNombre: item.cargo.cargo,
+        ejercicio: item.cargo.ejercicio,
+        sustituidoId: item.asociado.id,
+        sustituidoNombre: `${item.asociado.nombre} ${item.asociado.apellidos}`,
+        sustitutoId: sustituto?.id,
+        sustitutoNombre: sustituto ? `${sustituto.nombre} ${sustituto.apellidos}` : ''
+      });
+      return acc;
+    }, {});
+
+    const registrosBaja$ = this.bajasPendientesSustitucion.map(asociado =>
+      this.secretariaService.crearRegistroPendiente({
+        asociacionId: this.asociacionId,
+        tipo: 'baja',
+        asociadoId: asociado.id,
+        datos: {
+          asociadoId: asociado.id,
+          nombre: asociado.nombre,
+          apellidos: asociado.apellidos,
+          sustitucionesCargo: sustitucionesByAsociado[asociado.id] || []
+        },
+        datosOriginales: { ...asociado },
+        observaciones: 'Solicitud con sustitucion automatica de cargo obligatorio'
+      })
+    );
+    const registrosCambioCargo$ = this.sustitucionesCargo.map(item => {
+      const sustituto = this.buscarAsociado(Number(item.sustitutoId));
+      return this.secretariaService.crearRegistroPendiente({
+        asociacionId: this.asociacionId,
+        tipo: 'cambio',
+        asociadoId: Number(item.sustitutoId),
+        datos: {
+          asociadoId: Number(item.sustitutoId),
+          nombre: sustituto?.nombre || '',
+          apellidos: sustituto?.apellidos || '',
+          tramiteOrigen: 'sustitucion_cargo_obligatorio',
+          tipoCambio: 'cargo',
+          cargoId: item.cargo.idCargo,
+          cargoNombre: item.cargo.cargo,
+          ejercicio: item.cargo.ejercicio,
+          sustituyeAId: item.asociado.id,
+          sustituyeANombre: `${item.asociado.nombre} ${item.asociado.apellidos}`
+        },
+        datosOriginales: sustituto ? { ...sustituto } : null,
+        observaciones: 'Cambio de cargo obligatorio asociado a baja'
+      });
+    });
+
+    forkJoin([...registrosBaja$, ...registrosCambioCargo$])
+      .pipe(
+        switchMap(items =>
+          this.secretariaService.crearSolicitud({
+            asociacionId: this.asociacionId,
+            tipo: 'baja',
+            registroPendienteIds: items.map(item => item.id),
+            observaciones: 'Solicitud conjunta: baja y cambio de cargo obligatorio'
+          })
+        ),
+        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+      )
+      .subscribe({
+        next: solicitud => {
+          this.solicitudes.unshift(solicitud);
+          this.solicitudDetalle = solicitud;
+          this.seleccionBaja.clear();
+          this.activeTab = 'solicitudes';
+          this.loading = false;
+          this.cerrarSustitucionesDialog();
+          this.dialog.openDialogAlert({
+            title: 'Solicitud enviada',
+            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
+            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p>`,
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se ha podido crear y enviar la solicitud con sustitucion.');
+        }
+      });
+  }
+
+  sustitutosDisponibles(sustitucion: SustitucionCargoRequerido): Asociado[] {
+    const afectados = new Set(this.bajasPendientesSustitucion.map(asociado => asociado.id));
+    return [...this.adultos, ...this.infantiles]
+      .filter(asociado => asociado.id !== sustitucion.asociado.id)
+      .filter(asociado => !afectados.has(asociado.id))
+      .filter(asociado => !this.asociadoBloqueado(asociado))
+      .sort((a, b) => this.normalizeText(`${a.nombre} ${a.apellidos}`).localeCompare(this.normalizeText(`${b.nombre} ${b.apellidos}`)));
+  }
+
+  cargoRequeridoLabel(cargo: HistoricoAsociado): string {
+    return `${cargo.cargo} (${cargo.ejercicio})`;
+  }
+
+  private confirmarBajasPendientes(seleccionados: Asociado[]): void {
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
     const ref = this.dialog.openDialogAlert({
       title: 'Confirmar bajas',
@@ -403,8 +549,9 @@ export class AsociadosGestionComponent implements OnInit {
   cargarSolicitudes(): void {
     this.secretariaService.getSolicitudes(this.asociacionId).subscribe({
       next: response => {
-        this.solicitudes = response.solicitudes;
-        this.cargarDetalleSolicitudesBloqueantes(response.solicitudes);
+        const solicitudesActivas = response.solicitudes.filter(solicitud => solicitud.estado !== 'cancelada');
+        this.solicitudes = solicitudesActivas;
+        this.cargarDetalleSolicitudesBloqueantes(solicitudesActivas);
       },
       error: () => this.showError('No se han podido cargar las solicitudes.')
     });
@@ -517,9 +664,14 @@ export class AsociadosGestionComponent implements OnInit {
 
   detalleItem(item: RegistroPendiente | { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string[] {
     const datos = item.datos || {};
+    const sustituciones = Array.isArray(datos['sustitucionesCargo'])
+      ? datos['sustitucionesCargo'].map((sustitucion: any) =>
+          `Sustitucion ${sustitucion.cargoNombre}: ${sustitucion.sustituidoNombre} -> ${sustitucion.sustitutoNombre}`
+        )
+      : [];
 
     if ('tipo' in item && item.tipo === 'cambio') {
-      return this.diferenciasItem(item as RegistroPendiente);
+      return [...this.diferenciasItem(item as RegistroPendiente), ...sustituciones];
     }
 
     return [
@@ -527,6 +679,7 @@ export class AsociadosGestionComponent implements OnInit {
       datos.sip ? `SIP: ${datos.sip}` : '',
       datos.telefono ? `Telefono: ${datos.telefono}` : '',
       datos.email ? `Email: ${datos.email}` : '',
+      ...sustituciones
     ].filter(Boolean);
   }
 
@@ -671,7 +824,7 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     return this.solicitudes.some(solicitud => {
-      if (solicitud.tipo !== tipo || solicitud.estado === 'finalizada') {
+      if (solicitud.tipo !== tipo || ['finalizada', 'cancelada'].includes(solicitud.estado)) {
         return false;
       }
 
@@ -679,9 +832,44 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  private detectarSustitucionesRequeridas(asociados: Asociado[]) {
+    if (!asociados.length) {
+      return of([]);
+    }
+
+    const currentYear = new Date().getFullYear();
+    return forkJoin(
+      asociados.map(asociado =>
+        this.asociadosService.getHistorico(asociado.id).pipe(
+          map(historico =>
+            historico
+              .filter(item =>
+              Number(item.ejercicio) === currentYear &&
+              Number(item.idAsociacion) === this.asociacionId &&
+              this.esCargoRequerido(item)
+              )
+              .map(cargo => ({ asociado, cargo, sustitutoId: null }))
+          )
+        )
+      )
+    ).pipe(map(items => items.flat()));
+  }
+
+  private esCargoRequerido(historico: HistoricoAsociado): boolean {
+    const cargo = this.cargos.find(item => Number(item.id) === Number(historico.idCargo));
+    if (Number((cargo as any)?.requerido || 0) > 0) {
+      return true;
+    }
+
+    const nombre = this.normalizeText(cargo?.nombre || historico.cargo);
+    return nombre.includes('presid') || nombre.includes('secretar');
+  }
+
   private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
     const abiertasSinDetalle = solicitudes.filter(
-      solicitud => ['cambio', 'baja'].includes(solicitud.tipo) && solicitud.estado !== 'finalizada' && !solicitud.items?.length
+      solicitud => ['cambio', 'baja'].includes(solicitud.tipo) &&
+        !['finalizada', 'cancelada'].includes(solicitud.estado) &&
+        !solicitud.items?.length
     );
 
     if (!abiertasSinDetalle.length) {

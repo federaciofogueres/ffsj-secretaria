@@ -112,4 +112,32 @@ describe('SolicitudesComponent', () => {
 
     expect(component.detalleDialogOpen).toBeFalse();
   });
+
+  it('identifica cambios de cargo dentro de una solicitud conjunta de baja', () => {
+    const item = {
+      id: 11,
+      solicitudId: 2,
+      registroPendienteId: 6,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: {
+        nombre: 'Luis',
+        apellidos: 'Sustituto',
+        tipoCambio: 'cargo',
+        cargoNombre: 'Presidente',
+        ejercicio: 2026,
+        sustituyeANombre: 'Ana Presidenta'
+      },
+      datosOriginales: null
+    };
+
+    component.detalle = { ...solicitudes[1], items: [item] };
+
+    expect(component.labelTipoItem(item)).toBe('Cambio de cargo');
+    expect(component.cambiosItem(item)).toEqual([
+      'Cargo: Presidente',
+      'Ejercicio: 2026',
+      'Sustituye a: Ana Presidenta'
+    ]);
+  });
 });
