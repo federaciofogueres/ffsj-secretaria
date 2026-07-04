@@ -13,6 +13,10 @@ export interface Asociado {
   fechaNacimiento?: string;
   email?: string;
   telefono?: string;
+  direccion?: string;
+  codigoPostal?: string;
+  codigo_postal?: string;
+  cp?: string;
 }
 
 export interface HistoricoAsociado {

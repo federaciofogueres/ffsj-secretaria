@@ -237,7 +237,7 @@ Pendiente futuro, no bloqueante:
 
 ## 10. Gestion de altas, cambios y bajas: registro pendiente
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Alta, cambio y baja crean items en `registro pendiente`.
 - Cada pestana tiene boton de pendientes con contador.
@@ -245,18 +245,22 @@ Estado actual:
 - Se pueden seleccionar items y generar una solicitud registrada.
 - Existe boton `Volver atras`.
 - La solicitud queda guardada en BD de secretaria.
+- Se pueden descartar items pendientes antes de generar solicitud.
+- Se evita duplicar registros pendientes:
+  - cambios/bajas sobre el mismo asociado,
+  - altas con el mismo DNI/NIE dentro de la misma asociacion.
+- Los cambios muestran diferencias entre datos originales y datos nuevos en la vista de pendientes.
+- Los listados de seleccion de asociados en modificaciones y bajas tienen busqueda, orden alfabetico y paginacion.
+- Los asociados con cambio o baja pendiente aparecen deshabilitados y sombreados segun la operacion en todos los listados de gestion.
+- Tras generar una solicitud, la pantalla cambia a `Solicitudes pendientes` y enfoca la solicitud creada.
+- Las acciones estan protegidas por `solicitudes:write` en front y API.
 
-Pendiente:
+Pendiente futuro, pendiente de reglas de negocio:
 
-- Permitir editar o descartar items pendientes antes de generar solicitud.
-- Evitar duplicados: no permitir dos cambios/bajas pendientes sobre el mismo asociado si ya hay item o solicitud abierta.
-- Anadir motivo de baja.
-- En cambios, resaltar diferencias entre datos originales y datos nuevos.
-- Validar campos obligatorios por tipo de tramite.
-- Validar reglas de negocio antes de generar solicitud.
-- Tras generar solicitud, navegar o enfocar automaticamente la solicitud creada.
-- Mejorar el detalle visual de los items pendientes.
-- Aplicar permisos de creacion/modificacion.
+- Permitir editar items pendientes antes de generar solicitud si secretaria lo necesita.
+- Evitar duplicados tambien contra solicitudes abiertas ya registradas, no solo contra registro pendiente.
+- Ampliar validaciones obligatorias por tipo de tramite cuando se definan las reglas finales.
+- Validar cupos/cargos antes de generar solicitud cuando el modulo de cargos y cupos este cerrado.
 
 ## 11. Solicitudes pendientes
 

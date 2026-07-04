@@ -12,6 +12,8 @@ import { SecretariaService } from '../core/secretaria.service';
 import { Asociado, AsociadosService } from './asociados.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
+type AsociadoGrupo = 'adultos' | 'infantiles';
+type ListadoContexto = 'modificaciones' | 'bajas';
 
 @Component({
   selector: 'app-asociados-gestion',
@@ -40,6 +42,15 @@ export class AsociadosGestionComponent implements OnInit {
   asociadoEnEdicion: Asociado | null = null;
 
   readonly tipoOpciones = ['Hoguera adulta', 'Hoguera infantil'];
+  readonly pageSize = 10;
+  filtrosListado: Record<ListadoContexto, Record<AsociadoGrupo, string>> = {
+    modificaciones: { adultos: '', infantiles: '' },
+    bajas: { adultos: '', infantiles: '' }
+  };
+  paginasListado: Record<ListadoContexto, Record<AsociadoGrupo, number>> = {
+    modificaciones: { adultos: 0, infantiles: 0 },
+    bajas: { adultos: 0, infantiles: 0 }
+  };
 
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
@@ -121,6 +132,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   iniciarModificacion(asociado: Asociado): void {
+    if (this.estadoPendienteAsociado(asociado)) {
+      return;
+    }
+
     const ref = this.dialog.openDialogAlert({
       title: 'Modificar asociado',
       content: `Deseas modificar el asociado ${asociado.nombre} ${asociado.apellidos}?`,
@@ -138,11 +153,11 @@ export class AsociadosGestionComponent implements OnInit {
         tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
         dni: asociado.dni ?? String(asociado.id),
         sip: asociado.sip ?? '',
-        nacimiento: '',
+        nacimiento: asociado.fechaNacimiento ?? '',
         nombre: asociado.nombre,
         apellidos: asociado.apellidos,
-        direccion: '',
-        cp: '',
+        direccion: asociado.direccion ?? '',
+        cp: asociado.codigoPostal ?? asociado.codigo_postal ?? asociado.cp ?? '',
         localidad: '',
         provincia: '',
         telefono: asociado.telefono ?? '',
@@ -164,6 +179,11 @@ export class AsociadosGestionComponent implements OnInit {
     const tipo: SolicitudTipo = this.modoFormulario === 'alta' ? 'alta' : 'cambio';
     const datos = { ...this.altaForm.value, tipoHoguera: this.altaForm.value.tipo };
     const datosOriginales = this.asociadoEnEdicion ? { ...this.asociadoEnEdicion } : null;
+
+    if (this.tieneDuplicadoPendiente(tipo, this.asociadoEnEdicion?.id ?? null, datos)) {
+      this.showError('Ya existe un registro pendiente para este tramite.');
+      return;
+    }
 
     this.loading = true;
     this.secretariaService
@@ -197,6 +217,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   toggleSeleccionBaja(asociado: Asociado): void {
+    if (this.estadoPendienteAsociado(asociado)) {
+      return;
+    }
+
     if (this.seleccionBaja.has(asociado.id)) {
       this.seleccionBaja.delete(asociado.id);
     } else {
@@ -211,6 +235,11 @@ export class AsociadosGestionComponent implements OnInit {
     }
     if (this.seleccionBaja.size === 0) return;
     const seleccionados = [...this.seleccionBaja].map(id => this.buscarAsociado(id)).filter(Boolean) as Asociado[];
+    const duplicados = seleccionados.filter(asociado => this.tieneDuplicadoPendiente('baja', asociado.id));
+    if (duplicados.length > 0) {
+      this.showError(`Ya existe una baja pendiente para: ${duplicados.map(a => `${a.nombre} ${a.apellidos}`).join(', ')}.`);
+      return;
+    }
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
     const ref = this.dialog.openDialogAlert({
       title: 'Confirmar bajas',
@@ -294,6 +323,9 @@ export class AsociadosGestionComponent implements OnInit {
           this.registroPendiente = this.registroPendiente.filter(item => !selectedIds.has(item.id));
           this.seleccionRegistro.clear();
           this.solicitudes.unshift(solicitud);
+          this.solicitudDetalle = solicitud;
+          this.activeTab = 'solicitudes';
+          this.pendingViewTipo = null;
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Solicitud registrada',
@@ -360,9 +392,95 @@ export class AsociadosGestionComponent implements OnInit {
     return this.pendientesPorTipo(tipo).filter(item => this.seleccionRegistro.has(item.id));
   }
 
+  asociadoBloqueado(asociado: Asociado): boolean {
+    return this.estadoPendienteAsociado(asociado) !== null;
+  }
+
+  estadoPendienteAsociado(asociado: Asociado): 'cambio' | 'baja' | null {
+    const tieneBaja = this.tieneDuplicadoPendiente('baja', asociado.id);
+    if (tieneBaja) {
+      return 'baja';
+    }
+
+    const tieneCambio = this.tieneDuplicadoPendiente('cambio', asociado.id);
+    return tieneCambio ? 'cambio' : null;
+  }
+
+  etiquetaPendienteAsociado(asociado: Asociado): string {
+    const estado = this.estadoPendienteAsociado(asociado);
+    return estado === 'baja' ? 'Baja pendiente' : estado === 'cambio' ? 'Cambio pendiente' : '';
+  }
+
+  descartarRegistro(item: RegistroPendiente): void {
+    if (!this.permissions.hasPermission('solicitudes:write')) {
+      this.showError('No tienes permiso para descartar registros pendientes.');
+      return;
+    }
+
+    const ref = this.dialog.openDialogAlert({
+      title: 'Descartar registro',
+      content: `Deseas descartar ${this.resumenItem(item)}?`,
+      innerHtml: `<p>Deseas descartar <strong>${this.resumenItem(item)}</strong>?</p>`,
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result !== AlertButtonType.Aceptar) return;
+
+      this.loading = true;
+      this.secretariaService.descartarRegistroPendiente(item.id, this.asociacionId).subscribe({
+        next: () => {
+          this.registroPendiente = this.registroPendiente.filter(registro => registro.id !== item.id);
+          this.seleccionRegistro.delete(item.id);
+          this.loading = false;
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se ha podido descartar el registro pendiente.');
+        }
+      });
+    });
+  }
+
   resumenItem(item: RegistroPendiente | { datos: Record<string, any> }): string {
     const datos = item.datos || {};
     return [datos.nombre, datos.apellidos].filter(Boolean).join(' ') || `Asociado ${datos.asociadoId ?? ''}`.trim();
+  }
+
+  detalleItem(item: RegistroPendiente | { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string[] {
+    const datos = item.datos || {};
+
+    if ('tipo' in item && item.tipo === 'cambio') {
+      return this.diferenciasItem(item as RegistroPendiente);
+    }
+
+    return [
+      datos.dni ? `DNI/NIE: ${datos.dni}` : '',
+      datos.sip ? `SIP: ${datos.sip}` : '',
+      datos.telefono ? `Telefono: ${datos.telefono}` : '',
+      datos.email ? `Email: ${datos.email}` : '',
+    ].filter(Boolean);
+  }
+
+  diferenciasItem(item: RegistroPendiente): string[] {
+    const datos = item.datos || {};
+    const originales = item.datosOriginales || {};
+    const campos: Array<[string, string, string]> = [
+      ['nombre', 'Nombre', 'nombre'],
+      ['apellidos', 'Apellidos', 'apellidos'],
+      ['dni', 'DNI/NIE', 'dni'],
+      ['sip', 'SIP', 'sip'],
+      ['telefono', 'Telefono', 'telefono'],
+      ['email', 'Email', 'email']
+    ];
+
+    return campos
+      .map(([key, label, originalKey]) => {
+        const nuevo = String(datos[key] ?? '').trim();
+        const anterior = String(originales[originalKey] ?? '').trim();
+        return nuevo !== anterior ? `${label}: ${anterior || '-'} -> ${nuevo || '-'}` : '';
+      })
+      .filter(Boolean);
   }
 
   public resetFormulario(): void {
@@ -382,8 +500,74 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  asociadosPagina(contexto: ListadoContexto, grupo: AsociadoGrupo): Asociado[] {
+    const start = this.paginasListado[contexto][grupo] * this.pageSize;
+    return this.asociadosFiltrados(contexto, grupo).slice(start, start + this.pageSize);
+  }
+
+  totalPaginas(contexto: ListadoContexto, grupo: AsociadoGrupo): number {
+    return Math.max(1, Math.ceil(this.asociadosFiltrados(contexto, grupo).length / this.pageSize));
+  }
+
+  cambiarPagina(contexto: ListadoContexto, grupo: AsociadoGrupo, delta: number): void {
+    const total = this.totalPaginas(contexto, grupo);
+    const nextPage = this.paginasListado[contexto][grupo] + delta;
+    this.paginasListado[contexto][grupo] = Math.min(Math.max(nextPage, 0), total - 1);
+  }
+
+  actualizarFiltro(contexto: ListadoContexto, grupo: AsociadoGrupo, event: Event): void {
+    this.filtrosListado[contexto][grupo] = (event.target as HTMLInputElement).value ?? '';
+    this.paginasListado[contexto][grupo] = 0;
+  }
+
+  private asociadosFiltrados(contexto: ListadoContexto, grupo: AsociadoGrupo): Asociado[] {
+    const source = grupo === 'adultos' ? this.adultos : this.infantiles;
+    const filter = this.normalizeText(this.filtrosListado[contexto][grupo]);
+
+    return source
+      .filter(asociado => !filter || this.normalizeText([
+        asociado.id,
+        asociado.nombre,
+        asociado.apellidos,
+        asociado.cargo,
+        asociado.dni,
+        asociado.telefono,
+        asociado.email
+      ].join(' ')).includes(filter))
+      .slice()
+      .sort((a, b) =>
+        this.normalizeText(`${a.nombre} ${a.apellidos}`).localeCompare(
+          this.normalizeText(`${b.nombre} ${b.apellidos}`),
+          'es',
+          { sensitivity: 'base' }
+        )
+      );
+  }
+
   private buscarAsociado(id: number): Asociado | undefined {
     return [...this.adultos, ...this.infantiles].find(a => a.id === id);
+  }
+
+  private tieneDuplicadoPendiente(
+    tipo: SolicitudTipo,
+    asociadoId: number | null,
+    datos: Record<string, any> = {}
+  ): boolean {
+    return this.registroPendiente.some(item => {
+      if (item.tipo !== tipo || item.estado !== 'pendiente') {
+        return false;
+      }
+
+      if (asociadoId) {
+        return Number(item.asociadoId ?? item.datos?.asociadoId) === asociadoId;
+      }
+
+      if (tipo === 'alta' && datos['dni']) {
+        return String(item.datos?.['dni'] ?? '').trim().toLowerCase() === String(datos['dni']).trim().toLowerCase();
+      }
+
+      return false;
+    });
   }
 
   private showError(message: string): void {
@@ -393,5 +577,13 @@ export class AsociadosGestionComponent implements OnInit {
       innerHtml: `<p>${message}</p>`,
       buttonsAlert: [AlertButtonType.Entendido]
     });
+  }
+
+  private normalizeText(value: unknown): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 }

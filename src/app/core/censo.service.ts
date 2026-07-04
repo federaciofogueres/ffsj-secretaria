@@ -80,10 +80,40 @@ export class CensoService {
       sip: item.sip,
       estado: item.estado,
       fechaAlta: item.fechaAlta ?? item.date_up,
-      fechaNacimiento,
+      fechaNacimiento: this.formatDateForInput(fechaNacimiento),
       email: item.email,
-      telefono: item.telefono ?? item.phone
+      telefono: item.telefono ?? item.phone,
+      direccion: item.direccion ?? item.address,
+      codigoPostal: item.codigo_postal ?? item.codigoPostal ?? item.cp
     };
+  }
+
+  private formatDateForInput(value: unknown): string {
+    if (!value) {
+      return '';
+    }
+
+    const raw = String(value).trim();
+    const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      return `${isoMatch[1]}-${isoMatch[2]}-${isoMatch[3]}`;
+    }
+
+    const localMatch = raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if (localMatch) {
+      return `${localMatch[3]}-${localMatch[2].padStart(2, '0')}-${localMatch[1].padStart(2, '0')}`;
+    }
+
+    const date = new Date(raw);
+    if (Number.isNaN(date.getTime())) {
+      return raw;
+    }
+
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0')
+    ].join('-');
   }
 
   private mapHistoricoAsociado(raw: unknown): HistoricoAsociado {

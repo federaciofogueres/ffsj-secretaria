@@ -53,29 +53,61 @@
           <div class="row g-3">
             <div class="col-12 col-lg-6">
               <h6 class="fw-bold">Adultos</h6>
+              <input
+                class="form-control form-control-sm mb-2"
+                type="search"
+                placeholder="Buscar adultos"
+                [value]="filtrosListado.modificaciones.adultos"
+                (input)="actualizarFiltro('modificaciones', 'adultos', $event)"
+              />
               <ul class="list-group">
                 <li
-                  *ngFor="let a of adultos"
+                  *ngFor="let a of asociadosPagina('modificaciones', 'adultos')"
                   class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
+                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                  [class.disabled-item]="asociadoBloqueado(a)"
                   (click)="iniciarModificacion(a)"
                 >
                   <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                  <span class="pending-state" *ngIf="asociadoBloqueado(a)">{{ etiquetaPendienteAsociado(a) }}</span>
                   <i class="bi bi-pencil-square text-rojo"></i>
                 </li>
               </ul>
+              <div class="list-pager">
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.adultos === 0" (click)="cambiarPagina('modificaciones', 'adultos', -1)">Anterior</button>
+                <span>Pagina {{ paginasListado.modificaciones.adultos + 1 }} de {{ totalPaginas('modificaciones', 'adultos') }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.adultos + 1 >= totalPaginas('modificaciones', 'adultos')" (click)="cambiarPagina('modificaciones', 'adultos', 1)">Siguiente</button>
+              </div>
             </div>
             <div class="col-12 col-lg-6">
               <h6 class="fw-bold">Infantiles</h6>
+              <input
+                class="form-control form-control-sm mb-2"
+                type="search"
+                placeholder="Buscar infantiles"
+                [value]="filtrosListado.modificaciones.infantiles"
+                (input)="actualizarFiltro('modificaciones', 'infantiles', $event)"
+              />
               <ul class="list-group">
                 <li
-                  *ngFor="let a of infantiles"
+                  *ngFor="let a of asociadosPagina('modificaciones', 'infantiles')"
                   class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
+                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                  [class.disabled-item]="asociadoBloqueado(a)"
                   (click)="iniciarModificacion(a)"
                 >
                   <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                  <span class="pending-state" *ngIf="asociadoBloqueado(a)">{{ etiquetaPendienteAsociado(a) }}</span>
                   <i class="bi bi-pencil-square text-rojo"></i>
                 </li>
               </ul>
+              <div class="list-pager">
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.infantiles === 0" (click)="cambiarPagina('modificaciones', 'infantiles', -1)">Anterior</button>
+                <span>Pagina {{ paginasListado.modificaciones.infantiles + 1 }} de {{ totalPaginas('modificaciones', 'infantiles') }}</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.infantiles + 1 >= totalPaginas('modificaciones', 'infantiles')" (click)="cambiarPagina('modificaciones', 'infantiles', 1)">Siguiente</button>
+              </div>
             </div>
           </div>
         </div>
@@ -112,39 +144,73 @@
         <div class="row g-3">
           <div class="col-12 col-lg-6">
             <h6 class="fw-bold">Adultos</h6>
+            <input
+              class="form-control form-control-sm mb-2"
+              type="search"
+              placeholder="Buscar adultos"
+              [value]="filtrosListado.bajas.adultos"
+              (input)="actualizarFiltro('bajas', 'adultos', $event)"
+            />
             <ul class="list-group">
               <li
-                *ngFor="let a of adultos"
+                *ngFor="let a of asociadosPagina('bajas', 'adultos')"
                 class="list-group-item d-flex align-items-center gap-2 clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
+                [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
+                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                [class.disabled-item]="asociadoBloqueado(a)"
                 (click)="toggleSeleccionBaja(a)"
               >
                 <input
                   type="checkbox"
                   [checked]="seleccionBaja.has(a.id)"
+                  [disabled]="asociadoBloqueado(a)"
                   (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
                 />
                 <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                <span class="pending-state ms-auto" *ngIf="asociadoBloqueado(a)">{{ etiquetaPendienteAsociado(a) }}</span>
               </li>
             </ul>
+            <div class="list-pager">
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.adultos === 0" (click)="cambiarPagina('bajas', 'adultos', -1)">Anterior</button>
+              <span>Pagina {{ paginasListado.bajas.adultos + 1 }} de {{ totalPaginas('bajas', 'adultos') }}</span>
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.adultos + 1 >= totalPaginas('bajas', 'adultos')" (click)="cambiarPagina('bajas', 'adultos', 1)">Siguiente</button>
+            </div>
           </div>
           <div class="col-12 col-lg-6">
             <h6 class="fw-bold">Infantiles</h6>
+            <input
+              class="form-control form-control-sm mb-2"
+              type="search"
+              placeholder="Buscar infantiles"
+              [value]="filtrosListado.bajas.infantiles"
+              (input)="actualizarFiltro('bajas', 'infantiles', $event)"
+            />
             <ul class="list-group">
               <li
-                *ngFor="let a of infantiles"
+                *ngFor="let a of asociadosPagina('bajas', 'infantiles')"
                 class="list-group-item d-flex align-items-center gap-2 clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
+                [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
+                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                [class.disabled-item]="asociadoBloqueado(a)"
                 (click)="toggleSeleccionBaja(a)"
               >
                 <input
                   type="checkbox"
                   [checked]="seleccionBaja.has(a.id)"
+                  [disabled]="asociadoBloqueado(a)"
                   (click)="$event.stopPropagation(); toggleSeleccionBaja(a)"
                 />
                 <span>{{ a.nombre }} {{ a.apellidos }}</span>
+                <span class="pending-state ms-auto" *ngIf="asociadoBloqueado(a)">{{ etiquetaPendienteAsociado(a) }}</span>
               </li>
             </ul>
+            <div class="list-pager">
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.infantiles === 0" (click)="cambiarPagina('bajas', 'infantiles', -1)">Anterior</button>
+              <span>Pagina {{ paginasListado.bajas.infantiles + 1 }} de {{ totalPaginas('bajas', 'infantiles') }}</span>
+              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.infantiles + 1 >= totalPaginas('bajas', 'infantiles')" (click)="cambiarPagina('bajas', 'infantiles', 1)">Siguiente</button>
+            </div>
           </div>
         </div>
 
@@ -329,8 +395,10 @@
               <tr>
                 <th></th>
                 <th>Asociado</th>
+                <th>Detalle</th>
                 <th>Fecha</th>
                 <th>Estado</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -339,11 +407,27 @@
                   <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" (change)="toggleRegistro(item)" />
                 </td>
                 <td>{{ resumenItem(item) }}</td>
+                <td>
+                  <ul class="pending-detail-list">
+                    <li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li>
+                  </ul>
+                  <span class="text-muted small" *ngIf="detalleItem(item).length === 0">Sin cambios visibles.</span>
+                </td>
                 <td>{{ item.createdAt | date: 'dd/MM/yyyy HH:mm' }}</td>
                 <td>{{ item.estado }}</td>
+                <td class="text-end">
+                  <button
+                    class="btn btn-outline-danger btn-sm"
+                    type="button"
+                    [disabled]="loading || !permissions.hasPermission('solicitudes:write')"
+                    (click)="descartarRegistro(item)"
+                  >
+                    Descartar
+                  </button>
+                </td>
               </tr>
               <tr *ngIf="pendientesPorTipo(tipo).length === 0">
-                <td colspan="4" class="text-muted">No hay items pendientes.</td>
+                <td colspan="6" class="text-muted">No hay items pendientes.</td>
               </tr>
             </tbody>
           </table>

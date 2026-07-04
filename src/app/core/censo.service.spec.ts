@@ -58,4 +58,24 @@ describe('CensoService', () => {
       active: 1
     });
   });
+
+  it('mapea datos completos del asociado para formularios de modificacion', () => {
+    const asociado = (service as any).mapAsociado({
+      id: 354,
+      nif: '48627219K',
+      nombre: 'Judit',
+      apellidos: 'Esteban Garcia',
+      telefono: '627 133 062',
+      email: null,
+      direccion: 'C/ Doctor Bergez n 78 6B',
+      codigo_postal: '03012',
+      fecha_nacimiento: '1994-01-18 00:00:00.000'
+    });
+
+    expect(asociado.dni).toBe('48627219K');
+    expect(asociado.telefono).toBe('627 133 062');
+    expect(asociado.direccion).toBe('C/ Doctor Bergez n 78 6B');
+    expect(asociado.codigoPostal).toBe('03012');
+    expect(asociado.fechaNacimiento).toBe('1994-01-18');
+  });
 });
