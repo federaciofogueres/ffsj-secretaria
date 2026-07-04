@@ -167,6 +167,24 @@ export class SecretariaService {
     });
   }
 
+  crearInscripcion(payload: unknown): Observable<InscripcionSecretaria> {
+    return this.http.post<InscripcionSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  actualizarInscripcion(id: string, payload: unknown): Observable<InscripcionSecretaria> {
+    return this.http.put<InscripcionSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  borrarInscripcion(id: string): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
   getIncidencias(scope: string, scopeId: string): Observable<{ incidencias: Incidencia[] }> {
     return this.http.get<{ incidencias: Incidencia[] }>(`${this.apiUrl.secretariaBasePath}/incidencias`, {
       params: new HttpParams().set('scope', scope).set('scopeId', scopeId),
@@ -220,8 +238,28 @@ export class SecretariaService {
     });
   }
 
-  getActividades(): Observable<{ actividades: ActividadSecretaria[] }> {
+  getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
+    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades`, {
+      params,
+      headers: this.authHeaders()
+    });
+  }
+
+  crearActividad(payload: unknown): Observable<ActividadSecretaria> {
+    return this.http.post<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  actualizarActividad(id: string, payload: unknown): Observable<ActividadSecretaria> {
+    return this.http.put<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades/${id}`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  borrarActividad(id: string): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl.secretariaBasePath}/actividades/${id}`, {
       headers: this.authHeaders()
     });
   }

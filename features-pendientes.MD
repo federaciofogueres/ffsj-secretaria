@@ -473,43 +473,51 @@ Pendiente futuro:
 
 ## 18. Actividades y calendario
 
-Motivo del orden:
+Estado actual: completado para el alcance actual.
 
-- Conviene implementarlo antes de cerrar inscripciones, porque las inscripciones pueden depender de actividades/plazos.
+- Existe endpoint `GET /actividades`.
+- Existe endpoint administrativo `POST /actividades`.
+- Las actividades se guardan en `secretaria_actividades`.
+- Existe seccion independiente `/calendario`.
+- El menu muestra Calendario como modulo propio para consultar actividades.
+- Administracion puede crear actividades con titulo, responsable, fechas y descripcion.
+- Las actividades pueden tener formularios de inscripcion vinculados.
+- Las asociaciones pueden ver el calendario y las actividades.
+- OpenAPI actualizado.
 
-Estado actual:
+Pendiente futuro:
 
-- Existe endpoint `/actividades`.
-- Existe servicio front preparado.
-
-Pendiente:
-
-- Crear modulo visual de actividades.
-- Listar actividades activas/cerradas.
-- Detalle de actividad.
+- Vista calendario mensual/semanal real.
 - Filtros por estado y fecha.
-- Vincular actividades con inscripciones y solicitudes.
-- Definir si las actividades son de secretaria o vienen de otro sistema.
+- Edicion/cierre de actividades.
+- Vincular actividades con solicitudes cuando se defina el procedimiento.
 
 ## 19. Inscripciones
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
-- Pantalla existente.
+- Pantalla existente renovada para modo Administracion y modo Asociacion.
 - Carga formularios desde `ffsj-secretaria-api`.
-- Envia entradas.
+- Administracion puede crear formularios de inscripcion.
+- Al crear una inscripcion se puede vincular una actividad existente.
+- Administracion puede ver el listado de inscripciones, abrir el detalle, editar y borrar formularios sin entradas presentadas.
+- La creacion de actividades queda en la seccion independiente `/calendario`.
+- Los formularios se guardan en `secretaria_inscripcion_formularios`.
+- Las entradas se guardan en `secretaria_inscripcion_entradas`.
+- Las asociaciones ven inscripciones abiertas y pueden inscribirse.
+- La API bloquea inscripciones fuera de plazo.
+- La API evita que una misma asociacion se inscriba dos veces al mismo formulario.
+- Hay listado administrativo de entradas con `GET /inscripciones/entradas`.
+- OpenAPI actualizado.
 
-Pendiente:
+Pendiente futuro:
 
-- Persistencia real en BD.
-- Formularios dinamicos desde `secretaria_formularios`.
-- Edicion de formularios por plazo.
-- Bloqueo fuera de plazo.
-- Historico de inscripciones enviadas.
-- Seleccion de asociados participantes desde censo.
-- Estados reales e incidencias.
-- Justificante PDF.
-- Aplicar permisos de lectura/envio.
+- Cierre de formularios desde UI.
+- Historico visual de inscripciones enviadas por asociacion.
+- Sustituir participantes mock por asociados reales de censo en esta pantalla.
+- Estados administrativos de entradas: revisar, validar, rechazar.
+- Incidencias sobre entradas de inscripcion.
+- Justificante PDF especifico de inscripcion.
 
 ## 20. Textos y codificacion
 

@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
+import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
+import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -15,195 +17,239 @@ interface Participant {
   tipo: ParticipantType;
 }
 
-type FieldType = 'text' | 'textarea' | 'tel' | 'email' | 'number' | 'date' | 'select';
-
-interface InscriptionField {
-  key: string;
-  label: string;
-  type: FieldType;
-  required?: boolean;
-  placeholder?: string;
-  options?: string[];
-}
-
-interface Inscription {
-  id: string;
-  title: string;
-  subtitle: string;
-  responsable: string;
-  avatar: string;
-  publishedAt: string;
-  deadlineAt: string;
-  signupDate?: string;
-  allowedTypes: ParticipantType[];
-  fields: InscriptionField[];
-}
-
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
 export class InscripcionesComponent implements OnInit {
-  inscriptions: Inscription[] = [
-    {
-      id: 'cena-jovenes',
-      title: 'Cena y fiesta juvenil de Año Nuevo 2026',
-      subtitle: 'Delegación de Foguers Infantils y Juventud',
-      responsable: 'Agustín Sanz Manzanaro',
-      avatar: 'assets/img/logo-intranet.png',
-      publishedAt: '2025-12-03',
-      deadlineAt: '2025-12-12',
-      signupDate: '2025-12-05',
-      allowedTypes: ['infantil'],
-      fields: [
-        { key: 'delegado', label: 'Delegado/a de infantiles', type: 'text', required: true },
-        { key: 'telefono', label: 'Teléfono de contacto', type: 'tel', required: true },
-        { key: 'observaciones', label: 'Observaciones (intolerancias o alergias)', type: 'textarea' }
-      ]
-    },
-    {
-      id: 'inscripcion-cargos',
-      title: 'Inscripción cargos / presentaciones 2026',
-      subtitle: 'Vicepresidencia de Fiestas y Actividades',
-      responsable: 'María Segarra González',
-      avatar: 'assets/img/logo-intranet.png',
-      publishedAt: '2025-11-21',
-      deadlineAt: '2026-01-18',
-      allowedTypes: ['adulto', 'infantil'],
-      fields: [
-        { key: 'representante', label: 'Representante principal', type: 'text', required: true },
-        { key: 'telefono', label: 'Teléfono', type: 'tel', required: true },
-        { key: 'cargo', label: 'Cargo solicitado', type: 'select', required: true, options: ['Bellea', 'Dama', 'Presidencia'] },
-        { key: 'nota', label: 'Notas adicionales', type: 'textarea' }
-      ]
-    },
-    {
-      id: 'procesion-san-nicolas',
-      title: 'Procesión de San Nicolás 2025',
-      subtitle: 'Delegación de Foguers Infantils y Juventud',
-      responsable: 'Luis Carrión Martínez',
-      avatar: 'assets/img/logo-intranet.png',
-      publishedAt: '2025-10-28',
-      deadlineAt: '2025-11-26',
-      allowedTypes: ['adulto'],
-      fields: [
-        { key: 'delegado', label: 'Delegado/a', type: 'text', required: true },
-        { key: 'telefono', label: 'Teléfono', type: 'tel', required: true },
-        { key: 'asistentes', label: 'Número de asistentes', type: 'number', required: true },
-        { key: 'observaciones', label: 'Observaciones', type: 'textarea' }
-      ]
-    }
-  ];
-
-  adults: Participant[] = [
-    { id: 'a1', nombre: 'María López Gadea', cargo: 'Presidencia', tipo: 'adulto' },
-    { id: 'a2', nombre: 'Sergio Martínez Ruiz', cargo: 'Secretaría', tipo: 'adulto' },
-    { id: 'a3', nombre: 'Lucía Gómez Díaz', cargo: 'Vocal', tipo: 'adulto' }
-  ];
-
-  kids: Participant[] = [
-    { id: 'k1', nombre: 'Antonio Cáceres Moreno', cargo: 'Presidencia Infantil', tipo: 'infantil' },
-    { id: 'k2', nombre: 'Abril del Carmen Sanz Blasco', cargo: 'Asociado/a Infantil', tipo: 'infantil' },
-    { id: 'k3', nombre: 'Lucía Eugenio Bertomeu', cargo: 'Asociado/a Infantil', tipo: 'infantil' }
-  ];
-
-  selectedInscription: Inscription | null = null;
+  actividades: ActividadSecretaria[] = [];
+  inscripciones: InscripcionSecretaria[] = [];
+  selectedInscription: InscripcionSecretaria | null = null;
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
+  loading = false;
+  error = '';
+  success = '';
+  editingInscription = false;
+
+  readonly adults: Participant[] = [
+    { id: 'a1', nombre: 'Maria Lopez Gadea', cargo: 'Presidencia', tipo: 'adulto' },
+    { id: 'a2', nombre: 'Sergio Martinez Ruiz', cargo: 'Secretaria', tipo: 'adulto' },
+    { id: 'a3', nombre: 'Lucia Gomez Diaz', cargo: 'Vocal', tipo: 'adulto' }
+  ];
+
+  readonly kids: Participant[] = [
+    { id: 'k1', nombre: 'Antonio Caceres Moreno', cargo: 'Presidencia Infantil', tipo: 'infantil' },
+    { id: 'k2', nombre: 'Abril del Carmen Sanz Blasco', cargo: 'Asociado/a Infantil', tipo: 'infantil' },
+    { id: 'k3', nombre: 'Lucia Eugenio Bertomeu', cargo: 'Asociado/a Infantil', tipo: 'infantil' }
+  ];
+
+  inscripcionAdminForm = this.fb.group({
+    titulo: ['', Validators.required],
+    actividadId: [''],
+    fechaPublicacion: [new Date().toISOString().slice(0, 10), Validators.required],
+    fechaLimite: ['', Validators.required],
+    adultos: [true],
+    infantiles: [true]
+  });
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly secretariaService: SecretariaService,
     private readonly censoService: CensoService,
+    private readonly adminAccess: AdminAccessService,
     readonly permissions: PermissionsService
   ) {}
 
   ngOnInit(): void {
-    this.secretariaService.getInscripciones(this.censoService.asociacionId).subscribe({
-      next: response => {
-        if (!response.inscripciones.length) {
-          this.selectInscription(this.inscriptions[0]);
-          return;
-        }
+    this.cargarDatos();
+  }
 
-        this.inscriptions = response.inscripciones.map(item => ({
-          id: item.id,
-          title: item.titulo,
-          subtitle: 'Secretaria',
-          responsable: 'Secretaria',
-          avatar: 'assets/img/logo-intranet.png',
-          publishedAt: item.fechaPublicacion,
-          deadlineAt: item.fechaLimite,
-          allowedTypes: item.tiposPermitidos,
-          fields: item.campos
-        }));
-        this.selectInscription(this.inscriptions[0]);
-      },
-      error: () => this.selectInscription(this.inscriptions[0])
+  get isAdminMode(): boolean {
+    return this.adminAccess.isAdmin();
+  }
+
+  get availableParticipants(): Participant[] {
+    if (!this.selectedInscription) return [];
+    const allowed = this.selectedInscription.tiposPermitidos;
+    return [...this.adults, ...this.kids].filter(p => allowed.includes(p.tipo));
+  }
+
+  get canSubmit(): boolean {
+    return !this.isAdminMode && this.permissions.hasPermission('inscripciones:write') && this.form.valid && this.selectedParticipants.size > 0;
+  }
+
+  actividadDe(inscripcion: InscripcionSecretaria): ActividadSecretaria | undefined {
+    return this.actividades.find(actividad => actividad.id === inscripcion.actividadId);
+  }
+
+  selectInscription(inscription: InscripcionSecretaria): void {
+    this.selectedInscription = inscription;
+    this.selectedParticipants.clear();
+    this.success = '';
+    this.error = '';
+    const group: Record<string, FormControl> = {};
+    inscription.campos.forEach(field => {
+      group[field.key] = this.fb.control('', field.required ? Validators.required : undefined);
+    });
+    this.form = this.fb.group(group);
+
+    if (this.isAdminMode) {
+      this.editingInscription = true;
+      this.inscripcionAdminForm.patchValue({
+        titulo: inscription.titulo,
+        actividadId: inscription.actividadId || '',
+        fechaPublicacion: this.toDateInput(inscription.fechaPublicacion) || new Date().toISOString().slice(0, 10),
+        fechaLimite: this.toDateInput(inscription.fechaLimite) || '',
+        adultos: inscription.tiposPermitidos.includes('adulto'),
+        infantiles: inscription.tiposPermitidos.includes('infantil')
+      });
+    }
+  }
+
+  nuevaInscripcion(): void {
+    this.selectedInscription = null;
+    this.editingInscription = false;
+    this.success = '';
+    this.error = '';
+    this.inscripcionAdminForm.reset({
+      titulo: '',
+      actividadId: '',
+      fechaPublicacion: new Date().toISOString().slice(0, 10),
+      fechaLimite: '',
+      adultos: true,
+      infantiles: true
     });
   }
 
-  selectInscription(inscription: Inscription): void {
-    this.selectedInscription = inscription;
-    this.selectedParticipants.clear();
-    this.buildForm(inscription);
+  crearInscripcion(): void {
+    if (this.inscripcionAdminForm.invalid) {
+      this.inscripcionAdminForm.markAllAsTouched();
+      return;
+    }
+    const tiposPermitidos = [
+      this.inscripcionAdminForm.value.adultos ? 'adulto' : null,
+      this.inscripcionAdminForm.value.infantiles ? 'infantil' : null
+    ].filter((tipo): tipo is ParticipantType => Boolean(tipo));
+    if (!tiposPermitidos.length) {
+      this.error = 'Selecciona al menos un tipo de participante.';
+      return;
+    }
+    this.loading = true;
+    const payload = {
+      titulo: this.inscripcionAdminForm.value.titulo,
+      actividadId: this.inscripcionAdminForm.value.actividadId || null,
+      estado: 'abierta',
+      fechaPublicacion: this.inscripcionAdminForm.value.fechaPublicacion,
+      fechaLimite: this.inscripcionAdminForm.value.fechaLimite,
+      tiposPermitidos
+    };
+    const request = this.editingInscription && this.selectedInscription
+      ? this.secretariaService.actualizarInscripcion(this.selectedInscription.id, payload)
+      : this.secretariaService.crearInscripcion(payload);
+
+    request.subscribe({
+      next: inscripcion => {
+        this.inscripciones = [inscripcion, ...this.inscripciones.filter(item => item.id !== inscripcion.id)];
+        this.selectInscription(inscripcion);
+        this.success = this.editingInscription ? 'Inscripcion actualizada correctamente.' : 'Inscripcion creada correctamente.';
+        this.loading = false;
+      },
+      error: () => {
+        this.error = this.editingInscription ? 'No se ha podido actualizar la inscripcion.' : 'No se ha podido crear la inscripcion.';
+        this.loading = false;
+      }
+    });
+  }
+
+  borrarInscripcion(): void {
+    if (!this.selectedInscription || !this.isAdminMode) {
+      return;
+    }
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+    this.secretariaService.borrarInscripcion(this.selectedInscription.id).subscribe({
+      next: () => {
+        const deletedId = this.selectedInscription?.id;
+        this.inscripciones = this.inscripciones.filter(item => item.id !== deletedId);
+        this.selectedInscription = null;
+        this.nuevaInscripcion();
+        if (this.inscripciones[0]) {
+          this.selectInscription(this.inscripciones[0]);
+        }
+        this.success = 'Inscripcion borrada correctamente.';
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'No se ha podido borrar la inscripcion. Comprueba que no tenga entradas presentadas.';
+        this.loading = false;
+      }
+    });
   }
 
   toggleParticipant(participant: Participant): void {
-    const exists = this.selectedParticipants.has(participant.id);
-    if (exists) {
-      this.selectedParticipants.delete(participant.id);
-    } else {
-      this.selectedParticipants.add(participant.id);
-    }
+    this.selectedParticipants.has(participant.id)
+      ? this.selectedParticipants.delete(participant.id)
+      : this.selectedParticipants.add(participant.id);
   }
 
   isParticipantSelected(participant: Participant): boolean {
     return this.selectedParticipants.has(participant.id);
   }
 
-  get availableParticipants(): Participant[] {
-    if (!this.selectedInscription) return [];
-    const allowed = this.selectedInscription.allowedTypes;
-    return [...this.adults, ...this.kids].filter(p => allowed.includes(p.tipo));
-  }
-
-  get canSubmit(): boolean {
-    return this.permissions.hasPermission('inscripciones:write') && this.form.valid && this.selectedParticipants.size > 0;
-  }
-
-  print(): void {
-    if (!this.canSubmit) return;
-    // Placeholder for print logic
-    console.log('Imprimir ficha de inscripción', this.form.value, [...this.selectedParticipants]);
-  }
-
   submit(): void {
     if (!this.selectedInscription) return;
-    if (this.form.invalid || this.selectedParticipants.size === 0) {
+    if (!this.canSubmit) {
       this.form.markAllAsTouched();
       return;
     }
-
-    const payload = {
+    this.secretariaService.enviarInscripcion({
       asociacionId: this.censoService.asociacionId,
-      inscriptionId: this.selectedInscription.id,
       formularioId: this.selectedInscription.id,
-      data: this.form.value,
       datos: this.form.value,
-      participants: [...this.selectedParticipants]
-    };
-    this.secretariaService.enviarInscripcion(payload).subscribe({ error: () => undefined });
+      participantes: [...this.selectedParticipants]
+    }).subscribe({
+      next: () => {
+        this.success = 'Inscripcion enviada correctamente.';
+      },
+      error: () => {
+        this.error = 'No se ha podido enviar la inscripcion.';
+      }
+    });
   }
 
-  private buildForm(inscription: Inscription): void {
-    const group: Record<string, FormControl> = {};
-    inscription.fields.forEach(field => {
-      group[field.key] = this.fb.control('', field.required ? Validators.required : undefined);
+  private cargarDatos(): void {
+    this.loading = true;
+    this.secretariaService.getActividades().subscribe({
+      next: actividadesResponse => {
+        this.actividades = actividadesResponse.actividades;
+        this.secretariaService.getInscripciones(this.censoService.asociacionId).subscribe({
+          next: inscripcionesResponse => {
+            this.inscripciones = inscripcionesResponse.inscripciones;
+            if (this.inscripciones[0]) {
+              this.selectInscription(this.inscripciones[0]);
+            }
+            this.loading = false;
+          },
+          error: () => {
+            this.error = 'No se han podido cargar las inscripciones.';
+            this.loading = false;
+          }
+        });
+      },
+      error: () => {
+        this.error = 'No se han podido cargar las actividades.';
+        this.loading = false;
+      }
     });
-    this.form = this.fb.group(group);
+  }
+
+  private toDateInput(value: string | null | undefined): string {
+    if (!value) return '';
+    return String(value).slice(0, 10);
   }
 }

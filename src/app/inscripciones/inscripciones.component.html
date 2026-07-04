@@ -1,149 +1,152 @@
 <section class="inscripciones card border-0 shadow-sm">
   <div class="card-body p-0">
-    <div class="layout">
-      <aside class="list">
-        <div class="list-header">
+    <div class="p-4 p-md-5">
+      <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
+        <div>
           <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones</p>
-          <h2 class="h5 mb-0 text-rojo">Convocatorias abiertas</h2>
+          <h1 class="h4 mb-1 text-rojo">{{ isAdminMode ? 'Inscripciones' : 'Inscripciones disponibles' }}</h1>
+          <p class="text-muted mb-0">
+            {{ isAdminMode ? 'Crea, revisa y edita formularios de inscripcion.' : 'Consulta y envia inscripciones abiertas.' }}
+          </p>
         </div>
+      </div>
 
-        <div class="inscription-list">
-          <button
-            *ngFor="let item of inscriptions"
-            type="button"
-            class="list-item"
-            [class.active]="item.id === selectedInscription?.id"
-            (click)="selectInscription(item)"
-          >
-            <div class="d-flex align-items-center gap-2 flex-grow-1">
-              <img [src]="item.avatar" alt="Responsable" class="avatar" />
-              <div class="text-start">
-                <p class="title mb-1">{{ item.title }}</p>
-                <p class="subtitle mb-1 text-muted">{{ item.subtitle }}</p>
-                <div class="dates small text-muted">
-                  <span>Publicada: {{ item.publishedAt | date : 'd MMM y' }}</span>
-                  <span class="ms-2">Límite: {{ item.deadlineAt | date : 'd MMM y' }}</span>
-                  <span *ngIf="item.signupDate" class="ms-2">Inscrito: {{ item.signupDate | date : 'd MMM y' }}</span>
-                </div>
-              </div>
-            </div>
-            <span class="chevron" aria-hidden="true">›</span>
-          </button>
-        </div>
-      </aside>
+      <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+      <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+      <div class="text-muted" *ngIf="loading">Cargando...</div>
 
-      <section class="detail" *ngIf="selectedInscription as inscription">
-        <div class="detail-header d-flex align-items-start justify-content-between gap-3 flex-wrap">
-          <div>
-            <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
-            <h1 class="h4 mb-1 text-rojo">{{ inscription.title }}</h1>
-            <p class="text-muted mb-0">{{ inscription.subtitle }}</p>
+      <div class="admin-grid mb-4" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
+        <form class="admin-panel" [formGroup]="inscripcionAdminForm" (ngSubmit)="crearInscripcion()">
+          <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
+            <h2 class="h6 mb-0">{{ editingInscription ? 'Editar inscripcion' : 'Crear inscripcion' }}</h2>
+            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="nuevaInscripcion()">Nueva</button>
           </div>
-          <div class="responsable d-flex align-items-center gap-2">
-            <img [src]="inscription.avatar" alt="Responsable" class="avatar" />
-            <div>
-              <p class="mb-0 fw-semibold">Responsable</p>
-              <small class="text-muted">{{ inscription.responsable }}</small>
+          <label class="form-label">Titulo</label>
+          <input class="form-control" formControlName="titulo" />
+          <label class="form-label mt-2">Actividad vinculada</label>
+          <select class="form-select" formControlName="actividadId">
+            <option value="">Sin actividad vinculada</option>
+            <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
+          </select>
+          <div class="row g-2 mt-1">
+            <div class="col">
+              <label class="form-label">Publicacion</label>
+              <input type="date" class="form-control" formControlName="fechaPublicacion" />
+            </div>
+            <div class="col">
+              <label class="form-label">Fecha limite</label>
+              <input type="date" class="form-control" formControlName="fechaLimite" />
             </div>
           </div>
-        </div>
-
-        <div class="dates-card">
-          <div>
-            <p class="label">Fecha publicación</p>
-            <p class="value">{{ inscription.publishedAt | date : 'd MMM y' }}</p>
-          </div>
-          <div>
-            <p class="label">Fecha límite</p>
-            <p class="value">{{ inscription.deadlineAt | date : 'd MMM y' }}</p>
-          </div>
-        </div>
-
-        <form [formGroup]="form" class="form-grid">
-          <h3 class="section-title">Formulario de inscripción</h3>
-
-          <div class="field-grid">
-            <ng-container *ngFor="let field of inscription.fields">
-              <div class="field" [class.full]="field.type === 'textarea'">
-                <label class="form-label">
-                  {{ field.label }}
-                  <span *ngIf="field.required" class="text-rojo">*</span>
-                </label>
-
-                <ng-container [ngSwitch]="field.type">
-                  <textarea
-                    *ngSwitchCase="'textarea'"
-                    class="form-control"
-                    rows="3"
-                    [attr.placeholder]="field.placeholder"
-                    [formControlName]="field.key"
-                  ></textarea>
-
-                  <select
-                    *ngSwitchCase="'select'"
-                    class="form-select"
-                    [formControlName]="field.key"
-                  >
-                    <option value="" disabled>Selecciona una opción</option>
-                    <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
-                  </select>
-
-                  <input
-                    *ngSwitchDefault
-                    class="form-control"
-                    [attr.type]="field.type"
-                    [attr.placeholder]="field.placeholder"
-                    [formControlName]="field.key"
-                  />
-                </ng-container>
-
-                <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
-                  Este campo es obligatorio.
-                </div>
-              </div>
-            </ng-container>
-          </div>
-        </form>
-
-        <div class="participants">
-          <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-            <h3 class="section-title mb-0">Seleccionar asociados</h3>
-            <span class="badge bg-light text-rojo border border-rojo">
-              {{ inscription.allowedTypes.includes('adulto') ? 'Adultos' : '' }}
-              <ng-container *ngIf="inscription.allowedTypes.length === 2"> y </ng-container>
-              {{ inscription.allowedTypes.includes('infantil') ? 'Infantiles' : '' }}
-            </span>
-          </div>
-
-          <div class="participant-list">
-            <label
-              class="participant-item"
-              *ngFor="let person of availableParticipants"
-            >
-              <input
-                type="checkbox"
-                [checked]="isParticipantSelected(person)"
-                (change)="toggleParticipant(person)"
-              />
-              <div class="info">
-                <p class="name mb-0">{{ person.nombre }}</p>
-                <small class="text-muted">{{ person.cargo }} · {{ person.tipo === 'adulto' ? 'Adulto' : 'Infantil' }}</small>
-              </div>
+          <div class="d-flex gap-3 mt-3">
+            <label class="form-check">
+              <input type="checkbox" class="form-check-input" formControlName="adultos" />
+              Adultos
+            </label>
+            <label class="form-check">
+              <input type="checkbox" class="form-check-input" formControlName="infantiles" />
+              Infantiles
             </label>
           </div>
-        </div>
+          <div class="d-flex gap-2 mt-3">
+            <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">
+              {{ editingInscription ? 'Guardar cambios' : 'Crear inscripcion' }}
+            </button>
+            <button
+              class="btn btn-outline-danger"
+              type="button"
+              *ngIf="editingInscription && selectedInscription"
+              [disabled]="loading"
+              (click)="borrarInscripcion()"
+            >
+              Borrar
+            </button>
+          </div>
+        </form>
+      </div>
 
-        <div class="actions d-flex flex-wrap gap-2">
-          <button type="button" class="btn btn-outline-secondary" [disabled]="!canSubmit" (click)="print()">
-            <i class="bi bi-printer me-1"></i>
-            Imprimir
-          </button>
-          <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmit" (click)="submit()">
-            <i class="bi bi-send me-1"></i>
-            Inscribirse
-          </button>
-        </div>
-      </section>
+      <div class="layout">
+        <section class="detail">
+          <h2 class="h6 mb-3">Listado de inscripciones</h2>
+          <div class="inscription-list mb-4">
+            <button
+              *ngFor="let item of inscripciones"
+              type="button"
+              class="list-item"
+              [class.active]="item.id === selectedInscription?.id"
+              (click)="selectInscription(item)"
+            >
+              <div class="text-start">
+                <p class="title mb-1">{{ item.titulo }}</p>
+                <p class="subtitle mb-1 text-muted">{{ actividadDe(item)?.titulo || 'Sin actividad vinculada' }}</p>
+                <div class="dates small text-muted">
+                  <span>Publicada: {{ item.fechaPublicacion | date : 'dd/MM/y' }}</span>
+                  <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <ng-container *ngIf="selectedInscription as inscription">
+            <div class="detail-header d-flex align-items-start justify-content-between gap-3 flex-wrap">
+              <div>
+                <p class="overline text-uppercase text-muted fw-bold mb-1">Formulario</p>
+                <h3 class="h5 mb-1 text-rojo">{{ inscription.titulo }}</h3>
+                <p class="text-muted mb-0">{{ actividadDe(inscription)?.titulo || 'Inscripcion sin actividad vinculada' }}</p>
+              </div>
+              <span class="badge bg-light text-rojo border border-rojo">
+                {{ inscription.tiposPermitidos.join(', ') }}
+              </span>
+            </div>
+
+            <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode">
+              <div class="field-grid">
+                <ng-container *ngFor="let field of inscription.campos">
+                  <div class="field" [class.full]="field.type === 'textarea'">
+                    <label class="form-label">
+                      {{ field.label }}
+                      <span *ngIf="field.required" class="text-rojo">*</span>
+                    </label>
+                    <ng-container [ngSwitch]="field.type">
+                      <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [formControlName]="field.key"></textarea>
+                      <select *ngSwitchCase="'select'" class="form-select" [formControlName]="field.key">
+                        <option value="" disabled>Selecciona una opcion</option>
+                        <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
+                      </select>
+                      <input *ngSwitchDefault class="form-control" [attr.type]="field.type" [formControlName]="field.key" />
+                    </ng-container>
+                    <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
+                      Este campo es obligatorio.
+                    </div>
+                  </div>
+                </ng-container>
+              </div>
+            </form>
+
+            <div class="participants mt-3" *ngIf="!isAdminMode">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
+                <h3 class="section-title mb-0">Seleccionar asociados</h3>
+              </div>
+              <div class="participant-list">
+                <label class="participant-item" *ngFor="let person of availableParticipants">
+                  <input type="checkbox" [checked]="isParticipantSelected(person)" (change)="toggleParticipant(person)" />
+                  <div class="info">
+                    <p class="name mb-0">{{ person.nombre }}</p>
+                    <small class="text-muted">{{ person.cargo }} - {{ person.tipo }}</small>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode">
+              <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmit" (click)="submit()">
+                <i class="bi bi-send me-1"></i>
+                Inscribirse
+              </button>
+            </div>
+          </ng-container>
+        </section>
+      </div>
     </div>
   </div>
 </section>

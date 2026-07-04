@@ -1,0 +1,166 @@
+<section class="calendario card border-0 shadow-sm">
+  <div class="card-body p-4 p-md-5">
+    <div class="header d-flex justify-content-between align-items-start gap-3 flex-wrap">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Calendario</p>
+        <h1 class="h4 mb-1 text-rojo">Actividades</h1>
+        <p class="text-muted mb-0">Consulta las actividades de secretaria.</p>
+      </div>
+      <div class="d-flex gap-2">
+        <button class="btn btn-outline-secondary" type="button" (click)="previousMonth()">Anterior</button>
+        <button class="btn btn-outline-secondary" type="button" (click)="nextMonth()">Siguiente</button>
+      </div>
+    </div>
+
+    <div class="alert alert-danger mt-3" *ngIf="error">{{ error }}</div>
+    <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
+    <div class="text-muted mt-3" *ngIf="loading">Cargando calendario...</div>
+
+    <div class="calendar-layout mt-4">
+      <div class="calendar">
+        <h2 class="h5 text-capitalize mb-3">{{ monthLabel }}</h2>
+        <div class="weekdays">
+          <span>Lun</span>
+          <span>Mar</span>
+          <span>Mie</span>
+          <span>Jue</span>
+          <span>Vie</span>
+          <span>Sab</span>
+          <span>Dom</span>
+        </div>
+        <div class="days">
+          <article
+            class="day"
+            *ngFor="let day of days"
+            [class.muted]="!day.currentMonth"
+            [class.selected]="selectedDate && (selectedDate | date: 'yyyy-MM-dd') === (day.date | date: 'yyyy-MM-dd')"
+            (click)="selectDay(day)"
+          >
+            <div class="day-number">{{ day.date | date: 'd' }}</div>
+            <button
+              class="activity-pill"
+              type="button"
+              *ngFor="let actividad of day.actividades"
+              [class.inactive]="actividad.estado === 'cerrada'"
+              (click)="select(actividad); $event.stopPropagation()"
+            >
+              {{ actividad.titulo }}
+            </button>
+          </article>
+        </div>
+      </div>
+
+      <aside class="detail">
+        <ng-container *ngIf="selected; else empty">
+          <p class="overline text-uppercase text-muted fw-bold mb-1">Actividad</p>
+          <div class="d-flex align-items-start justify-content-between gap-2">
+            <h2 class="h5 text-rojo mb-1">{{ selected.titulo }}</h2>
+            <span class="status" [class.inactive]="selected.estado === 'cerrada'">{{ estadoLabel(selected.estado) }}</span>
+          </div>
+          <p class="text-muted mb-2">
+            {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
+          </p>
+          <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
+          <div class="linked" *ngIf="selected.inscripciones?.length">
+            <h3 class="h6">Inscripcion asociada</h3>
+            <a class="linked-item" routerLink="/inscripciones" *ngFor="let inscripcion of selected.inscripciones">
+              {{ inscripcion.titulo }}
+            </a>
+          </div>
+          <p class="text-muted mb-0" *ngIf="!selected.inscripciones?.length">
+            Esta actividad no tiene inscripcion asociada.
+          </p>
+
+          <form
+            class="admin-edit"
+            *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+            [formGroup]="editActividadForm"
+            (ngSubmit)="guardarActividad()"
+          >
+            <div class="border-top pt-3 mt-3">
+              <p class="overline text-uppercase text-muted fw-bold mb-1">Gestion del evento</p>
+              <label class="form-label">Titulo</label>
+              <input class="form-control" formControlName="titulo" />
+              <label class="form-label mt-2">Responsable</label>
+              <input class="form-control" formControlName="responsable" />
+              <div class="row g-2 mt-1">
+                <div class="col">
+                  <label class="form-label">Inicio</label>
+                  <input type="date" class="form-control" formControlName="fechaInicio" />
+                </div>
+                <div class="col">
+                  <label class="form-label">Fin</label>
+                  <input type="date" class="form-control" formControlName="fechaFin" />
+                </div>
+              </div>
+              <label class="form-label mt-2">Descripcion</label>
+              <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+              <div class="admin-actions mt-3">
+                <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Guardar</button>
+                <button
+                  class="btn btn-outline-secondary"
+                  type="button"
+                  *ngIf="selected.estado === 'activa'"
+                  [disabled]="loading"
+                  (click)="cambiarEstadoActividad('cerrada')"
+                >
+                  Desactivar
+                </button>
+                <button
+                  class="btn btn-outline-success"
+                  type="button"
+                  *ngIf="selected.estado === 'cerrada'"
+                  [disabled]="loading"
+                  (click)="cambiarEstadoActividad('activa')"
+                >
+                  Reactivar
+                </button>
+                <button class="btn btn-outline-warning" type="button" [disabled]="loading" (click)="cambiarEstadoActividad('cancelada')">
+                  Archivar
+                </button>
+                <button class="btn btn-outline-danger" type="button" [disabled]="loading" (click)="borrarActividad()">
+                  Borrar definitivamente
+                </button>
+              </div>
+            </div>
+          </form>
+        </ng-container>
+
+        <form
+          class="admin-create"
+          *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+          [formGroup]="actividadForm"
+          (ngSubmit)="crearActividad()"
+        >
+          <div class="border-top pt-3 mt-3">
+            <p class="overline text-uppercase text-muted fw-bold mb-1">Administracion</p>
+            <h3 class="h6 mb-3">
+              {{ selectedDate ? ('Nueva actividad el ' + (selectedDate | date: 'dd/MM/y')) : 'Selecciona un dia para crear actividad' }}
+            </h3>
+            <label class="form-label">Titulo</label>
+            <input class="form-control" formControlName="titulo" />
+            <label class="form-label mt-2">Responsable</label>
+            <input class="form-control" formControlName="responsable" />
+            <div class="row g-2 mt-1">
+              <div class="col">
+                <label class="form-label">Inicio</label>
+                <input type="date" class="form-control" formControlName="fechaInicio" />
+              </div>
+              <div class="col">
+                <label class="form-label">Fin</label>
+                <input type="date" class="form-control" formControlName="fechaFin" />
+              </div>
+            </div>
+            <label class="form-label mt-2">Descripcion</label>
+            <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+            <button class="btn btn-foc-rojo mt-3" type="submit" [disabled]="loading">Crear actividad</button>
+          </div>
+        </form>
+      </aside>
+
+      <ng-template #empty>
+        <p class="text-muted mb-0">Pulsa sobre una actividad del calendario para ver su detalle.</p>
+      </ng-template>
+    </div>
+  </div>
+</section>

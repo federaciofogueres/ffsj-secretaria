@@ -146,6 +146,7 @@ export interface InscripcionSecretaria {
   id: string;
   asociacionId: number;
   formularioId: string;
+  actividadId?: string | null;
   titulo: string;
   estado: string;
   fechaPublicacion: string;
@@ -214,6 +215,7 @@ export interface ActividadSecretaria {
   fechaInicio: string;
   fechaFin: string;
   descripcion?: string;
+  inscripciones?: InscripcionSecretaria[];
 }
 
 export interface CargoResumen {

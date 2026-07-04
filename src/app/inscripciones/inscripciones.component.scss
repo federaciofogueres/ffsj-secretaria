@@ -3,9 +3,20 @@
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: 360px 1fr;
   min-height: 420px;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+.admin-panel {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  padding: 1rem;
+  background: #fff;
 }
 
 .list {

@@ -19,6 +19,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly navLinks = [
     { path: '/asociados', label: 'Asociados', icon: 'bi-people-fill', permission: 'asociados:read' },
     { path: '/asociacion', label: 'Asociacion', icon: 'bi-building-fill', permission: 'asociacion:read' },
+    { path: '/calendario', label: 'Calendario', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
     { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
     { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill', permission: 'registro:read' },
     { path: '/solicitudes', label: 'Solicitudes', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },

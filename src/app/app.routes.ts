@@ -5,6 +5,7 @@ import { AdminComponent } from './admin/admin.component';
 import { AsociacionComponent } from './asociacion/asociacion.component';
 import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
+import { CalendarioComponent } from './calendario/calendario.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
 import { LoginComponent } from './login/login.component';
@@ -60,6 +61,17 @@ export const routes: Routes = [
       permission: 'asociacion:read',
       moduleName: 'Asociacion',
       moduleDescription: 'Administracion de los datos oficiales de la asociacion.'
+    }
+  },
+  {
+    path: 'calendario',
+    component: CalendarioComponent,
+    title: 'Calendario',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'inscripciones:read',
+      moduleName: 'Calendario',
+      moduleDescription: 'Calendario visual de actividades de secretaria e inscripciones vinculadas.'
     }
   },
   {
