@@ -148,15 +148,16 @@ Estado actual:
 - Existe `POST /login/asociacion` en `ffsj-new-censo-api`.
 - El login devuelve token con `idAsociacion`.
 - `ffsj-secretaria` usa el login por asociacion de `ffsj-web-components`.
-- Los permisos de la asociacion se cargan desde `ffsj-secretaria-api/contexto`.
+- El componente de login redirige al panel principal cuando `ffsj-web-components` emite login correcto.
+- Los permisos base de asociacion se cargan desde `ffsj-secretaria-api/contexto` usando el token bearer y el `idAsociacion` del token.
+- Las llamadas a `ffsj-secretaria-api` y `ffsj-new-censo-api` reutilizan el token de sesion.
+- Hay tests de redireccion de login y carga de contexto de sesion por asociacion.
 
-Pendiente:
+Pendiente operativo:
 
 - Desplegar/reiniciar `ffsj-new-censo-api` en cada entorno con el endpoint nuevo.
-- Confirmar expiracion, renovacion y logout en todos los entornos.
-- Aplicar permisos reales al contexto de sesion.
-- Revisar mensajes de error del login para diferenciar credenciales invalidas, password truncada y asociacion sin password.
-- Verificar que el frontend redirige correctamente si el token expira.
+- Confirmar expiracion y logout en todos los entornos desplegados.
+- Revisar mensajes de error del login para diferenciar credenciales invalidas, password truncada y asociacion sin password cuando se quiera afinar UX.
 
 ## 7. Asociacion
 

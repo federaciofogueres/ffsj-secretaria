@@ -41,7 +41,7 @@ export class AdminComponent implements OnInit {
 
   onLoginStatus(isLogged: boolean): void {
     if (isLogged && this.canShowAdmin()) {
-      this.load();
+      this.permissions.loadContext().subscribe(() => this.load());
       return;
     }
     if (isLogged) {

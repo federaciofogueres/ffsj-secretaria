@@ -29,15 +29,18 @@ export class PermissionsService {
     private readonly auth: AuthService
   ) {}
 
-  loadContext(asociacionId = this.getAuthAsociacionId()): Observable<AuthContext | null> {
-    if (!asociacionId || asociacionId < 0) {
+  loadContext(asociacionId?: number): Observable<AuthContext | null> {
+    const hasCargoContext = this.auth.getCargos().length > 0;
+    const effectiveAsociacionId = hasCargoContext ? -1 : asociacionId ?? this.getAuthAsociacionId();
+
+    if ((!effectiveAsociacionId || effectiveAsociacionId < 0) && !hasCargoContext) {
       this.permissions$.next([]);
       return of(null);
     }
 
     return this.http
       .get<AuthContext>(`${this.apiUrl.secretariaBasePath}/contexto`, {
-        params: { asociacionId },
+        params: !hasCargoContext && effectiveAsociacionId && effectiveAsociacionId > 0 ? { asociacionId: effectiveAsociacionId } : {},
         headers: this.adminHeaders()
       })
       .pipe(
@@ -62,6 +65,10 @@ export class PermissionsService {
 
   get permisosSnapshot(): string[] {
     return this.permissions$.value;
+  }
+
+  clear(): void {
+    this.permissions$.next([]);
   }
 
   getPermisos(): Observable<{ permisos: PermisoSecretaria[] }> {
@@ -141,6 +148,6 @@ export class PermissionsService {
 
   private getAuthAsociacionId(): number {
     const auth = this.auth as any;
-    return typeof auth.getIdAsociacion === 'function' ? auth.getIdAsociacion() : auth.getIdUsuario();
+    return typeof auth.getIdAsociacion === 'function' ? auth.getIdAsociacion() : -1;
   }
 }

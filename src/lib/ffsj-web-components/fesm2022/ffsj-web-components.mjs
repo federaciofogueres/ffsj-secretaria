@@ -216,6 +216,28 @@ class CensoService {
             reportProgress: reportProgress
         });
     }
+    doLoginAsociacion(body, observe = 'body', reportProgress = false) {
+        let headers = this.defaultHeaders;
+        let httpHeaderAccepts = ['application/json'];
+        const httpHeaderAcceptSelected = this.configuration.selectHeaderAccept(httpHeaderAccepts);
+        if (httpHeaderAcceptSelected != undefined) {
+            headers = headers.set('Accept', httpHeaderAcceptSelected);
+        }
+        const consumes = [
+            'application/json'
+        ];
+        const httpContentTypeSelected = this.configuration.selectHeaderContentType(consumes);
+        if (httpContentTypeSelected != undefined) {
+            headers = headers.set('Content-Type', httpContentTypeSelected);
+        }
+        return this.httpClient.request('post', `${this.basePath}/login/asociacion`, {
+            body: body,
+            withCredentials: this.configuration.withCredentials,
+            headers: headers,
+            observe: observe,
+            reportProgress: reportProgress
+        });
+    }
     asociadosGetById(asociado, observe = 'body', reportProgress = false) {
         if (asociado === null || asociado === undefined) {
             throw new Error('Required parameter asociado was null or undefined when calling asociadosGetById.');
@@ -393,6 +415,28 @@ class AuthService {
             });
         });
     }
+    async loginAsociacion(cif, password) {
+        const usuario = {
+            cif,
+            password: this.encoderService.encrypt(password)
+        };
+        return new Promise((resolve) => {
+            this.censoService.doLoginAsociacion(usuario).subscribe({
+                next: (res) => {
+                    if (res.token) {
+                        this.saveToken(res.token);
+                    }
+                    this.loginStatus$.next(true);
+                    resolve({ code: 200 });
+                },
+                error: (error) => {
+                    console.log(error);
+                    this.loginStatus$.next(false);
+                    resolve({ code: 400 });
+                }
+            });
+        });
+    }
     getToken() {
         let token = '';
         if (this.cookieService.get('token')) {
@@ -402,11 +446,21 @@ class AuthService {
         return token;
     }
     getIdUsuario() {
-        const token = this.getToken();
-        if (token === '' || token === null) {
+        const payload = this.getTokenPayload();
+        if (!payload) {
             return -1;
         }
-        return (JSON.parse(atob(token.split('.')[1]))).id;
+        return payload.id ?? -1;
+    }
+    getIdAsociacion() {
+        const payload = this.getTokenPayload();
+        if (!payload) {
+            return -1;
+        }
+        if (payload.tipoLogin !== 'asociacion') {
+            return -1;
+        }
+        return payload.idAsociacion ? Number(payload.idAsociacion) : -1;
     }
     logout() {
         const isLocal = this.isLocalDomain();
@@ -433,22 +487,22 @@ class AuthService {
     }
     getCargos() {
         try {
-            // Suponiendo que token es la cadena que quieres decodificar
-            const token = this.cookieService.get('token');
-            if (!token) {
-                throw new Error('Token no encontrado');
-            }
-            // Asegúrate de que la cadena esté correctamente codificada en base64 antes de decodificarla
-            const tokenDecoded = this.encoderService.decrypt(token);
-            const base64Payload = tokenDecoded.split('.')[1]; // Asumiendo JWT. Ajusta según sea necesario.
-            const payload = atob(base64Payload);
-            // Procesa el payload como necesites
-            return JSON.parse(payload).cargos; // Ajusta según la estructura de tus datos
+            return this.getTokenPayload()?.cargos ?? [];
         }
         catch (error) {
-            // console.log('Error al decodificar la cadena base64:', error);
-            // Retorna un valor de respaldo o maneja el error como consideres apropiado
             return [];
+        }
+    }
+    getTokenPayload() {
+        const token = this.getToken();
+        if (token === '' || token === null) {
+            return null;
+        }
+        try {
+            return JSON.parse(atob(token.split('.')[1]));
+        }
+        catch {
+            return null;
         }
     }
     updatePassword(asociado, password) {
@@ -573,6 +627,61 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "20.3.12", ngImpo
                 type: Output
             }] } });
 
+class FfsjLoginAsociacionesComponent {
+    constructor(authService, alertService) {
+        this.authService = authService;
+        this.alertService = alertService;
+        this.title = 'Iniciar sesion';
+        this.subtitle = 'Acceso por asociacion';
+        this.logStatus = new EventEmitter();
+        this.cif = new FormControl({ value: '', disabled: false });
+        this.password = new FormControl('');
+        this.loading = false;
+    }
+    ngOnInit() {
+        if (this.authService.isLoggedIn()) {
+            this.logStatus.emit(true);
+        }
+    }
+    async login() {
+        this.loading = true;
+        if (this.cif.valid && this.password.valid) {
+            const codeLogin = await this.authService.loginAsociacion(this.cif.value, this.password.value);
+            if (codeLogin.code === 200) {
+                this.loading = false;
+                this.alertService.success('Bienvenido!', 5000);
+                this.logStatus.emit(true);
+            }
+            else {
+                this.loading = false;
+                this.alertService.danger('Datos incorrectos de inicio de sesion.', 5000);
+                this.logStatus.emit(false);
+            }
+        }
+        else {
+            this.loading = false;
+            this.alertService.danger('Datos incorrectos de inicio de sesion.', 5000);
+            this.logStatus.emit(false);
+        }
+    }
+    static { this.ɵfac = i0.ɵɵngDeclareFactory({ minVersion: "12.0.0", version: "20.3.12", ngImport: i0, type: FfsjLoginAsociacionesComponent, deps: [{ token: AuthService }, { token: FfsjAlertService }], target: i0.ɵɵFactoryTarget.Component }); }
+    static { this.ɵcmp = i0.ɵɵngDeclareComponent({ minVersion: "17.0.0", version: "20.3.12", type: FfsjLoginAsociacionesComponent, isStandalone: true, selector: "lib-ffsj-login-asociaciones", inputs: { title: "title", subtitle: "subtitle" }, outputs: { logStatus: "logStatus" }, ngImport: i0, template: "\n<div class=\"container mt-4 login-container\">\n  <div class=\"row banner\">\n    <h1>\n      <img src=\"https://intranet.hogueras.es/wp-content/uploads/2016/12/logofede.png\" class=\"img-fluid\" alt=\"\">\n      <span style=\"color: #dd5a43 !important\">{{title}}</span>\n    </h1>\n    <h4 style=\"color: #478fca !important; text-align: center;\">© Federació de Les Fogueres de Sant Joan</h4>\n  </div>\n  <div class=\"row\">\n    <h4 class=\"titulo-consultas\" style=\"color: #478fca !important;\">{{subtitle}}</h4>\n  </div>\n  <div class=\"row my-3\">\n    <label for=\"cif\">CIF</label>\n    <input type=\"text\" id=\"cif\" class=\"form-control\" [formControl]=\"cif\" value=\"\">\n  </div>\n  <div class=\"row mb-3\">\n    <label for=\"password\">Contraseña</label>\n    <input type=\"password\" id=\"password\" class=\"form-control\" [formControl]=\"password\" value=\"\">\n  </div>\n  <div class=\"row submit-button mt-2\">\n    <button type=\"button\" (click)=\"login()\" [disabled]=\"loading\">Iniciar sesión</button>\n  </div>\n</div>\n<lib-ffsj-alert></lib-ffsj-alert>", styles: [".login-container{max-width:350px}.login-container .row.banner{text-align:center}.login-container .row.banner img{max-height:75px}.submit-button button{margin:auto;color:#fff;background-color:#0033a0;border:1px solid #0033A0;font-weight:700;padding:10px 20px;border-radius:25px;width:auto;max-width:80%}.row.banner{text-align:center}.row.banner img{max-height:75px}\n"], dependencies: [{ kind: "ngmodule", type: ReactiveFormsModule }, { kind: "directive", type: i3.DefaultValueAccessor, selector: "input:not([type=checkbox])[formControlName],textarea[formControlName],input:not([type=checkbox])[formControl],textarea[formControl],input:not([type=checkbox])[ngModel],textarea[ngModel],[ngDefaultControl]" }, { kind: "directive", type: i3.NgControlStatus, selector: "[formControlName],[ngModel],[formControl]" }, { kind: "directive", type: i3.FormControlDirective, selector: "[formControl]", inputs: ["formControl", "disabled", "ngModel"], outputs: ["ngModelChange"], exportAs: ["ngForm"] }, { kind: "ngmodule", type: HttpClientModule }, { kind: "component", type: FfsjAlertComponent, selector: "lib-ffsj-alert" }] }); }
+}
+i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "20.3.12", ngImport: i0, type: FfsjLoginAsociacionesComponent, decorators: [{
+            type: Component,
+            args: [{ selector: 'lib-ffsj-login-asociaciones', standalone: true, imports: [
+                        ReactiveFormsModule,
+                        HttpClientModule,
+                        FfsjAlertComponent
+                    ], template: "\n<div class=\"container mt-4 login-container\">\n  <div class=\"row banner\">\n    <h1>\n      <img src=\"https://intranet.hogueras.es/wp-content/uploads/2016/12/logofede.png\" class=\"img-fluid\" alt=\"\">\n      <span style=\"color: #dd5a43 !important\">{{title}}</span>\n    </h1>\n    <h4 style=\"color: #478fca !important; text-align: center;\">© Federació de Les Fogueres de Sant Joan</h4>\n  </div>\n  <div class=\"row\">\n    <h4 class=\"titulo-consultas\" style=\"color: #478fca !important;\">{{subtitle}}</h4>\n  </div>\n  <div class=\"row my-3\">\n    <label for=\"cif\">CIF</label>\n    <input type=\"text\" id=\"cif\" class=\"form-control\" [formControl]=\"cif\" value=\"\">\n  </div>\n  <div class=\"row mb-3\">\n    <label for=\"password\">Contraseña</label>\n    <input type=\"password\" id=\"password\" class=\"form-control\" [formControl]=\"password\" value=\"\">\n  </div>\n  <div class=\"row submit-button mt-2\">\n    <button type=\"button\" (click)=\"login()\" [disabled]=\"loading\">Iniciar sesión</button>\n  </div>\n</div>\n<lib-ffsj-alert></lib-ffsj-alert>", styles: [".login-container{max-width:350px}.login-container .row.banner{text-align:center}.login-container .row.banner img{max-height:75px}.submit-button button{margin:auto;color:#fff;background-color:#0033a0;border:1px solid #0033A0;font-weight:700;padding:10px 20px;border-radius:25px;width:auto;max-width:80%}.row.banner{text-align:center}.row.banner img{max-height:75px}\n"] }]
+        }], ctorParameters: () => [{ type: AuthService }, { type: FfsjAlertService }], propDecorators: { title: [{
+                type: Input
+            }], subtitle: [{
+                type: Input
+            }], logStatus: [{
+                type: Output
+            }] } });
+
 class AuthGuard {
     constructor(authService, router, censoService) {
         this.authService = authService;
@@ -667,5 +776,5 @@ i0.ɵɵngDeclareClassMetadata({ minVersion: "12.0.0", version: "20.3.12", ngImpo
  * Generated bundle index. Do not edit.
  */
 
-export { AlertButtonType, AlertType, AuthGuard, AuthService, EncoderService, FfsjAlertComponent, FfsjAlertService, FfsjDialogAlertComponent, FfsjDialogAlertService, FfsjLoginComponent, FfsjSpinnerComponent, FfsjWebComponentsComponent, FfsjWebComponentsService };
+export { AlertButtonType, AlertType, AuthGuard, AuthService, EncoderService, FfsjAlertComponent, FfsjAlertService, FfsjDialogAlertComponent, FfsjDialogAlertService, FfsjLoginAsociacionesComponent, FfsjLoginComponent, FfsjSpinnerComponent, FfsjWebComponentsComponent, FfsjWebComponentsService };
 //# sourceMappingURL=ffsj-web-components.mjs.map

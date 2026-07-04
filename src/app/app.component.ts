@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
+import { Subscription } from 'rxjs';
 import { AdminAccessService } from './core/admin-access.service';
 import { PermissionsService } from './core/permissions.service';
 
@@ -12,7 +13,7 @@ import { PermissionsService } from './core/permissions.service';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent implements OnInit {
+export class AppComponent implements OnInit, OnDestroy {
   readonly title = 'ffsj-secretaria';
 
   readonly navLinks = [
@@ -24,6 +25,7 @@ export class AppComponent implements OnInit {
   ];
 
   menuOpen = false;
+  private loginSubscription?: Subscription;
 
   constructor(
     readonly auth: AuthService,
@@ -35,6 +37,17 @@ export class AppComponent implements OnInit {
     if (this.auth.isLoggedIn()) {
       this.permissions.loadContext().subscribe();
     }
+    this.loginSubscription = this.auth.loginStatusObservable.subscribe(isLogged => {
+      if (isLogged) {
+        this.permissions.loadContext().subscribe();
+      } else {
+        this.permissions.clear();
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.loginSubscription?.unsubscribe();
   }
 
   toggleMenu(): void {

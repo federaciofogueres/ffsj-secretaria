@@ -408,8 +408,13 @@ declare class AuthService {
         code: number;
         id?: number;
     }>;
+    loginAsociacion(cif: string, password: string): Promise<{
+        code: number;
+        id?: number;
+    }>;
     getToken(): string;
     getIdUsuario(): number;
+    getIdAsociacion(): number;
     logout(): void;
     isLoggedIn(): boolean;
     getCargos(): any[];
@@ -436,6 +441,22 @@ declare class FfsjLoginComponent {
     changePassword(): void;
     static ɵfac: i0.ɵɵFactoryDeclaration<FfsjLoginComponent, never>;
     static ɵcmp: i0.ɵɵComponentDeclaration<FfsjLoginComponent, "lib-ffsj-login", never, { "title": { "alias": "title"; "required": false; }; "subtitle": { "alias": "subtitle"; "required": false; }; }, { "logStatus": "logStatus"; }, never, never, true, never>;
+}
+
+declare class FfsjLoginAsociacionesComponent {
+    private authService;
+    private alertService;
+    title: string;
+    subtitle: string;
+    logStatus: EventEmitter<boolean>;
+    cif: FormControl<string | null>;
+    password: FormControl<string | null>;
+    loading: boolean;
+    constructor(authService: AuthService, alertService: FfsjAlertService);
+    ngOnInit(): void;
+    login(): Promise<void>;
+    static ɵfac: i0.ɵɵFactoryDeclaration<FfsjLoginAsociacionesComponent, never>;
+    static ɵcmp: i0.ɵɵComponentDeclaration<FfsjLoginAsociacionesComponent, "lib-ffsj-login-asociaciones", never, { "title": { "alias": "title"; "required": false; }; "subtitle": { "alias": "subtitle"; "required": false; }; }, { "logStatus": "logStatus"; }, never, never, true, never>;
 }
 
 declare class AuthGuard implements CanActivate {
@@ -495,5 +516,5 @@ declare class FfsjDialogAlertService {
     static ɵprov: i0.ɵɵInjectableDeclaration<FfsjDialogAlertService>;
 }
 
-export { AlertButtonType, AlertType, AuthGuard, AuthService, EncoderService, FfsjAlertComponent, FfsjAlertService, FfsjDialogAlertComponent, FfsjDialogAlertService, FfsjLoginComponent, FfsjSpinnerComponent, FfsjWebComponentsComponent, FfsjWebComponentsService };
+export { AlertButtonType, AlertType, AuthGuard, AuthService, EncoderService, FfsjAlertComponent, FfsjAlertService, FfsjDialogAlertComponent, FfsjDialogAlertService, FfsjLoginAsociacionesComponent, FfsjLoginComponent, FfsjSpinnerComponent, FfsjWebComponentsComponent, FfsjWebComponentsService };
 export type { DataAlert };

@@ -12,9 +12,9 @@ describe('AppComponent', () => {
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, AppComponent],
       providers: [
-        { provide: AuthService, useValue: { isLoggedIn: () => false, logout: () => undefined } },
+        { provide: AuthService, useValue: { isLoggedIn: () => false, logout: () => undefined, loginStatusObservable: of(false) } },
         { provide: AdminAccessService, useValue: { isAdmin: () => false } },
-        { provide: PermissionsService, useValue: { loadContext: () => of(null), hasPermission: () => true } }
+        { provide: PermissionsService, useValue: { loadContext: () => of(null), hasPermission: () => true, clear: () => undefined } }
       ]
     }).compileComponents();
   });
