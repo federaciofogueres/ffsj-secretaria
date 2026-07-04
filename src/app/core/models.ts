@@ -119,14 +119,27 @@ export interface SolicitudSecretaria {
 }
 
 export interface RegistroSecretaria {
-  id: string;
+  id: number;
+  numero: string;
   asociacionId: number;
   tipo: 'documentacion' | 'comunicacion';
+  origen: 'asociacion' | 'administracion';
   titulo: string;
   mensaje?: string;
-  estado: string;
+  responsable?: string | null;
+  estado: 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado';
   fechaEntrada: string;
-  adjuntos: unknown[];
+  adjuntos: AdjuntoSecretaria[];
+  mensajes?: RegistroMensajeSecretaria[];
+}
+
+export interface RegistroMensajeSecretaria {
+  id: number;
+  registroId: number;
+  actor: 'asociacion' | 'administracion';
+  mensaje: string;
+  createdAt: string;
+  adjuntos: AdjuntoSecretaria[];
 }
 
 export interface InscripcionSecretaria {
@@ -173,7 +186,7 @@ export interface IncidenciaEvento {
 
 export interface AdjuntoSecretaria {
   id: number;
-  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia' | 'incidencia_evento';
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
   scopeId: string;
   fileName: string;
   originalName: string;

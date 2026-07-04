@@ -430,23 +430,46 @@ Pendiente futuro:
 
 ## 17. Registro documental y comunicaciones
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - La pantalla existe.
 - Crea registros contra `ffsj-secretaria-api`.
 - Usa el numero devuelto por API.
-- La persistencia sigue incompleta o pendiente de consolidar.
+- Persistencia real en BD con tabla `secretaria_registros`.
+- Historico real por asociacion en acceso Asociaciones.
+- Historico global en acceso Administracion.
+- Adjuntos multiples reales mediante `secretaria_adjuntos`.
+- Validacion de tamano/tipo de archivo en API.
+- Las comunicaciones tienen bandejas:
+  - Asociaciones: realizadas y recibidas.
+  - Administracion: recibidas y realizadas.
+- Si la asociacion inicia una comunicacion, siempre queda en realizadas de la asociacion y recibidas de administracion, aunque administracion responda.
+- Si administracion inicia una comunicacion, queda en realizadas de administracion y recibidas de la asociacion.
+- Cada comunicacion tiene hilo de mensajes con respuestas de asociacion y administracion.
+- Los mensajes del hilo pueden tener adjuntos propios.
+- Administracion puede responder comunicaciones recibidas y enviar comunicaciones a una asociacion.
+- Asociaciones pueden responder comunicaciones recibidas o realizadas dentro del mismo hilo.
+- Estados reales:
+  - recibido,
+  - leido,
+  - validado,
+  - incidencia,
+  - rechazado.
+- Administracion puede cambiar el estado de un registro.
+- Descarga de adjuntos reales desde el historico.
+- Generacion/descarga de justificante PDF por registro.
+- Documentacion oficial y comunicaciones quedan separadas visualmente.
+- Permisos aplicados:
+  - `registro:read` para listar/ver historico,
+  - `registro:write` para crear registros como asociacion,
+  - `registro:write` + cargo admin para cambiar estado.
 
-Pendiente:
+Pendiente futuro:
 
-- Persistencia real en BD.
-- Historico real por asociacion.
-- Adjuntos multiples.
-- Validacion de tamano/tipo de archivo.
-- Estados reales: recibido, leido, validado, incidencia, rechazado.
-- Descarga/impresion de justificante.
-- Separar claramente documentacion oficial y comunicaciones.
-- Aplicar permisos de lectura/creacion.
+- Definir workflow oficial de recepcion y lectura por departamentos.
+- Vincular incidencias de registro en una pantalla administrativa especifica.
+- Mejorar plantilla PDF oficial del justificante.
+- Definir si las comunicaciones deben tener destinatarios configurables desde BD.
 
 ## 18. Actividades y calendario
 

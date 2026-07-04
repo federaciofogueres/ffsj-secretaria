@@ -2,22 +2,22 @@
   <div class="card-body p-0">
     <ng-container *ngIf="mode === null; else formView">
       <div class="intro p-4 p-md-5">
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Modulo</p>
         <h1 class="h4 mb-2 text-rojo">Registro</h1>
         <p class="text-muted mb-4">
-          Presenta documentación oficial o envía comunicaciones internas a la Federación. Generaremos un registro
-          de entrada y podrás descargar un resguardo en PDF.
+          Presenta documentacion oficial o envia comunicaciones internas a la Federacion. Se generara un registro de
+          entrada y podras descargar el resguardo en PDF.
         </p>
         <div class="row g-3">
           <div class="col-12 col-md-6">
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
-                <h2 class="h5 mb-2">Presentar documentación</h2>
-                <p class="text-muted mb-3">Adjunta ficheros y envíalos a la Federación. Obtendrás un registro de entrada.</p>
+                <h2 class="h5 mb-2">Presentar documentacion</h2>
+                <p class="text-muted mb-3">Adjunta ficheros y envialos a la Federacion. Obtendras un registro de entrada.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-foc-rojo w-100" type="button" [disabled]="!permissions.hasPermission('registro:write')" (click)="setMode('documentacion')">
-                  Abrir presentación
+                <button class="btn btn-foc-rojo w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('documentacion')">
+                  {{ isAdminMode ? 'Ver documentacion' : 'Abrir presentacion' }}
                 </button>
               </div>
             </div>
@@ -25,12 +25,12 @@
           <div class="col-12 col-md-6">
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
-                <h2 class="h5 mb-2">Realizar comunicación</h2>
-                <p class="text-muted mb-3">Envía un mensaje con destinatario y adjuntos opcionales. No es una vía oficial de documentación.</p>
+                <h2 class="h5 mb-2">Realizar comunicacion</h2>
+                <p class="text-muted mb-3">Envia un mensaje con destinatario y adjuntos opcionales. No sustituye a una presentacion documental oficial.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-outline-secondary w-100" type="button" [disabled]="!permissions.hasPermission('registro:write')" (click)="setMode('comunicacion')">
-                  Abrir comunicación
+                <button class="btn btn-outline-secondary w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('comunicacion')">
+                  {{ isAdminMode ? 'Ver comunicaciones' : 'Abrir comunicacion' }}
                 </button>
               </div>
             </div>
@@ -44,7 +44,7 @@
         <div>
           <p class="overline text-uppercase text-muted fw-bold mb-1">Registro</p>
           <h1 class="h4 mb-0 text-rojo">
-            {{ mode === 'documentacion' ? 'Presentar documentación' : 'Realizar comunicación' }}
+            {{ mode === 'documentacion' ? 'Presentar documentacion' : 'Realizar comunicacion' }}
           </h1>
         </div>
         <button class="btn btn-link text-rojo" type="button" (click)="resetMode()">
@@ -54,6 +54,21 @@
       </div>
 
       <div class="body px-4 pb-4">
+        <div class="alert alert-danger" *ngIf="errorRegistros">{{ errorRegistros }}</div>
+        <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
+
+        <section class="status-card" *ngIf="mode === 'comunicacion' && !commResultado">
+          <div class="comm-tabs mb-2">
+            <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'realizadas'" [class.btn-outline-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
+              Realizadas
+            </button>
+            <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'recibidas'" [class.btn-outline-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
+              Recibidas
+            </button>
+          </div>
+          <p class="text-muted mb-0">No hay comunicaciones en esta bandeja.</p>
+        </section>
+
         <section class="status-card" *ngIf="mode === 'documentacion' ? docResultado : commResultado as resultado">
           <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
             <div>
@@ -62,15 +77,38 @@
             </div>
             <div class="d-flex align-items-center gap-2">
               <span class="text-muted">Estado</span>
-              <span class="badge estado" [ngClass]="resultado.estado === 'Leído' ? 'leido' : resultado.estado.toLowerCase()">
-                {{ resultado.estado }}
+              <span class="badge estado" [ngClass]="estadoClass(resultado.estado)">
+                {{ estadoLabel(resultado.estado) }}
               </span>
             </div>
-            <div class="text-muted">{{ resultado.mensaje }}</div>
+            <div class="text-muted">{{ resultado.titulo }}</div>
+          </div>
+
+          <p class="mb-0 mt-2" *ngIf="resultado.mensaje">{{ resultado.mensaje }}</p>
+
+          <div class="attachments mt-2" *ngIf="resultado.adjuntos.length">
+            <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of resultado.adjuntos" (click)="descargarAdjunto(adjunto.downloadUrl)">
+              {{ adjunto.originalName }}
+            </button>
+          </div>
+
+          <div class="admin-state mt-3" *ngIf="isAdminMode && permissions.hasPermission('registro:write')">
+            <label class="form-label mb-1">Estado administrativo</label>
+            <select class="form-select form-select-sm" [disabled]="updatingEstado" [ngModel]="resultado.estado" (ngModelChange)="cambiarEstado(resultado, $event)">
+              <option *ngFor="let estado of estadosRegistro" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
+            </select>
           </div>
 
           <div class="referencias" *ngIf="(mode === 'documentacion' ? docRefs : commRefs).length > 0">
-            <p class="text-muted mb-1">Referencias previas</p>
+            <div class="comm-tabs mb-2" *ngIf="mode === 'comunicacion'">
+              <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'realizadas'" [class.btn-outline-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
+                Realizadas
+              </button>
+              <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'recibidas'" [class.btn-outline-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
+                Recibidas
+              </button>
+            </div>
+            <p class="text-muted mb-1">{{ mode === 'comunicacion' ? 'Listado de comunicaciones' : 'Historico' }}</p>
             <div class="d-flex flex-wrap gap-2">
               <button
                 type="button"
@@ -80,18 +118,42 @@
                 (click)="openReferencia(ref, mode!)"
               >
                 <span class="fw-semibold">{{ ref.numero }}</span>
-                <span class="text-muted">{{ ref.estado }}</span>
+                <span class="text-muted">{{ estadoLabel(ref.estado) }}</span>
               </button>
             </div>
           </div>
+
+          <div class="thread mt-3" *ngIf="mode === 'comunicacion' && resultado.mensajes?.length">
+            <h2 class="h6 mb-2">Hilo de comunicacion</h2>
+            <article class="thread-message" *ngFor="let mensaje of resultado.mensajes" [class.admin]="mensaje.actor === 'administracion'">
+              <div class="d-flex justify-content-between gap-2 flex-wrap">
+                <strong>{{ mensaje.actor === 'administracion' ? 'Administracion' : 'Asociacion' }}</strong>
+                <small class="text-muted">{{ mensaje.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+              </div>
+              <p class="mb-2">{{ mensaje.mensaje }}</p>
+              <div class="attachments" *ngIf="mensaje.adjuntos.length">
+                <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto.downloadUrl)">
+                  {{ adjunto.originalName }}
+                </button>
+              </div>
+            </article>
+          </div>
+
+          <div class="reply-box mt-3" *ngIf="mode === 'comunicacion' && permissions.hasPermission('registro:write')">
+            <label class="form-label">Responder en este hilo</label>
+            <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe una respuesta"></textarea>
+            <input class="form-control form-control-sm mt-2" type="file" multiple (change)="onRespuestaFiles($event)" />
+            <button class="btn btn-foc-rojo btn-sm mt-2" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
+              Responder
+            </button>
+          </div>
         </section>
 
-        <form
-          *ngIf="mode === 'documentacion'"
-          [formGroup]="docForm"
-          class="form-grid"
-          novalidate
-        >
+        <div class="alert alert-light border" *ngIf="isAdminMode">
+          Selecciona un registro del historico para revisar adjuntos, descargar resguardo o cambiar su estado.
+        </div>
+
+        <form *ngIf="mode === 'documentacion' && canCreateRegistros" [formGroup]="docForm" class="form-grid" novalidate>
           <div class="field">
             <label class="form-label">Responsable (destinatario) <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="responsable">
@@ -104,7 +166,7 @@
           </div>
 
           <div class="field">
-            <label class="form-label">Título <span class="text-rojo">*</span></label>
+            <label class="form-label">Titulo <span class="text-rojo">*</span></label>
             <input type="text" class="form-control" formControlName="titulo" placeholder="Ej. Memoria anual" />
             <div class="invalid-field" *ngIf="docForm.get('titulo')?.touched && docForm.get('titulo')?.invalid">
               Campo obligatorio.
@@ -112,19 +174,19 @@
           </div>
 
           <div class="field">
-            <label class="form-label">Mensaje / Descripción <span class="text-rojo">*</span></label>
-            <textarea class="form-control" rows="4" formControlName="mensaje" placeholder="Explica el objetivo del envío"></textarea>
+            <label class="form-label">Mensaje / Descripcion <span class="text-rojo">*</span></label>
+            <textarea class="form-control" rows="4" formControlName="mensaje" placeholder="Explica el objetivo del envio"></textarea>
             <div class="invalid-field" *ngIf="docForm.get('mensaje')?.touched && docForm.get('mensaje')?.invalid">
-              Campo obligatorio (mín. 10 caracteres).
+              Campo obligatorio (min. 10 caracteres).
             </div>
           </div>
 
           <div class="field">
             <label class="form-label">Adjuntar documentos <span class="text-rojo">*</span></label>
             <input type="file" class="form-control" multiple (change)="onDocFiles($event)" [disabled]="docLocked" />
-            <small class="text-muted d-block mt-1">Puedes arrastrar varios archivos y enviarlos juntos.</small>
+            <small class="text-muted d-block mt-1">Puedes adjuntar varios archivos y enviarlos juntos.</small>
             <div class="invalid-field" *ngIf="docAdjuntos.length === 0 && docForm.touched">
-              Añade al menos un documento.
+              Anade al menos un documento.
             </div>
             <ul class="adjuntos" *ngIf="docAdjuntos.length > 0">
               <li *ngFor="let file of docAdjuntos">{{ file.name }}</li>
@@ -132,44 +194,28 @@
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              *ngIf="docResultado"
-              (click)="enableDocEdit()"
-              [disabled]="!docLocked"
-            >
-              Modificar documentación
+            <button type="button" class="btn btn-outline-secondary" *ngIf="docResultado" (click)="enableDocEdit()" [disabled]="!docLocked">
+              Nueva documentacion
             </button>
-            <button
-              type="button"
-              class="btn btn-foc-rojo"
-              [disabled]="!canSubmitDoc"
-              (click)="submitDoc()"
-            >
+            <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmitDoc" (click)="submitDoc()">
               <span *ngIf="submittingDoc" class="spinner-border spinner-border-sm me-2"></span>
-              Presentar documentación
+              Presentar documentacion
             </button>
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              [disabled]="!docResultado"
-              (click)="printDoc()"
-            >
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!docResultado" (click)="printDoc()">
               <i class="bi bi-printer me-1"></i>
               Imprimir resguardo
             </button>
           </div>
         </form>
 
-        <form
-          *ngIf="mode === 'comunicacion'"
-          [formGroup]="commForm"
-          class="form-grid"
-          novalidate
-        >
+        <form *ngIf="mode === 'comunicacion' && canCreateComm" [formGroup]="commForm" class="form-grid" novalidate>
           <div class="alert alert-warning py-2">
-            Esta vía es para comunicaciones; para documentación oficial utiliza <strong>Presentar documentación</strong>.
+            {{ isAdminMode ? 'Crea una comunicacion saliente hacia una asociacion.' : 'Esta via es para comunicaciones; para documentacion oficial utiliza Presentar documentacion.' }}
+          </div>
+
+          <div class="field" *ngIf="isAdminMode">
+            <label class="form-label">ID asociacion destino <span class="text-rojo">*</span></label>
+            <input type="number" class="form-control" formControlName="asociacionId" placeholder="Ej. 25" />
           </div>
 
           <div class="field">
@@ -184,7 +230,7 @@
           </div>
 
           <div class="field">
-            <label class="form-label">Título <span class="text-rojo">*</span></label>
+            <label class="form-label">Titulo <span class="text-rojo">*</span></label>
             <input type="text" class="form-control" formControlName="titulo" placeholder="Ej. Consulta sobre plazos" />
             <div class="invalid-field" *ngIf="commForm.get('titulo')?.touched && commForm.get('titulo')?.invalid">
               Campo obligatorio.
@@ -192,47 +238,31 @@
           </div>
 
           <div class="field">
-            <label class="form-label">Descripción / Mensaje <span class="text-rojo">*</span></label>
+            <label class="form-label">Descripcion / Mensaje <span class="text-rojo">*</span></label>
             <textarea class="form-control" rows="4" formControlName="mensaje" placeholder="Escribe tu mensaje"></textarea>
             <div class="invalid-field" *ngIf="commForm.get('mensaje')?.touched && commForm.get('mensaje')?.invalid">
-              Campo obligatorio (mín. 10 caracteres).
+              Campo obligatorio (min. 10 caracteres).
             </div>
           </div>
 
           <div class="field">
-            <label class="form-label">Adjuntar documentación (opcional)</label>
+            <label class="form-label">Adjuntar documentacion (opcional)</label>
             <input type="file" class="form-control" multiple (change)="onCommFiles($event)" [disabled]="commLocked" />
-            <small class="text-muted d-block mt-1">Recuerda: para registro oficial, usa la opción de documentación.</small>
+            <small class="text-muted d-block mt-1">Recuerda: para registro oficial, usa la opcion de documentacion.</small>
             <ul class="adjuntos" *ngIf="commAdjuntos.length > 0">
               <li *ngFor="let file of commAdjuntos">{{ file.name }}</li>
             </ul>
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              *ngIf="commResultado"
-              (click)="enableCommEdit()"
-              [disabled]="!commLocked"
-            >
-              Modificar comunicación
+            <button type="button" class="btn btn-outline-secondary" *ngIf="commResultado" (click)="enableCommEdit()" [disabled]="!commLocked">
+              Nueva comunicacion
             </button>
-            <button
-              type="button"
-              class="btn btn-foc-rojo"
-              [disabled]="!canSubmitComm"
-              (click)="submitComm()"
-            >
+            <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmitComm" (click)="submitComm()">
               <span *ngIf="submittingComm" class="spinner-border spinner-border-sm me-2"></span>
-              Enviar comunicación
+              Enviar comunicacion
             </button>
-            <button
-              type="button"
-              class="btn btn-outline-secondary"
-              [disabled]="!commResultado"
-              (click)="printComm()"
-            >
+            <button type="button" class="btn btn-outline-secondary" [disabled]="!commResultado" (click)="printComm()">
               <i class="bi bi-printer me-1"></i>
               Imprimir resguardo
             </button>

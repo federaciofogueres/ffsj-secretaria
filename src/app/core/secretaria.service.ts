@@ -11,6 +11,7 @@ import {
   Incidencia,
   InscripcionSecretaria,
   JustificanteSecretaria,
+  RegistroMensajeSecretaria,
   RegistroPendiente,
   RegistroSecretaria,
   SolicitudSecretaria,
@@ -118,15 +119,37 @@ export class SecretariaService {
     });
   }
 
-  getRegistros(asociacionId: number): Observable<{ registros: RegistroSecretaria[] }> {
+  getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion' } = {}): Observable<{ registros: RegistroSecretaria[] }> {
+    let params = new HttpParams();
+    if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.tipo) params = params.set('tipo', filters.tipo);
+    if (filters.origen) params = params.set('origen', filters.origen);
     return this.http.get<{ registros: RegistroSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/registros`, {
-      params: new HttpParams().set('asociacionId', asociacionId),
+      params,
       headers: this.authHeaders()
     });
   }
 
   crearRegistro(payload: unknown): Observable<RegistroSecretaria> {
     return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getRegistro(id: number): Observable<RegistroSecretaria> {
+    return this.http.get<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  actualizarEstadoRegistro(id: number, estado: RegistroSecretaria['estado']): Observable<RegistroSecretaria> {
+    return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/estado`, { estado }, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearMensajeRegistro(id: number, mensaje: string): Observable<RegistroMensajeSecretaria> {
+    return this.http.post<RegistroMensajeSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/mensajes`, { mensaje }, {
       headers: this.authHeaders()
     });
   }

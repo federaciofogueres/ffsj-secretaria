@@ -80,6 +80,48 @@
     background: #e7f1ff;
     color: #0b4fad;
   }
+  &.incidencia {
+    background: #fee2e2;
+    color: #991b1b;
+  }
+  &.rechazado {
+    background: #f3f4f6;
+    color: #4b5563;
+  }
+}
+
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.comm-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.thread {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.thread-message {
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #fff;
+
+  &.admin {
+    background: #f8fbff;
+    border-color: #d8e7ff;
+  }
+}
+
+.reply-box {
+  border-top: 1px solid #e6e6e6;
+  padding-top: 1rem;
 }
 
 .form-grid {
