@@ -161,31 +161,42 @@ Pendiente operativo:
 
 ## 7. Asociacion
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - La pantalla carga la asociacion activa desde `ffsj-new-censo-api`.
 - El boton guardar hace `PUT /asociaciones/{id}`.
 - Se envia `active` como boolean para cumplir OpenAPI.
 - Se envian solo columnas reales de la tabla de censo.
-
-Pendiente:
-
-- Confirmar que el update queda sincronizado correctamente en censo y en la intranet antigua si aplica.
-- Mostrar mensaje de exito al guardar.
-- Mejorar mensajes de error con detalle de validacion.
-- Aplicar permisos: lectura/edicion.
-- Decidir donde guardar campos no soportados por censo:
-  - sede social,
+- La pantalla separa visualmente `direccion`, `codigo postal` y `localidad` cuando censo devuelve una direccion compuesta.
+- `ffsj-new-censo-api` tiene OpenAPI actualizado con las columnas ampliadas de `asociaciones`:
+  - localidad,
+  - codigo_postal,
+  - provincia,
   - himno,
-  - ubicacion monumento,
-  - ubicacion portada,
-  - provincia/localidad separadas si no existen en censo.
-- Si esos campos son de secretaria, crear endpoints y tablas en `ffsj-secretaria-api`.
-- Revisar el campo `tipo_asociacion`: ahora se edita como numero; idealmente deberia ser un selector cargado desde censo.
+  - ubicacion_monumento,
+  - ubicacion_portada,
+  - sede_direccion,
+  - sede_codigo_postal,
+  - sede_poblacion,
+  - sede_provincia.
+- La migracion local se ha ejecutado correctamente sobre `u438573835_censo_pre.asociaciones`.
+- Al guardar se envian esos campos separados a censo.
+- Los campos visibles de asociacion son editables.
+- El campo `tipo_asociacion` se edita como selector:
+  - Foguera = 2,
+  - Barraca = 1.
+- La lectura/edicion queda protegida por permisos.
+- Hay tests para la separacion de direccion compuesta y el payload enviado a censo.
+
+Pendiente operativo:
+
+- Ejecutar la misma migracion en test/prod cuando corresponda.
+- Reiniciar/desplegar `ffsj-new-censo-api` en cada entorno para cargar el OpenAPI actualizado.
+- Confirmar si la intranet antigua debe sincronizar tambien las nuevas columnas ampliadas.
 
 ## 8. Asociados: listado, detalle y exportacion
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Los asociados se cargan desde `ffsj-new-censo-api`.
 - Se filtran por asociacion activa usando `idAsociacion`.
@@ -193,15 +204,16 @@ Estado actual:
 - Hay paginacion por pestana.
 - Hay exportacion Excel.
 - Si la API no marca infantiles, se clasifican provisionalmente como infantiles los menores de 18 anos a fecha `01/07/2026`.
+- El detalle muestra los campos reales disponibles: DNI/NIF, SIP, telefono, email, fecha nacimiento, fecha alta y estado.
+- La exportacion Excel incluye los campos reales disponibles.
+- Hay tests para la clasificacion provisional adulto/infantil.
+- La lectura queda protegida por permisos de ruta/menu.
 
-Pendiente:
+Pendiente futuro, no bloqueante:
 
-- Confirmar con censo si el tipo adulto/infantil debe venir explicitamente desde API.
-- Mejorar el detalle con todos los campos reales disponibles: DNI/NIF, SIP, telefono, email, fecha nacimiento, fecha alta, cargos y estado.
-- Revisar la exportacion Excel con datos reales definitivos.
-- Anadir estados visuales mas claros de vacio, cargando y error.
-- Revisar paginacion en movil.
-- Aplicar permisos de lectura.
+- Si censo incorpora un campo explicito adulto/infantil, sustituir la clasificacion provisional por edad.
+- Si censo expone historico de cargos, ampliar detalle/exportacion con ese historico.
+- Revisar UX movil de tablas dentro de la tarea general de UX.
 
 ## 9. Gestion de altas, cambios y bajas: registro pendiente
 

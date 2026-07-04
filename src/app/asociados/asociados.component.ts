@@ -115,16 +115,30 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   }
 
   openDetails(asociado: Asociado): void {
+    const rowCandidates: Array<[string, string]> = [
+      ['Nombre', `${asociado.nombre} ${asociado.apellidos}`],
+      ['Cargo', asociado.cargo ?? ''],
+      ['Tipo', asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'],
+      ['DNI/NIF', asociado.dni ?? ''],
+      ['SIP', asociado.sip ?? ''],
+      ['Estado', asociado.estado ?? ''],
+      ['Fecha de alta', asociado.fechaAlta ?? ''],
+      ['Fecha de nacimiento', asociado.fechaNacimiento ?? ''],
+      ['Email', asociado.email ?? ''],
+      ['Telefono', asociado.telefono ?? '']
+    ];
+    const rows = rowCandidates.filter(([, value]) => value);
+
     this.dialogService.openDialogAlert({
       title: 'Detalles del asociado',
-      content: `Nombre: ${asociado.nombre} ${asociado.apellidos}\nCargo: ${asociado.cargo}\nTipo: ${
-        asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'
-      }`,
+      content: rows.map(([label, value]) => `${label}: ${value}`).join('\n'),
       innerHtml: `
-        <p><strong>Nombre:</strong> ${asociado.nombre} ${asociado.apellidos}</p>
-        <p><strong>Cargo:</strong> ${asociado.cargo}</p>
-        <p><strong>Tipo:</strong> ${asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'}</p>
-        ${asociado.fechaNacimiento ? `<p><strong>Fecha de nacimiento:</strong> ${asociado.fechaNacimiento}</p>` : ''}
+        ${rows
+          .map(
+            ([label, value]) =>
+              `<p><strong>${this.escapeHtml(label)}:</strong> ${this.escapeHtml(String(value))}</p>`
+          )
+          .join('')}
       `,
       buttonsAlert: [AlertButtonType.Entendido]
     });
@@ -133,10 +147,18 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   downloadExcel(): void {
     this.asociadosService.getTodos().subscribe(data => {
       const rows = data.map(a => ({
+        ID: a.id,
         Nombre: a.nombre,
         Apellidos: a.apellidos,
         Cargo: a.cargo,
-        Tipo: a.tipo
+        Tipo: a.tipo,
+        'DNI/NIF': a.dni ?? '',
+        SIP: a.sip ?? '',
+        Estado: a.estado ?? '',
+        'Fecha de alta': a.fechaAlta ?? '',
+        'Fecha de nacimiento': a.fechaNacimiento ?? '',
+        Email: a.email ?? '',
+        Telefono: a.telefono ?? ''
       }));
       const worksheet = XLSX.utils.json_to_sheet(rows);
       const workbook = XLSX.utils.book_new();
@@ -176,5 +198,18 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     this.loading = false;
     this.error = 'No se han podido cargar los asociados desde la API de censo.';
     this.errorService.show(this.error);
+  }
+
+  private escapeHtml(value: string): string {
+    return value.replace(/[&<>"']/g, char => {
+      const entities: Record<string, string> = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      };
+      return entities[char];
+    });
   }
 }

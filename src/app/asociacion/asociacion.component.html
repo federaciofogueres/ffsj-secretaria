@@ -41,7 +41,7 @@
             <p class="section-subtitle text-muted mb-0">Identificación oficial y ámbito de la asociación.</p>
           </div>
           <span class="badge rounded-pill bg-light text-rojo fw-semibold text-uppercase">
-            {{ form.get('basic.tag')?.value }}
+            {{ getTipoLabel(form.get('basic.tag')?.value) }}
           </span>
         </div>
 
@@ -52,7 +52,10 @@
           </div>
           <div class="col-12 col-md-6">
             <label class="form-label">Ámbito / tipo</label>
-            <input type="number" class="form-control" formControlName="tag" />
+            <select class="form-select" formControlName="tag">
+              <option value="2">Foguera</option>
+              <option value="1">Barraca</option>
+            </select>
           </div>
           <div class="col-12 col-md-6">
             <label class="form-label">CIF</label>
@@ -62,11 +65,15 @@
             <label class="form-label">Dirección</label>
             <input type="text" class="form-control" formControlName="address" />
           </div>
-          <div class="col-12 col-md-6">
+          <div class="col-6 col-md-3">
+            <label class="form-label">Código postal</label>
+            <input type="text" class="form-control" formControlName="postalCode" />
+          </div>
+          <div class="col-12 col-md-5">
             <label class="form-label">Localidad</label>
             <input type="text" class="form-control" formControlName="city" />
           </div>
-          <div class="col-12 col-md-6">
+          <div class="col-12 col-md-4">
             <label class="form-label">Provincia</label>
             <input type="text" class="form-control" formControlName="province" />
           </div>

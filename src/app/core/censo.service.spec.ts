@@ -1,0 +1,39 @@
+import { HttpClient } from '@angular/common/http';
+import { AuthService } from 'ffsj-web-components';
+
+import { ApiUrlService } from './api-url.service';
+import { CensoService } from './censo.service';
+
+describe('CensoService', () => {
+  let service: CensoService;
+
+  beforeEach(() => {
+    service = new CensoService(
+      jasmine.createSpyObj<HttpClient>('HttpClient', ['get', 'put']),
+      { censoBasePath: 'http://censo.test' } as ApiUrlService,
+      jasmine.createSpyObj<AuthService>('AuthService', ['getIdAsociacion', 'getToken'])
+    );
+  });
+
+  it('clasifica provisionalmente como infantil a los menores de 18 anos a 01/07/2026', () => {
+    const asociado = (service as any).mapAsociado({
+      id: 1,
+      nombre: 'Infantil',
+      apellidos: 'Prueba',
+      fecha_nacimiento: '02/07/2008'
+    });
+
+    expect(asociado.tipo).toBe('infantil');
+  });
+
+  it('clasifica como adulto a quien ya tiene 18 anos a 01/07/2026', () => {
+    const asociado = (service as any).mapAsociado({
+      id: 2,
+      nombre: 'Adulto',
+      apellidos: 'Prueba',
+      fecha_nacimiento: '01/07/2008'
+    });
+
+    expect(asociado.tipo).toBe('adulto');
+  });
+});
