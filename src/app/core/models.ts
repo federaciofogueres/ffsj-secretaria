@@ -151,11 +151,46 @@ export interface CampoInscripcion {
 
 export interface Incidencia {
   id: string;
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia';
+  scopeId: string;
+  estado: 'abierta' | 'respondida' | 'subsanada' | 'cerrada';
+  mensaje: string;
+  respuesta?: string | null;
+  fechaAlta: string;
+  fechaCierre?: string | null;
+  eventos?: IncidenciaEvento[];
+}
+
+export interface IncidenciaEvento {
+  id: number;
+  incidenciaId: number;
+  tipo: 'creada' | 'respuesta_asociacion' | 'devuelta_admin' | 'subsanada' | 'cerrada';
+  actor: 'administracion' | 'asociacion' | 'sistema';
+  mensaje: string;
+  createdAt: string;
+  adjuntos: AdjuntoSecretaria[];
+}
+
+export interface AdjuntoSecretaria {
+  id: number;
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia' | 'incidencia_evento';
+  scopeId: string;
+  fileName: string;
+  originalName: string;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+  downloadUrl: string;
+}
+
+export interface JustificanteSecretaria {
   scope: 'solicitud' | 'registro' | 'inscripcion';
   scopeId: string;
-  estado: 'abierta' | 'subsanada' | 'cerrada';
-  mensaje: string;
-  fechaAlta: string;
+  fileName: string;
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+  generatedAt: string;
 }
 
 export interface ActividadSecretaria {

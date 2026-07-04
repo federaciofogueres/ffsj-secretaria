@@ -9,6 +9,7 @@ import { CensoService } from '../core/censo.service';
 import { CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
@@ -24,7 +25,7 @@ interface SustitucionCargoRequerido {
 @Component({
   selector: 'app-asociados-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent],
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })

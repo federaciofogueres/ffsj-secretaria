@@ -356,53 +356,77 @@ Pendiente:
 
 ## 14. Incidencias
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Existe endpoint base en `ffsj-secretaria-api`.
 - Existe servicio front preparado.
+- Existe componente reutilizable `IncidenciasPanelComponent`.
+- Las incidencias se vinculan con solicitudes, registros e inscripciones por `scope/scopeId`.
+- Se puede crear, responder/subsanar y cerrar incidencias.
+- Al crear incidencia sobre solicitud, la solicitud pasa a `con_incidencias`.
+- La API bloquea envio y validacion de solicitudes con incidencias abiertas.
+- El registro global de solicitudes muestra contador de incidencias abiertas.
+- Las asociaciones ven y responden las incidencias desde su propia solicitud registrada en `Asociados > Gestion > Solicitudes pendientes`.
+- La respuesta de la asociacion solo requiere permiso `incidencias:read`.
+- Las asociaciones no pueden crear, cerrar ni devolver incidencias.
+- Crear, cerrar y devolver incidencias exige modo Administracion y permiso `incidencias:write`.
+- La respuesta de la asociacion deja la incidencia en estado `respondida`; solo administracion puede resolverla como `subsanada`, `cerrada` o devolverla a `abierta`.
+- Administracion puede cerrar una incidencia aunque todavia este `abierta` y no haya sido contestada por la asociacion.
+- Una solicitud no se puede validar ni finalizar mientras tenga incidencias `abierta` o `respondida`.
+- El panel permite adjuntar ficheros a incidencias.
+- Cada incidencia guarda un historico de eventos:
+  - creada por administracion,
+  - respuesta de asociacion,
+  - devolucion de administracion,
+  - subsanada,
+  - cerrada.
+- Cada evento guarda mensaje, actor, fecha y adjuntos propios.
+- Cuando administracion devuelve una incidencia, debe indicar motivo y puede adjuntar ficheros; la incidencia vuelve a estado `abierta`.
 
-Pendiente:
+Pendiente futuro:
 
-- Crear componente reutilizable de incidencias.
-- Vincular incidencias con solicitudes, registros e inscripciones.
-- Permitir responder/subsanar incidencias.
-- Permitir cerrar incidencias.
-- Bloquear envio o validacion si hay incidencias abiertas.
-- Anadir adjuntos a incidencias.
-- Mostrar contador de incidencias en listados.
+- Extender el panel visualmente a registro e inscripciones cuando esas pantallas tengan detalle administrativo.
+- Notificaciones a la asociacion cuando administracion cree una incidencia.
+- Afinar textos/notificaciones del rebote de incidencias cuando se defina el procedimiento oficial.
 
 ## 15. Adjuntos
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Hay diseno de tabla `secretaria_adjuntos`.
-- No hay subida real implementada.
+- Migracion `006_incidencias_adjuntos_justificantes.sql` creada.
+- Subida binaria implementada en `ffsj-secretaria-api` con `application/octet-stream`.
+- Metadatos guardados en `secretaria_adjuntos`.
+- Storage local configurable con `SECRETARIA_STORAGE_ROOT`.
+- Validacion de tamano maximo y tipos permitidos.
+- Adjuntos asociados a solicitud, registro, inscripcion, incidencia y evento de incidencia por `scope/scopeId`.
+- Descarga segura por endpoint protegido.
+- Borrado logico implementado.
+- Registro documental sube sus ficheros reales tras crear el registro.
 
-Pendiente:
+Pendiente futuro:
 
-- Implementar subida binaria en `ffsj-secretaria-api`.
-- Guardar metadatos de adjuntos en BD.
-- Definir storage: disco, FTP, blob storage o similar.
-- Validar tamano maximo y tipos permitidos.
-- Asociar adjuntos a solicitud, registro, inscripcion e incidencia.
-- Implementar descarga segura.
-- Implementar borrado si el tramite aun permite edicion.
+- Decidir storage definitivo para produccion: disco persistente, FTP, S3/blob o similar.
+- Antivirus/escaneo de ficheros si se exige.
+- Politica fina de borrado segun estado del tramite.
+- Interfaz de adjuntos completa en detalles de registro e inscripciones.
 
 ## 16. Justificantes PDF
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Existe endpoint placeholder de justificantes.
+- La API genera PDF real basico sin dependencias externas.
+- Guarda el PDF en storage local y actualiza metadatos en `secretaria_justificantes`.
+- Permite descarga posterior por endpoint protegido.
+- Solicitudes y registro documental tienen accion para generar/descargar justificante.
+- El justificante incluye tipo, numero/ID, fecha, asociacion, estado y resumen.
 
-Pendiente:
+Pendiente futuro:
 
-- Generar PDF real para solicitudes.
-- Generar PDF real para registros.
-- Generar PDF real para inscripciones.
-- Guardar metadatos del justificante generado.
-- Permitir descarga posterior.
 - Definir plantilla visual oficial.
-- Incluir numero, fecha, asociacion, items y estado.
+- Enriquecer datos de inscripciones y registros en la plantilla.
+- Incorporar logo oficial, firma/sello y CSV si se define.
 
 ## 17. Registro documental y comunicaciones
 

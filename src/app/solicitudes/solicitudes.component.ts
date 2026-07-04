@@ -6,11 +6,12 @@ import { catchError, forkJoin, map, of } from 'rxjs';
 import { SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 
 @Component({
   selector: 'app-solicitudes',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, IncidenciasPanelComponent],
   templateUrl: './solicitudes.component.html',
   styleUrls: ['./solicitudes.component.scss']
 })
@@ -41,6 +42,7 @@ export class SolicitudesComponent implements OnInit {
   filtroEstado = 'todos';
   filtroTipo = 'todos';
   asociacionNombres: Record<number, string> = {};
+  incidenciasAbiertasBySolicitud: Record<number, number> = {};
   detalleDialogOpen = false;
 
   constructor(
@@ -62,6 +64,7 @@ export class SolicitudesComponent implements OnInit {
           this.detalle = null;
         }
         this.cargarNombresAsociacion();
+        this.cargarContadoresIncidencias();
         this.loading = false;
       },
       error: () => {
@@ -111,7 +114,9 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeValidar(): boolean {
-    return !!this.detalle && ['enviada', 'en_revision', 'con_incidencias'].includes(this.detalle.estado);
+    return !!this.detalle &&
+      ['enviada', 'en_revision', 'con_incidencias'].includes(this.detalle.estado) &&
+      !this.tieneIncidenciasAbiertas(this.detalle.id);
   }
 
   puedeCancelarEnvio(): boolean {
@@ -166,6 +171,25 @@ export class SolicitudesComponent implements OnInit {
 
   totalTipo(tipo: string): number {
     return this.solicitudes.filter(solicitud => solicitud.tipo === tipo).length;
+  }
+
+  tieneIncidenciasAbiertas(solicitudId: number): boolean {
+    return (this.incidenciasAbiertasBySolicitud[solicitudId] || 0) > 0;
+  }
+
+  generarJustificante(): void {
+    if (!this.detalle) return;
+    this.loading = true;
+    this.secretariaService.generarJustificante('solicitud', this.detalle.id).subscribe({
+      next: justificante => {
+        window.open(justificante.url, '_blank');
+        this.loading = false;
+      },
+      error: () => {
+        this.error = 'No se ha podido generar el justificante.';
+        this.loading = false;
+      }
+    });
   }
 
   asociacionLabel(asociacionId: number): string {
@@ -255,6 +279,29 @@ export class SolicitudesComponent implements OnInit {
           return acc;
         }, {})
       };
+    });
+  }
+
+  private cargarContadoresIncidencias(): void {
+    if (!this.solicitudes.length) {
+      this.incidenciasAbiertasBySolicitud = {};
+      return;
+    }
+    forkJoin(
+      this.solicitudes.map(solicitud =>
+        this.secretariaService.getIncidencias('solicitud', String(solicitud.id)).pipe(
+          map(response => ({
+            id: solicitud.id,
+            abiertas: response.incidencias.filter(item => ['abierta', 'respondida'].includes(item.estado)).length
+          })),
+          catchError(() => of({ id: solicitud.id, abiertas: 0 }))
+        )
+      )
+    ).subscribe(results => {
+      this.incidenciasAbiertasBySolicitud = results.reduce<Record<number, number>>((acc, item) => {
+        acc[item.id] = item.abiertas;
+        return acc;
+      }, {});
     });
   }
 }

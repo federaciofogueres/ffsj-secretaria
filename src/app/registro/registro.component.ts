@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { PermissionsService } from '../core/permissions.service';
@@ -115,7 +116,12 @@ export class RegistroComponent {
       titulo: this.docForm.value.titulo,
       mensaje: this.docForm.value.mensaje,
       adjuntos: this.docAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
-    }).subscribe({
+    }).pipe(
+      switchMap(registro => this.docAdjuntos.length
+        ? forkJoin(this.docAdjuntos.map(file => this.secretariaService.subirAdjunto('registro', registro.id, file))).pipe(switchMap(() => of(registro)))
+        : of(registro)
+      )
+    ).subscribe({
       next: registro => {
         if (this.docActual) {
           this.docReferencias.unshift(this.docActual);
@@ -148,7 +154,12 @@ export class RegistroComponent {
       titulo: this.commForm.value.titulo,
       mensaje: this.commForm.value.mensaje,
       adjuntos: this.commAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
-    }).subscribe({
+    }).pipe(
+      switchMap(registro => this.commAdjuntos.length
+        ? forkJoin(this.commAdjuntos.map(file => this.secretariaService.subirAdjunto('registro', registro.id, file))).pipe(switchMap(() => of(registro)))
+        : of(registro)
+      )
+    ).subscribe({
       next: registro => {
         if (this.commActual) {
           this.commReferencias.unshift(this.commActual);
@@ -170,12 +181,12 @@ export class RegistroComponent {
 
   printDoc(): void {
     if (!this.docResultado) return;
-    this.printSummary('Presentacion de documentacion', this.docForm.value, this.docAdjuntos, this.docResultado);
+    this.descargarJustificante('registro', this.docResultado.numero);
   }
 
   printComm(): void {
     if (!this.commResultado) return;
-    this.printSummary('Comunicacion', this.commForm.value, this.commAdjuntos, this.commResultado);
+    this.descargarJustificante('registro', this.commResultado.numero);
   }
 
   openReferencia(ref: RegistroResultado, mode: Exclude<RegistroMode, null>): void {
@@ -202,39 +213,11 @@ export class RegistroComponent {
     this.commForm.enable({ emitEvent: false });
   }
 
-  private printSummary(
-    titulo: string,
-    formValue: unknown,
-    adjuntos: File[],
-    resultado: RegistroResultado
-  ): void {
-    const win = window.open('', '_blank', 'width=800,height=600');
-    if (!win) return;
-    const adjuntosList = adjuntos.map(file => `<li>${file.name}</li>`).join('');
-    win.document.write(`
-      <html>
-        <head>
-          <title>${titulo}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 16px; }
-            h1 { color: #c4141c; }
-            .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; background: #f4f4f4; }
-          </style>
-        </head>
-        <body>
-          <h1>${titulo}</h1>
-          <p><strong>Registro de entrada:</strong> ${resultado.numero}</p>
-          <p><strong>Estado:</strong> ${resultado.estado}</p>
-          <p><strong>Datos enviados:</strong></p>
-          <pre>${JSON.stringify(formValue, null, 2)}</pre>
-          <p><strong>Adjuntos:</strong></p>
-          <ul>${adjuntosList || '<li>Sin adjuntos</li>'}</ul>
-          <p class="badge">${resultado.mensaje}</p>
-          <script>window.print();</script>
-        </body>
-      </html>
-    `);
-    win.document.close();
+  private descargarJustificante(scope: string, scopeId: string): void {
+    this.secretariaService.generarJustificante(scope, scopeId).subscribe({
+      next: justificante => window.open(justificante.url, '_blank'),
+      error: () => undefined
+    });
   }
 
   private lockDocForm(): void {

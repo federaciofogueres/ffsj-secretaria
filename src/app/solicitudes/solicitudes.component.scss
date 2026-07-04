@@ -165,6 +165,17 @@
   background: #ede9fe;
 }
 
+.incidence-badge {
+  display: inline-flex;
+  margin-left: 0.35rem;
+  border-radius: 999px;
+  padding: 0.16rem 0.45rem;
+  color: #991b1b;
+  background: #fee2e2;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
 .metadata-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

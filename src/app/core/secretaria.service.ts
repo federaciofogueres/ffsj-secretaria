@@ -6,9 +6,11 @@ import { Observable } from 'rxjs';
 import { ApiUrlService } from './api-url.service';
 import {
   ActividadSecretaria,
+  AdjuntoSecretaria,
   CargoResumen,
   Incidencia,
   InscripcionSecretaria,
+  JustificanteSecretaria,
   RegistroPendiente,
   RegistroSecretaria,
   SolicitudSecretaria,
@@ -149,6 +151,52 @@ export class SecretariaService {
     });
   }
 
+  crearIncidencia(payload: { scope: string; scopeId: string | number; mensaje: string }): Observable<Incidencia> {
+    return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  responderIncidencia(id: string | number, respuesta: string): Observable<Incidencia> {
+    return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias/${id}/responder`, { respuesta }, {
+      headers: this.authHeaders()
+    });
+  }
+
+  cerrarIncidencia(id: string | number, respuesta?: string, estado: 'subsanada' | 'cerrada' = 'cerrada'): Observable<Incidencia> {
+    return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias/${id}/cerrar`, { respuesta, estado }, {
+      headers: this.authHeaders()
+    });
+  }
+
+  reabrirIncidencia(id: string | number, motivo: string): Observable<Incidencia> {
+    return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias/${id}/reabrir`, { motivo }, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getAdjuntos(scope: string, scopeId: string | number): Observable<{ adjuntos: AdjuntoSecretaria[] }> {
+    return this.http.get<{ adjuntos: AdjuntoSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/adjuntos/${scope}/${scopeId}`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  subirAdjunto(scope: string, scopeId: string | number, file: File): Observable<AdjuntoSecretaria> {
+    return this.http.post<AdjuntoSecretaria>(`${this.apiUrl.secretariaBasePath}/adjuntos/${scope}/${scopeId}`, file, {
+      params: new HttpParams().set('fileName', file.name).set('mimeType', file.type || 'application/octet-stream'),
+      headers: {
+        ...this.authHeaders(),
+        'Content-Type': file.type || 'application/octet-stream'
+      }
+    });
+  }
+
+  borrarAdjunto(id: number): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl.secretariaBasePath}/adjuntos/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
   getActividades(): Observable<{ actividades: ActividadSecretaria[] }> {
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades`, {
       headers: this.authHeaders()
@@ -161,10 +209,14 @@ export class SecretariaService {
     });
   }
 
-  generarJustificante(scope: string, scopeId: string): Observable<unknown> {
-    return this.http.post(`${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}`, {}, {
+  generarJustificante(scope: string, scopeId: string | number): Observable<JustificanteSecretaria> {
+    return this.http.post<JustificanteSecretaria>(`${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}`, {}, {
       headers: this.authHeaders()
     });
+  }
+
+  justificanteUrl(scope: string, scopeId: string | number): string {
+    return `${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}/download`;
   }
 
   private authHeaders() {

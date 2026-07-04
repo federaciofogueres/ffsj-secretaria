@@ -86,6 +86,9 @@
               </td>
               <td>
                 <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
+                <span class="incidence-badge" *ngIf="tieneIncidenciasAbiertas(solicitud.id)">
+                  {{ incidenciasAbiertasBySolicitud[solicitud.id] }} incidencia(s)
+                </span>
               </td>
               <td class="text-center">{{ solicitud.fechaRegistro | date: 'dd/MM/yyyy' }}</td>
               <td class="text-center">{{ solicitud.fechaEntrada ? (solicitud.fechaEntrada | date: 'dd/MM/yyyy') : '-' }}</td>
@@ -158,6 +161,8 @@
           </small>
         </li>
       </ul>
+
+      <app-incidencias-panel scope="solicitud" [scopeId]="detalle.id"></app-incidencias-panel>
     </div>
 
     <footer class="detail-footer">
@@ -176,6 +181,9 @@
         </button>
       </div>
       <div class="secondary-actions">
+        <button class="btn btn-outline-primary" type="button" [disabled]="loading" (click)="generarJustificante()">
+          Descargar justificante
+        </button>
         <button class="btn btn-outline-secondary" type="button" *ngIf="puedeCancelarEnvio()" [disabled]="loading" (click)="cancelarEnvio()">
           Cancelar envio
         </button>
