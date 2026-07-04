@@ -25,7 +25,7 @@ describe('HomeComponent', () => {
     expect(component).toBeTruthy();
   });
 
-  it('should expose four modules on the home screen', () => {
-    expect(component.modules.length).toBe(4);
+  it('should expose five modules on the home screen', () => {
+    expect(component.modules.length).toBe(5);
   });
 });

@@ -1,0 +1,185 @@
+<section class="solicitudes card border-0 shadow-sm">
+  <div class="card-body p-4 p-md-5">
+    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-4">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Secretaria</p>
+        <h1 class="h4 mb-1 text-rojo">Registro de secretaria</h1>
+        <p class="text-muted mb-0">Revision global de solicitudes enviadas por asociaciones y gestion de su tramitacion.</p>
+      </div>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarSolicitudes()">
+        <i class="bi bi-arrow-clockwise me-1"></i>
+        Actualizar
+      </button>
+    </div>
+
+    <div class="summary-grid mb-4">
+      <div class="summary-item">
+        <span class="summary-label">Total</span>
+        <strong>{{ solicitudes.length }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Pendientes de revision</span>
+        <strong>{{ totalEstado('enviada', 'en_revision', 'con_incidencias') }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Validadas</span>
+        <strong>{{ totalEstado('validada') }}</strong>
+      </div>
+      <div class="summary-item">
+        <span class="summary-label">Finalizadas</span>
+        <strong>{{ totalEstado('finalizada') }}</strong>
+      </div>
+    </div>
+
+    <div class="filters mb-4">
+      <div>
+        <label class="form-label" for="filtroTexto">Buscar</label>
+        <input
+          id="filtroTexto"
+          class="form-control"
+          type="search"
+          placeholder="Numero, asociacion, tipo o estado"
+          [(ngModel)]="filtroTexto"
+        />
+      </div>
+      <div>
+        <label class="form-label" for="filtroTipo">Tipo</label>
+        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo">
+          <option *ngFor="let tipo of tipos" [value]="tipo.value">{{ tipo.label }}</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="filtroEstado">Estado</label>
+        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado">
+          <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div *ngIf="loading" class="alert alert-info">Cargando solicitudes...</div>
+    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+    <div class="registro-table">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>N. solicitud</th>
+              <th>Asociacion</th>
+              <th class="text-center">Registros</th>
+              <th>Tipo</th>
+              <th>Estado</th>
+              <th class="text-center">F. alta</th>
+              <th class="text-center">F. entrada</th>
+              <th class="text-end">Accion</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let solicitud of solicitudesFiltradas">
+              <td>
+                <strong>{{ solicitud.numero }}</strong>
+              </td>
+              <td>{{ asociacionLabel(solicitud.asociacionId) }}</td>
+              <td class="text-center">{{ solicitud.totalRegistros || 0 }}</td>
+              <td>
+                <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
+              </td>
+              <td>
+                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
+              </td>
+              <td class="text-center">{{ solicitud.fechaRegistro | date: 'dd/MM/yyyy' }}</td>
+              <td class="text-center">{{ solicitud.fechaEntrada ? (solicitud.fechaEntrada | date: 'dd/MM/yyyy') : '-' }}</td>
+              <td class="text-end">
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="verSolicitud(solicitud)">
+                  Detalles
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="solicitudesFiltradas.length === 0">
+              <td colspan="8" class="text-muted text-center py-4">No hay solicitudes con estos filtros.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div *ngIf="detalleDialogOpen && detalle" class="detail-backdrop" role="presentation" (click)="cerrarDetalle()">
+  <section class="detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudDetalleTitle" (click)="$event.stopPropagation()">
+    <header class="detail-header">
+      <div>
+        <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de solicitud</p>
+        <h2 id="solicitudDetalleTitle" class="h5 mb-1">{{ detalle.numero }}</h2>
+        <div class="d-flex flex-wrap gap-2">
+          <span class="tipo-badge" [ngClass]="tipoClass(detalle.tipo)">{{ labelTipo(detalle.tipo) }}</span>
+          <span class="estado-badge" [ngClass]="estadoClass(detalle.estado)">{{ labelEstado(detalle.estado) }}</span>
+        </div>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()"></button>
+    </header>
+
+    <div class="detail-body">
+      <dl class="metadata-grid">
+        <div>
+          <dt>Asociacion</dt>
+          <dd>{{ asociacionLabel(detalle.asociacionId) }}</dd>
+        </div>
+        <div>
+          <dt>Registros</dt>
+          <dd>{{ detalle.totalRegistros || 0 }}</dd>
+        </div>
+        <div>
+          <dt>Alta</dt>
+          <dd>{{ detalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Entrada</dt>
+          <dd>{{ detalle.fechaEntrada ? (detalle.fechaEntrada | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd>
+        </div>
+        <div>
+          <dt>Validacion</dt>
+          <dd>{{ detalle.fechaValidacion ? (detalle.fechaValidacion | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd>
+        </div>
+      </dl>
+
+      <h3 class="h6 mt-4 mb-2">Contenido de la solicitud</h3>
+      <ul class="items-list">
+        <li *ngFor="let item of detalle.items || []">
+          <div>
+            <strong>{{ resumenItem(item) }}</strong>
+            <span>{{ identifierItem(item) }}</span>
+          </div>
+          <small *ngIf="cambiosItem(item).length">
+            Cambios: {{ cambiosItem(item).join(', ') }}
+          </small>
+        </li>
+      </ul>
+    </div>
+
+    <footer class="detail-footer">
+      <div class="action-hint" *ngIf="!tieneAccionesDisponibles()">
+        No hay acciones disponibles para el estado actual.
+      </div>
+      <div class="primary-actions">
+        <button class="btn btn-success" type="button" *ngIf="puedeValidar()" [disabled]="loading" (click)="validar()">
+          Validar solicitud
+        </button>
+        <button class="btn btn-outline-danger" type="button" *ngIf="puedeValidar()" [disabled]="loading" (click)="rechazar()">
+          Rechazar
+        </button>
+        <button class="btn btn-primary" type="button" *ngIf="puedeFinalizar()" [disabled]="loading" (click)="finalizar()">
+          Finalizar tramite
+        </button>
+      </div>
+      <div class="secondary-actions">
+        <button class="btn btn-outline-secondary" type="button" *ngIf="puedeCancelarEnvio()" [disabled]="loading" (click)="cancelarEnvio()">
+          Cancelar envio
+        </button>
+        <button class="btn btn-outline-secondary" type="button" (click)="cerrarDetalle()">
+          Cerrar
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

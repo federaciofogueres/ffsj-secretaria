@@ -355,6 +355,41 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  enviarSolicitud(solicitud: SolicitudSecretaria): void {
+    this.cambiarEstadoSolicitud(
+      solicitud,
+      () => this.secretariaService.enviarSolicitud(solicitud.id),
+      'No se ha podido enviar la solicitud.'
+    );
+  }
+
+  cancelarEnvioSolicitud(solicitud: SolicitudSecretaria): void {
+    this.cambiarEstadoSolicitud(
+      solicitud,
+      () => this.secretariaService.cancelarEnvioSolicitud(solicitud.id),
+      'No se ha podido cancelar el envio.'
+    );
+  }
+
+  cancelarSolicitud(solicitud: SolicitudSecretaria): void {
+    const ref = this.dialog.openDialogAlert({
+      title: 'Cancelar solicitud',
+      content: `Deseas cancelar la solicitud ${solicitud.numero}?`,
+      innerHtml: `<p>Deseas cancelar la solicitud <strong>${solicitud.numero}</strong>?</p>`,
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result !== AlertButtonType.Aceptar) return;
+      this.cambiarEstadoSolicitud(
+        solicitud,
+        () => this.secretariaService.cancelarSolicitud(solicitud.id),
+        'No se ha podido cancelar la solicitud.',
+        true
+      );
+    });
+  }
+
   cargarRegistroPendiente(): void {
     this.secretariaService.getRegistroPendiente(this.asociacionId).subscribe({
       next: response => {
@@ -367,9 +402,24 @@ export class AsociadosGestionComponent implements OnInit {
 
   cargarSolicitudes(): void {
     this.secretariaService.getSolicitudes(this.asociacionId).subscribe({
-      next: response => (this.solicitudes = response.solicitudes),
+      next: response => {
+        this.solicitudes = response.solicitudes;
+        this.cargarDetalleSolicitudesBloqueantes(response.solicitudes);
+      },
       error: () => this.showError('No se han podido cargar las solicitudes.')
     });
+  }
+
+  puedeEnviarSolicitud(solicitud: SolicitudSecretaria): boolean {
+    return solicitud.estado === 'registrada' && this.permissions.hasPermission('solicitudes:send');
+  }
+
+  puedeCancelarEnvio(solicitud: SolicitudSecretaria): boolean {
+    return ['enviada', 'en_revision', 'con_incidencias'].includes(solicitud.estado) && this.permissions.hasPermission('solicitudes:send');
+  }
+
+  puedeCancelarSolicitud(solicitud: SolicitudSecretaria): boolean {
+    return solicitud.estado === 'registrada' && this.permissions.hasPermission('solicitudes:write');
   }
 
   labelTipo(tipo: SolicitudTipo | string): string {
@@ -378,6 +428,24 @@ export class AsociadosGestionComponent implements OnInit {
 
   tipoClass(tipo: SolicitudTipo | string): string {
     return `tipo-${tipo}`;
+  }
+
+  labelEstado(estado: string): string {
+    const labels: Record<string, string> = {
+      registrada: 'Registrada',
+      enviada: 'Enviada',
+      en_revision: 'En revision',
+      con_incidencias: 'Con incidencias',
+      validada: 'Validada',
+      rechazada: 'Rechazada',
+      finalizada: 'Finalizada',
+      cancelada: 'Cancelada'
+    };
+    return labels[estado] ?? estado;
+  }
+
+  estadoClass(estado: string): string {
+    return `estado-${estado.replace('_', '-')}`;
   }
 
   pendientesPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
@@ -397,12 +465,12 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   estadoPendienteAsociado(asociado: Asociado): 'cambio' | 'baja' | null {
-    const tieneBaja = this.tieneDuplicadoPendiente('baja', asociado.id);
+    const tieneBaja = this.tieneDuplicadoPendiente('baja', asociado.id) || this.tieneSolicitudAbierta('baja', asociado.id);
     if (tieneBaja) {
       return 'baja';
     }
 
-    const tieneCambio = this.tieneDuplicadoPendiente('cambio', asociado.id);
+    const tieneCambio = this.tieneDuplicadoPendiente('cambio', asociado.id) || this.tieneSolicitudAbierta('cambio', asociado.id);
     return tieneCambio ? 'cambio' : null;
   }
 
@@ -548,6 +616,33 @@ export class AsociadosGestionComponent implements OnInit {
     return [...this.adultos, ...this.infantiles].find(a => a.id === id);
   }
 
+  private cambiarEstadoSolicitud(
+    solicitud: SolicitudSecretaria,
+    action: () => any,
+    errorMessage: string,
+    removeFromList = false
+  ): void {
+    this.loading = true;
+    action().subscribe({
+      next: (updated: SolicitudSecretaria) => {
+        this.loading = false;
+        if (removeFromList) {
+          this.solicitudes = this.solicitudes.filter(item => item.id !== solicitud.id);
+          this.solicitudDetalle = null;
+          this.cargarRegistroPendiente();
+          return;
+        }
+
+        this.solicitudes = this.solicitudes.map(item => (item.id === updated.id ? updated : item));
+        this.solicitudDetalle = updated;
+      },
+      error: () => {
+        this.loading = false;
+        this.showError(errorMessage);
+      }
+    });
+  }
+
   private tieneDuplicadoPendiente(
     tipo: SolicitudTipo,
     asociadoId: number | null,
@@ -567,6 +662,38 @@ export class AsociadosGestionComponent implements OnInit {
       }
 
       return false;
+    });
+  }
+
+  private tieneSolicitudAbierta(tipo: SolicitudTipo, asociadoId: number): boolean {
+    if (!['cambio', 'baja'].includes(tipo)) {
+      return false;
+    }
+
+    return this.solicitudes.some(solicitud => {
+      if (solicitud.tipo !== tipo || solicitud.estado === 'finalizada') {
+        return false;
+      }
+
+      return (solicitud.items || []).some(item => Number(item.datos?.asociadoId ?? item.datosOriginales?.['id']) === asociadoId);
+    });
+  }
+
+  private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
+    const abiertasSinDetalle = solicitudes.filter(
+      solicitud => ['cambio', 'baja'].includes(solicitud.tipo) && solicitud.estado !== 'finalizada' && !solicitud.items?.length
+    );
+
+    if (!abiertasSinDetalle.length) {
+      return;
+    }
+
+    forkJoin(abiertasSinDetalle.map(solicitud => this.secretariaService.getSolicitud(solicitud.id))).subscribe({
+      next: detalles => {
+        const detallesById = new Map(detalles.map(detalle => [detalle.id, detalle]));
+        this.solicitudes = this.solicitudes.map(solicitud => detallesById.get(solicitud.id) ?? solicitud);
+      },
+      error: () => undefined
     });
   }
 

@@ -9,6 +9,7 @@ import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
+import { SolicitudesComponent } from './solicitudes/solicitudes.component';
 import { permissionGuard } from './core/permission.guard';
 
 export const routes: Routes = [
@@ -81,6 +82,17 @@ export const routes: Routes = [
       permission: 'registro:read',
       moduleName: 'Registro',
       moduleDescription: 'Subida de documentos para registro de entrada y comunicaciones directas con la Federacion.'
+    }
+  },
+  {
+    path: 'solicitudes',
+    component: SolicitudesComponent,
+    title: 'Solicitudes',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'solicitudes:validate',
+      moduleName: 'Solicitudes',
+      moduleDescription: 'Revision y validacion de solicitudes enviadas por las asociaciones.'
     }
   },
   {

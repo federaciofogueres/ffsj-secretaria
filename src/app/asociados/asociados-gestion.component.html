@@ -253,7 +253,7 @@
                   <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
                   {{ solicitud.totalRegistros }} item(s)
                 </span>
-                <span>{{ solicitud.estado }}</span>
+                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
               </div>
             </button>
             <div *ngIf="solicitudes.length === 0" class="text-muted">No hay solicitudes registradas.</div>
@@ -264,7 +264,39 @@
           <div class="detail-panel">
             <ng-container *ngIf="solicitudDetalle; else emptyDetail">
               <h6 class="fw-bold mb-1">{{ solicitudDetalle.numero }}</h6>
-              <p class="text-muted mb-3">{{ labelTipo(solicitudDetalle.tipo) }} - {{ solicitudDetalle.estado }}</p>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="tipo-badge" [ngClass]="tipoClass(solicitudDetalle.tipo)">{{ labelTipo(solicitudDetalle.tipo) }}</span>
+                <span class="estado-badge" [ngClass]="estadoClass(solicitudDetalle.estado)">{{ labelEstado(solicitudDetalle.estado) }}</span>
+              </div>
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <button
+                  class="btn btn-foc-rojo btn-sm"
+                  type="button"
+                  *ngIf="puedeEnviarSolicitud(solicitudDetalle)"
+                  [disabled]="loading"
+                  (click)="enviarSolicitud(solicitudDetalle)"
+                >
+                  Enviar a secretaria
+                </button>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  *ngIf="puedeCancelarEnvio(solicitudDetalle)"
+                  [disabled]="loading"
+                  (click)="cancelarEnvioSolicitud(solicitudDetalle)"
+                >
+                  Cancelar envio
+                </button>
+                <button
+                  class="btn btn-outline-danger btn-sm"
+                  type="button"
+                  *ngIf="puedeCancelarSolicitud(solicitudDetalle)"
+                  [disabled]="loading"
+                  (click)="cancelarSolicitud(solicitudDetalle)"
+                >
+                  Cancelar solicitud
+                </button>
+              </div>
               <ul class="pending-list">
                 <li *ngFor="let item of solicitudDetalle.items || []">
                   <i class="bi bi-file-earmark-text me-1"></i>

@@ -52,6 +52,14 @@ export class HomeComponent {
       accent: '#f3722c',
       icon: 'bi-inbox-fill',
       permission: 'registro:read'
+    },
+    {
+      title: 'Solicitudes',
+      description: 'Revision y validacion de solicitudes enviadas por las asociaciones.',
+      path: '/solicitudes',
+      accent: '#c4141c',
+      icon: 'bi-file-earmark-check-fill',
+      permission: 'solicitudes:validate'
     }
   ];
 

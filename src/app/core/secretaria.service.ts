@@ -57,8 +57,50 @@ export class SecretariaService {
     });
   }
 
+  getSolicitudesGlobal(): Observable<{ solicitudes: SolicitudSecretaria[] }> {
+    return this.http.get<{ solicitudes: SolicitudSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/solicitudes/global`, {
+      headers: this.authHeaders()
+    });
+  }
+
   getSolicitud(id: number): Observable<SolicitudSecretaria> {
     return this.http.get<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  enviarSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/enviar`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  cancelarEnvioSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/cancelar-envio`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  cancelarSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/cancelar`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  validarSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/validar`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  rechazarSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/rechazar`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  finalizarSolicitud(id: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/finalizar`, {}, {
       headers: this.authHeaders()
     });
   }

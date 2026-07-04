@@ -264,7 +264,7 @@ Pendiente futuro, pendiente de reglas de negocio:
 
 ## 11. Solicitudes pendientes
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
 - Hay listado de solicitudes registradas.
 - Hay detalle al hacer click.
@@ -272,36 +272,53 @@ Estado actual:
   - alta,
   - cambio,
   - baja.
+- Las asociaciones gestionan sus solicitudes desde la subseccion `Asociados > Gestion > Solicitudes pendientes`.
+- Una solicitud registrada se puede enviar a secretaria.
+- Una solicitud enviada, en revision o con incidencias puede cancelar el envio y volver a `registrada`.
+- Una solicitud registrada no enviada puede cancelarse.
+- El detalle muestra fechas de alta, entrada y validacion cuando existen.
+- Al cancelar una solicitud registrada, sus items vuelven al registro pendiente para poder revisarlos de nuevo.
+- Las acciones usan permisos:
+  - `solicitudes:write` para cancelar solicitudes registradas,
+  - `solicitudes:send` para enviar y cancelar envio.
+- Migracion `005_asociacion_send_permission.sql` creada y ejecutada en local para dar `solicitudes:send` al acceso base de asociaciones.
 
-Pendiente:
+Pendiente futuro:
 
-- Crear accion `Enviar a secretaria`.
-- Cambiar estado de `registrada` a `enviada`.
-- Bloquear edicion cuando una solicitud este enviada.
 - Anadir historico de estados.
-- Mostrar fecha de envio, fecha de revision y fecha de validacion.
-- Crear vista de detalle completa con items, datos originales/nuevos y posibles incidencias.
-- Permitir cancelar una solicitud registrada si aun no se ha enviado.
 - Preparar justificante de registro de solicitud.
-- Aplicar permisos de lectura/envio/cancelacion.
+- Mejorar vista de detalle con datos originales/nuevos e incidencias cuando esos modulos esten cerrados.
 
 ## 12. Envio a secretaria y validacion
 
-Estado actual:
+Estado actual: completado para el alcance actual.
 
-- No implementado. De momento solo se registran solicitudes.
+- `ffsj-secretaria-api` tiene endpoints de cambio de estado:
+  - enviar,
+  - cancelar envio,
+  - cancelar solicitud registrada,
+  - validar,
+  - rechazar,
+  - finalizar.
+- La validacion queda protegida por `solicitudes:validate`.
+- Las asociaciones no pueden acceder al listado global de solicitudes.
+- Los usuarios con permisos de validacion tienen una seccion propia `/solicitudes` a la altura del resto de secciones.
+- El endpoint global `/solicitudes/global` acepta tokens administrativos con cargos sin exigir `idAsociacion`.
+- La seccion global funciona como `Registro de secretaria`:
+  - lista todas las solicitudes de todas las asociaciones,
+  - muestra numero, asociacion, total de registros, tipo, estado, fecha de alta y fecha de entrada,
+  - enriquece el nombre de asociacion desde censo con fallback al id,
+  - incluye resumen de totales,
+  - incluye busqueda y filtros por tipo/estado,
+  - permite abrir detalle, validar, rechazar, cancelar envio y finalizar.
+- El menu y la pantalla de inicio solo muestran `Solicitudes` si el usuario tiene `solicitudes:validate`.
+- Hay tests de carga global, filtrado y validacion desde la pantalla de registro.
 
-Pendiente:
+Pendiente futuro:
 
-- Endpoint `POST /solicitudes/{id}/enviar`.
-- Endpoint `POST /solicitudes/{id}/validar`.
-- Endpoint `POST /solicitudes/{id}/rechazar`.
-- Endpoint `POST /solicitudes/{id}/finalizar`.
-- Definir que usuarios pueden validar.
 - Definir como se aplica el cambio final en `ffsj-new-censo-api`.
 - Definir rollback o gestion de errores si falla la sincronizacion con censo.
 - Auditar cada cambio de estado.
-- Aplicar permisos de validacion.
 
 ## 13. Cargos y cupos
 
