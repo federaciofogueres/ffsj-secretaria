@@ -15,6 +15,16 @@ export interface Asociado {
   telefono?: string;
 }
 
+export interface HistoricoAsociado {
+  cargo: string;
+  ejercicio: number | string;
+  nombreAsociacion: string;
+  idCargo: number;
+  idEjercicio: number;
+  idAsociacion: number;
+  active: boolean | number;
+}
+
 export interface Asociacion {
   id: number;
   name?: string;

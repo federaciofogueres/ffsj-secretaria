@@ -203,6 +203,7 @@ Estado actual: completado para el alcance actual.
 - Hay pestanas de adultos e infantiles.
 - Hay paginacion por pestana.
 - Hay exportacion Excel.
+- La columna `Cargo` muestra el cargo del ejercicio actual calculado desde el historico permitido.
 - Si la API no marca infantiles, se clasifican provisionalmente como infantiles los menores de 18 anos a fecha `01/07/2026`.
 - El detalle muestra los campos reales disponibles: DNI/NIF, SIP, telefono, email, fecha nacimiento, fecha alta y estado.
 - La exportacion Excel incluye los campos reales disponibles.
@@ -212,10 +213,27 @@ Estado actual: completado para el alcance actual.
 Pendiente futuro, no bloqueante:
 
 - Si censo incorpora un campo explicito adulto/infantil, sustituir la clasificacion provisional por edad.
-- Si censo expone historico de cargos, ampliar detalle/exportacion con ese historico.
 - Revisar UX movil de tablas dentro de la tarea general de UX.
 
-## 9. Gestion de altas, cambios y bajas: registro pendiente
+## 9. Historico de cargos de asociados
+
+Estado actual: completado para el alcance actual.
+
+- `ffsj-new-censo-api` expone `GET /asociados/{asociado}/historico`.
+- `ffsj-secretaria` consume el historico desde `CensoService`.
+- El detalle del asociado muestra el historico de cargos por ejercicio y asociacion permitidos segun el acceso.
+- En acceso Asociaciones, el historico queda filtrado a la asociacion autenticada.
+- En acceso Administracion global, el historico completo queda disponible.
+- La exportacion Excel incluye una hoja `Historico` con los cargos historicos permitidos para cada asociado.
+- Hay test para el mapeo del historico recibido desde censo.
+- Hay tests para garantizar que una asociacion no ve historico de otras asociaciones y que administracion global ve el historico completo.
+
+Pendiente futuro, no bloqueante:
+
+- Si censo anade mas campos al historico, ampliar el detalle/exportacion con esos datos.
+- Revisar rendimiento de la exportacion si hay asociaciones con muchos asociados, porque ahora consulta historico por asociado.
+
+## 10. Gestion de altas, cambios y bajas: registro pendiente
 
 Estado actual:
 
@@ -238,7 +256,7 @@ Pendiente:
 - Mejorar el detalle visual de los items pendientes.
 - Aplicar permisos de creacion/modificacion.
 
-## 10. Solicitudes pendientes
+## 11. Solicitudes pendientes
 
 Estado actual:
 
@@ -261,7 +279,7 @@ Pendiente:
 - Preparar justificante de registro de solicitud.
 - Aplicar permisos de lectura/envio/cancelacion.
 
-## 11. Envio a secretaria y validacion
+## 12. Envio a secretaria y validacion
 
 Estado actual:
 
@@ -279,7 +297,7 @@ Pendiente:
 - Auditar cada cambio de estado.
 - Aplicar permisos de validacion.
 
-## 12. Cargos y cupos
+## 13. Cargos y cupos
 
 Motivo del orden:
 
@@ -299,7 +317,7 @@ Pendiente:
 - Avisar antes de generar solicitudes que incumplan cupos.
 - Diferenciar visualmente cargos validados, pendientes y faltantes.
 
-## 13. Incidencias
+## 14. Incidencias
 
 Estado actual:
 
@@ -316,7 +334,7 @@ Pendiente:
 - Anadir adjuntos a incidencias.
 - Mostrar contador de incidencias en listados.
 
-## 14. Adjuntos
+## 15. Adjuntos
 
 Estado actual:
 
@@ -333,7 +351,7 @@ Pendiente:
 - Implementar descarga segura.
 - Implementar borrado si el tramite aun permite edicion.
 
-## 15. Justificantes PDF
+## 16. Justificantes PDF
 
 Estado actual:
 
@@ -349,7 +367,7 @@ Pendiente:
 - Definir plantilla visual oficial.
 - Incluir numero, fecha, asociacion, items y estado.
 
-## 16. Registro documental y comunicaciones
+## 17. Registro documental y comunicaciones
 
 Estado actual:
 
@@ -369,7 +387,7 @@ Pendiente:
 - Separar claramente documentacion oficial y comunicaciones.
 - Aplicar permisos de lectura/creacion.
 
-## 17. Actividades y calendario
+## 18. Actividades y calendario
 
 Motivo del orden:
 
@@ -389,7 +407,7 @@ Pendiente:
 - Vincular actividades con inscripciones y solicitudes.
 - Definir si las actividades son de secretaria o vienen de otro sistema.
 
-## 18. Inscripciones
+## 19. Inscripciones
 
 Estado actual:
 
@@ -409,7 +427,7 @@ Pendiente:
 - Justificante PDF.
 - Aplicar permisos de lectura/envio.
 
-## 19. Textos y codificacion
+## 20. Textos y codificacion
 
 Estado actual:
 
@@ -422,7 +440,7 @@ Pendiente:
 - Unificar castellano/valenciano.
 - Evitar textos tecnicos visibles en la UI.
 
-## 20. UX pendiente
+## 21. UX pendiente
 
 Pendiente:
 
@@ -433,7 +451,7 @@ Pendiente:
 - Mejorar experiencia movil en tablas.
 - Revisar que no haya textos solapados.
 
-## 21. Despliegue
+## 22. Despliegue
 
 Pendiente:
 

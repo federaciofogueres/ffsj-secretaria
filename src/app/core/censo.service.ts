@@ -4,7 +4,7 @@ import { AuthService } from 'ffsj-web-components';
 import { Observable, map } from 'rxjs';
 
 import { ApiUrlService } from './api-url.service';
-import { Asociacion, Asociado, CargoResumen } from './models';
+import { Asociacion, Asociado, CargoResumen, HistoricoAsociado } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class CensoService {
@@ -43,6 +43,15 @@ export class CensoService {
       .pipe(map(response => (response.asociados ?? []).map(item => this.mapAsociado(item))));
   }
 
+  getHistoricoByAsociado(asociadoId: number): Observable<HistoricoAsociado[]> {
+    return this.http
+      .get<{ historico?: unknown[] }>(
+        `${this.apiUrl.censoBasePath}/asociados/${asociadoId}/historico`,
+        this.authOptions()
+      )
+      .pipe(map(response => (response.historico ?? []).map(item => this.mapHistoricoAsociado(item))));
+  }
+
   getCargos(): Observable<CargoResumen[]> {
     return this.http
       .get<{ cargos?: CargoResumen[] }>(`${this.apiUrl.censoBasePath}/cargos`, this.authOptions())
@@ -74,6 +83,20 @@ export class CensoService {
       fechaNacimiento,
       email: item.email,
       telefono: item.telefono ?? item.phone
+    };
+  }
+
+  private mapHistoricoAsociado(raw: unknown): HistoricoAsociado {
+    const item = raw as Record<string, any>;
+
+    return {
+      cargo: item.cargo ?? '',
+      ejercicio: item.ejercicio ?? '',
+      nombreAsociacion: item.nombreAsociacion ?? item.nombre_asociacion ?? '',
+      idCargo: Number(item.idCargo ?? item.id_cargo ?? 0),
+      idEjercicio: Number(item.idEjercicio ?? item.id_ejercicio ?? 0),
+      idAsociacion: Number(item.idAsociacion ?? item.id_asociacion ?? 0),
+      active: item.active ?? false
     };
   }
 

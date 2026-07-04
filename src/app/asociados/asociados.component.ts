@@ -13,8 +13,9 @@ import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { FfsjDialogAlertService, AlertButtonType } from 'ffsj-web-components';
 import * as XLSX from 'xlsx';
+import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { ErrorService } from '../core/error.service';
-import { Asociado, AsociadosService } from './asociados.service';
+import { Asociado, AsociadosService, HistoricoAsociado } from './asociados.service';
 
 type TabKey = 'adultos' | 'infantiles';
 
@@ -115,6 +116,16 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   }
 
   openDetails(asociado: Asociado): void {
+    this.asociadosService.getHistorico(asociado.id).subscribe({
+      next: historico => this.openDetailsDialog(asociado, historico),
+      error: () => {
+        this.errorService.show('No se ha podido cargar el historico del asociado.');
+        this.openDetailsDialog(asociado, []);
+      }
+    });
+  }
+
+  private openDetailsDialog(asociado: Asociado, historico: HistoricoAsociado[]): void {
     const rowCandidates: Array<[string, string]> = [
       ['Nombre', `${asociado.nombre} ${asociado.apellidos}`],
       ['Cargo', asociado.cargo ?? ''],
@@ -139,32 +150,35 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
               `<p><strong>${this.escapeHtml(label)}:</strong> ${this.escapeHtml(String(value))}</p>`
           )
           .join('')}
+        ${this.buildHistoricoHtml(historico)}
       `,
       buttonsAlert: [AlertButtonType.Entendido]
     });
   }
 
   downloadExcel(): void {
-    this.asociadosService.getTodos().subscribe(data => {
-      const rows = data.map(a => ({
-        ID: a.id,
-        Nombre: a.nombre,
-        Apellidos: a.apellidos,
-        Cargo: a.cargo,
-        Tipo: a.tipo,
-        'DNI/NIF': a.dni ?? '',
-        SIP: a.sip ?? '',
-        Estado: a.estado ?? '',
-        'Fecha de alta': a.fechaAlta ?? '',
-        'Fecha de nacimiento': a.fechaNacimiento ?? '',
-        Email: a.email ?? '',
-        Telefono: a.telefono ?? ''
-      }));
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Asociados');
-      XLSX.writeFile(workbook, 'asociados.xlsx');
-    });
+    this.asociadosService
+      .getTodos()
+      .pipe(
+        switchMap(data => {
+          if (data.length === 0) {
+            return of({ data, historicos: [] as Array<{ asociado: Asociado; historico: HistoricoAsociado[] }> });
+          }
+
+          return forkJoin(
+            data.map(asociado =>
+              this.asociadosService.getHistorico(asociado.id).pipe(
+                map(historico => ({ asociado, historico })),
+                catchError(() => of({ asociado, historico: [] as HistoricoAsociado[] }))
+              )
+            )
+          ).pipe(map(historicos => ({ data, historicos })));
+        })
+      )
+      .subscribe({
+        next: ({ data, historicos }) => this.writeExcel(data, historicos),
+        error: () => this.errorService.show('No se ha podido generar el Excel de asociados.')
+      });
   }
 
   private configureFilter(ds: MatTableDataSource<Asociado>): void {
@@ -198,6 +212,78 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     this.loading = false;
     this.error = 'No se han podido cargar los asociados desde la API de censo.';
     this.errorService.show(this.error);
+  }
+
+  private writeExcel(
+    data: Asociado[],
+    historicos: Array<{ asociado: Asociado; historico: HistoricoAsociado[] }>
+  ): void {
+    const rows = data.map(a => ({
+      ID: a.id,
+      Nombre: a.nombre,
+      Apellidos: a.apellidos,
+      Cargo: a.cargo,
+      Tipo: a.tipo,
+      'DNI/NIF': a.dni ?? '',
+      SIP: a.sip ?? '',
+      Estado: a.estado ?? '',
+      'Fecha de alta': a.fechaAlta ?? '',
+      'Fecha de nacimiento': a.fechaNacimiento ?? '',
+      Email: a.email ?? '',
+      Telefono: a.telefono ?? ''
+    }));
+
+    const historicoRows = historicos.flatMap(({ asociado, historico }) =>
+      historico.map(item => ({
+        ID: asociado.id,
+        Nombre: asociado.nombre,
+        Apellidos: asociado.apellidos,
+        Ejercicio: item.ejercicio,
+        Cargo: item.cargo,
+        Asociacion: item.nombreAsociacion,
+        'ID cargo': item.idCargo,
+        'ID ejercicio': item.idEjercicio,
+        'ID asociacion': item.idAsociacion
+      }))
+    );
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), 'Asociados');
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(historicoRows), 'Historico');
+    XLSX.writeFile(workbook, 'asociados.xlsx');
+  }
+
+  private buildHistoricoHtml(historico: HistoricoAsociado[]): string {
+    if (historico.length === 0) {
+      return '<hr /><p><strong>Historico:</strong> sin registros.</p>';
+    }
+
+    const rows = historico
+      .map(
+        item => `
+          <tr>
+            <td>${this.escapeHtml(String(item.ejercicio))}</td>
+            <td>${this.escapeHtml(item.cargo)}</td>
+            <td>${this.escapeHtml(item.nombreAsociacion)}</td>
+          </tr>
+        `
+      )
+      .join('');
+
+    return `
+      <hr />
+      <p><strong>Historico de cargos</strong></p>
+      <table class="table table-sm">
+        <thead>
+          <tr>
+            <th>Ejercicio</th>
+            <th>Cargo</th>
+            <th>Asociacion</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
   }
 
   private escapeHtml(value: string): string {

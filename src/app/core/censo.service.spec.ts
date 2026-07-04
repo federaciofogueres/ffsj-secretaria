@@ -36,4 +36,26 @@ describe('CensoService', () => {
 
     expect(asociado.tipo).toBe('adulto');
   });
+
+  it('mapea el historico de cargos de un asociado', () => {
+    const historico = (service as any).mapHistoricoAsociado({
+      cargo: 'Secretaria',
+      ejercicio: 2026,
+      nombreAsociacion: 'Doctor Bergez - Carolinas',
+      idCargo: 16,
+      idEjercicio: 5,
+      idAsociacion: 25,
+      active: 1
+    });
+
+    expect(historico).toEqual({
+      cargo: 'Secretaria',
+      ejercicio: 2026,
+      nombreAsociacion: 'Doctor Bergez - Carolinas',
+      idCargo: 16,
+      idEjercicio: 5,
+      idAsociacion: 25,
+      active: 1
+    });
+  });
 });
