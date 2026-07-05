@@ -6,7 +6,15 @@
         <h1 class="h4 mb-1 text-rojo">Actividades</h1>
         <p class="text-muted mb-0">Consulta las actividades de secretaria.</p>
       </div>
-      <div class="d-flex gap-2">
+      <div class="d-flex gap-2 flex-wrap">
+        <button
+          class="btn btn-foc-rojo"
+          type="button"
+          *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+          (click)="abrirCrearActividad()"
+        >
+          Añadir actividad
+        </button>
         <button class="btn btn-outline-secondary" type="button" (click)="previousMonth()">Anterior</button>
         <button class="btn btn-outline-secondary" type="button" (click)="nextMonth()">Siguiente</button>
       </div>
@@ -42,7 +50,7 @@
               type="button"
               *ngFor="let actividad of day.actividades"
               [class.inactive]="actividad.estado === 'cerrada'"
-              (click)="select(actividad); $event.stopPropagation()"
+              (click)="select(actividad, day.date); $event.stopPropagation()"
             >
               {{ actividad.titulo }}
             </button>
@@ -51,8 +59,42 @@
       </div>
 
       <aside class="detail">
+        <section class="day-list" *ngIf="selectedDate">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+            <div>
+              <p class="overline text-uppercase text-muted fw-bold mb-1">Dia seleccionado</p>
+              <h2 class="h6 mb-0">{{ selectedDate | date: 'dd/MM/y' }}</h2>
+            </div>
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              type="button"
+              *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+              (click)="abrirCrearActividad(selectedDate)"
+            >
+              Añadir
+            </button>
+          </div>
+          <div class="event-list" *ngIf="selectedDayActividades.length; else noDayEvents">
+            <button
+              class="event-item"
+              type="button"
+              *ngFor="let actividad of selectedDayActividades"
+              [class.active]="actividad.id === selected?.id"
+              [class.inactive]="actividad.estado === 'cerrada'"
+              (click)="select(actividad)"
+            >
+              <span>{{ actividad.titulo }}</span>
+              <small>{{ estadoLabel(actividad.estado) }}</small>
+            </button>
+          </div>
+          <ng-template #noDayEvents>
+            <p class="text-muted mb-0">No hay actividades en este dia.</p>
+          </ng-template>
+        </section>
+
         <ng-container *ngIf="selected; else empty">
-          <p class="overline text-uppercase text-muted fw-bold mb-1">Actividad</p>
+          <div class="detail-block">
+          <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de actividad</p>
           <div class="d-flex align-items-start justify-content-between gap-2">
             <h2 class="h5 text-rojo mb-1">{{ selected.titulo }}</h2>
             <span class="status" [class.inactive]="selected.estado === 'cerrada'">{{ estadoLabel(selected.estado) }}</span>
@@ -63,13 +105,18 @@
           <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
           <div class="linked" *ngIf="selected.inscripciones?.length">
             <h3 class="h6">Inscripcion asociada</h3>
-            <a class="linked-item" routerLink="/inscripciones" *ngFor="let inscripcion of selected.inscripciones">
+            <a
+              class="linked-item"
+              [routerLink]="['/inscripciones', inscripcion.id]"
+              *ngFor="let inscripcion of selected.inscripciones"
+            >
               {{ inscripcion.titulo }}
             </a>
           </div>
           <p class="text-muted mb-0" *ngIf="!selected.inscripciones?.length">
             Esta actividad no tiene inscripcion asociada.
           </p>
+          </div>
 
           <form
             class="admin-edit"
@@ -124,43 +171,92 @@
               </div>
             </div>
           </form>
-        </ng-container>
 
-        <form
-          class="admin-create"
-          *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
-          [formGroup]="actividadForm"
-          (ngSubmit)="crearActividad()"
-        >
-          <div class="border-top pt-3 mt-3">
-            <p class="overline text-uppercase text-muted fw-bold mb-1">Administracion</p>
-            <h3 class="h6 mb-3">
-              {{ selectedDate ? ('Nueva actividad el ' + (selectedDate | date: 'dd/MM/y')) : 'Selecciona un dia para crear actividad' }}
-            </h3>
-            <label class="form-label">Titulo</label>
-            <input class="form-control" formControlName="titulo" />
-            <label class="form-label mt-2">Responsable</label>
-            <input class="form-control" formControlName="responsable" />
-            <div class="row g-2 mt-1">
-              <div class="col">
-                <label class="form-label">Inicio</label>
-                <input type="date" class="form-control" formControlName="fechaInicio" />
-              </div>
-              <div class="col">
-                <label class="form-label">Fin</label>
-                <input type="date" class="form-control" formControlName="fechaFin" />
-              </div>
+          <section class="admin-link-inscripciones" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
+            <div class="border-top pt-3 mt-3">
+              <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones del evento</p>
+
+              <form [formGroup]="linkInscripcionForm" (ngSubmit)="vincularInscripcion()" class="linked-form">
+                <label class="form-label">Añadir inscripcion existente</label>
+                <div class="input-action">
+                  <select class="form-select" formControlName="inscripcionId">
+                    <option value="">Selecciona una inscripcion</option>
+                    <option *ngFor="let inscripcion of availableInscripciones" [value]="inscripcion.id">
+                      {{ inscripcion.titulo }}
+                    </option>
+                  </select>
+                  <button class="btn btn-outline-secondary" type="submit" [disabled]="loading || !linkInscripcionForm.value.inscripcionId">
+                    Añadir
+                  </button>
+                </div>
+              </form>
+
+              <form [formGroup]="nuevaInscripcionForm" (ngSubmit)="crearInscripcionVinculada()" class="linked-form mt-3">
+                <label class="form-label">Crear nueva inscripcion vinculada</label>
+                <input class="form-control" formControlName="titulo" placeholder="Titulo de la inscripcion" />
+                <div class="row g-2 mt-1">
+                  <div class="col">
+                    <label class="form-label">Publicacion</label>
+                    <input type="date" class="form-control" formControlName="fechaPublicacion" />
+                  </div>
+                  <div class="col">
+                    <label class="form-label">Fecha limite</label>
+                    <input type="date" class="form-control" formControlName="fechaLimite" />
+                  </div>
+                </div>
+                <div class="d-flex gap-3 mt-2">
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input" formControlName="adultos" />
+                    Adultos
+                  </label>
+                  <label class="form-check">
+                    <input type="checkbox" class="form-check-input" formControlName="infantiles" />
+                    Infantiles
+                  </label>
+                </div>
+                <button class="btn btn-foc-rojo mt-2" type="submit" [disabled]="loading">Crear y vincular</button>
+              </form>
             </div>
-            <label class="form-label mt-2">Descripcion</label>
-            <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
-            <button class="btn btn-foc-rojo mt-3" type="submit" [disabled]="loading">Crear actividad</button>
-          </div>
-        </form>
+          </section>
+        </ng-container>
       </aside>
 
       <ng-template #empty>
-        <p class="text-muted mb-0">Pulsa sobre una actividad del calendario para ver su detalle.</p>
+        <p class="text-muted mb-0">{{ selectedDate ? 'Selecciona una actividad del listado para ver su detalle.' : 'Pulsa un dia del calendario para ver sus actividades.' }}</p>
       </ng-template>
     </div>
   </div>
+</section>
+
+<div class="modal-backdrop-custom" *ngIf="showCreateDialog" (click)="cerrarCrearActividad()"></div>
+<section class="modal-panel" *ngIf="showCreateDialog" role="dialog" aria-modal="true" aria-label="Añadir actividad">
+  <div class="modal-header-custom">
+    <div>
+      <p class="overline text-uppercase text-muted fw-bold mb-1">Calendario</p>
+      <h2 class="h5 mb-0 text-rojo">Añadir actividad</h2>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarCrearActividad()">Cerrar</button>
+  </div>
+  <form class="admin-create" [formGroup]="actividadForm" (ngSubmit)="crearActividad()">
+    <label class="form-label">Titulo</label>
+    <input class="form-control" formControlName="titulo" />
+    <label class="form-label mt-2">Responsable</label>
+    <input class="form-control" formControlName="responsable" />
+    <div class="row g-2 mt-1">
+      <div class="col">
+        <label class="form-label">Inicio</label>
+        <input type="date" class="form-control" formControlName="fechaInicio" />
+      </div>
+      <div class="col">
+        <label class="form-label">Fin</label>
+        <input type="date" class="form-control" formControlName="fechaFin" />
+      </div>
+    </div>
+    <label class="form-label mt-2">Descripcion</label>
+    <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+    <div class="d-flex gap-2 mt-3">
+      <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Crear actividad</button>
+      <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>
+    </div>
+  </form>
 </section>

@@ -21,6 +21,7 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/asociacion', label: 'Asociacion', icon: 'bi-building-fill', permission: 'asociacion:read' },
     { path: '/calendario', label: 'Calendario', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
     { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
+    { path: '/formularios', label: 'Formularios', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
     { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill', permission: 'registro:read' },
     { path: '/solicitudes', label: 'Solicitudes', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
     { path: '/admin', label: 'Admin', icon: 'bi-shield-lock-fill', adminOnly: true }

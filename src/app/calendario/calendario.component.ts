@@ -4,7 +4,7 @@ import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angu
 import { RouterLink } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
-import { ActividadSecretaria } from '../core/models';
+import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -23,9 +23,11 @@ interface CalendarDay {
 })
 export class CalendarioComponent implements OnInit {
   actividades: ActividadSecretaria[] = [];
+  inscripciones: InscripcionSecretaria[] = [];
   days: CalendarDay[] = [];
   selected: ActividadSecretaria | null = null;
   selectedDate: Date | null = null;
+  showCreateDialog = false;
   loading = false;
   error = '';
   success = '';
@@ -44,6 +46,18 @@ export class CalendarioComponent implements OnInit {
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
     descripcion: ['']
+  });
+
+  linkInscripcionForm = this.fb.group({
+    inscripcionId: ['']
+  });
+
+  nuevaInscripcionForm = this.fb.group({
+    titulo: ['', Validators.required],
+    fechaPublicacion: [new Date().toISOString().slice(0, 10), Validators.required],
+    fechaLimite: ['', Validators.required],
+    adultos: [true],
+    infantiles: [true]
   });
 
   private monthCursor = new Date();
@@ -67,6 +81,17 @@ export class CalendarioComponent implements OnInit {
     return this.adminAccess.isAdmin();
   }
 
+  get selectedDayActividades(): ActividadSecretaria[] {
+    if (!this.selectedDate) return [];
+    return this.actividades.filter(actividad => this.isActividadOnDate(actividad, this.selectedDate as Date));
+  }
+
+  get availableInscripciones(): InscripcionSecretaria[] {
+    if (!this.selected) return [];
+    const linkedIds = new Set((this.selected.inscripciones || []).map(inscripcion => inscripcion.id));
+    return this.inscripciones.filter(inscripcion => !linkedIds.has(inscripcion.id));
+  }
+
   previousMonth(): void {
     this.monthCursor = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth() - 1, 1);
     this.buildCalendar();
@@ -77,25 +102,49 @@ export class CalendarioComponent implements OnInit {
     this.buildCalendar();
   }
 
-  select(actividad: ActividadSecretaria): void {
-    this.selected = actividad;
+  select(actividad: ActividadSecretaria, date: Date | null = null): void {
+    if (date) {
+      this.selectedDate = date;
+    }
+    const hydrated = this.actividades.find(item => item.id === actividad.id) || actividad;
+    this.selected = hydrated;
     this.error = '';
     this.success = '';
     this.editActividadForm.patchValue({
-      titulo: actividad.titulo,
-      responsable: actividad.responsable || '',
-      fechaInicio: this.toDateInput(actividad.fechaInicio),
-      fechaFin: this.toDateInput(actividad.fechaFin),
-      descripcion: actividad.descripcion || ''
+      titulo: hydrated.titulo,
+      responsable: hydrated.responsable || '',
+      fechaInicio: this.toDateInput(hydrated.fechaInicio),
+      fechaFin: this.toDateInput(hydrated.fechaFin),
+      descripcion: hydrated.descripcion || ''
     });
+    this.linkInscripcionForm.reset({ inscripcionId: '' });
   }
 
   selectDay(day: CalendarDay): void {
     this.selectedDate = day.date;
+    this.selected = null;
     if (this.isAdminMode && this.permissions.hasPermission('inscripciones:write')) {
       const date = this.formatDate(day.date);
       this.actividadForm.patchValue({ fechaInicio: date, fechaFin: date });
     }
+  }
+
+  abrirCrearActividad(date: Date | null = this.selectedDate): void {
+    const target = date || new Date();
+    this.selectedDate = target;
+    const formatted = this.formatDate(target);
+    this.actividadForm.reset({
+      titulo: '',
+      responsable: 'Secretaria',
+      fechaInicio: formatted,
+      fechaFin: formatted,
+      descripcion: ''
+    });
+    this.showCreateDialog = true;
+  }
+
+  cerrarCrearActividad(): void {
+    this.showCreateDialog = false;
   }
 
   crearActividad(): void {
@@ -108,6 +157,7 @@ export class CalendarioComponent implements OnInit {
     this.success = '';
     this.secretariaService.crearActividad(this.actividadForm.value).subscribe({
       next: actividad => {
+        this.showCreateDialog = false;
         this.recargarTrasCrear(actividad.id);
       },
       error: () => {
@@ -194,6 +244,68 @@ export class CalendarioComponent implements OnInit {
     });
   }
 
+  vincularInscripcion(): void {
+    if (!this.selected || !this.linkInscripcionForm.value.inscripcionId) return;
+    const inscripcion = this.inscripciones.find(item => item.id === this.linkInscripcionForm.value.inscripcionId);
+    if (!inscripcion) return;
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+    this.secretariaService.actualizarInscripcion(inscripcion.id, this.buildInscripcionPayload(inscripcion, this.selected.id)).subscribe({
+      next: updated => {
+        this.inscripciones = [updated, ...this.inscripciones.filter(item => item.id !== updated.id)];
+        this.actualizarInscripcionEnActividad(updated, 'Inscripcion vinculada correctamente.');
+      },
+      error: () => {
+        this.error = 'No se ha podido vincular la inscripcion.';
+        this.loading = false;
+      }
+    });
+  }
+
+  crearInscripcionVinculada(): void {
+    if (!this.selected) return;
+    if (this.nuevaInscripcionForm.invalid) {
+      this.nuevaInscripcionForm.markAllAsTouched();
+      return;
+    }
+    const tiposPermitidos = [
+      this.nuevaInscripcionForm.value.adultos ? 'adulto' : null,
+      this.nuevaInscripcionForm.value.infantiles ? 'infantil' : null
+    ].filter(Boolean);
+    if (!tiposPermitidos.length) {
+      this.error = 'Selecciona al menos un tipo de participante.';
+      return;
+    }
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+    this.secretariaService.crearInscripcion({
+      titulo: this.nuevaInscripcionForm.value.titulo,
+      actividadId: this.selected.id,
+      estado: 'abierta',
+      fechaPublicacion: this.nuevaInscripcionForm.value.fechaPublicacion,
+      fechaLimite: this.nuevaInscripcionForm.value.fechaLimite,
+      tiposPermitidos
+    }).subscribe({
+      next: created => {
+        this.inscripciones = [created, ...this.inscripciones.filter(item => item.id !== created.id)];
+        this.nuevaInscripcionForm.reset({
+          titulo: '',
+          fechaPublicacion: new Date().toISOString().slice(0, 10),
+          fechaLimite: '',
+          adultos: true,
+          infantiles: true
+        });
+        this.actualizarInscripcionEnActividad(created, 'Inscripcion creada y vinculada correctamente.');
+      },
+      error: () => {
+        this.error = 'No se ha podido crear la inscripcion vinculada.';
+        this.loading = false;
+      }
+    });
+  }
+
   estadoLabel(estado: string): string {
     if (estado === 'cerrada') return 'Desactivada';
     if (estado === 'cancelada') return 'Archivada';
@@ -227,11 +339,32 @@ export class CalendarioComponent implements OnInit {
       next: response => {
         this.actividades = response.actividades;
         this.selected = null;
+        this.cargarInscripciones();
+      },
+      error: () => {
+        this.error = 'No se ha podido cargar el calendario.';
+        this.loading = false;
+      }
+    });
+  }
+
+  private cargarInscripciones(): void {
+    if (!this.isAdminMode) {
+      this.inscripciones = [];
+      this.buildCalendar();
+      this.loading = false;
+      return;
+    }
+    this.secretariaService.getInscripciones(-1).subscribe({
+      next: response => {
+        this.inscripciones = response.inscripciones;
+        this.syncInscripcionesEnActividades();
         this.buildCalendar();
         this.loading = false;
       },
       error: () => {
-        this.error = 'No se ha podido cargar el calendario.';
+        this.inscripciones = [];
+        this.buildCalendar();
         this.loading = false;
       }
     });
@@ -292,5 +425,44 @@ export class CalendarioComponent implements OnInit {
     this.success = message;
     this.buildCalendar();
     this.loading = false;
+  }
+
+  private buildInscripcionPayload(inscripcion: InscripcionSecretaria, actividadId: string): unknown {
+    return {
+      titulo: inscripcion.titulo,
+      actividadId,
+      estado: inscripcion.estado || 'abierta',
+      fechaPublicacion: this.toDateInput(inscripcion.fechaPublicacion) || new Date().toISOString().slice(0, 10),
+      fechaLimite: this.toDateInput(inscripcion.fechaLimite) || null,
+      tiposPermitidos: inscripcion.tiposPermitidos,
+      campos: inscripcion.campos
+    };
+  }
+
+  private actualizarInscripcionEnActividad(inscripcion: InscripcionSecretaria, message: string): void {
+    if (!this.selected) return;
+    const actividad = {
+      ...this.selected,
+      inscripciones: [inscripcion, ...(this.selected.inscripciones || []).filter(item => item.id !== inscripcion.id)]
+    };
+    this.actividades = this.actividades.map(item => item.id === actividad.id ? actividad : item);
+    this.select(actividad);
+    this.success = message;
+    this.buildCalendar();
+    this.loading = false;
+  }
+
+  private syncInscripcionesEnActividades(): void {
+    const byActividad = this.inscripciones.reduce<Record<string, InscripcionSecretaria[]>>((acc, inscripcion) => {
+      if (!inscripcion.actividadId) return acc;
+      const key = String(inscripcion.actividadId);
+      acc[key] = acc[key] || [];
+      acc[key].push(inscripcion);
+      return acc;
+    }, {});
+    this.actividades = this.actividades.map(actividad => ({
+      ...actividad,
+      inscripciones: byActividad[actividad.id] || actividad.inscripciones || []
+    }));
   }
 }

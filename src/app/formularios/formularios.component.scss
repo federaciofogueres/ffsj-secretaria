@@ -1,0 +1,121 @@
+.formularios {
+  border-radius: 18px;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 340px) 1fr;
+  gap: 1rem;
+}
+
+.list,
+.panel {
+  border: 1px solid #e6e6e6;
+  border-radius: 12px;
+  background: #fff;
+  padding: 1rem;
+}
+
+.form-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 1px solid #e6e6e6;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0.75rem;
+  text-align: left;
+  margin-bottom: 0.5rem;
+}
+
+.form-item.active {
+  border-color: #c4141c;
+  box-shadow: 0 8px 18px rgba(196, 20, 28, 0.12);
+}
+
+.form-item small {
+  display: block;
+  color: #667085;
+}
+
+.form-item em {
+  border-radius: 999px;
+  background: #eaf7ed;
+  color: #188040;
+  font-style: normal;
+  font-weight: 700;
+  padding: 0.2rem 0.55rem;
+  height: fit-content;
+}
+
+.form-item em.archived {
+  background: #f2f4f7;
+  color: #667085;
+}
+
+.editor form {
+  display: grid;
+  gap: 1rem;
+}
+
+.fields {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.field-row {
+  border: 1px solid #edf0f4;
+  border-radius: 10px;
+  background: #fbfcfe;
+  padding: 0.85rem;
+}
+
+.field-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.field-grid,
+.field-grid-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.75rem;
+}
+
+.field-grid label,
+.field-grid-preview label,
+.options {
+  display: grid;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #344054;
+}
+
+.check {
+  align-content: end;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+}
+
+.check input {
+  width: 18px;
+  height: 18px;
+}
+
+.options {
+  margin-top: 0.75rem;
+}
+
+.preview {
+  background: #fbfcfe;
+}
+
+@media (max-width: 991px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}

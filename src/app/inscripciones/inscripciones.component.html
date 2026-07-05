@@ -15,66 +15,26 @@
       <div class="alert alert-success" *ngIf="success">{{ success }}</div>
       <div class="text-muted" *ngIf="loading">Cargando...</div>
 
-      <div class="admin-grid mb-4" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
-        <form class="admin-panel" [formGroup]="inscripcionAdminForm" (ngSubmit)="crearInscripcion()">
-          <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-            <h2 class="h6 mb-0">{{ editingInscription ? 'Editar inscripcion' : 'Crear inscripcion' }}</h2>
-            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="nuevaInscripcion()">Nueva</button>
-          </div>
-          <label class="form-label">Titulo</label>
-          <input class="form-control" formControlName="titulo" />
-          <label class="form-label mt-2">Actividad vinculada</label>
-          <select class="form-select" formControlName="actividadId">
-            <option value="">Sin actividad vinculada</option>
-            <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
-          </select>
-          <div class="row g-2 mt-1">
-            <div class="col">
-              <label class="form-label">Publicacion</label>
-              <input type="date" class="form-control" formControlName="fechaPublicacion" />
-            </div>
-            <div class="col">
-              <label class="form-label">Fecha limite</label>
-              <input type="date" class="form-control" formControlName="fechaLimite" />
-            </div>
-          </div>
-          <div class="d-flex gap-3 mt-3">
-            <label class="form-check">
-              <input type="checkbox" class="form-check-input" formControlName="adultos" />
-              Adultos
-            </label>
-            <label class="form-check">
-              <input type="checkbox" class="form-check-input" formControlName="infantiles" />
-              Infantiles
-            </label>
-          </div>
-          <div class="d-flex gap-2 mt-3">
-            <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">
-              {{ editingInscription ? 'Guardar cambios' : 'Crear inscripcion' }}
-            </button>
+      <div class="layout" *ngIf="!detailMode">
+        <section class="detail list-page">
+          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
+            <h2 class="h6 mb-0">Listado de inscripciones</h2>
             <button
-              class="btn btn-outline-danger"
+              class="btn btn-foc-rojo"
               type="button"
-              *ngIf="editingInscription && selectedInscription"
-              [disabled]="loading"
-              (click)="borrarInscripcion()"
+              *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+              (click)="crearNuevaInscripcion()"
             >
-              Borrar
+              Crear inscripcion
             </button>
           </div>
-        </form>
-      </div>
-
-      <div class="layout">
-        <section class="detail">
-          <h2 class="h6 mb-3">Listado de inscripciones</h2>
           <div class="inscription-list mb-4">
-            <button
+            <div
               *ngFor="let item of inscripciones"
-              type="button"
               class="list-item"
-              [class.active]="item.id === selectedInscription?.id"
-              (click)="selectInscription(item)"
+              role="button"
+              tabindex="0"
+              (click)="openInscription(item)"
             >
               <div class="text-start">
                 <p class="title mb-1">{{ item.titulo }}</p>
@@ -82,10 +42,73 @@
                 <div class="dates small text-muted">
                   <span>Publicada: {{ item.fechaPublicacion | date : 'dd/MM/y' }}</span>
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
+                  <span class="ms-2" *ngIf="isAdminMode">Estado: {{ item.estado }}</span>
                 </div>
               </div>
-            </button>
+              <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirTodas(item)">Imprimir</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarTodas(item, 'csv')">Excel</button>
+                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarTodas(item, 'pdf')">PDF</button>
+              </div>
+            </div>
           </div>
+          <p class="text-muted mb-0" *ngIf="!inscripciones.length && !loading">No hay inscripciones disponibles.</p>
+        </section>
+      </div>
+
+      <div class="layout" *ngIf="detailMode">
+        <section class="detail">
+          <button class="btn btn-outline-secondary align-self-start" type="button" (click)="volverAlListado()">
+            <i class="bi bi-arrow-left me-1"></i>
+            Volver al listado
+          </button>
+          <form
+            class="admin-panel mt-3"
+            *ngIf="createMode && isAdminMode && permissions.hasPermission('inscripciones:write')"
+            [formGroup]="inscripcionAdminForm"
+            (ngSubmit)="crearInscripcion()"
+          >
+            <h3 class="section-title">Nueva inscripcion</h3>
+            <label class="form-label">Titulo</label>
+            <input class="form-control" formControlName="titulo" />
+            <label class="form-label mt-2">Formulario reutilizable</label>
+            <select class="form-select" formControlName="formularioId">
+              <option value="">Formulario propio de esta inscripcion</option>
+              <option *ngFor="let formulario of formularios" [value]="formulario.id">
+                {{ formulario.nombre }} ({{ formulario.campos.length }} campo(s))
+              </option>
+            </select>
+            <label class="form-label mt-2">Actividad vinculada</label>
+            <select class="form-select" formControlName="actividadId">
+              <option value="">Sin actividad vinculada</option>
+              <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
+            </select>
+            <div class="row g-2 mt-1">
+              <div class="col">
+                <label class="form-label">Publicacion</label>
+                <input type="date" class="form-control" formControlName="fechaPublicacion" />
+              </div>
+              <div class="col">
+                <label class="form-label">Fecha limite</label>
+                <input type="date" class="form-control" formControlName="fechaLimite" />
+              </div>
+            </div>
+            <div class="d-flex gap-3 mt-3">
+              <label class="form-check">
+                <input type="checkbox" class="form-check-input" formControlName="adultos" />
+                Adultos
+              </label>
+              <label class="form-check">
+                <input type="checkbox" class="form-check-input" formControlName="infantiles" />
+                Infantiles
+              </label>
+            </div>
+            <div class="d-flex gap-2 mt-3 flex-wrap">
+              <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Crear inscripcion</button>
+              <button class="btn btn-outline-secondary" type="button" (click)="volverAlListado()">Cancelar</button>
+            </div>
+          </form>
 
           <ng-container *ngIf="selectedInscription as inscription">
             <div class="detail-header d-flex align-items-start justify-content-between gap-3 flex-wrap">
@@ -99,7 +122,202 @@
               </span>
             </div>
 
-            <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode">
+            <div class="admin-tabs" *ngIf="isAdminMode">
+              <button type="button" class="tab-button" [class.active]="adminTab === 'documentacion'" (click)="setAdminTab('documentacion')">
+                Documentacion
+              </button>
+              <button type="button" class="tab-button" [class.active]="adminTab === 'gestion'" (click)="setAdminTab('gestion')">
+                Gestion
+              </button>
+              <button type="button" class="tab-button" [class.active]="adminTab === 'inscritos'" (click)="setAdminTab('inscritos')">
+                Inscritos
+              </button>
+            </div>
+
+            <div class="admin-tabs" *ngIf="!isAdminMode">
+              <button type="button" class="tab-button" [class.active]="associationTab === 'documentacion'" (click)="setAssociationTab('documentacion')">
+                Documentacion
+              </button>
+              <button type="button" class="tab-button" [class.active]="associationTab === 'formulario'" (click)="setAssociationTab('formulario')">
+                Formulario
+              </button>
+              <button type="button" class="tab-button" [class.active]="associationTab === 'asociados'" (click)="setAssociationTab('asociados')">
+                Asociados inscritos
+              </button>
+            </div>
+
+            <div class="documents mt-3" *ngIf="(isAdminMode && adminTab === 'documentacion') || (!isAdminMode && associationTab === 'documentacion')">
+              <h3 class="section-title">Documentos asociados</h3>
+              <div class="document-list" *ngIf="adjuntos.length; else noDocs">
+                <a class="document-item" *ngFor="let adjunto of adjuntos" [href]="documentUrl(adjunto)" target="_blank" rel="noopener">
+                  {{ adjunto.originalName || adjunto.fileName }}
+                </a>
+              </div>
+              <ng-template #noDocs>
+                <p class="text-muted mb-0">No hay documentos asociados.</p>
+              </ng-template>
+            </div>
+
+            <form
+              class="admin-panel mt-3"
+              *ngIf="isAdminMode && adminTab === 'gestion' && permissions.hasPermission('inscripciones:write')"
+              [formGroup]="inscripcionAdminForm"
+              (ngSubmit)="crearInscripcion()"
+            >
+              <h3 class="section-title">Gestion de inscripcion</h3>
+              <label class="form-label">Titulo</label>
+              <input class="form-control" formControlName="titulo" />
+              <label class="form-label mt-2">Formulario reutilizable</label>
+              <select class="form-select" formControlName="formularioId">
+                <option value="">Formulario propio de esta inscripcion</option>
+                <option *ngFor="let formulario of formularios" [value]="formulario.id">
+                  {{ formulario.nombre }} ({{ formulario.campos.length }} campo(s))
+                </option>
+              </select>
+              <label class="form-label mt-2">Actividad vinculada</label>
+              <select class="form-select" formControlName="actividadId">
+                <option value="">Sin actividad vinculada</option>
+                <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
+              </select>
+              <div class="row g-2 mt-1">
+                <div class="col">
+                  <label class="form-label">Publicacion</label>
+                  <input type="date" class="form-control" formControlName="fechaPublicacion" />
+                </div>
+                <div class="col">
+                  <label class="form-label">Fecha limite</label>
+                  <input type="date" class="form-control" formControlName="fechaLimite" />
+                </div>
+              </div>
+              <div class="d-flex gap-3 mt-3">
+                <label class="form-check">
+                  <input type="checkbox" class="form-check-input" formControlName="adultos" />
+                  Adultos
+                </label>
+                <label class="form-check">
+                  <input type="checkbox" class="form-check-input" formControlName="infantiles" />
+                  Infantiles
+                </label>
+              </div>
+              <div class="d-flex gap-2 mt-3 flex-wrap">
+                <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Guardar</button>
+                <button class="btn btn-outline-secondary" type="button" *ngIf="inscription.estado === 'abierta'" [disabled]="loading" (click)="cambiarEstadoInscripcion('cerrada')">
+                  Desactivar
+                </button>
+                <button class="btn btn-outline-success" type="button" *ngIf="inscription.estado === 'cerrada'" [disabled]="loading" (click)="cambiarEstadoInscripcion('abierta')">
+                  Activar
+                </button>
+                <button class="btn btn-outline-warning" type="button" [disabled]="loading" (click)="cambiarEstadoInscripcion('archivada')">
+                  Archivar
+                </button>
+                <button class="btn btn-outline-danger" type="button" [disabled]="loading" (click)="borrarInscripcion()">
+                  Borrar definitivamente
+                </button>
+              </div>
+            </form>
+
+            <section class="admin-panel mt-3" *ngIf="isAdminMode && adminTab === 'inscritos'">
+              <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+                <div>
+                  <h3 class="section-title mb-1">Asociaciones inscritas</h3>
+                  <p class="text-muted mb-0">{{ entradas.length }} entrada(s) registradas.</p>
+                </div>
+                <div class="d-flex gap-2 flex-wrap">
+                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="imprimirTodas(inscription)">Imprimir todas</button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'csv')">Excel</button>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'pdf')">PDF</button>
+                </div>
+              </div>
+
+              <div class="entries-table" *ngIf="entradas.length; else noEntradas">
+                <div class="entries-row header">
+                  <span>Asociacion</span>
+                  <span>Numero</span>
+                  <span>Estado</span>
+                  <span>Fecha</span>
+                  <span>Acciones</span>
+                </div>
+                <div class="entries-row" *ngFor="let entrada of entradas">
+                  <span>{{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</span>
+                  <span>{{ entrada.numero }}</span>
+                  <span>{{ entrada.estado }}</span>
+                  <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
+                  <span class="entry-actions">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                  </span>
+                </div>
+              </div>
+              <ng-template #noEntradas>
+                <p class="text-muted mb-0">Todavia no hay asociaciones inscritas.</p>
+              </ng-template>
+
+              <div class="entry-detail" *ngIf="selectedEntrada as entrada">
+                <div class="d-flex justify-content-between gap-2 flex-wrap mb-2">
+                  <div>
+                    <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle</p>
+                    <h4 class="h6 mb-0">{{ entrada.numero }} - {{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</h4>
+                  </div>
+                  <div class="d-flex gap-2 flex-wrap">
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
+                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                  </div>
+                </div>
+                <dl class="entry-data">
+                  <ng-container *ngFor="let field of inscription.campos">
+                    <dt>{{ field.label }}</dt>
+                    <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
+                  </ng-container>
+                </dl>
+              </div>
+            </section>
+
+            <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'summary' && miEntrada as entrada">
+              <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+                <div>
+                  <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripcion registrada</p>
+                  <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
+                  <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
+                </div>
+                <button class="btn btn-foc-rojo" type="button" (click)="cerrarResumen()">Cerrar</button>
+              </div>
+              <dl class="entry-data">
+                <dt>Participantes</dt>
+                <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
+                <ng-container *ngFor="let field of inscription.campos">
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
+                </ng-container>
+              </dl>
+            </section>
+
+            <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'view' && miEntrada as entrada">
+              <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
+                <div>
+                  <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripcion presentada</p>
+                  <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
+                  <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
+                </div>
+                <button class="btn btn-foc-rojo" type="button" [disabled]="!isWithinDeadline(inscription)" (click)="modificarMiInscripcion()">
+                  Modificar inscripcion
+                </button>
+              </div>
+              <dl class="entry-data">
+                <dt>Participantes</dt>
+                <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
+                <ng-container *ngFor="let field of inscription.campos">
+                  <dt>{{ field.label }}</dt>
+                  <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
+                </ng-container>
+              </dl>
+              <p class="text-muted mb-0 mt-2" *ngIf="!isWithinDeadline(inscription)">El plazo de modificacion esta cerrado.</p>
+            </section>
+
+            <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'edit'">
+              <h3 class="section-title">Formulario</h3>
               <div class="field-grid">
                 <ng-container *ngFor="let field of inscription.campos">
                   <div class="field" [class.full]="field.type === 'textarea'">
@@ -113,6 +331,22 @@
                         <option value="" disabled>Selecciona una opcion</option>
                         <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
                       </select>
+                      <select *ngSwitchCase="'asociado'" class="form-select" [formControlName]="field.key">
+                        <option value="" disabled>Selecciona un asociado</option>
+                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
+                      </select>
+                      <select *ngSwitchCase="'asociado_adulto'" class="form-select" [formControlName]="field.key">
+                        <option value="" disabled>Selecciona un asociado adulto</option>
+                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
+                      </select>
+                      <select *ngSwitchCase="'asociado_infantil'" class="form-select" [formControlName]="field.key">
+                        <option value="" disabled>Selecciona un asociado infantil</option>
+                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
+                      </select>
+                      <select *ngSwitchCase="'responsable'" class="form-select" [formControlName]="field.key">
+                        <option value="" disabled>Selecciona responsable</option>
+                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
+                      </select>
                       <input *ngSwitchDefault class="form-control" [attr.type]="field.type" [formControlName]="field.key" />
                     </ng-container>
                     <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
@@ -123,28 +357,124 @@
               </div>
             </form>
 
-            <div class="participants mt-3" *ngIf="!isAdminMode">
+            <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'asociados' && associationMode !== 'edit' && miEntrada as entrada">
+              <h3 class="section-title">Asociados inscritos</h3>
+              <p class="text-muted mb-0">{{ entradaParticipantesLabel(entrada) }}</p>
+            </section>
+
+            <div class="participants mt-3" *ngIf="!isAdminMode && associationTab === 'asociados' && associationMode === 'edit'">
               <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
                 <h3 class="section-title mb-0">Seleccionar asociados</h3>
+                <span class="text-muted small">{{ selectedParticipants.size }} seleccionado(s)</span>
               </div>
+
+              <div class="participant-toolbar">
+                <div class="participant-tabs" role="tablist" aria-label="Tipos de asociados">
+                  <button
+                    type="button"
+                    class="tab-button"
+                    [class.active]="participantTab === 'adulto'"
+                    [disabled]="!inscription.tiposPermitidos.includes('adulto')"
+                    (click)="setParticipantTab('adulto')"
+                  >
+                    Adultos
+                  </button>
+                  <button
+                    type="button"
+                    class="tab-button"
+                    [class.active]="participantTab === 'infantil'"
+                    [disabled]="!inscription.tiposPermitidos.includes('infantil')"
+                    (click)="setParticipantTab('infantil')"
+                  >
+                    Infantiles
+                  </button>
+                </div>
+
+                <div class="participant-filters">
+                  <label class="filter-field">
+                    <span>Buscar</span>
+                    <input
+                      class="form-control"
+                      type="search"
+                      [(ngModel)]="participantSearch"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="onParticipantSearchChange()"
+                      placeholder="Nombre, cargo o DNI"
+                    />
+                  </label>
+                  <label class="filter-field">
+                    <span>Ordenar</span>
+                    <select
+                      class="form-select"
+                      [(ngModel)]="participantSort"
+                      [ngModelOptions]="{ standalone: true }"
+                      (ngModelChange)="onParticipantSortChange()"
+                    >
+                      <option value="nombre-asc">Nombre A-Z</option>
+                      <option value="nombre-desc">Nombre Z-A</option>
+                      <option value="cargo-asc">Cargo A-Z</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <label class="select-all">
+                <input type="checkbox" [checked]="allTabParticipantsSelected" (change)="toggleAllTabParticipants()" />
+                Seleccionar/deseleccionar todos los asociados de esta pestaña
+              </label>
+
               <div class="participant-list">
-                <label class="participant-item" *ngFor="let person of availableParticipants">
+                <label class="participant-item" *ngFor="let person of pagedParticipants">
                   <input type="checkbox" [checked]="isParticipantSelected(person)" (change)="toggleParticipant(person)" />
                   <div class="info">
-                    <p class="name mb-0">{{ person.nombre }}</p>
-                    <small class="text-muted">{{ person.cargo }} - {{ person.tipo }}</small>
+                    <p class="name mb-0">{{ person.nombre }} {{ person.apellidos }}</p>
+                    <small class="text-muted">{{ person.cargo || 'Sin cargo' }} - {{ person.tipo }}</small>
                   </div>
                 </label>
               </div>
+
+              <div class="participant-pagination" *ngIf="filteredParticipants.length">
+                <div class="text-muted small">
+                  {{ participantRangeStart }} - {{ participantRangeEnd }} de {{ filteredParticipants.length }}
+                </div>
+                <label class="page-size">
+                  <span>Por pagina</span>
+                  <select
+                    class="form-select form-select-sm"
+                    [(ngModel)]="participantPageSize"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onParticipantPageSizeChange()"
+                  >
+                    <option *ngFor="let size of participantPageSizes" [ngValue]="size">{{ size }}</option>
+                  </select>
+                </label>
+                <div class="page-actions">
+                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="participantPage === 1" (click)="previousParticipantPage()">
+                    Anterior
+                  </button>
+                  <span class="small text-muted">Pagina {{ participantPage }} de {{ participantTotalPages }}</span>
+                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="participantPage === participantTotalPages" (click)="nextParticipantPage()">
+                    Siguiente
+                  </button>
+                </div>
+              </div>
+              <p class="text-muted mb-0 mt-2" *ngIf="!filteredParticipants.length">No hay asociados disponibles con los filtros actuales.</p>
             </div>
 
-            <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode">
+            <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode && associationMode === 'edit'">
               <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmit" (click)="submit()">
                 <i class="bi bi-send me-1"></i>
-                Inscribirse
+                {{ miEntrada ? 'Guardar cambios' : 'Inscribirse' }}
+              </button>
+              <button type="button" class="btn btn-outline-secondary" *ngIf="miEntrada" (click)="associationMode = 'view'">
+                Cancelar
               </button>
             </div>
           </ng-container>
+
+          <p class="text-muted mb-0" *ngIf="!selectedInscription && !createMode">
+            No se ha podido cargar el detalle de la inscripcion.
+          </p>
         </section>
       </div>
     </div>

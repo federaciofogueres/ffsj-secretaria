@@ -6,11 +6,13 @@ import { AsociacionComponent } from './asociacion/asociacion.component';
 import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { CalendarioComponent } from './calendario/calendario.component';
+import { FormulariosComponent } from './formularios/formularios.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
 import { SolicitudesComponent } from './solicitudes/solicitudes.component';
+import { adminGuard } from './core/admin.guard';
 import { permissionGuard } from './core/permission.guard';
 
 export const routes: Routes = [
@@ -83,6 +85,39 @@ export const routes: Routes = [
       permission: 'inscripciones:read',
       moduleName: 'Inscripciones',
       moduleDescription: 'Permite apuntar a asociados de la entidad en eventos y actividades ya existentes.'
+    }
+  },
+  {
+    path: 'formularios',
+    component: FormulariosComponent,
+    title: 'Formularios',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'inscripciones:write',
+      moduleName: 'Formularios',
+      moduleDescription: 'Constructor de plantillas de formulario reutilizables para inscripciones.'
+    }
+  },
+  {
+    path: 'inscripciones/nueva',
+    component: InscripcionesComponent,
+    title: 'Crear inscripcion',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'inscripciones:write',
+      moduleName: 'Inscripciones',
+      moduleDescription: 'Creacion de una nueva inscripcion.'
+    }
+  },
+  {
+    path: 'inscripciones/:id',
+    component: InscripcionesComponent,
+    title: 'Detalle de inscripcion',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'inscripciones:read',
+      moduleName: 'Inscripciones',
+      moduleDescription: 'Detalle de una inscripcion para gestion o presentacion.'
     }
   },
   {

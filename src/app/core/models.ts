@@ -145,7 +145,7 @@ export interface RegistroMensajeSecretaria {
 export interface InscripcionSecretaria {
   id: string;
   asociacionId: number;
-  formularioId: string;
+  formularioId: string | null;
   actividadId?: string | null;
   titulo: string;
   estado: string;
@@ -155,12 +155,35 @@ export interface InscripcionSecretaria {
   campos: CampoInscripcion[];
 }
 
+export interface InscripcionEntradaSecretaria {
+  id: number;
+  numero: string;
+  asociacionId: number;
+  asociacionNombre?: string;
+  formularioId: string;
+  estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada';
+  fechaEntrada: string;
+  participantes: string[];
+  datos: Record<string, unknown>;
+}
+
 export interface CampoInscripcion {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'tel' | 'email' | 'number' | 'date' | 'select';
+  type: 'text' | 'textarea' | 'tel' | 'email' | 'number' | 'date' | 'select' | 'asociado' | 'asociado_adulto' | 'asociado_infantil' | 'responsable';
   required?: boolean;
   options?: string[];
+}
+
+export interface FormularioInscripcion {
+  id: string;
+  nombre: string;
+  descripcion?: string | null;
+  estado: 'activo' | 'archivado';
+  campos: CampoInscripcion[];
+  inscripcionesCount: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Incidencia {

@@ -9,6 +9,8 @@ import {
   AdjuntoSecretaria,
   CargoResumen,
   Incidencia,
+  FormularioInscripcion,
+  InscripcionEntradaSecretaria,
   InscripcionSecretaria,
   JustificanteSecretaria,
   RegistroMensajeSecretaria,
@@ -154,15 +156,30 @@ export class SecretariaService {
     });
   }
 
-  getInscripciones(asociacionId: number): Observable<{ inscripciones: InscripcionSecretaria[] }> {
+  getInscripciones(asociacionId: number, includeInactive = false): Observable<{ inscripciones: InscripcionSecretaria[] }> {
+    let params = new HttpParams().set('asociacionId', asociacionId);
+    if (includeInactive) params = params.set('includeInactive', 'true');
     return this.http.get<{ inscripciones: InscripcionSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones`, {
-      params: new HttpParams().set('asociacionId', asociacionId),
+      params,
       headers: this.authHeaders()
     });
   }
 
   enviarInscripcion(payload: unknown): Observable<unknown> {
     return this.http.post(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getInscripcionEntradas(formularioId: string): Observable<{ entradas: InscripcionEntradaSecretaria[] }> {
+    return this.http.get<{ entradas: InscripcionEntradaSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas`, {
+      params: new HttpParams().set('formularioId', formularioId),
+      headers: this.authHeaders()
+    });
+  }
+
+  getMiEntradaInscripcion(formularioId: string): Observable<InscripcionEntradaSecretaria> {
+    return this.http.get<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/${formularioId}/mi-entrada`, {
       headers: this.authHeaders()
     });
   }
@@ -181,6 +198,32 @@ export class SecretariaService {
 
   borrarInscripcion(id: string): Observable<unknown> {
     return this.http.delete(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getFormularios(includeInactive = false): Observable<{ formularios: FormularioInscripcion[] }> {
+    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
+    return this.http.get<{ formularios: FormularioInscripcion[] }>(`${this.apiUrl.secretariaBasePath}/formularios`, {
+      params,
+      headers: this.authHeaders()
+    });
+  }
+
+  crearFormulario(payload: unknown): Observable<FormularioInscripcion> {
+    return this.http.post<FormularioInscripcion>(`${this.apiUrl.secretariaBasePath}/formularios`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  actualizarFormulario(id: string, payload: unknown): Observable<FormularioInscripcion> {
+    return this.http.put<FormularioInscripcion>(`${this.apiUrl.secretariaBasePath}/formularios/${id}`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  borrarFormulario(id: string): Observable<unknown> {
+    return this.http.delete(`${this.apiUrl.secretariaBasePath}/formularios/${id}`, {
       headers: this.authHeaders()
     });
   }
@@ -236,6 +279,10 @@ export class SecretariaService {
     return this.http.delete(`${this.apiUrl.secretariaBasePath}/adjuntos/${id}`, {
       headers: this.authHeaders()
     });
+  }
+
+  adjuntoDownloadUrl(id: number): string {
+    return `${this.apiUrl.secretariaBasePath}/adjuntos/${id}/download`;
   }
 
   getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
