@@ -151,6 +151,7 @@
         <li *ngFor="let item of detalle.items || []">
           <div class="item-heading">
             <span class="tipo-badge" [ngClass]="tipoClass(tipoItem(item))">{{ labelTipoItem(item) }}</span>
+            <span class="estado-badge" [ngClass]="estadoItemClass(item)">{{ labelEstadoItem(item) }}</span>
             <div>
               <strong>{{ resumenItem(item) }}</strong>
               <span>{{ identifierItem(item) }}</span>

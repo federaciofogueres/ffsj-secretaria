@@ -11,6 +11,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FfsjDialogAlertService, AlertButtonType } from 'ffsj-web-components';
 import * as XLSX from 'xlsx';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -34,7 +35,8 @@ type TabKey = 'adultos' | 'infantiles';
     MatButtonModule,
     MatIconModule,
     MatRippleModule,
-    MatMenuModule
+    MatMenuModule,
+    MatTooltipModule
   ],
   templateUrl: './asociados.component.html',
   styleUrls: ['./asociados.component.scss']
@@ -123,6 +125,10 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
         this.openDetailsDialog(asociado, []);
       }
     });
+  }
+
+  esBaja(asociado: Asociado): boolean {
+    return String(asociado.estado || '').toLowerCase() === 'baja';
   }
 
   private openDetailsDialog(asociado: Asociado, historico: HistoricoAsociado[]): void {

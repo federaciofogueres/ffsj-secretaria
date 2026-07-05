@@ -75,10 +75,13 @@ export class CensoService {
       nombre: item.nombre ?? item.name ?? '',
       apellidos: item.apellidos ?? item.surnames ?? '',
       cargo: item.cargo ?? item.charge ?? item.cargoNombre ?? item.cargos?.[0]?.nombre ?? '',
+      cargoId: Number(item.cargoId ?? item.idCargo ?? item.id_cargo ?? 0) || undefined,
+      cargoIds: this.mapNumberList(item.cargoIds ?? item.cargo_ids ?? item.idCargos),
       tipo: this.mapTipoAsociado(tipoApi, item.child, fechaNacimiento),
       dni: item.dni ?? item.nif,
       sip: item.sip,
       estado: item.estado,
+      fechaBaja: item.fechaBaja ?? item.fecha_baja,
       fechaAlta: item.fechaAlta ?? item.date_up,
       fechaNacimiento: this.formatDateForInput(fechaNacimiento),
       email: item.email,
@@ -128,6 +131,17 @@ export class CensoService {
       idAsociacion: Number(item.idAsociacion ?? item.id_asociacion ?? 0),
       active: item.active ?? false
     };
+  }
+
+  private mapNumberList(value: unknown): number[] {
+    if (Array.isArray(value)) {
+      return value.map(item => Number(item)).filter(Boolean);
+    }
+
+    return String(value || '')
+      .split(',')
+      .map(item => Number(item.trim()))
+      .filter(Boolean);
   }
 
   private mapTipoAsociado(tipoApi: unknown, child: unknown, fechaNacimiento: unknown): Asociado['tipo'] {

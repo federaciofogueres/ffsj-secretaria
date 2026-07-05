@@ -213,6 +213,14 @@ export class SolicitudesComponent implements OnInit {
     return this.labelTipo(tipo);
   }
 
+  labelEstadoItem(item: SolicitudItemSecretaria): string {
+    return item.estado === 'validado' ? 'Aplicado en censo' : 'Pendiente de aplicar';
+  }
+
+  estadoItemClass(item: SolicitudItemSecretaria): string {
+    return item.estado === 'validado' ? 'estado-validada' : 'estado-registrada';
+  }
+
   identifierItem(item: { datos: Record<string, any> }): string {
     const datos = item.datos || {};
     return datos.dni || datos.nif || datos.sip || '-';

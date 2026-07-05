@@ -68,7 +68,7 @@ export class AsociadosService {
   private getCargoActual(historico: HistoricoAsociado[]): string {
     const currentYear = new Date().getFullYear();
     const cargos = historico
-      .filter(item => Number(item.ejercicio) === currentYear)
+      .filter(item => Number(item.ejercicio) === currentYear && Number(item.active) === 1)
       .map(item => item.cargo)
       .filter(Boolean);
 

@@ -65,7 +65,7 @@
                   *ngFor="let a of asociadosPagina('modificaciones', 'adultos')"
                   class="list-group-item d-flex justify-content-between align-items-center clickable"
                   [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
-                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                   [class.disabled-item]="asociadoBloqueado(a)"
                   (click)="iniciarModificacion(a)"
                 >
@@ -94,7 +94,7 @@
                   *ngFor="let a of asociadosPagina('modificaciones', 'infantiles')"
                   class="list-group-item d-flex justify-content-between align-items-center clickable"
                   [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
-                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                  [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                   [class.disabled-item]="asociadoBloqueado(a)"
                   (click)="iniciarModificacion(a)"
                 >
@@ -157,7 +157,7 @@
                 class="list-group-item d-flex align-items-center gap-2 clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
                 [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
-                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                 [class.disabled-item]="asociadoBloqueado(a)"
                 (click)="toggleSeleccionBaja(a)"
               >
@@ -192,7 +192,7 @@
                 class="list-group-item d-flex align-items-center gap-2 clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
                 [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
-                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja'"
+                [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                 [class.disabled-item]="asociadoBloqueado(a)"
                 (click)="toggleSeleccionBaja(a)"
               >
@@ -336,9 +336,30 @@
         <div class="row g-3">
           <div class="col-12 col-md-6">
             <label class="form-label">Tipo de hoguera</label>
-            <select class="form-select" formControlName="tipo">
+            <select class="form-select" formControlName="tipo" (change)="actualizarCargoPorTipo()">
               <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
             </select>
+          </div>
+          <div class="col-12 col-md-6">
+            <label class="form-label">Cargo</label>
+            <div class="input-group">
+              <select class="form-select" formControlName="cargoId">
+                <option [ngValue]="null">Selecciona cargo</option>
+                <option *ngFor="let cargo of cargosFormulario" [ngValue]="cargo.id" [disabled]="cargosSeleccionadosIds.has(cargo.id)">
+                  {{ cargo.nombre }}
+                </option>
+              </select>
+              <button class="btn btn-outline-secondary" type="button" (click)="agregarCargoSeleccionado()">
+                Anadir
+              </button>
+            </div>
+            <div class="selected-cargos" *ngIf="cargosSeleccionados.length > 0">
+              <span class="cargo-chip" *ngFor="let cargo of cargosSeleccionados">
+                {{ cargo.nombre }}
+                <button type="button" aria-label="Quitar cargo" (click)="quitarCargoSeleccionado(cargo.id)">×</button>
+              </span>
+            </div>
+            <p class="text-danger small mt-1 mb-0" *ngIf="cargosSeleccionados.length === 0">Selecciona al menos un cargo.</p>
           </div>
           <div class="col-12 col-md-6">
             <label class="form-label">DNI/NIE</label>
@@ -493,7 +514,7 @@
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Cargos obligatorios</p>
         <h2 id="sustitucionTitle" class="h5 mb-1 text-rojo">Selecciona sustitutos</h2>
-        <p class="text-muted mb-0">La baja afecta a cargos obligatorios. Indica quien debe ocupar cada cargo antes de enviar la solicitud.</p>
+        <p class="text-muted mb-0">El tramite afecta a cargos obligatorios. Indica quien debe ocupar cada cargo antes de enviar la solicitud.</p>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarSustitucionesDialog()"></button>
     </header>

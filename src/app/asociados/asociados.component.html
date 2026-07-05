@@ -50,7 +50,10 @@
                     <span class="avatar-placeholder">{{ (element.nombre | slice:0:1) + (element.apellidos | slice:0:1) }}</span>
                     <div>
                       <div class="cell-name">{{ element.nombre }} {{ element.apellidos }}</div>
-                      <div class="cell-sub">ID {{ element.id }}</div>
+                      <div class="cell-sub">
+                        ID {{ element.id }}
+                        <span class="baja-badge" *ngIf="esBaja(element)">Baja</span>
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -68,6 +71,8 @@
                 (click)="openDetails(row)"
                 matRipple
                 class="clickable-row"
+                [class.row-baja]="esBaja(row)"
+                [matTooltip]="esBaja(row) ? 'Baja' : ''"
               ></tr>
               <tr class="no-data" *matNoDataRow>
                 <td colspan="2">No hay asociados en esta categorÃ­a.</td>
@@ -82,7 +87,10 @@
                     <span class="avatar-placeholder">{{ (element.nombre | slice:0:1) + (element.apellidos | slice:0:1) }}</span>
                     <div>
                       <div class="cell-name">{{ element.nombre }} {{ element.apellidos }}</div>
-                      <div class="cell-sub">ID {{ element.id }}</div>
+                      <div class="cell-sub">
+                        ID {{ element.id }}
+                        <span class="baja-badge" *ngIf="esBaja(element)">Baja</span>
+                      </div>
                     </div>
                   </div>
                 </td>
@@ -100,6 +108,8 @@
                 (click)="openDetails(row)"
                 matRipple
                 class="clickable-row"
+                [class.row-baja]="esBaja(row)"
+                [matTooltip]="esBaja(row) ? 'Baja' : ''"
               ></tr>
               <tr class="no-data" *matNoDataRow>
                 <td colspan="2">No hay asociados en esta categoría.</td>

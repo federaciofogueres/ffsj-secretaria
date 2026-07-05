@@ -30,6 +30,38 @@
   color: #1f1f1f;
 }
 
+.selected-cargos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.cargo-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.18rem 0.55rem;
+  background: #eef2ff;
+  color: #1e3a8a;
+  font-size: 0.82rem;
+  font-weight: 800;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: 0;
+    border-radius: 999px;
+    background: rgba(30, 58, 138, 0.14);
+    color: #1e3a8a;
+    line-height: 1;
+  }
+}
+
 .pending-list {
   list-style: none;
   padding: 0;

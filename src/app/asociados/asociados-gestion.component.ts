@@ -22,6 +22,17 @@ interface SustitucionCargoRequerido {
   sustitutoId: number | null;
 }
 
+interface ModificacionPendienteConSustitucion {
+  asociado: Asociado;
+  datos: Record<string, any>;
+  datosOriginales: Record<string, any> | null;
+}
+
+interface ConflictoCargoExclusivo {
+  cargo: CargoResumen;
+  titular: Asociado;
+}
+
 @Component({
   selector: 'app-asociados-gestion',
   standalone: true,
@@ -48,6 +59,9 @@ export class AsociadosGestionComponent implements OnInit {
   sustitucionesDialogOpen = false;
   sustitucionesCargo: SustitucionCargoRequerido[] = [];
   bajasPendientesSustitucion: Asociado[] = [];
+  sustitucionOrigen: 'baja' | 'modificacion' = 'baja';
+  modificacionPendienteConSustitucion: ModificacionPendienteConSustitucion | null = null;
+  cargosSeleccionadosIds = new Set<number>();
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
@@ -65,6 +79,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
+    cargoId: [null as number | null],
     dni: ['', Validators.required],
     sip: [''],
     nacimiento: [''],
@@ -90,7 +105,10 @@ export class AsociadosGestionComponent implements OnInit {
   ngOnInit(): void {
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
     this.asociadosService.getInfantiles().subscribe(kids => (this.infantiles = kids));
-    this.censoService.getCargos().subscribe(cargos => (this.cargos = cargos));
+    this.censoService.getCargos().subscribe(cargos => {
+      this.cargos = cargos;
+      this.actualizarCargoPorTipo();
+    });
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
   }
@@ -110,6 +128,21 @@ export class AsociadosGestionComponent implements OnInit {
 
   get seleccionRegistroValida(): boolean {
     return this.registrosSeleccionados.length > 0 && this.tipoSeleccionado !== null;
+  }
+
+  get cargosFormulario(): CargoResumen[] {
+    const infantil = this.altaForm.value.tipo === 'Hoguera infantil';
+    return this.cargos
+      .filter(cargo => Number(cargo.id) > 0)
+      .filter(cargo => this.cargoActivo(cargo))
+      .filter(cargo => this.cargoEsInfantil(cargo) === infantil)
+      .sort((a, b) => this.normalizeText(a.nombre).localeCompare(this.normalizeText(b.nombre), 'es'));
+  }
+
+  get cargosSeleccionados(): CargoResumen[] {
+    return [...this.cargosSeleccionadosIds]
+      .map(id => this.cargos.find(cargo => Number(cargo.id) === Number(id)))
+      .filter(Boolean) as CargoResumen[];
   }
 
   setTab(tab: GestionTab): void {
@@ -144,7 +177,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   iniciarModificacion(asociado: Asociado): void {
-    if (this.estadoPendienteAsociado(asociado)) {
+    if (this.asociadoBloqueado(asociado)) {
       return;
     }
 
@@ -163,6 +196,7 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = true;
       this.altaForm.patchValue({
         tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
+        cargoId: null,
         dni: asociado.dni ?? String(asociado.id),
         sip: asociado.sip ?? '',
         nacimiento: asociado.fechaNacimiento ?? '',
@@ -175,6 +209,8 @@ export class AsociadosGestionComponent implements OnInit {
         telefono: asociado.telefono ?? '',
         email: asociado.email ?? ''
       });
+      this.cargosSeleccionadosIds = new Set(asociado.cargoIds?.length ? asociado.cargoIds : [asociado.cargoId ?? this.getCargoIdPorNombre(asociado.cargo, asociado.tipo)].filter(Boolean) as number[]);
+      this.precargarCargoActual(asociado);
     });
   }
 
@@ -187,9 +223,24 @@ export class AsociadosGestionComponent implements OnInit {
       this.altaForm.markAllAsTouched();
       return;
     }
+    if (this.cargosSeleccionadosIds.size === 0) {
+      this.showError('Selecciona al menos un cargo.');
+      return;
+    }
 
     const tipo: SolicitudTipo = this.modoFormulario === 'alta' ? 'alta' : 'cambio';
-    const datos = { ...this.altaForm.value, tipoHoguera: this.altaForm.value.tipo };
+    const cargosSeleccionados = this.cargosSeleccionados;
+    const cargoIds = cargosSeleccionados.map(cargo => Number(cargo.id));
+    const cargoNombres = cargosSeleccionados.map(cargo => cargo.nombre);
+    const datos = {
+      ...this.altaForm.value,
+      cargoId: cargoIds[0],
+      cargoIds,
+      cargoNombre: cargoNombres[0] || '',
+      cargoNombres,
+      tipoCambio: this.modoFormulario === 'modificacion' ? 'cargo' : undefined,
+      tipoHoguera: this.altaForm.value.tipo
+    };
     const datosOriginales = this.asociadoEnEdicion ? { ...this.asociadoEnEdicion } : null;
 
     if (this.tieneDuplicadoPendiente(tipo, this.asociadoEnEdicion?.id ?? null, datos)) {
@@ -197,6 +248,184 @@ export class AsociadosGestionComponent implements OnInit {
       return;
     }
 
+    if (this.modoFormulario === 'modificacion' && this.asociadoEnEdicion) {
+      this.loading = true;
+      this.detectarSustitucionesPorCambioCargo(this.asociadoEnEdicion, cargoIds).subscribe({
+        next: sustituciones => {
+          this.loading = false;
+          if (sustituciones.length) {
+            this.sustitucionOrigen = 'modificacion';
+            this.modificacionPendienteConSustitucion = {
+              asociado: this.asociadoEnEdicion as Asociado,
+              datos,
+              datosOriginales
+            };
+            this.bajasPendientesSustitucion = [this.asociadoEnEdicion as Asociado];
+            this.sustitucionesCargo = sustituciones;
+            this.sustitucionesDialogOpen = true;
+            return;
+          }
+
+          this.crearRegistroAltaOCambioConConflictos(tipo, datos, datosOriginales, cargoIds);
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se han podido comprobar los cargos obligatorios.');
+        }
+      });
+      return;
+    }
+
+    this.crearRegistroAltaOCambioConConflictos(tipo, datos, datosOriginales, cargoIds);
+  }
+
+  private crearRegistroAltaOCambioConConflictos(
+    tipo: SolicitudTipo,
+    datos: Record<string, any>,
+    datosOriginales: Record<string, any> | null,
+    cargoIds: number[]
+  ): void {
+    const conflictos = this.getConflictosCargoExclusivo(cargoIds);
+    if (!conflictos.length) {
+      this.crearRegistroAltaOCambio(tipo, datos, datosOriginales);
+      return;
+    }
+
+    this.confirmarCesionCargoObligatorio(tipo, datos, datosOriginales, conflictos);
+  }
+
+  private confirmarCesionCargoObligatorio(
+    tipo: SolicitudTipo,
+    datos: Record<string, any>,
+    datosOriginales: Record<string, any> | null,
+    conflictos: ConflictoCargoExclusivo[]
+  ): void {
+    const conflicto = conflictos[0];
+    const cargoNombre = conflicto.cargo.nombre;
+    const titularNombre = `${conflicto.titular.nombre} ${conflicto.titular.apellidos}`.trim();
+    const nuevoNombre = `${datos['nombre'] || ''} ${datos['apellidos'] || ''}`.trim();
+    const extra = conflictos.length > 1
+      ? `<p>Tambien se aplicaran ${conflictos.length - 1} cambio(s) de cargo obligatorio adicionales.</p>`
+      : '';
+    const ref = this.dialog.openDialogAlert({
+      title: 'Cambiar cargo obligatorio',
+      content: `Desea cambiar el cargo ${cargoNombre} de ${titularNombre} por el de ${nuevoNombre}?`,
+      innerHtml: `
+        <p>Desea cambiar el cargo <strong>${cargoNombre}</strong> de <strong>${titularNombre}</strong> por el de <strong>${nuevoNombre}</strong>?</p>
+        <p>Con este cambio <strong>${titularNombre}</strong> dejara de tener el cargo <strong>${cargoNombre}</strong> y lo tendra <strong>${nuevoNombre}</strong>.</p>
+        ${extra}
+      `,
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result !== AlertButtonType.Aceptar) return;
+      this.crearYEnviarSolicitudConCesionCargo(tipo, datos, datosOriginales, conflictos);
+    });
+  }
+
+  private crearYEnviarSolicitudConCesionCargo(
+    tipo: SolicitudTipo,
+    datos: Record<string, any>,
+    datosOriginales: Record<string, any> | null,
+    conflictos: ConflictoCargoExclusivo[]
+  ): void {
+    const cargosCedidosPorTitular = conflictos.reduce<Map<number, ConflictoCargoExclusivo[]>>((acc, conflicto) => {
+      const current = acc.get(conflicto.titular.id) || [];
+      current.push(conflicto);
+      acc.set(conflicto.titular.id, current);
+      return acc;
+    }, new Map<number, ConflictoCargoExclusivo[]>());
+    const nuevoNombre = `${datos['nombre'] || ''} ${datos['apellidos'] || ''}`.trim();
+
+    this.loading = true;
+    const registroBase$ = this.secretariaService.crearRegistroPendiente({
+      asociacionId: this.asociacionId,
+      tipo,
+      asociadoId: this.asociadoEnEdicion?.id ?? null,
+      datos: {
+        ...datos,
+        cesionesCargo: conflictos.map(conflicto => ({
+          cargoId: Number(conflicto.cargo.id),
+          cargoNombre: conflicto.cargo.nombre,
+          titularAnteriorId: conflicto.titular.id,
+          titularAnteriorNombre: `${conflicto.titular.nombre} ${conflicto.titular.apellidos}`.trim()
+        }))
+      },
+      datosOriginales,
+      observaciones: 'Solicitud con cesion automatica de cargo obligatorio'
+    });
+
+    const registrosCesion$ = [...cargosCedidosPorTitular.entries()].map(([titularId, conflictosTitular]) => {
+      const titular = conflictosTitular[0].titular;
+      const cargosARetirar = new Set(conflictosTitular.map(conflicto => Number(conflicto.cargo.id)));
+      let cargosRestantes = this.getCargoIdsAsociado(titular).filter(cargoId => !cargosARetirar.has(cargoId));
+      if (!cargosRestantes.length) {
+        cargosRestantes = [this.getDefaultCargoId(titular.tipo === 'infantil' ? 'Hoguera infantil' : 'Hoguera adulta')].filter(Boolean);
+      }
+      const cargoNombres = cargosRestantes.map(cargoId => this.cargos.find(cargo => Number(cargo.id) === cargoId)?.nombre || String(cargoId));
+      return this.secretariaService.crearRegistroPendiente({
+        asociacionId: this.asociacionId,
+        tipo: 'cambio',
+        asociadoId: titularId,
+        datos: {
+          asociadoId: titularId,
+          nombre: titular.nombre,
+          apellidos: titular.apellidos,
+          tramiteOrigen: 'cesion_cargo_obligatorio',
+          tipoCambio: 'cargo',
+          cargoId: cargosRestantes[0],
+          cargoIds: cargosRestantes,
+          cargoNombre: cargoNombres[0] || '',
+          cargoNombres,
+          cedeCargoAId: this.asociadoEnEdicion?.id ?? null,
+          cedeCargoANombre: nuevoNombre,
+          cargosCedidos: conflictosTitular.map(conflicto => ({
+            cargoId: Number(conflicto.cargo.id),
+            cargoNombre: conflicto.cargo.nombre
+          }))
+        },
+        datosOriginales: { ...titular },
+        observaciones: 'Cesion de cargo obligatorio asociada a solicitud'
+      });
+    });
+
+    forkJoin([registroBase$, ...registrosCesion$])
+      .pipe(
+        switchMap(items =>
+          this.secretariaService.crearSolicitud({
+            asociacionId: this.asociacionId,
+            tipo,
+            registroPendienteIds: items.map(item => item.id),
+            observaciones: `Solicitud conjunta: ${tipo} y cesion de cargo obligatorio`
+          })
+        ),
+        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+      )
+      .subscribe({
+        next: solicitud => {
+          this.solicitudes.unshift(solicitud);
+          this.solicitudDetalle = solicitud;
+          this.resetFormulario();
+          this.asociadoEnEdicion = null;
+          this.mostrarFormMod = false;
+          this.activeTab = 'solicitudes';
+          this.loading = false;
+          this.dialog.openDialogAlert({
+            title: 'Solicitud enviada',
+            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
+            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p>`,
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        },
+        error: () => {
+          this.loading = false;
+          this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+        }
+      });
+  }
+
+  private crearRegistroAltaOCambio(tipo: SolicitudTipo, datos: Record<string, any>, datosOriginales: Record<string, any> | null): void {
     this.loading = true;
     this.secretariaService
       .crearRegistroPendiente({
@@ -229,7 +458,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   toggleSeleccionBaja(asociado: Asociado): void {
-    if (this.estadoPendienteAsociado(asociado)) {
+    if (this.asociadoBloqueado(asociado)) {
       return;
     }
 
@@ -246,7 +475,15 @@ export class AsociadosGestionComponent implements OnInit {
       return;
     }
     if (this.seleccionBaja.size === 0) return;
-    const seleccionados = [...this.seleccionBaja].map(id => this.buscarAsociado(id)).filter(Boolean) as Asociado[];
+    const seleccionados = [...this.seleccionBaja]
+      .map(id => this.buscarAsociado(id))
+      .filter(Boolean)
+      .filter(asociado => !this.asociadoBloqueado(asociado as Asociado)) as Asociado[];
+    if (seleccionados.length === 0) {
+      this.seleccionBaja.clear();
+      this.showError('No se pueden tramitar asociados dados de baja o bloqueados.');
+      return;
+    }
     const duplicados = seleccionados.filter(asociado => this.tieneDuplicadoPendiente('baja', asociado.id));
     if (duplicados.length > 0) {
       this.showError(`Ya existe una baja pendiente para: ${duplicados.map(a => `${a.nombre} ${a.apellidos}`).join(', ')}.`);
@@ -277,6 +514,8 @@ export class AsociadosGestionComponent implements OnInit {
     this.sustitucionesDialogOpen = false;
     this.sustitucionesCargo = [];
     this.bajasPendientesSustitucion = [];
+    this.modificacionPendienteConSustitucion = null;
+    this.sustitucionOrigen = 'baja';
   }
 
   confirmarSolicitudConSustituciones(): void {
@@ -301,7 +540,18 @@ export class AsociadosGestionComponent implements OnInit {
       return acc;
     }, {});
 
-    const registrosBaja$ = this.bajasPendientesSustitucion.map(asociado =>
+    const registrosBase$ = this.sustitucionOrigen === 'modificacion' && this.modificacionPendienteConSustitucion
+      ? [
+          this.secretariaService.crearRegistroPendiente({
+            asociacionId: this.asociacionId,
+            tipo: 'cambio',
+            asociadoId: this.modificacionPendienteConSustitucion.asociado.id,
+            datos: this.modificacionPendienteConSustitucion.datos,
+            datosOriginales: this.modificacionPendienteConSustitucion.datosOriginales,
+            observaciones: 'Solicitud con sustitucion automatica de cargo obligatorio'
+          })
+        ]
+      : this.bajasPendientesSustitucion.map(asociado =>
       this.secretariaService.crearRegistroPendiente({
         asociacionId: this.asociacionId,
         tipo: 'baja',
@@ -329,7 +579,9 @@ export class AsociadosGestionComponent implements OnInit {
           tramiteOrigen: 'sustitucion_cargo_obligatorio',
           tipoCambio: 'cargo',
           cargoId: item.cargo.idCargo,
+          cargoIds: [item.cargo.idCargo],
           cargoNombre: item.cargo.cargo,
+          cargoNombres: [item.cargo.cargo],
           ejercicio: item.cargo.ejercicio,
           sustituyeAId: item.asociado.id,
           sustituyeANombre: `${item.asociado.nombre} ${item.asociado.apellidos}`
@@ -339,14 +591,18 @@ export class AsociadosGestionComponent implements OnInit {
       });
     });
 
-    forkJoin([...registrosBaja$, ...registrosCambioCargo$])
+    const tipoSolicitud: SolicitudTipo = this.sustitucionOrigen === 'modificacion' ? 'cambio' : 'baja';
+    const observacionesSolicitud = this.sustitucionOrigen === 'modificacion'
+      ? 'Solicitud conjunta: cambio y sustitucion de cargo obligatorio'
+      : 'Solicitud conjunta: baja y cambio de cargo obligatorio';
+    forkJoin([...registrosBase$, ...registrosCambioCargo$])
       .pipe(
         switchMap(items =>
           this.secretariaService.crearSolicitud({
             asociacionId: this.asociacionId,
-            tipo: 'baja',
+            tipo: tipoSolicitud,
             registroPendienteIds: items.map(item => item.id),
-            observaciones: 'Solicitud conjunta: baja y cambio de cargo obligatorio'
+            observaciones: observacionesSolicitud
           })
         ),
         switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
@@ -356,6 +612,9 @@ export class AsociadosGestionComponent implements OnInit {
           this.solicitudes.unshift(solicitud);
           this.solicitudDetalle = solicitud;
           this.seleccionBaja.clear();
+          this.resetFormulario();
+          this.asociadoEnEdicion = null;
+          this.mostrarFormMod = false;
           this.activeTab = 'solicitudes';
           this.loading = false;
           this.cerrarSustitucionesDialog();
@@ -609,7 +868,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   asociadoBloqueado(asociado: Asociado): boolean {
-    return this.estadoPendienteAsociado(asociado) !== null;
+    return this.asociadoDadoDeBaja(asociado) || this.estadoPendienteAsociado(asociado) !== null;
   }
 
   estadoPendienteAsociado(asociado: Asociado): 'cambio' | 'baja' | null {
@@ -623,8 +882,16 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   etiquetaPendienteAsociado(asociado: Asociado): string {
+    if (this.asociadoDadoDeBaja(asociado)) {
+      return 'Baja';
+    }
+
     const estado = this.estadoPendienteAsociado(asociado);
     return estado === 'baja' ? 'Baja pendiente' : estado === 'cambio' ? 'Cambio pendiente' : '';
+  }
+
+  asociadoDadoDeBaja(asociado: Asociado): boolean {
+    return String(asociado.estado || '').toLowerCase() === 'baja';
   }
 
   descartarRegistro(item: RegistroPendiente): void {
@@ -696,18 +963,29 @@ export class AsociadosGestionComponent implements OnInit {
       ['email', 'Email', 'email']
     ];
 
-    return campos
+    const diferencias = campos
       .map(([key, label, originalKey]) => {
         const nuevo = String(datos[key] ?? '').trim();
         const anterior = String(originales[originalKey] ?? '').trim();
         return nuevo !== anterior ? `${label}: ${anterior || '-'} -> ${nuevo || '-'}` : '';
       })
       .filter(Boolean);
+
+    const cargosNuevo = Array.isArray(datos['cargoNombres'])
+      ? datos['cargoNombres'].join(' / ')
+      : datos['cargoNombre'] || '';
+    const cargosAnterior = String(originales['cargo'] || '').trim();
+    if (cargosNuevo && this.normalizeText(cargosNuevo) !== this.normalizeText(cargosAnterior)) {
+      diferencias.push(`Cargos: ${cargosAnterior || '-'} -> ${cargosNuevo}`);
+    }
+
+    return diferencias;
   }
 
   public resetFormulario(): void {
     this.altaForm.reset({
       tipo: 'Hoguera adulta',
+      cargoId: null,
       dni: '',
       sip: '',
       nacimiento: '',
@@ -720,6 +998,35 @@ export class AsociadosGestionComponent implements OnInit {
       telefono: '',
       email: ''
     });
+    this.cargosSeleccionadosIds = new Set([this.getDefaultCargoId('Hoguera adulta')].filter(Boolean));
+  }
+
+  actualizarCargoPorTipo(): void {
+    const validIds = new Set(this.cargosFormulario.map(cargo => Number(cargo.id)));
+    this.cargosSeleccionadosIds = new Set([...this.cargosSeleccionadosIds].filter(id => validIds.has(id)));
+    if (this.cargosSeleccionadosIds.size === 0) {
+      this.cargosSeleccionadosIds.add(this.getDefaultCargoId(this.altaForm.value.tipo || 'Hoguera adulta'));
+    }
+    this.altaForm.patchValue({ cargoId: null });
+  }
+
+  agregarCargoSeleccionado(): void {
+    const currentCargoId = Number(this.altaForm.value.cargoId || 0);
+    if (!currentCargoId) {
+      return;
+    }
+
+    const validIds = new Set(this.cargosFormulario.map(cargo => Number(cargo.id)));
+    if (!validIds.has(currentCargoId)) {
+      return;
+    }
+
+    this.cargosSeleccionadosIds.add(currentCargoId);
+    this.altaForm.patchValue({ cargoId: null });
+  }
+
+  quitarCargoSeleccionado(cargoId: number): void {
+    this.cargosSeleccionadosIds.delete(Number(cargoId));
   }
 
   asociadosPagina(contexto: ListadoContexto, grupo: AsociadoGrupo): Asociado[] {
@@ -856,6 +1163,25 @@ export class AsociadosGestionComponent implements OnInit {
     ).pipe(map(items => items.flat()));
   }
 
+  private detectarSustitucionesPorCambioCargo(asociado: Asociado, cargoIdsSeleccionados: number[]) {
+    const selected = new Set(cargoIdsSeleccionados.map(Number));
+    const currentYear = new Date().getFullYear();
+
+    return this.asociadosService.getHistorico(asociado.id).pipe(
+      map(historico =>
+        historico
+          .filter(item =>
+            Number(item.ejercicio) === currentYear &&
+            Number(item.idAsociacion) === this.asociacionId &&
+            Number(item.active) === 1 &&
+            this.esCargoRequerido(item) &&
+            !selected.has(Number(item.idCargo))
+          )
+          .map(cargo => ({ asociado, cargo, sustitutoId: null }))
+      )
+    );
+  }
+
   private esCargoRequerido(historico: HistoricoAsociado): boolean {
     const cargo = this.cargos.find(item => Number(item.id) === Number(historico.idCargo));
     if (Number((cargo as any)?.requerido || 0) > 0) {
@@ -863,6 +1189,112 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     const nombre = this.normalizeText(cargo?.nombre || historico.cargo);
+    return nombre.includes('presid') || nombre.includes('secretar');
+  }
+
+  private precargarCargoActual(asociado: Asociado): void {
+    this.asociadosService.getHistorico(asociado.id).subscribe({
+      next: historico => {
+        const currentYear = new Date().getFullYear();
+        const cargoActual = historico.find(item =>
+          Number(item.ejercicio) === currentYear &&
+          Number(item.idAsociacion) === this.asociacionId &&
+          Number(item.active) === 1
+        );
+        const cargoIds = historico
+          .filter(item =>
+            Number(item.ejercicio) === currentYear &&
+            Number(item.idAsociacion) === this.asociacionId &&
+            Number(item.active) === 1
+          )
+          .map(item => Number(item.idCargo))
+          .filter(Boolean);
+        if (cargoIds.length) {
+          this.cargosSeleccionadosIds = new Set(cargoIds);
+          this.altaForm.patchValue({ cargoId: null });
+        } else if (cargoActual?.idCargo) {
+          this.cargosSeleccionadosIds = new Set([Number(cargoActual.idCargo)]);
+          this.altaForm.patchValue({ cargoId: null });
+        }
+      },
+      error: () => undefined
+    });
+  }
+
+  private getCargoIdPorNombre(nombreCargo: string | undefined, tipo: 'adulto' | 'infantil'): number {
+    const firstCargoName = String(nombreCargo || '').split('/')[0].trim();
+    const cargo = this.cargos.find(item =>
+      this.cargoActivo(item) &&
+      this.cargoEsInfantil(item) === (tipo === 'infantil') &&
+      this.normalizeText(item.nombre) === this.normalizeText(firstCargoName)
+    );
+    return Number(cargo?.id || this.getDefaultCargoId(tipo === 'infantil' ? 'Hoguera infantil' : 'Hoguera adulta'));
+  }
+
+  private getDefaultCargoId(tipo: string): number {
+    const infantil = tipo === 'Hoguera infantil';
+    const preferredName = infantil ? 'Asociado/a Infantil' : 'Asociado/a';
+    const preferred = this.cargos.find(cargo =>
+      this.cargoActivo(cargo) &&
+      this.cargoEsInfantil(cargo) === infantil &&
+      this.normalizeText(cargo.nombre) === this.normalizeText(preferredName)
+    );
+    const first = this.cargos.find(cargo =>
+      Number(cargo.id) > 0 &&
+      this.cargoActivo(cargo) &&
+      this.cargoEsInfantil(cargo) === infantil
+    );
+    return Number(preferred?.id || first?.id || (infantil ? 12 : 8));
+  }
+
+  private cargoActivo(cargo: CargoResumen): boolean {
+    if (cargo.activo === undefined && cargo.active === undefined) {
+      return true;
+    }
+
+    return cargo.activo === true || Number(cargo.active ?? 0) === 1;
+  }
+
+  private cargoEsInfantil(cargo: CargoResumen): boolean {
+    return Number(cargo.es_infantil ?? cargo.esInfantil ?? 0) === 1;
+  }
+
+  private getConflictosCargoExclusivo(cargoIds: number[]): ConflictoCargoExclusivo[] {
+    const actualId = this.asociadoEnEdicion?.id ?? null;
+    return cargoIds
+      .map(cargoId => this.cargos.find(item => Number(item.id) === Number(cargoId)))
+      .filter((cargo): cargo is CargoResumen => Boolean(cargo) && this.cargoExclusivo(cargo))
+      .map(cargo => {
+        const titular = [...this.adultos, ...this.infantiles].find(asociado =>
+          asociado.id !== actualId &&
+          !this.asociadoDadoDeBaja(asociado) &&
+          this.getCargoIdsAsociado(asociado).includes(Number(cargo.id))
+        );
+        return titular ? { cargo, titular } : null;
+      })
+      .filter(Boolean) as ConflictoCargoExclusivo[];
+  }
+
+  private getCargoIdsAsociado(asociado: Asociado): number[] {
+    const directIds = (asociado.cargoIds || []).map(Number).filter(Boolean);
+    if (directIds.length) {
+      return directIds;
+    }
+
+    const splitIds = String((asociado as any).cargo_ids || '')
+      .split(',')
+      .map(id => Number(id.trim()))
+      .filter(Boolean);
+    if (splitIds.length) {
+      return splitIds;
+    }
+
+    const cargoId = Number(asociado.cargoId || 0);
+    return cargoId ? [cargoId] : [this.getCargoIdPorNombre(asociado.cargo, asociado.tipo)].filter(Boolean);
+  }
+
+  private cargoExclusivo(cargo: CargoResumen | undefined): boolean {
+    const nombre = this.normalizeText(cargo?.nombre || '');
     return nombre.includes('presid') || nombre.includes('secretar');
   }
 

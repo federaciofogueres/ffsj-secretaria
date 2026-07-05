@@ -5,10 +5,13 @@ export interface Asociado {
   nombre: string;
   apellidos: string;
   cargo: string;
+  cargoId?: number;
+  cargoIds?: number[];
   tipo: AsociadoTipo;
   dni?: string;
   sip?: string;
   estado?: string;
+  fechaBaja?: string;
   fechaAlta?: string;
   fechaNacimiento?: string;
   email?: string;
@@ -247,6 +250,9 @@ export interface CargoResumen {
   requerido: number;
   maximo: number;
   activo: boolean;
+  active?: boolean | number;
+  es_infantil?: boolean | number;
+  esInfantil?: boolean | number;
   validados: number;
   solicitados: number;
 }
