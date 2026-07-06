@@ -1,6 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
+import { Router } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
 
 import { ApiUrlService } from './api-url.service';
@@ -10,9 +11,11 @@ describe('PermissionsService', () => {
   let service: PermissionsService;
   let httpMock: HttpTestingController;
   let auth: jasmine.SpyObj<AuthService>;
+  let router: jasmine.SpyObj<Router>;
 
   beforeEach(() => {
-    auth = jasmine.createSpyObj<AuthService>('AuthService', ['getIdAsociacion', 'getToken', 'getCargos']);
+    auth = jasmine.createSpyObj<AuthService>('AuthService', ['getIdAsociacion', 'getToken', 'getCargos', 'logout']);
+    router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
     auth.getIdAsociacion.and.returnValue(25);
     auth.getToken.and.returnValue('token-asociacion');
     auth.getCargos.and.returnValue([]);
@@ -30,7 +33,8 @@ describe('PermissionsService', () => {
             filesBasePath: 'http://files.test'
           }
         },
-        { provide: AuthService, useValue: auth }
+        { provide: AuthService, useValue: auth },
+        { provide: Router, useValue: router }
       ]
     });
 
@@ -101,5 +105,21 @@ describe('PermissionsService', () => {
       asociacionNombre: 'Federacio',
       permisos: ['admin:read', 'asociados:read']
     });
+  });
+
+  it('cierra sesion si el contexto devuelve token no valido', () => {
+    service.loadContext().subscribe(context => {
+      expect(context).toBeNull();
+      expect(service.permisosSnapshot).toEqual([]);
+      expect(auth.logout).toHaveBeenCalled();
+      expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/login');
+    });
+
+    const req = httpMock.expectOne(request =>
+      request.method === 'GET' &&
+      request.url === 'http://secretaria-api.test/contexto'
+    );
+
+    req.flush({ status: 401, message: 'Token no valido' }, { status: 401, statusText: 'Unauthorized' });
   });
 });

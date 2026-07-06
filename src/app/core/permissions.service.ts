@@ -1,5 +1,6 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
 import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
 
@@ -26,7 +27,8 @@ export class PermissionsService {
   constructor(
     private readonly http: HttpClient,
     private readonly apiUrl: ApiUrlService,
-    private readonly auth: AuthService
+    private readonly auth: AuthService,
+    private readonly router: Router
   ) {}
 
   loadContext(asociacionId?: number): Observable<AuthContext | null> {
@@ -45,7 +47,13 @@ export class PermissionsService {
       })
       .pipe(
         tap(context => this.permissions$.next(context.permisos ?? DEFAULT_PERMISSIONS)),
-        catchError(() => {
+        catchError(error => {
+          this.permissions$.next([]);
+          if (error?.status === 401 || error?.status === 403) {
+            this.auth.logout();
+            this.router.navigateByUrl('/login');
+            return of(null);
+          }
           this.permissions$.next(DEFAULT_PERMISSIONS);
           return of(null);
         })
