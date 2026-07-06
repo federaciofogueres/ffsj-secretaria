@@ -1,7 +1,7 @@
 import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService, FfsjLoginAsociacionesComponent } from 'ffsj-web-components';
-import { Subscription } from 'rxjs';
+import { Subscription, distinctUntilChanged } from 'rxjs';
 
 @Component({
   selector: 'app-login',
@@ -12,6 +12,7 @@ import { Subscription } from 'rxjs';
 })
 export class LoginComponent implements OnInit, OnDestroy {
   private loginSubscription?: Subscription;
+  private hasNavigated = false;
 
   constructor(
     private readonly router: Router,
@@ -20,7 +21,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    this.loginSubscription = this.auth.loginStatusObservable.subscribe(logged => {
+    this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(logged => {
       if (logged) {
         this.goHome();
       }
@@ -38,6 +39,10 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   private goHome(): void {
+    if (this.hasNavigated) {
+      return;
+    }
+    this.hasNavigated = true;
     this.zone.run(() => {
       this.router.navigateByUrl('/');
     });

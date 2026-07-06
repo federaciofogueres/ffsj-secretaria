@@ -47,4 +47,21 @@ describe('LoginComponent', () => {
 
     expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/');
   });
+
+  it('no redirige dos veces si llegan evento y emision global de login', () => {
+    const router = jasmine.createSpyObj<Router>('Router', ['navigateByUrl']);
+    const loginStatus = new Subject<boolean>();
+    const auth = jasmine.createSpyObj<AuthService>('AuthService', [], {
+      loginStatusObservable: loginStatus.asObservable()
+    });
+    const zone = { run: (work: () => void) => work() } as NgZone;
+    const component = new LoginComponent(router, auth, zone);
+
+    component.ngOnInit();
+    component.onLogStatus(true);
+    loginStatus.next(true);
+    component.ngOnDestroy();
+
+    expect(router.navigateByUrl).toHaveBeenCalledOnceWith('/');
+  });
 });
