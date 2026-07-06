@@ -25,7 +25,6 @@ node_modules/
 /.angular/cache
 /.angular
 npm-debug.log
-package-lock.json
 yarn-error.log
 server.cert
 server.key
