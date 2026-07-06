@@ -2,7 +2,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
-import { BehaviorSubject, Observable, catchError, map, of, tap } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, map, of, tap, timeout } from 'rxjs';
 
 import { ApiUrlService } from './api-url.service';
 import { AuthContext, CargoPermisosSecretaria, PermisoSecretaria, RolSecretaria } from './models';
@@ -46,6 +46,7 @@ export class PermissionsService {
         headers: this.adminHeaders()
       })
       .pipe(
+        timeout(10000),
         tap(context => this.permissions$.next(context.permisos ?? DEFAULT_PERMISSIONS)),
         catchError(error => {
           this.permissions$.next([]);
