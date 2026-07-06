@@ -26,7 +26,7 @@
       </nav>
 
       <button
-        *ngIf="auth.isLoggedIn()"
+        *ngIf="isLoggedIn"
         class="btn btn-sm btn-outline-light d-none d-md-inline-flex"
         type="button"
         (click)="logout()"
@@ -61,7 +61,7 @@
         </span>
         <i class="bi bi-chevron-right"></i>
       </a>
-      <button *ngIf="auth.isLoggedIn()" class="mobile-link border-0 w-100" type="button" (click)="logout()">
+      <button *ngIf="isLoggedIn" class="mobile-link border-0 w-100" type="button" (click)="logout()">
         <span>Salir</span>
         <i class="bi bi-box-arrow-right"></i>
       </button>
@@ -74,7 +74,7 @@
     </div>
   </main>
 
-  <footer class="tab-bar d-md-none background-rojo text-light" *ngIf="auth.isLoggedIn()">
+  <footer class="tab-bar d-md-none background-rojo text-light" *ngIf="isLoggedIn">
     <button
       *ngFor="let link of navLinks"
       [class.d-none]="!canShowLink(link)"

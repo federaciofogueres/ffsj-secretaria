@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService, FfsjLoginComponent } from 'ffsj-web-components';
-import { forkJoin } from 'rxjs';
+import { Subscription, distinctUntilChanged, forkJoin } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
@@ -15,7 +15,7 @@ import { PermissionsService } from '../core/permissions.service';
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })
-export class AdminComponent implements OnInit {
+export class AdminComponent implements OnInit, OnDestroy {
   permisos: PermisoSecretaria[] = [];
   cargos: CargoResumen[] = [];
   cargoPermisos: CargoPermisosSecretaria[] = [];
@@ -25,6 +25,9 @@ export class AdminComponent implements OnInit {
   administracionPanelExpanded = true;
   loading = false;
   error = '';
+  isLoggedIn = false;
+  isAdmin = false;
+  private loginSubscription?: Subscription;
 
   constructor(
     readonly auth: AuthService,
@@ -34,13 +37,25 @@ export class AdminComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    if (this.canShowAdmin()) {
+    this.refreshAuthState();
+    if (this.isAdmin) {
       this.load();
     }
+    this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(isLogged => {
+      this.isLoggedIn = isLogged;
+      this.isAdmin = isLogged && this.adminAccess.isAdmin();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.loginSubscription?.unsubscribe();
   }
 
   onLoginStatus(isLogged: boolean): void {
-    if (isLogged && this.canShowAdmin()) {
+    this.isLoggedIn = isLogged;
+    this.isAdmin = isLogged && this.adminAccess.isAdmin();
+
+    if (this.isAdmin) {
       this.permissions.loadContext().subscribe(() => this.load());
       return;
     }
@@ -50,7 +65,12 @@ export class AdminComponent implements OnInit {
   }
 
   canShowAdmin(): boolean {
-    return this.auth.isLoggedIn() && this.adminAccess.isAdmin();
+    return this.isLoggedIn && this.isAdmin;
+  }
+
+  private refreshAuthState(): void {
+    this.isLoggedIn = this.auth.isLoggedIn();
+    this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
   }
 
   load(): void {

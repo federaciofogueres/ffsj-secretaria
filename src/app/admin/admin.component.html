@@ -1,4 +1,4 @@
-<ng-container *ngIf="!auth.isLoggedIn(); else loggedAdmin">
+<ng-container *ngIf="!isLoggedIn; else loggedAdmin">
   <lib-ffsj-login
     title="Administracion FFSJ"
     subtitle="Acceso de personas"

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
-import { Subscription } from 'rxjs';
+import { Subscription, distinctUntilChanged } from 'rxjs';
 import { AdminAccessService } from './core/admin-access.service';
 import { PermissionsService } from './core/permissions.service';
 
@@ -28,6 +28,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ];
 
   menuOpen = false;
+  isLoggedIn = false;
   private loginSubscription?: Subscription;
 
   constructor(
@@ -37,10 +38,12 @@ export class AppComponent implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    if (this.auth.isLoggedIn()) {
+    this.isLoggedIn = this.auth.isLoggedIn();
+    if (this.isLoggedIn) {
       this.permissions.loadContext().subscribe();
     }
-    this.loginSubscription = this.auth.loginStatusObservable.subscribe(isLogged => {
+    this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(isLogged => {
+      this.isLoggedIn = isLogged;
       if (isLogged) {
         this.permissions.loadContext().subscribe();
       } else {
