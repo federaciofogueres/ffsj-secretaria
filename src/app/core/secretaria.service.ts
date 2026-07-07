@@ -8,6 +8,7 @@ import {
   ActividadSecretaria,
   AdjuntoSecretaria,
   CargoResumen,
+  DashboardAsociacionResumen,
   Incidencia,
   FormularioInscripcion,
   InscripcionEntradaSecretaria,
@@ -57,6 +58,13 @@ export class SecretariaService {
 
   getSolicitudes(asociacionId: number): Observable<{ solicitudes: SolicitudSecretaria[] }> {
     return this.http.get<{ solicitudes: SolicitudSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/solicitudes`, {
+      params: new HttpParams().set('asociacionId', asociacionId),
+      headers: this.authHeaders()
+    });
+  }
+
+  getDashboardAsociacion(asociacionId: number): Observable<DashboardAsociacionResumen> {
+    return this.http.get<DashboardAsociacionResumen>(`${this.apiUrl.secretariaBasePath}/dashboard/asociacion`, {
       params: new HttpParams().set('asociacionId', asociacionId),
       headers: this.authHeaders()
     });

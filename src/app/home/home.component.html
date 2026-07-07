@@ -16,11 +16,15 @@
       *ngFor="let task of taskCards"
       class="task-card"
       [routerLink]="task.path"
+      [queryParams]="task.queryParams || null"
       [ngClass]="'task-' + task.tone"
     >
       <span class="task-icon"><i class="bi" [ngClass]="task.icon"></i></span>
       <span>
-        <strong>{{ task.title }}</strong>
+        <strong>
+          {{ task.title }}
+          <span class="task-count" *ngIf="task.count !== undefined">{{ task.count }}</span>
+        </strong>
         <small>{{ task.value }}</small>
       </span>
       <i class="bi bi-arrow-right-short"></i>

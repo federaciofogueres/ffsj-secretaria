@@ -121,6 +121,12 @@ export interface SolicitudSecretaria {
   items?: SolicitudItemSecretaria[];
 }
 
+export interface DashboardAsociacionResumen {
+  solicitudesConIncidencia: number;
+  inscripcionesAbiertas: number;
+  comunicacionesNuevas: number;
+}
+
 export interface RegistroSecretaria {
   id: number;
   numero: string;

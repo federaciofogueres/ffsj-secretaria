@@ -234,11 +234,21 @@
         </button>
       </div>
 
+      <div class="filter-notice" *ngIf="filtroSolicitudes === 'incidencias'">
+        <span>
+          <i class="bi bi-exclamation-triangle-fill me-1"></i>
+          Mostrando solo solicitudes con incidencias abiertas o pendientes de revision.
+        </span>
+        <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" (click)="limpiarFiltroSolicitudes()">
+          Ver todas
+        </button>
+      </div>
+
       <div class="row g-3">
         <div class="col-12 col-lg-6">
           <div class="item-list">
             <button
-              *ngFor="let solicitud of solicitudes"
+              *ngFor="let solicitud of solicitudesVisibles"
               type="button"
               class="request-row"
               [class.active]="solicitudDetalle?.id === solicitud.id"
@@ -256,7 +266,9 @@
                 <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
               </div>
             </button>
-            <div *ngIf="solicitudes.length === 0" class="text-muted">No hay solicitudes registradas.</div>
+            <div *ngIf="solicitudesVisibles.length === 0" class="text-muted">
+              {{ filtroSolicitudes === 'incidencias' ? 'No hay solicitudes con incidencias.' : 'No hay solicitudes registradas.' }}
+            </div>
           </div>
         </div>
 

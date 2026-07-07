@@ -1,8 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminAccessService } from '../core/admin-access.service';
+import { CensoService } from '../core/censo.service';
+import { DashboardAsociacionResumen } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
+import { SecretariaService } from '../core/secretaria.service';
 
 interface ModuleTile {
   title: string;
@@ -13,6 +16,16 @@ interface ModuleTile {
   permission: string;
 }
 
+interface TaskCard {
+  title: string;
+  value: string;
+  icon: string;
+  tone: string;
+  path: string;
+  count?: number;
+  queryParams?: Record<string, string>;
+}
+
 @Component({
   selector: 'app-home',
   standalone: true,
@@ -20,8 +33,15 @@ interface ModuleTile {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent {
+export class HomeComponent implements OnInit {
   readonly isAdmin: boolean;
+  dashboardLoading = false;
+  dashboardError = false;
+  associationSummary: DashboardAsociacionResumen = {
+    solicitudesConIncidencia: 0,
+    inscripcionesAbiertas: 0,
+    comunicacionesNuevas: 0
+  };
 
   readonly modules: ModuleTile[] = [
     {
@@ -68,24 +88,26 @@ export class HomeComponent {
 
   constructor(
     readonly permissions: PermissionsService,
-    readonly adminAccess: AdminAccessService
+    readonly adminAccess: AdminAccessService,
+    private readonly secretariaService: SecretariaService,
+    private readonly censoService: CensoService
   ) {
     this.isAdmin = this.adminAccess.isAdmin();
   }
 
-  readonly associationTasks = [
-    { title: 'Solicitudes con incidencia', value: 'Revisar', icon: 'bi-exclamation-triangle-fill', tone: 'orange', path: '/asociados/gestion' },
-    { title: 'Inscripciones abiertas', value: 'Ver plazos', icon: 'bi-clipboard-check-fill', tone: 'blue', path: '/inscripciones' },
-    { title: 'Comunicaciones nuevas', value: 'Leer', icon: 'bi-envelope-fill', tone: 'gray', path: '/registro' }
-  ];
+  ngOnInit(): void {
+    if (!this.isAdmin) {
+      this.cargarResumenAsociacion();
+    }
+  }
 
-  readonly adminTasks = [
+  readonly adminTasks: TaskCard[] = [
     { title: 'Solicitudes pendientes', value: 'Validar', icon: 'bi-file-earmark-check-fill', tone: 'blue', path: '/solicitudes' },
     { title: 'Incidencias respondidas', value: 'Revisar', icon: 'bi-chat-dots-fill', tone: 'orange', path: '/solicitudes' },
     { title: 'Registros recibidos', value: 'Gestionar', icon: 'bi-inbox-fill', tone: 'gray', path: '/registro' }
   ];
 
-  get taskCards(): typeof this.associationTasks {
+  get taskCards(): TaskCard[] {
     return this.isAdmin ? this.adminTasks : this.associationTasks;
   }
 
@@ -97,5 +119,65 @@ export class HomeComponent {
     return this.isAdmin
       ? 'Revisa solicitudes, incidencias, registros y configuracion desde un unico punto.'
       : 'Accede rapido a los tramites habituales de tu asociacion.';
+  }
+
+  get associationTasks(): TaskCard[] {
+    return [
+      {
+        title: 'Solicitudes con incidencia',
+        value: this.formatCount(this.associationSummary.solicitudesConIncidencia, 'solicitud', 'solicitudes'),
+        count: this.associationSummary.solicitudesConIncidencia,
+        icon: 'bi-exclamation-triangle-fill',
+        tone: 'orange',
+        path: '/asociados/gestion',
+        queryParams: { tab: 'solicitudes', filtro: 'incidencias' }
+      },
+      {
+        title: 'Inscripciones abiertas',
+        value: this.formatCount(this.associationSummary.inscripcionesAbiertas, 'abierta', 'abiertas'),
+        count: this.associationSummary.inscripcionesAbiertas,
+        icon: 'bi-clipboard-check-fill',
+        tone: 'blue',
+        path: '/inscripciones'
+      },
+      {
+        title: 'Comunicaciones nuevas',
+        value: this.formatCount(this.associationSummary.comunicacionesNuevas, 'nueva', 'nuevas'),
+        count: this.associationSummary.comunicacionesNuevas,
+        icon: 'bi-envelope-fill',
+        tone: 'gray',
+        path: '/registro'
+      }
+    ];
+  }
+
+  private cargarResumenAsociacion(): void {
+    const asociacionId = this.censoService.asociacionId;
+    if (!asociacionId) {
+      return;
+    }
+
+    this.dashboardLoading = true;
+    this.dashboardError = false;
+    this.secretariaService.getDashboardAsociacion(asociacionId).subscribe({
+      next: resumen => {
+        this.associationSummary = resumen;
+        this.dashboardLoading = false;
+      },
+      error: () => {
+        this.dashboardError = true;
+        this.dashboardLoading = false;
+      }
+    });
+  }
+
+  private formatCount(value: number, singular: string, plural: string): string {
+    if (this.dashboardLoading) {
+      return 'Cargando...';
+    }
+    if (this.dashboardError) {
+      return 'No disponible';
+    }
+    return `${value} ${value === 1 ? singular : plural}`;
   }
 }

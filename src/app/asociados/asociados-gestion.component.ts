@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
@@ -50,6 +50,7 @@ export class AsociadosGestionComponent implements OnInit {
   registroPendiente: RegistroPendiente[] = [];
   solicitudes: SolicitudSecretaria[] = [];
   solicitudDetalle: SolicitudSecretaria | null = null;
+  filtroSolicitudes: 'incidencias' | null = null;
 
   seleccionBaja = new Set<number>();
   seleccionRegistro = new Set<number>();
@@ -98,11 +99,19 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly censoService: CensoService,
     private readonly asociadosService: AsociadosService,
     private readonly secretariaService: SecretariaService,
+    private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
     readonly permissions: PermissionsService
   ) {}
 
   ngOnInit(): void {
+    const requestedTab = this.route.snapshot.queryParamMap.get('tab');
+    if (this.isGestionTab(requestedTab)) {
+      this.activeTab = requestedTab;
+      this.mostrarFormMod = requestedTab === 'altas';
+    }
+    this.filtroSolicitudes = this.route.snapshot.queryParamMap.get('filtro') === 'incidencias' ? 'incidencias' : null;
+
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
     this.asociadosService.getInfantiles().subscribe(kids => (this.infantiles = kids));
     this.censoService.getCargos().subscribe(cargos => {
@@ -130,6 +139,14 @@ export class AsociadosGestionComponent implements OnInit {
     return this.registrosSeleccionados.length > 0 && this.tipoSeleccionado !== null;
   }
 
+  get solicitudesVisibles(): SolicitudSecretaria[] {
+    if (this.filtroSolicitudes !== 'incidencias') {
+      return this.solicitudes;
+    }
+
+    return this.solicitudes.filter(solicitud => this.solicitudTieneIncidencias(solicitud));
+  }
+
   get cargosFormulario(): CargoResumen[] {
     const infantil = this.altaForm.value.tipo === 'Hoguera infantil';
     return this.cargos
@@ -147,6 +164,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   setTab(tab: GestionTab): void {
     this.activeTab = tab;
+    this.filtroSolicitudes = null;
     this.pendingViewTipo = null;
     this.resetFormulario();
     this.modoFormulario = tab === 'modificaciones' ? 'modificacion' : 'alta';
@@ -445,14 +463,14 @@ export class AsociadosGestionComponent implements OnInit {
           this.mostrarFormMod = this.activeTab === 'altas';
           this.dialog.openDialogAlert({
             title: tipo === 'alta' ? 'Alta pendiente' : 'Cambio pendiente',
-            content: 'Se ha añadido al borrador de solicitud.',
-            innerHtml: '<p>Se ha añadido al borrador de solicitud.</p>',
+            content: 'Se ha anadido al borrador de solicitud.',
+            innerHtml: '<p>Se ha anadido al borrador de solicitud.</p>',
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido añadir al borrador de solicitud.');
+          this.showError('No se ha podido anadir al borrador de solicitud.');
         }
       });
   }
@@ -676,14 +694,14 @@ export class AsociadosGestionComponent implements OnInit {
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Bajas pendientes',
-            content: 'Las bajas se han añadido al borrador de solicitud.',
-            innerHtml: '<p>Las bajas se han añadido al borrador de solicitud.</p>',
+            content: 'Las bajas se han anadido al borrador de solicitud.',
+            innerHtml: '<p>Las bajas se han anadido al borrador de solicitud.</p>',
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se han podido añadir las bajas al borrador de solicitud.');
+          this.showError('No se han podido anadir las bajas al borrador de solicitud.');
         }
       });
     });
@@ -853,6 +871,10 @@ export class AsociadosGestionComponent implements OnInit {
 
   estadoClass(estado: string): string {
     return `estado-${estado.replace('_', '-')}`;
+  }
+
+  limpiarFiltroSolicitudes(): void {
+    this.filtroSolicitudes = null;
   }
 
   pendientesPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
@@ -1316,6 +1338,14 @@ export class AsociadosGestionComponent implements OnInit {
       },
       error: () => undefined
     });
+  }
+
+  private solicitudTieneIncidencias(solicitud: SolicitudSecretaria): boolean {
+    return solicitud.estado === 'con_incidencias';
+  }
+
+  private isGestionTab(value: string | null): value is GestionTab {
+    return value === 'altas' || value === 'modificaciones' || value === 'bajas' || value === 'solicitudes';
   }
 
   private showError(message: string): void {
