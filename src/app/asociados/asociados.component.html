@@ -155,3 +155,84 @@
     }
   </mat-tab-group>
 </section>
+
+<div class="detail-overlay" *ngIf="selectedAsociado as asociado" (click)="closeDetails()">
+  <section class="detail-dialog" role="dialog" aria-modal="true" (click)="$event.stopPropagation()">
+    <header class="detail-head">
+      <div class="avatar-placeholder detail-avatar">{{ initials(asociado) }}</div>
+      <div class="detail-head-main">
+        <p class="detail-kicker">{{ asociado.tipo === 'adulto' ? 'Asociado adulto' : 'Asociado infantil' }}</p>
+        <h2>{{ asociado.nombre }} {{ asociado.apellidos }}</h2>
+        <div class="detail-meta">
+          <span
+            class="state-dot"
+            [class.is-inactive]="isInactive(asociado)"
+            [class.is-active]="!isInactive(asociado)"
+            [matTooltip]="stateText(asociado)"
+            [attr.aria-label]="stateText(asociado)"
+          ></span>
+          <span class="cargo-pill">{{ asociado.cargo || 'Sin cargo' }}</span>
+        </div>
+      </div>
+      <button class="close-detail" type="button" aria-label="Cerrar detalle" (click)="closeDetails()">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </header>
+
+    <nav class="detail-tabs" aria-label="Detalle del asociado">
+      <button
+        type="button"
+        [class.active]="detailTab === 'informacion'"
+        (click)="setDetailTab('informacion')"
+      >
+        Información
+      </button>
+      <button
+        type="button"
+        [class.active]="detailTab === 'historico'"
+        (click)="setDetailTab('historico')"
+      >
+        Histórico
+      </button>
+    </nav>
+
+    <section class="detail-body" *ngIf="detailTab === 'informacion'">
+      <dl class="detail-grid" *ngIf="detalleRows(asociado).length; else sinInformacion">
+        <div *ngFor="let row of detalleRows(asociado)">
+          <dt>{{ row[0] }}</dt>
+          <dd>{{ row[1] }}</dd>
+        </div>
+      </dl>
+      <ng-template #sinInformacion>
+        <p class="empty-state">No hay información disponible.</p>
+      </ng-template>
+    </section>
+
+    <section class="detail-body" *ngIf="detailTab === 'historico'">
+      <div class="history-panel" *ngIf="historicoAgrupado().length; else sinHistorico">
+        <h3>Histórico de cargos</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Ejercicio</th>
+              <th>Cargos</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of historicoAgrupado()">
+              <td>{{ item.ejercicio }}</td>
+              <td>{{ item.cargos }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <ng-template #sinHistorico>
+        <p class="empty-state">Sin registros.</p>
+      </ng-template>
+    </section>
+
+    <footer class="detail-actions">
+      <button class="ux-btn" type="button" (click)="closeDetails()">Entendido</button>
+    </footer>
+  </section>
+</div>

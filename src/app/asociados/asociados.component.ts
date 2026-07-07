@@ -12,13 +12,13 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
-import { FfsjDialogAlertService, AlertButtonType } from 'ffsj-web-components';
 import * as XLSX from 'xlsx';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { ErrorService } from '../core/error.service';
 import { Asociado, AsociadosService, HistoricoAsociado } from './asociados.service';
 
 type TabKey = 'adultos' | 'infantiles';
+type DetailTabKey = 'informacion' | 'historico';
 
 @Component({
   selector: 'app-asociados',
@@ -54,6 +54,9 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
   };
 
   activeTab: TabKey = 'adultos';
+  detailTab: DetailTabKey = 'informacion';
+  selectedAsociado: Asociado | null = null;
+  selectedHistorico: HistoricoAsociado[] = [];
   loading = false;
   error = '';
 
@@ -64,8 +67,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
 
   constructor(
     private readonly asociadosService: AsociadosService,
-    private readonly errorService: ErrorService,
-    private readonly dialogService: FfsjDialogAlertService
+    private readonly errorService: ErrorService
   ) {}
 
   ngOnInit(): void {
@@ -131,50 +133,69 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     return String(asociado.estado || '').toLowerCase() === 'baja';
   }
 
-  private openDetailsDialog(asociado: Asociado, historico: HistoricoAsociado[]): void {
-    const rowCandidates: Array<[string, string]> = [
-      ['Nombre', `${asociado.nombre} ${asociado.apellidos}`],
-      ['Cargo', asociado.cargo ?? ''],
+  closeDetails(): void {
+    this.selectedAsociado = null;
+    this.selectedHistorico = [];
+    this.detailTab = 'informacion';
+  }
+
+  setDetailTab(tab: DetailTabKey): void {
+    this.detailTab = tab;
+  }
+
+  detalleRows(asociado: Asociado): Array<[string, string]> {
+    const rows: Array<[string, string]> = [
       ['Tipo', asociado.tipo === 'adulto' ? 'Adulto' : 'Infantil'],
       ['DNI/NIF', asociado.dni ?? ''],
       ['SIP', asociado.sip ?? ''],
-      ['Estado', asociado.estado ?? ''],
       ['Fecha de alta', asociado.fechaAlta ?? ''],
       ['Fecha de nacimiento', asociado.fechaNacimiento ?? ''],
+      ['Dirección', asociado.direccion ?? ''],
+      ['Código postal', asociado.codigoPostal ?? asociado.codigo_postal ?? asociado.cp ?? ''],
       ['Email', asociado.email ?? ''],
-      ['Telefono', asociado.telefono ?? '']
+      ['Teléfono', asociado.telefono ?? '']
     ];
-    const rows = rowCandidates.filter(([, value]) => value);
 
-    this.dialogService.openDialogAlert({
-      title: `${asociado.nombre} ${asociado.apellidos}`,
-      content: rows.map(([label, value]) => `${label}: ${value}`).join('\n'),
-      innerHtml: `
-        <section class="asociado-dialog">
-          <header class="asociado-dialog__head">
-            <div class="asociado-dialog__avatar">${this.escapeHtml(this.initials(asociado))}</div>
-            <div>
-              <p class="asociado-dialog__kicker">${asociado.tipo === 'adulto' ? 'Asociado adulto' : 'Asociado infantil'}</p>
-              <h2>${this.escapeHtml(`${asociado.nombre} ${asociado.apellidos}`)}</h2>
-              <span class="asociado-dialog__status ${this.esBaja(asociado) ? 'is-baja' : ''}">
-                ${this.escapeHtml(this.esBaja(asociado) ? 'Baja' : (asociado.estado || 'Activo'))}
-              </span>
-            </div>
-          </header>
-          <dl class="asociado-dialog__grid">
-            ${rows
-              .filter(([label]) => !['Nombre', 'Tipo', 'Estado'].includes(label))
-              .map(
-                ([label, value]) =>
-                  `<div><dt>${this.escapeHtml(label)}</dt><dd>${this.escapeHtml(String(value))}</dd></div>`
-              )
-              .join('')}
-          </dl>
-          ${this.buildHistoricoHtml(historico)}
-        </section>
-      `,
-      buttonsAlert: [AlertButtonType.Entendido]
-    });
+    return rows.filter(([, value]) => value);
+  }
+
+  historicoAgrupado(): Array<{ ejercicio: string; cargos: string }> {
+    const grouped = this.selectedHistorico.reduce((acc, item) => {
+      const ejercicio = String(item.ejercicio || 'Sin ejercicio');
+      const cargos = acc.get(ejercicio) ?? new Set<string>();
+      if (item.cargo) {
+        cargos.add(item.cargo);
+      }
+      acc.set(ejercicio, cargos);
+      return acc;
+    }, new Map<string, Set<string>>());
+
+    return Array.from(grouped.entries())
+      .sort(([a], [b]) => Number(b) - Number(a))
+      .map(([ejercicio, cargos]) => ({
+        ejercicio,
+        cargos: Array.from(cargos).join(' / ') || '-'
+      }));
+  }
+
+  isInactive(asociado: Asociado): boolean {
+    return this.esBaja(asociado) || String(asociado.estado || '').toLowerCase() === 'inactivo';
+  }
+
+  stateText(asociado: Asociado): string {
+    return this.isInactive(asociado) ? 'Inactivo' : 'Activo';
+  }
+
+  initials(asociado: Asociado): string {
+    const first = asociado.nombre?.trim()?.[0] || '';
+    const second = asociado.apellidos?.trim()?.[0] || '';
+    return `${first}${second}`.toUpperCase();
+  }
+
+  private openDetailsDialog(asociado: Asociado, historico: HistoricoAsociado[]): void {
+    this.selectedAsociado = asociado;
+    this.selectedHistorico = historico;
+    this.detailTab = 'informacion';
   }
 
   downloadExcel(): void {
@@ -316,59 +337,6 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), 'Asociados');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(historicoRows), 'Historico');
     XLSX.writeFile(workbook, 'asociados.xlsx');
-  }
-
-  private buildHistoricoHtml(historico: HistoricoAsociado[]): string {
-    if (historico.length === 0) {
-      return '<section class="asociado-dialog__history"><h3>Historico de cargos</h3><p>Sin registros.</p></section>';
-    }
-
-    const rows = historico
-      .map(
-        item => `
-          <tr>
-            <td>${this.escapeHtml(String(item.ejercicio))}</td>
-            <td>${this.escapeHtml(item.cargo)}</td>
-            <td>${this.escapeHtml(item.nombreAsociacion)}</td>
-          </tr>
-        `
-      )
-      .join('');
-
-    return `
-      <section class="asociado-dialog__history">
-      <h3>Historico de cargos</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Ejercicio</th>
-            <th>Cargo</th>
-            <th>Asociacion</th>
-          </tr>
-        </thead>
-        <tbody>${rows}</tbody>
-      </table>
-      </section>
-    `;
-  }
-
-  private initials(asociado: Asociado): string {
-    const first = asociado.nombre?.trim()?.[0] || '';
-    const second = asociado.apellidos?.trim()?.[0] || '';
-    return `${first}${second}`.toUpperCase();
-  }
-
-  private escapeHtml(value: string): string {
-    return value.replace(/[&<>"']/g, char => {
-      const entities: Record<string, string> = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-      };
-      return entities[char];
-    });
   }
 
   private normalizeSearchText(values: unknown[]): string {

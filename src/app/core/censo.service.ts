@@ -24,6 +24,12 @@ export class CensoService {
       .pipe(map(response => response.asociaciones?.[0] ?? (response as unknown as Asociacion)));
   }
 
+  getAsociaciones(): Observable<Asociacion[]> {
+    return this.http
+      .get<{ asociaciones?: Asociacion[] } | Asociacion[]>(`${this.apiUrl.censoBasePath}/asociaciones`, this.authOptions())
+      .pipe(map(response => Array.isArray(response) ? response : response.asociaciones ?? []));
+  }
+
   updateAsociacion(id: number, asociacion: Asociacion): Observable<Asociacion> {
     return this.http
       .put<{ asociaciones?: Asociacion[] }>(

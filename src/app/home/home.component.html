@@ -5,7 +5,11 @@
       <h1 class="ux-page-title">{{ heading }}</h1>
       <p class="ux-muted mb-0">{{ subheading }}</p>
     </div>
-    <a class="ux-btn" [routerLink]="isAdmin ? '/solicitudes' : '/registro'">
+    <a
+      class="ux-btn"
+      [routerLink]="isAdmin ? '/solicitudes' : '/registro/documentacion'"
+      [queryParams]="isAdmin ? null : { nuevo: '1' }"
+    >
       <i class="bi" [ngClass]="isAdmin ? 'bi-file-earmark-check-fill' : 'bi-send-fill'"></i>
       {{ isAdmin ? 'Revisar solicitudes' : 'Enviar documentacion' }}
     </a>

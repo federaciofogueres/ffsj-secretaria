@@ -8,6 +8,7 @@ import {
   ActividadSecretaria,
   AdjuntoSecretaria,
   CargoResumen,
+  DashboardAdminResumen,
   DashboardAsociacionResumen,
   Incidencia,
   FormularioInscripcion,
@@ -66,6 +67,12 @@ export class SecretariaService {
   getDashboardAsociacion(asociacionId: number): Observable<DashboardAsociacionResumen> {
     return this.http.get<DashboardAsociacionResumen>(`${this.apiUrl.secretariaBasePath}/dashboard/asociacion`, {
       params: new HttpParams().set('asociacionId', asociacionId),
+      headers: this.authHeaders()
+    });
+  }
+
+  getDashboardAdmin(): Observable<DashboardAdminResumen> {
+    return this.http.get<DashboardAdminResumen>(`${this.apiUrl.secretariaBasePath}/dashboard/admin`, {
       headers: this.authHeaders()
     });
   }
@@ -154,6 +161,12 @@ export class SecretariaService {
 
   actualizarEstadoRegistro(id: number, estado: RegistroSecretaria['estado']): Observable<RegistroSecretaria> {
     return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/estado`, { estado }, {
+      headers: this.authHeaders()
+    });
+  }
+
+  finalizarRegistro(id: number): Observable<RegistroSecretaria> {
+    return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/finalizar`, {}, {
       headers: this.authHeaders()
     });
   }

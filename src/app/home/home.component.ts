@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
-import { DashboardAsociacionResumen } from '../core/models';
+import { DashboardAdminResumen, DashboardAsociacionResumen } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -41,6 +41,12 @@ export class HomeComponent implements OnInit {
     solicitudesConIncidencia: 0,
     inscripcionesAbiertas: 0,
     comunicacionesNuevas: 0
+  };
+  adminSummary: DashboardAdminResumen = {
+    solicitudesPendientes: 0,
+    incidenciasRespondidas: 0,
+    comunicacionesPendientes: 0,
+    documentacionRecibida: 0
   };
 
   readonly modules: ModuleTile[] = [
@@ -96,16 +102,12 @@ export class HomeComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    if (!this.isAdmin) {
+    if (this.isAdmin) {
+      this.cargarResumenAdmin();
+    } else {
       this.cargarResumenAsociacion();
     }
   }
-
-  readonly adminTasks: TaskCard[] = [
-    { title: 'Solicitudes pendientes', value: 'Validar', icon: 'bi-file-earmark-check-fill', tone: 'blue', path: '/solicitudes' },
-    { title: 'Incidencias respondidas', value: 'Revisar', icon: 'bi-chat-dots-fill', tone: 'orange', path: '/solicitudes' },
-    { title: 'Registros recibidos', value: 'Gestionar', icon: 'bi-inbox-fill', tone: 'gray', path: '/registro' }
-  ];
 
   get taskCards(): TaskCard[] {
     return this.isAdmin ? this.adminTasks : this.associationTasks;
@@ -146,7 +148,45 @@ export class HomeComponent implements OnInit {
         count: this.associationSummary.comunicacionesNuevas,
         icon: 'bi-envelope-fill',
         tone: 'gray',
-        path: '/registro'
+        path: '/registro/comunicacion',
+        queryParams: { bandeja: 'recibidas', filtro: 'nuevas' }
+      }
+    ];
+  }
+
+  get adminTasks(): TaskCard[] {
+    return [
+      {
+        title: 'Solicitudes pendientes',
+        value: this.formatCount(this.adminSummary.solicitudesPendientes, 'pendiente', 'pendientes'),
+        count: this.adminSummary.solicitudesPendientes,
+        icon: 'bi-file-earmark-check-fill',
+        tone: 'blue',
+        path: '/solicitudes'
+      },
+      {
+        title: 'Incidencias respondidas',
+        value: this.formatCount(this.adminSummary.incidenciasRespondidas, 'respondida', 'respondidas'),
+        count: this.adminSummary.incidenciasRespondidas,
+        icon: 'bi-chat-dots-fill',
+        tone: 'orange',
+        path: '/solicitudes'
+      },
+      {
+        title: 'Comunicaciones pendientes',
+        value: this.formatCount(this.adminSummary.comunicacionesPendientes, 'pendiente', 'pendientes'),
+        count: this.adminSummary.comunicacionesPendientes,
+        icon: 'bi-envelope-fill',
+        tone: 'gray',
+        path: '/registro/comunicacion'
+      },
+      {
+        title: 'Documentacion recibida',
+        value: this.formatCount(this.adminSummary.documentacionRecibida, 'recibida', 'recibidas'),
+        count: this.adminSummary.documentacionRecibida,
+        icon: 'bi-inbox-fill',
+        tone: 'blue',
+        path: '/registro/documentacion'
       }
     ];
   }
@@ -162,6 +202,21 @@ export class HomeComponent implements OnInit {
     this.secretariaService.getDashboardAsociacion(asociacionId).subscribe({
       next: resumen => {
         this.associationSummary = resumen;
+        this.dashboardLoading = false;
+      },
+      error: () => {
+        this.dashboardError = true;
+        this.dashboardLoading = false;
+      }
+    });
+  }
+
+  private cargarResumenAdmin(): void {
+    this.dashboardLoading = true;
+    this.dashboardError = false;
+    this.secretariaService.getDashboardAdmin().subscribe({
+      next: resumen => {
+        this.adminSummary = resumen;
         this.dashboardLoading = false;
       },
       error: () => {

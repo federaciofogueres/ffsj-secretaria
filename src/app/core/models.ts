@@ -127,6 +127,13 @@ export interface DashboardAsociacionResumen {
   comunicacionesNuevas: number;
 }
 
+export interface DashboardAdminResumen {
+  solicitudesPendientes: number;
+  incidenciasRespondidas: number;
+  comunicacionesPendientes: number;
+  documentacionRecibida: number;
+}
+
 export interface RegistroSecretaria {
   id: number;
   numero: string;
@@ -136,8 +143,10 @@ export interface RegistroSecretaria {
   titulo: string;
   mensaje?: string;
   responsable?: string | null;
-  estado: 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado';
+  estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada';
   fechaEntrada: string;
+  fechaCreacion?: string;
+  fechaActualizacion?: string;
   adjuntos: AdjuntoSecretaria[];
   mensajes?: RegistroMensajeSecretaria[];
 }

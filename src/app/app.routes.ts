@@ -132,6 +132,28 @@ export const routes: Routes = [
     }
   },
   {
+    path: 'registro/documentacion',
+    component: RegistroComponent,
+    title: 'Registro',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'registro:read',
+      moduleName: 'Registro',
+      moduleDescription: 'Listado de documentacion presentada o solicitada y presentacion de nueva documentacion.'
+    }
+  },
+  {
+    path: 'registro/comunicacion',
+    component: RegistroComponent,
+    title: 'Registro',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'registro:read',
+      moduleName: 'Registro',
+      moduleDescription: 'Listado de comunicaciones realizadas y recibidas.'
+    }
+  },
+  {
     path: 'solicitudes',
     component: SolicitudesComponent,
     title: 'Solicitudes',
