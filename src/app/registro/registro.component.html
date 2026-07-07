@@ -1,35 +1,35 @@
-<section class="registro card border-0 shadow-sm">
-  <div class="card-body p-0">
+<section class="registro ux-card">
+  <div class="registro-body">
     <ng-container *ngIf="mode === null; else formView">
-      <div class="intro p-4 p-md-5">
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Modulo</p>
-        <h1 class="h4 mb-2 text-rojo">Registro</h1>
+      <div class="intro">
+        <p class="ux-overline mb-1">Modulo</p>
+        <h1 class="ux-page-title mb-2">Registro</h1>
         <p class="text-muted mb-4">
           Presenta documentacion oficial o envia comunicaciones internas a la Federacion. Se generara un registro de
           entrada y podras descargar el resguardo en PDF.
         </p>
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
+        <div class="option-grid">
+          <div>
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
                 <h2 class="h5 mb-2">Presentar documentacion</h2>
                 <p class="text-muted mb-3">Adjunta ficheros y envialos a la Federacion. Obtendras un registro de entrada.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-foc-rojo w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('documentacion')">
+                <button class="ux-btn w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('documentacion')">
                   {{ isAdminMode ? 'Ver documentacion' : 'Abrir presentacion' }}
                 </button>
               </div>
             </div>
           </div>
-          <div class="col-12 col-md-6">
+          <div>
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
                 <h2 class="h5 mb-2">Realizar comunicacion</h2>
                 <p class="text-muted mb-3">Envia un mensaje con destinatario y adjuntos opcionales. No sustituye a una presentacion documental oficial.</p>
               </div>
               <div class="mt-auto p-3">
-                <button class="btn btn-outline-secondary w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('comunicacion')">
+                <button class="ux-btn ux-btn-secondary w-100" type="button" [disabled]="!permissions.hasPermission('registro:read')" (click)="setMode('comunicacion')">
                   {{ isAdminMode ? 'Ver comunicaciones' : 'Abrir comunicacion' }}
                 </button>
               </div>
@@ -40,29 +40,29 @@
     </ng-container>
 
     <ng-template #formView>
-      <div class="header px-4 py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="header page-head">
         <div>
-          <p class="overline text-uppercase text-muted fw-bold mb-1">Registro</p>
-          <h1 class="h4 mb-0 text-rojo">
+          <p class="ux-overline mb-1">Registro</p>
+          <h1 class="ux-page-title mb-0">
             {{ mode === 'documentacion' ? 'Presentar documentacion' : 'Realizar comunicacion' }}
           </h1>
         </div>
-        <button class="btn btn-link text-rojo" type="button" (click)="resetMode()">
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="resetMode()">
           <i class="bi bi-arrow-left"></i>
           Volver
         </button>
       </div>
 
-      <div class="body px-4 pb-4">
+      <div class="body">
         <div class="alert alert-danger" *ngIf="errorRegistros">{{ errorRegistros }}</div>
         <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
 
         <section class="status-card" *ngIf="mode === 'comunicacion' && !commResultado">
           <div class="comm-tabs mb-2">
-            <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'realizadas'" [class.btn-outline-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'realizadas'" [class.ux-btn-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
               Realizadas
             </button>
-            <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'recibidas'" [class.btn-outline-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'recibidas'" [class.ux-btn-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
               Recibidas
             </button>
           </div>
@@ -101,10 +101,10 @@
 
           <div class="referencias" *ngIf="(mode === 'documentacion' ? docRefs : commRefs).length > 0">
             <div class="comm-tabs mb-2" *ngIf="mode === 'comunicacion'">
-              <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'realizadas'" [class.btn-outline-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
+              <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'realizadas'" [class.ux-btn-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
                 Realizadas
               </button>
-              <button class="btn btn-sm" type="button" [class.btn-foc-rojo]="commBandeja === 'recibidas'" [class.btn-outline-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
+              <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'recibidas'" [class.ux-btn-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
                 Recibidas
               </button>
             </div>
@@ -194,14 +194,14 @@
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-secondary" *ngIf="docResultado" (click)="enableDocEdit()" [disabled]="!docLocked">
+            <button type="button" class="ux-btn ux-btn-secondary" *ngIf="docResultado" (click)="enableDocEdit()" [disabled]="!docLocked">
               Nueva documentacion
             </button>
-            <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmitDoc" (click)="submitDoc()">
+            <button type="button" class="ux-btn" [disabled]="!canSubmitDoc" (click)="submitDoc()">
               <span *ngIf="submittingDoc" class="spinner-border spinner-border-sm me-2"></span>
               Presentar documentacion
             </button>
-            <button type="button" class="btn btn-outline-secondary" [disabled]="!docResultado" (click)="printDoc()">
+            <button type="button" class="ux-btn ux-btn-secondary" [disabled]="!docResultado" (click)="printDoc()">
               <i class="bi bi-printer me-1"></i>
               Imprimir resguardo
             </button>
@@ -255,14 +255,14 @@
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
-            <button type="button" class="btn btn-outline-secondary" *ngIf="commResultado" (click)="enableCommEdit()" [disabled]="!commLocked">
+            <button type="button" class="ux-btn ux-btn-secondary" *ngIf="commResultado" (click)="enableCommEdit()" [disabled]="!commLocked">
               Nueva comunicacion
             </button>
-            <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmitComm" (click)="submitComm()">
+            <button type="button" class="ux-btn" [disabled]="!canSubmitComm" (click)="submitComm()">
               <span *ngIf="submittingComm" class="spinner-border spinner-border-sm me-2"></span>
               Enviar comunicacion
             </button>
-            <button type="button" class="btn btn-outline-secondary" [disabled]="!commResultado" (click)="printComm()">
+            <button type="button" class="ux-btn ux-btn-secondary" [disabled]="!commResultado" (click)="printComm()">
               <i class="bi bi-printer me-1"></i>
               Imprimir resguardo
             </button>
@@ -272,3 +272,4 @@
     </ng-template>
   </div>
 </section>
+

@@ -1,48 +1,56 @@
 <div class="app-shell">
-  <header class="app-header background-rojo text-light">
-    <div class="container-fluid py-3 px-3 px-md-4 d-flex align-items-center justify-content-between">
-      <div class="d-flex align-items-center gap-2">
-        <a routerLink="/" class="logo-link d-inline-flex align-items-center me-2">
-          <img class="logo" src="assets/img/logo-intranet.png" alt="FFSJ" />
-        </a>
-        <div class="d-flex flex-column lh-sm">
-          <span class="fw-bold">FFSJ Secretaria</span>
-          <small class="text-white-50">Gestion interna</small>
-        </div>
-      </div>
+  <header class="app-header">
+    <div class="app-header-inner">
+      <a routerLink="/" class="brand" aria-label="Ir al inicio">
+        <img class="logo" src="assets/img/logo-intranet.png" alt="FFSJ" />
+        <span>
+          <strong>FFSJ Secretaria</strong>
+          <small>Gestion interna</small>
+        </span>
+      </a>
 
-      <nav class="d-none d-md-flex align-items-center gap-2" aria-label="Navegacion principal">
+      <nav class="desktop-nav" aria-label="Navegacion principal">
         <a
           *ngFor="let link of navLinks"
           [class.d-none]="!canShowLink(link)"
-          class="nav-link text-light px-3 py-2 rounded"
+          class="nav-link"
           routerLink="{{ link.path }}"
           routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
+          [routerLinkActiveOptions]="{ exact: link.path === '/' }"
         >
           <i class="bi" [ngClass]="link.icon"></i>
-          <span class="ms-2">{{ link.label }}</span>
+          <span>{{ link.label }}</span>
         </a>
       </nav>
 
-      <button
-        *ngIf="isLoggedIn"
-        class="btn btn-sm btn-outline-light d-none d-md-inline-flex"
-        type="button"
-        (click)="logout()"
-      >
-        Salir
-      </button>
+      <div class="header-actions">
+        <div class="mode-pill" *ngIf="isLoggedIn">
+          <span class="mode-dot"></span>
+          <span>
+            <strong>{{ modeLabel }}</strong>
+            <small>{{ actorLabel }}</small>
+          </span>
+        </div>
 
-      <button
-        class="btn btn-link text-light d-md-none menu-button"
-        type="button"
-        (click)="toggleMenu()"
-        [attr.aria-expanded]="menuOpen"
-        aria-label="Abrir menu"
-      >
-        <i class="bi" [ngClass]="menuOpen ? 'bi-x-lg' : 'bi-list'"></i>
-      </button>
+        <a *ngIf="isLoggedIn" class="pending-pill d-none d-lg-inline-flex" routerLink="/solicitudes">
+          <i class="bi bi-bell-fill"></i>
+          <span>Tareas</span>
+        </a>
+
+        <button *ngIf="isLoggedIn" class="logout-button d-none d-md-inline-flex" type="button" (click)="logout()">
+          Salir
+        </button>
+
+        <button
+          class="menu-button d-md-none"
+          type="button"
+          (click)="toggleMenu()"
+          [attr.aria-expanded]="menuOpen"
+          aria-label="Abrir menu"
+        >
+          <i class="bi" [ngClass]="menuOpen ? 'bi-x-lg' : 'bi-list'"></i>
+        </button>
+      </div>
     </div>
 
     <div class="mobile-menu d-md-none" [class.show]="menuOpen">
@@ -52,8 +60,7 @@
         class="mobile-link"
         routerLink="{{ link.path }}"
         routerLinkActive="active"
-        [routerLinkActiveOptions]="{ exact: true }"
-        (click)="closeMenu()"
+        [routerLinkActiveOptions]="{ exact: link.path === '/' }"
       >
         <span class="d-flex align-items-center gap-2">
           <i class="bi" [ngClass]="link.icon"></i>
@@ -69,23 +76,22 @@
   </header>
 
   <main class="app-content">
-    <div class="content-container container">
+    <div class="content-container">
       <router-outlet></router-outlet>
     </div>
   </main>
 
-  <footer class="tab-bar d-md-none background-rojo text-light" *ngIf="isLoggedIn">
+  <footer class="tab-bar d-md-none" *ngIf="isLoggedIn">
     <button
-      *ngFor="let link of navLinks"
-      [class.d-none]="!canShowLink(link)"
+      *ngFor="let link of visibleMobileLinks"
       class="tab-button"
       type="button"
       [routerLink]="link.path"
       routerLinkActive="active"
-      [routerLinkActiveOptions]="{ exact: true }"
+      [routerLinkActiveOptions]="{ exact: link.path === '/' }"
     >
       <i class="bi" [ngClass]="link.icon"></i>
-      <span class="small">{{ link.label }}</span>
+      <span>{{ link.label }}</span>
     </button>
   </footer>
 

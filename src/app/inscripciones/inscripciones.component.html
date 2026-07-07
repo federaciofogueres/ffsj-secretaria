@@ -1,12 +1,11 @@
-<section class="inscripciones card border-0 shadow-sm">
-  <div class="card-body p-0">
-    <div class="p-4 p-md-5">
-      <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
+<section class="inscripciones ux-card">
+  <div class="inscripciones-body">
+      <div class="page-head mb-4">
         <div>
-          <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones</p>
-          <h1 class="h4 mb-1 text-rojo">{{ isAdminMode ? 'Inscripciones' : 'Inscripciones disponibles' }}</h1>
+          <p class="ux-overline mb-1">Inscripciones</p>
+          <h1 class="ux-page-title mb-1">{{ isAdminMode ? 'Inscripciones' : 'Inscripciones disponibles' }}</h1>
           <p class="text-muted mb-0">
-            {{ isAdminMode ? 'Crea, revisa y edita formularios de inscripcion.' : 'Consulta y envia inscripciones abiertas.' }}
+            {{ isAdminMode ? 'Crea, revisa y edita formularios de inscripcion.' : 'Consulta las convocatorias abiertas y presenta tus inscripciones.' }}
           </p>
         </div>
       </div>
@@ -17,10 +16,15 @@
 
       <div class="layout" *ngIf="!detailMode">
         <section class="detail list-page">
-          <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap mb-3">
-            <h2 class="h6 mb-0">Listado de inscripciones</h2>
+          <div class="section-head">
+            <div>
+              <h2 class="section-title mb-1">Listado de inscripciones</h2>
+              <p class="text-muted mb-0">
+                {{ isAdminMode ? 'Abre una inscripcion para editarla o revisar sus entradas.' : 'Elige una inscripcion para consultar documentacion, formulario y asociados inscritos.' }}
+              </p>
+            </div>
             <button
-              class="btn btn-foc-rojo"
+              class="ux-btn"
               type="button"
               *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
               (click)="crearNuevaInscripcion()"
@@ -46,10 +50,10 @@
                 </div>
               </div>
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirTodas(item)">Imprimir</button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarTodas(item, 'csv')">Excel</button>
-                <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarTodas(item, 'pdf')">PDF</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirTodas(item)">Imprimir</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarTodas(item, 'csv')">Excel</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarTodas(item, 'pdf')">PDF</button>
               </div>
             </div>
           </div>
@@ -59,7 +63,7 @@
 
       <div class="layout" *ngIf="detailMode">
         <section class="detail">
-          <button class="btn btn-outline-secondary align-self-start" type="button" (click)="volverAlListado()">
+          <button class="ux-btn ux-btn-secondary align-self-start" type="button" (click)="volverAlListado()">
             <i class="bi bi-arrow-left me-1"></i>
             Volver al listado
           </button>
@@ -105,19 +109,19 @@
               </label>
             </div>
             <div class="d-flex gap-2 mt-3 flex-wrap">
-              <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Crear inscripcion</button>
-              <button class="btn btn-outline-secondary" type="button" (click)="volverAlListado()">Cancelar</button>
+              <button class="ux-btn" type="submit" [disabled]="loading">Crear inscripcion</button>
+              <button class="ux-btn ux-btn-secondary" type="button" (click)="volverAlListado()">Cancelar</button>
             </div>
           </form>
 
           <ng-container *ngIf="selectedInscription as inscription">
             <div class="detail-header d-flex align-items-start justify-content-between gap-3 flex-wrap">
               <div>
-                <p class="overline text-uppercase text-muted fw-bold mb-1">Formulario</p>
-                <h3 class="h5 mb-1 text-rojo">{{ inscription.titulo }}</h3>
+                <p class="ux-overline mb-1">Formulario</p>
+                <h3 class="detail-title mb-1">{{ inscription.titulo }}</h3>
                 <p class="text-muted mb-0">{{ actividadDe(inscription)?.titulo || 'Inscripcion sin actividad vinculada' }}</p>
               </div>
-              <span class="badge bg-light text-rojo border border-rojo">
+              <span class="type-badge">
                 {{ inscription.tiposPermitidos.join(', ') }}
               </span>
             </div>
@@ -134,24 +138,41 @@
               </button>
             </div>
 
-            <div class="admin-tabs" *ngIf="!isAdminMode">
-              <button type="button" class="tab-button" [class.active]="associationTab === 'documentacion'" (click)="setAssociationTab('documentacion')">
+            <div class="inscription-steps" *ngIf="!isAdminMode" aria-label="Inscripcion paso a paso">
+              <button type="button" class="step-pill" [class.active]="associationStep === 1" (click)="goAssociationStep(1)">
+                <span>1</span>
                 Documentacion
               </button>
-              <button type="button" class="tab-button" [class.active]="associationTab === 'formulario'" (click)="setAssociationTab('formulario')">
-                Formulario
+              <button type="button" class="step-pill" [class.active]="associationStep === 2" (click)="goAssociationStep(2)">
+                <span>2</span>
+                Datos
               </button>
-              <button type="button" class="tab-button" [class.active]="associationTab === 'asociados'" (click)="setAssociationTab('asociados')">
-                Asociados inscritos
+              <button type="button" class="step-pill" [class.active]="associationStep === 3" (click)="goAssociationStep(3)">
+                <span>3</span>
+                Participantes
+              </button>
+              <button type="button" class="step-pill" [class.active]="associationStep === 4" [disabled]="!miEntrada" (click)="goAssociationStep(4)">
+                <span>4</span>
+                Revisar
+              </button>
+              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit" (click)="submit()">
+                <span>5</span>
+                Enviar
               </button>
             </div>
 
             <div class="documents mt-3" *ngIf="(isAdminMode && adminTab === 'documentacion') || (!isAdminMode && associationTab === 'documentacion')">
-              <h3 class="section-title">Documentos asociados</h3>
+              <h3 class="section-title">{{ isAdminMode ? 'Documentos asociados' : 'Antes de inscribirte' }}</h3>
+              <p class="text-muted" *ngIf="!isAdminMode">
+                Lee las condiciones y documentos adjuntos. Despues podras rellenar los datos y seleccionar participantes.
+              </p>
               <div class="document-list" *ngIf="adjuntos.length; else noDocs">
                 <a class="document-item" *ngFor="let adjunto of adjuntos" [href]="documentUrl(adjunto)" target="_blank" rel="noopener">
                   {{ adjunto.originalName || adjunto.fileName }}
                 </a>
+              </div>
+              <div class="actions mt-3" *ngIf="!isAdminMode">
+                <button class="ux-btn" type="button" (click)="goAssociationStep(2)">Continuar</button>
               </div>
               <ng-template #noDocs>
                 <p class="text-muted mb-0">No hay documentos asociados.</p>
@@ -200,17 +221,17 @@
                 </label>
               </div>
               <div class="d-flex gap-2 mt-3 flex-wrap">
-                <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Guardar</button>
-                <button class="btn btn-outline-secondary" type="button" *ngIf="inscription.estado === 'abierta'" [disabled]="loading" (click)="cambiarEstadoInscripcion('cerrada')">
+                <button class="ux-btn" type="submit" [disabled]="loading">Guardar</button>
+                <button class="ux-btn ux-btn-secondary" type="button" *ngIf="inscription.estado === 'abierta'" [disabled]="loading" (click)="cambiarEstadoInscripcion('cerrada')">
                   Desactivar
                 </button>
-                <button class="btn btn-outline-success" type="button" *ngIf="inscription.estado === 'cerrada'" [disabled]="loading" (click)="cambiarEstadoInscripcion('abierta')">
+                <button class="ux-btn ux-btn-secondary" type="button" *ngIf="inscription.estado === 'cerrada'" [disabled]="loading" (click)="cambiarEstadoInscripcion('abierta')">
                   Activar
                 </button>
-                <button class="btn btn-outline-warning" type="button" [disabled]="loading" (click)="cambiarEstadoInscripcion('archivada')">
+                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading" (click)="cambiarEstadoInscripcion('archivada')">
                   Archivar
                 </button>
-                <button class="btn btn-outline-danger" type="button" [disabled]="loading" (click)="borrarInscripcion()">
+                <button class="ux-btn ux-btn-danger" type="button" [disabled]="loading" (click)="borrarInscripcion()">
                   Borrar definitivamente
                 </button>
               </div>
@@ -223,9 +244,9 @@
                   <p class="text-muted mb-0">{{ entradas.length }} entrada(s) registradas.</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
-                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="imprimirTodas(inscription)">Imprimir todas</button>
-                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'csv')">Excel</button>
-                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'pdf')">PDF</button>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="imprimirTodas(inscription)">Imprimir todas</button>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'csv')">Excel</button>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'pdf')">PDF</button>
                 </div>
               </div>
 
@@ -243,10 +264,10 @@
                   <span>{{ entrada.estado }}</span>
                   <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
                   <span class="entry-actions">
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
                   </span>
                 </div>
               </div>
@@ -257,13 +278,13 @@
               <div class="entry-detail" *ngIf="selectedEntrada as entrada">
                 <div class="d-flex justify-content-between gap-2 flex-wrap mb-2">
                   <div>
-                    <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle</p>
+                    <p class="ux-overline mb-1">Detalle</p>
                     <h4 class="h6 mb-0">{{ entrada.numero }} - {{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</h4>
                   </div>
                   <div class="d-flex gap-2 flex-wrap">
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
-                    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
                   </div>
                 </div>
                 <dl class="entry-data">
@@ -278,11 +299,11 @@
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'summary' && miEntrada as entrada">
               <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
                 <div>
-                  <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripcion registrada</p>
+                  <p class="ux-overline mb-1">Inscripcion registrada</p>
                   <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
-                <button class="btn btn-foc-rojo" type="button" (click)="cerrarResumen()">Cerrar</button>
+                <button class="ux-btn" type="button" (click)="cerrarResumen()">Cerrar</button>
               </div>
               <dl class="entry-data">
                 <dt>Participantes</dt>
@@ -297,11 +318,11 @@
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'view' && miEntrada as entrada">
               <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
                 <div>
-                  <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripcion presentada</p>
+                  <p class="ux-overline mb-1">Inscripcion presentada</p>
                   <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
-                <button class="btn btn-foc-rojo" type="button" [disabled]="!isWithinDeadline(inscription)" (click)="modificarMiInscripcion()">
+                <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription)" (click)="modificarMiInscripcion()">
                   Modificar inscripcion
                 </button>
               </div>
@@ -449,11 +470,11 @@
                   </select>
                 </label>
                 <div class="page-actions">
-                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="participantPage === 1" (click)="previousParticipantPage()">
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="participantPage === 1" (click)="previousParticipantPage()">
                     Anterior
                   </button>
                   <span class="small text-muted">Pagina {{ participantPage }} de {{ participantTotalPages }}</span>
-                  <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="participantPage === participantTotalPages" (click)="nextParticipantPage()">
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="participantPage === participantTotalPages" (click)="nextParticipantPage()">
                     Siguiente
                   </button>
                 </div>
@@ -462,11 +483,11 @@
             </div>
 
             <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode && associationMode === 'edit'">
-              <button type="button" class="btn btn-foc-rojo" [disabled]="!canSubmit" (click)="submit()">
+              <button type="button" class="ux-btn" [disabled]="!canSubmit" (click)="submit()">
                 <i class="bi bi-send me-1"></i>
                 {{ miEntrada ? 'Guardar cambios' : 'Inscribirse' }}
               </button>
-              <button type="button" class="btn btn-outline-secondary" *ngIf="miEntrada" (click)="associationMode = 'view'">
+              <button type="button" class="ux-btn ux-btn-secondary" *ngIf="miEntrada" (click)="associationMode = 'view'">
                 Cancelar
               </button>
             </div>
@@ -477,6 +498,6 @@
           </p>
         </section>
       </div>
-    </div>
   </div>
 </section>
+

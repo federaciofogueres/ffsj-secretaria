@@ -134,6 +134,14 @@ export class InscripcionesComponent implements OnInit {
       (!this.requiresParticipants || this.selectedParticipants.size > 0);
   }
 
+  get associationStep(): 1 | 2 | 3 | 4 | 5 {
+    if (this.associationMode === 'summary') return 5;
+    if (this.associationMode === 'view') return 4;
+    if (this.associationTab === 'documentacion') return 1;
+    if (this.associationTab === 'asociados') return 3;
+    return 2;
+  }
+
   actividadDe(inscripcion: InscripcionSecretaria): ActividadSecretaria | undefined {
     return this.actividades.find(actividad => actividad.id === inscripcion.actividadId);
   }
@@ -364,6 +372,37 @@ export class InscripcionesComponent implements OnInit {
 
   setAssociationTab(tab: AssociationTab): void {
     this.associationTab = tab;
+  }
+
+  goAssociationStep(step: 1 | 2 | 3 | 4 | 5): void {
+    if (step === 1) {
+      this.associationTab = 'documentacion';
+      return;
+    }
+
+    if (step === 2) {
+      this.associationTab = 'formulario';
+      if (this.associationMode === 'view' && this.miEntrada) {
+        return;
+      }
+      this.associationMode = 'edit';
+      return;
+    }
+
+    if (step === 3) {
+      this.associationTab = 'asociados';
+      return;
+    }
+
+    if (step === 4) {
+      this.associationTab = 'formulario';
+      if (this.miEntrada) {
+        this.associationMode = 'view';
+      }
+      return;
+    }
+
+    this.associationTab = 'formulario';
   }
 
   verEntrada(entrada: InscripcionEntradaSecretaria): void {

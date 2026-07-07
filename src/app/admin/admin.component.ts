@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { AuthService, FfsjLoginComponent } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged, forkJoin } from 'rxjs';
 
@@ -11,7 +12,7 @@ import { PermissionsService } from '../core/permissions.service';
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FfsjLoginComponent],
+  imports: [CommonModule, RouterLink, FfsjLoginComponent],
   templateUrl: './admin.component.html',
   styleUrls: ['./admin.component.scss']
 })

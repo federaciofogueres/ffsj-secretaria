@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { AdminAccessService } from '../core/admin-access.service';
 import { PermissionsService } from '../core/permissions.service';
 
 interface ModuleTile {
@@ -20,6 +21,8 @@ interface ModuleTile {
   styleUrls: ['./home.component.scss']
 })
 export class HomeComponent {
+  readonly isAdmin: boolean;
+
   readonly modules: ModuleTile[] = [
     {
       title: 'Asociados',
@@ -63,5 +66,36 @@ export class HomeComponent {
     }
   ];
 
-  constructor(readonly permissions: PermissionsService) {}
+  constructor(
+    readonly permissions: PermissionsService,
+    readonly adminAccess: AdminAccessService
+  ) {
+    this.isAdmin = this.adminAccess.isAdmin();
+  }
+
+  readonly associationTasks = [
+    { title: 'Solicitudes con incidencia', value: 'Revisar', icon: 'bi-exclamation-triangle-fill', tone: 'orange', path: '/asociados/gestion' },
+    { title: 'Inscripciones abiertas', value: 'Ver plazos', icon: 'bi-clipboard-check-fill', tone: 'blue', path: '/inscripciones' },
+    { title: 'Comunicaciones nuevas', value: 'Leer', icon: 'bi-envelope-fill', tone: 'gray', path: '/registro' }
+  ];
+
+  readonly adminTasks = [
+    { title: 'Solicitudes pendientes', value: 'Validar', icon: 'bi-file-earmark-check-fill', tone: 'blue', path: '/solicitudes' },
+    { title: 'Incidencias respondidas', value: 'Revisar', icon: 'bi-chat-dots-fill', tone: 'orange', path: '/solicitudes' },
+    { title: 'Registros recibidos', value: 'Gestionar', icon: 'bi-inbox-fill', tone: 'gray', path: '/registro' }
+  ];
+
+  get taskCards(): typeof this.associationTasks {
+    return this.isAdmin ? this.adminTasks : this.associationTasks;
+  }
+
+  get heading(): string {
+    return this.isAdmin ? 'Mesa de trabajo administrativa' : 'Que necesitas hacer';
+  }
+
+  get subheading(): string {
+    return this.isAdmin
+      ? 'Revisa solicitudes, incidencias, registros y configuracion desde un unico punto.'
+      : 'Accede rapido a los tramites habituales de tu asociacion.';
+  }
 }

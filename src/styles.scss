@@ -39,6 +39,25 @@ body {
 :root {
   --header-height: 72px;
   --footer-height: 64px;
+  --ffsj-red: #b21f2d;
+  --ffsj-red-dark: #8f1723;
+  --ffsj-ink: #18212f;
+  --ffsj-muted: #667085;
+  --ffsj-line: #e5e7eb;
+  --ffsj-bg: #f6f7fb;
+  --ffsj-panel: #ffffff;
+  --ffsj-soft-red: #fff1f3;
+  --ffsj-soft-blue: #eef5ff;
+  --ffsj-soft-green: #ecfdf3;
+  --ffsj-soft-orange: #fff7ed;
+  --ffsj-soft-gray: #f2f4f7;
+  --ffsj-blue: #2563eb;
+  --ffsj-green: #118447;
+  --ffsj-orange: #c05621;
+  --ffsj-danger: #c62828;
+  --ffsj-shadow: 0 14px 40px rgba(16, 24, 40, 0.1);
+  --ffsj-radius: 18px;
+  --ffsj-radius-sm: 12px;
 }
 
 @media (min-width: 768px) {
@@ -61,8 +80,8 @@ body {
   align-items: stretch;
   min-height: 100dvh;
   height: auto;
-  background: #f6f6f6;
-  color: #1f1f1f;
+  background: var(--ffsj-bg);
+  color: var(--ffsj-ink);
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -109,7 +128,387 @@ body {
   font-family: Roboto, "Helvetica Neue", sans-serif;
 }
 
-/* Mejora visual para los diálogos de FFSJ */
+.ux-card {
+  background: var(--ffsj-panel);
+  border: 1px solid var(--ffsj-line);
+  border-radius: var(--ffsj-radius);
+  box-shadow: var(--ffsj-shadow);
+}
+
+.ux-card-flat {
+  background: var(--ffsj-panel);
+  border: 1px solid var(--ffsj-line);
+  border-radius: var(--ffsj-radius);
+}
+
+.ux-overline {
+  color: var(--ffsj-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.ux-page-title {
+  color: var(--ffsj-red);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.ux-muted {
+  color: var(--ffsj-muted);
+}
+
+.ux-btn {
+  min-height: 44px;
+  border: 0;
+  border-radius: 13px;
+  padding: 0.72rem 1rem;
+  background: var(--ffsj-red);
+  color: #fff;
+  font-weight: 800;
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.ux-btn:hover,
+.ux-btn:focus-visible {
+  background: var(--ffsj-red-dark);
+  color: #fff;
+}
+
+.ux-btn-secondary {
+  background: #fff;
+  color: var(--ffsj-ink);
+  border: 1px solid var(--ffsj-line);
+}
+
+.ux-btn-secondary:hover,
+.ux-btn-secondary:focus-visible {
+  background: var(--ffsj-soft-gray);
+  color: var(--ffsj-ink);
+}
+
+.ux-btn-light {
+  background: #fff;
+  color: var(--ffsj-red);
+  border: 1px solid #fecdd3;
+}
+
+.ux-btn-light:hover,
+.ux-btn-light:focus-visible {
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red-dark);
+}
+
+.ux-btn-danger {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.ux-btn-danger:hover,
+.ux-btn-danger:focus-visible {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+
+.ux-btn-sm {
+  min-height: 36px;
+  border-radius: 10px;
+  padding: 0.48rem 0.7rem;
+  font-size: 0.88rem;
+}
+
+.ux-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.38rem 0.62rem;
+  font-size: 0.78rem;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.ux-status-gray {
+  background: var(--ffsj-soft-gray);
+  color: #475467;
+}
+
+.ux-status-blue {
+  background: #e0edff;
+  color: #1d4ed8;
+}
+
+.ux-status-orange {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.ux-status-green {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.ux-status-red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ux-field label {
+  color: #475467;
+  font-size: 0.82rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.ux-field .form-control,
+.ux-field .form-select {
+  min-height: 48px;
+  border-color: var(--ffsj-line);
+  border-radius: 13px;
+  font-size: 1rem;
+}
+
+.asociado-dialog {
+  display: grid;
+  gap: 1rem;
+  width: max-content;
+  max-width: calc(100vw - 4rem);
+  min-width: 0;
+}
+
+.asociado-dialog__head {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding-bottom: 0.9rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.asociado-dialog__avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 999px;
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+}
+
+.asociado-dialog__kicker {
+  margin: 0 0 0.2rem;
+  color: var(--ffsj-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.asociado-dialog h2 {
+  margin: 0 0 0.45rem;
+  color: var(--ffsj-ink);
+  font-size: 1.35rem;
+  font-weight: 900;
+}
+
+.asociado-dialog__status {
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.78rem;
+  font-weight: 850;
+  padding: 0.35rem 0.62rem;
+}
+
+.asociado-dialog__status.is-baja {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.asociado-dialog__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(220px, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.asociado-dialog__grid div {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: #fff;
+}
+
+.asociado-dialog__grid dt {
+  color: var(--ffsj-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.asociado-dialog__grid dd {
+  margin: 0.2rem 0 0;
+  color: var(--ffsj-ink);
+  font-weight: 850;
+}
+
+.asociado-dialog__history {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  background: #fbfcfe;
+  padding: 0.9rem;
+}
+
+.asociado-dialog__history h3 {
+  margin: 0 0 0.65rem;
+  color: var(--ffsj-ink);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.asociado-dialog__history table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+.mat-mdc-dialog-surface:has(.asociado-dialog) {
+  width: max-content !important;
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.cdk-overlay-pane:has(.asociado-dialog) {
+  max-width: calc(100vw - 2rem) !important;
+}
+
+.asociado-dialog__history th,
+.asociado-dialog__history td {
+  border-bottom: 1px solid var(--ffsj-line);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.asociado-dialog__history th {
+  color: var(--ffsj-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.ux-help-panel {
+  background: var(--ffsj-soft-red);
+  border: 1px solid #ffd5db;
+  border-radius: var(--ffsj-radius);
+}
+
+.card {
+  border-color: var(--ffsj-line) !important;
+  border-radius: var(--ffsj-radius) !important;
+  box-shadow: var(--ffsj-shadow) !important;
+}
+
+.card .card {
+  box-shadow: none !important;
+}
+
+.btn {
+  min-height: 42px;
+  border-radius: 12px;
+  font-weight: 800;
+}
+
+.btn-foc-rojo,
+.btn-danger,
+.btn-primary {
+  background: var(--ffsj-red) !important;
+  border-color: var(--ffsj-red) !important;
+  color: #fff !important;
+}
+
+.btn-foc-rojo:hover,
+.btn-danger:hover,
+.btn-primary:hover {
+  background: var(--ffsj-red-dark) !important;
+  border-color: var(--ffsj-red-dark) !important;
+}
+
+.btn-outline-secondary,
+.btn-light,
+.btn-outline-primary {
+  border-color: var(--ffsj-line) !important;
+  color: var(--ffsj-ink) !important;
+  background: #fff !important;
+}
+
+.btn-outline-secondary:hover,
+.btn-light:hover,
+.btn-outline-primary:hover {
+  background: var(--ffsj-soft-gray) !important;
+}
+
+.form-control,
+.form-select,
+.mat-mdc-form-field {
+  font-size: 1rem;
+}
+
+.form-control,
+.form-select {
+  min-height: 44px;
+  border-color: var(--ffsj-line);
+  border-radius: 12px;
+}
+
+.table {
+  border-color: var(--ffsj-line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.table thead th {
+  color: var(--ffsj-muted);
+  background: #f9fafb;
+  font-size: 0.78rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.badge {
+  border-radius: 999px;
+  padding: 0.4rem 0.65rem;
+  font-weight: 850;
+}
+
+.alert {
+  border-radius: 14px;
+}
+
+.nav-pills .nav-link,
+.mat-mdc-tab .mdc-tab__text-label {
+  font-weight: 850;
+}
+
+.mat-mdc-tab-group,
+.mat-mdc-table,
+.mat-mdc-paginator {
+  border-radius: 14px;
+}
+
+@media (max-width: 767px) {
+  .ux-card,
+  .ux-card-flat,
+  .ux-help-panel {
+    border-radius: 14px;
+  }
+}
+
+/* Mejora visual para los dialogos de FFSJ */
 .mat-mdc-dialog-surface {
   border-radius: 16px !important;
   padding: 1.25rem 1.5rem !important;

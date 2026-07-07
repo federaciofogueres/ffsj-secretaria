@@ -1,24 +1,24 @@
-<section class="gestion card border-0 shadow-sm">
-  <div class="card-body p-4 p-md-5">
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-2 mb-3">
+<section class="gestion ux-card">
+  <div class="gestion-body">
+    <header class="page-head">
       <div>
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Gestion de asociados</p>
-        <h1 class="h4 mb-1 text-rojo">Altas, modificaciones y bajas</h1>
-        <p class="text-muted mb-0">Prepara registros pendientes y genera solicitudes desde cada tipo de tramite.</p>
+        <p class="ux-overline mb-1">Gestion de asociados</p>
+        <h1 class="ux-page-title mb-1">Altas, modificaciones y bajas</h1>
+        <p class="text-muted mb-0">Prepara cambios, revisa el borrador y genera solicitudes desde cada tipo de tramite.</p>
       </div>
-      <a routerLink="/asociados" class="btn btn-outline-secondary btn-sm">
+      <a routerLink="/asociados" class="ux-btn ux-btn-secondary ux-btn-sm">
         <i class="bi bi-arrow-left me-1"></i>
         Volver al listado
       </a>
-    </div>
+    </header>
 
-    <div class="nav nav-pills gap-2 mb-4">
-      <button class="nav-link" [class.active]="activeTab === 'altas'" (click)="setTab('altas')">Altas</button>
-      <button class="nav-link" [class.active]="activeTab === 'modificaciones'" (click)="setTab('modificaciones')">
+    <div class="workflow-tabs">
+      <button class="workflow-tab" [class.active]="activeTab === 'altas'" (click)="setTab('altas')">Altas</button>
+      <button class="workflow-tab" [class.active]="activeTab === 'modificaciones'" (click)="setTab('modificaciones')">
         Modificaciones
       </button>
-      <button class="nav-link" [class.active]="activeTab === 'bajas'" (click)="setTab('bajas')">Bajas</button>
-      <button class="nav-link" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
+      <button class="workflow-tab" [class.active]="activeTab === 'bajas'" (click)="setTab('bajas')">Bajas</button>
+      <button class="workflow-tab" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
         Solicitudes pendientes
       </button>
     </div>
@@ -37,13 +37,13 @@
         <ng-container *ngTemplateOutlet="pendientesTemplate; context: { tipo: 'cambio' }"></ng-container>
       </ng-container>
       <ng-template #cambiosView>
-        <div class="pending-cta alert alert-info" *ngIf="totalPendientes('cambio') > 0">
+        <div class="pending-cta" *ngIf="totalPendientes('cambio') > 0">
           <div>
-            <strong>Cambios pendientes</strong>
+            <strong>Cambios preparados</strong>
             <span class="text-muted ms-1">Revisa los cambios preparados y genera una solicitud.</span>
           </div>
-          <button class="btn btn-outline-primary btn-sm pending-button" type="button" (click)="abrirPendientes('cambio')">
-            Cambios pendientes
+          <button class="ux-btn ux-btn-light ux-btn-sm pending-button" type="button" (click)="abrirPendientes('cambio')">
+            Cambios preparados
             <span class="pending-badge">{{ totalPendientes('cambio') }}</span>
           </button>
         </div>
@@ -60,10 +60,10 @@
                 [value]="filtrosListado.modificaciones.adultos"
                 (input)="actualizarFiltro('modificaciones', 'adultos', $event)"
               />
-              <ul class="list-group">
+              <ul class="item-list">
                 <li
                   *ngFor="let a of asociadosPagina('modificaciones', 'adultos')"
-                  class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  class="person-row clickable"
                   [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
                   [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                   [class.disabled-item]="asociadoBloqueado(a)"
@@ -75,9 +75,9 @@
                 </li>
               </ul>
               <div class="list-pager">
-                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.adultos === 0" (click)="cambiarPagina('modificaciones', 'adultos', -1)">Anterior</button>
+                <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.modificaciones.adultos === 0" (click)="cambiarPagina('modificaciones', 'adultos', -1)">Anterior</button>
                 <span>Pagina {{ paginasListado.modificaciones.adultos + 1 }} de {{ totalPaginas('modificaciones', 'adultos') }}</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.adultos + 1 >= totalPaginas('modificaciones', 'adultos')" (click)="cambiarPagina('modificaciones', 'adultos', 1)">Siguiente</button>
+                <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.modificaciones.adultos + 1 >= totalPaginas('modificaciones', 'adultos')" (click)="cambiarPagina('modificaciones', 'adultos', 1)">Siguiente</button>
               </div>
             </div>
             <div class="col-12 col-lg-6">
@@ -89,10 +89,10 @@
                 [value]="filtrosListado.modificaciones.infantiles"
                 (input)="actualizarFiltro('modificaciones', 'infantiles', $event)"
               />
-              <ul class="list-group">
+              <ul class="item-list">
                 <li
                   *ngFor="let a of asociadosPagina('modificaciones', 'infantiles')"
-                  class="list-group-item d-flex justify-content-between align-items-center clickable"
+                  class="person-row clickable"
                   [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
                   [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
                   [class.disabled-item]="asociadoBloqueado(a)"
@@ -104,9 +104,9 @@
                 </li>
               </ul>
               <div class="list-pager">
-                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.infantiles === 0" (click)="cambiarPagina('modificaciones', 'infantiles', -1)">Anterior</button>
+                <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.modificaciones.infantiles === 0" (click)="cambiarPagina('modificaciones', 'infantiles', -1)">Anterior</button>
                 <span>Pagina {{ paginasListado.modificaciones.infantiles + 1 }} de {{ totalPaginas('modificaciones', 'infantiles') }}</span>
-                <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.modificaciones.infantiles + 1 >= totalPaginas('modificaciones', 'infantiles')" (click)="cambiarPagina('modificaciones', 'infantiles', 1)">Siguiente</button>
+                <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.modificaciones.infantiles + 1 >= totalPaginas('modificaciones', 'infantiles')" (click)="cambiarPagina('modificaciones', 'infantiles', 1)">Siguiente</button>
               </div>
             </div>
           </div>
@@ -123,13 +123,13 @@
         <ng-container *ngTemplateOutlet="pendientesTemplate; context: { tipo: 'baja' }"></ng-container>
       </ng-container>
       <ng-template #bajasView>
-        <div class="pending-cta alert alert-info" *ngIf="totalPendientes('baja') > 0">
+        <div class="pending-cta" *ngIf="totalPendientes('baja') > 0">
           <div>
-            <strong>Bajas pendientes</strong>
+            <strong>Bajas preparadas</strong>
             <span class="text-muted ms-1">Revisa las bajas preparadas y genera una solicitud.</span>
           </div>
-          <button class="btn btn-outline-primary btn-sm pending-button" type="button" (click)="abrirPendientes('baja')">
-            Bajas pendientes
+          <button class="ux-btn ux-btn-light ux-btn-sm pending-button" type="button" (click)="abrirPendientes('baja')">
+            Bajas preparadas
             <span class="pending-badge">{{ totalPendientes('baja') }}</span>
           </button>
         </div>
@@ -137,7 +137,7 @@
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
           <div>
             <h5 class="section-title mb-1">Selecciona asociados para dar de baja</h5>
-            <p class="text-muted mb-0">Se anadiran al registro pendiente de bajas.</p>
+            <p class="text-muted mb-0">Se anadiran al borrador de solicitud de bajas.</p>
           </div>
         </div>
 
@@ -151,10 +151,10 @@
               [value]="filtrosListado.bajas.adultos"
               (input)="actualizarFiltro('bajas', 'adultos', $event)"
             />
-            <ul class="list-group">
+            <ul class="item-list">
               <li
                 *ngFor="let a of asociadosPagina('bajas', 'adultos')"
-                class="list-group-item d-flex align-items-center gap-2 clickable"
+                class="person-row clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
                 [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
                 [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
@@ -172,9 +172,9 @@
               </li>
             </ul>
             <div class="list-pager">
-              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.adultos === 0" (click)="cambiarPagina('bajas', 'adultos', -1)">Anterior</button>
+              <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.bajas.adultos === 0" (click)="cambiarPagina('bajas', 'adultos', -1)">Anterior</button>
               <span>Pagina {{ paginasListado.bajas.adultos + 1 }} de {{ totalPaginas('bajas', 'adultos') }}</span>
-              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.adultos + 1 >= totalPaginas('bajas', 'adultos')" (click)="cambiarPagina('bajas', 'adultos', 1)">Siguiente</button>
+              <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.bajas.adultos + 1 >= totalPaginas('bajas', 'adultos')" (click)="cambiarPagina('bajas', 'adultos', 1)">Siguiente</button>
             </div>
           </div>
           <div class="col-12 col-lg-6">
@@ -186,10 +186,10 @@
               [value]="filtrosListado.bajas.infantiles"
               (input)="actualizarFiltro('bajas', 'infantiles', $event)"
             />
-            <ul class="list-group">
+            <ul class="item-list">
               <li
                 *ngFor="let a of asociadosPagina('bajas', 'infantiles')"
-                class="list-group-item d-flex align-items-center gap-2 clickable"
+                class="person-row clickable"
                 [class.selected]="seleccionBaja.has(a.id)"
                 [class.pending-change]="estadoPendienteAsociado(a) === 'cambio'"
                 [class.pending-delete]="estadoPendienteAsociado(a) === 'baja' || asociadoDadoDeBaja(a)"
@@ -207,16 +207,16 @@
               </li>
             </ul>
             <div class="list-pager">
-              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.infantiles === 0" (click)="cambiarPagina('bajas', 'infantiles', -1)">Anterior</button>
+              <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.bajas.infantiles === 0" (click)="cambiarPagina('bajas', 'infantiles', -1)">Anterior</button>
               <span>Pagina {{ paginasListado.bajas.infantiles + 1 }} de {{ totalPaginas('bajas', 'infantiles') }}</span>
-              <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="paginasListado.bajas.infantiles + 1 >= totalPaginas('bajas', 'infantiles')" (click)="cambiarPagina('bajas', 'infantiles', 1)">Siguiente</button>
+              <button type="button" class="ux-btn ux-btn-secondary ux-btn-sm" [disabled]="paginasListado.bajas.infantiles + 1 >= totalPaginas('bajas', 'infantiles')" (click)="cambiarPagina('bajas', 'infantiles', 1)">Siguiente</button>
             </div>
           </div>
         </div>
 
         <div class="actions mt-3">
-          <button class="btn btn-foc-rojo" type="button" [disabled]="seleccionBaja.size === 0 || loading || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
-            Anadir bajas al registro pendiente
+          <button class="ux-btn" type="button" [disabled]="seleccionBaja.size === 0 || loading || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
+            Preparar bajas
           </button>
         </div>
       </ng-template>
@@ -228,7 +228,7 @@
           <h5 class="section-title mb-1">Solicitudes pendientes</h5>
           <p class="text-muted mb-0">Solicitudes registradas y todavia no enviadas a secretaria.</p>
         </div>
-        <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarSolicitudes()">
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarSolicitudes()">
           <i class="bi bi-arrow-clockwise me-1"></i>
           Actualizar
         </button>
@@ -236,11 +236,11 @@
 
       <div class="row g-3">
         <div class="col-12 col-lg-6">
-          <div class="list-group">
+          <div class="item-list">
             <button
               *ngFor="let solicitud of solicitudes"
               type="button"
-              class="list-group-item list-group-item-action"
+              class="request-row"
               [class.active]="solicitudDetalle?.id === solicitud.id"
               (click)="verSolicitud(solicitud)"
             >
@@ -251,7 +251,7 @@
               <div class="d-flex justify-content-between gap-2 mt-1">
                 <span>
                   <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
-                  {{ solicitud.totalRegistros }} item(s)
+                  {{ solicitud.totalRegistros }} cambio(s)
                 </span>
                 <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
               </div>
@@ -270,16 +270,16 @@
               </div>
               <div class="d-flex flex-wrap gap-2 mb-3">
                 <button
-                  class="btn btn-foc-rojo btn-sm"
+                  class="ux-btn ux-btn-sm"
                   type="button"
                   *ngIf="puedeEnviarSolicitud(solicitudDetalle)"
                   [disabled]="loading"
                   (click)="enviarSolicitud(solicitudDetalle)"
                 >
-                  Enviar a secretaria
+                  Enviar solicitud a Secretaria
                 </button>
                 <button
-                  class="btn btn-outline-secondary btn-sm"
+                  class="ux-btn ux-btn-secondary ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarEnvio(solicitudDetalle)"
                   [disabled]="loading"
@@ -288,13 +288,13 @@
                   Cancelar envio
                 </button>
                 <button
-                  class="btn btn-outline-danger btn-sm"
+                  class="ux-btn ux-btn-danger ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarSolicitud(solicitudDetalle)"
                   [disabled]="loading"
                   (click)="cancelarSolicitud(solicitudDetalle)"
                 >
-                  Cancelar solicitud
+                  Cancelar esta solicitud antes de enviarla
                 </button>
               </div>
               <ul class="pending-list">
@@ -317,107 +317,136 @@
     </ng-container>
 
     <ng-template #formTemplate let-modo="modo">
-      <div class="pending-cta alert alert-info" *ngIf="totalPendientes(modo === 'alta' ? 'alta' : 'cambio') > 0">
+      <div class="pending-cta" *ngIf="totalPendientes(modo === 'alta' ? 'alta' : 'cambio') > 0">
         <div>
-          <strong>{{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}</strong>
-          <span class="text-muted ms-1">Completa el formulario y revisa los items preparados antes de generar solicitud.</span>
+          <strong>{{ modo === 'alta' ? 'Altas preparadas' : 'Cambios preparados' }}</strong>
+          <span class="text-muted ms-1">Completa el formulario y revisa los cambios preparados antes de generar solicitud.</span>
         </div>
         <button
-          class="btn btn-outline-primary btn-sm pending-button"
+          class="ux-btn ux-btn-light ux-btn-sm pending-button"
           type="button"
           (click)="abrirPendientes(modo === 'alta' ? 'alta' : 'cambio')"
         >
-          {{ modo === 'alta' ? 'Altas pendientes' : 'Cambios pendientes' }}
+          {{ modo === 'alta' ? 'Altas preparadas' : 'Cambios preparados' }}
           <span class="pending-badge">{{ totalPendientes(modo === 'alta' ? 'alta' : 'cambio') }}</span>
-        </button>
+          </button>
       </div>
 
       <form [formGroup]="altaForm" class="form-grid" (ngSubmit)="guardarRegistroAltaOCambio()">
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label">Tipo de hoguera</label>
-            <select class="form-select" formControlName="tipo" (change)="actualizarCargoPorTipo()">
-              <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
-            </select>
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Cargo</label>
-            <div class="input-group">
-              <select class="form-select" formControlName="cargoId">
-                <option [ngValue]="null">Selecciona cargo</option>
-                <option *ngFor="let cargo of cargosFormulario" [ngValue]="cargo.id" [disabled]="cargosSeleccionadosIds.has(cargo.id)">
-                  {{ cargo.nombre }}
-                </option>
-              </select>
-              <button class="btn btn-outline-secondary" type="button" (click)="agregarCargoSeleccionado()">
-                Anadir
-              </button>
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-step">1</span>
+            <div>
+              <h5 class="section-title mb-1">Datos personales</h5>
+              <p class="text-muted mb-0">Identificacion del asociado o asociada.</p>
             </div>
-            <div class="selected-cargos" *ngIf="cargosSeleccionados.length > 0">
-              <span class="cargo-chip" *ngFor="let cargo of cargosSeleccionados">
-                {{ cargo.nombre }}
-                <button type="button" aria-label="Quitar cargo" (click)="quitarCargoSeleccionado(cargo.id)">×</button>
-              </span>
+          </div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label">Nombre</label>
+              <input class="form-control" formControlName="nombre" />
             </div>
-            <p class="text-danger small mt-1 mb-0" *ngIf="cargosSeleccionados.length === 0">Selecciona al menos un cargo.</p>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Apellidos</label>
+              <input class="form-control" formControlName="apellidos" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" class="form-control" formControlName="nacimiento" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">DNI/NIE</label>
+              <input class="form-control" formControlName="dni" placeholder="Documento" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">SIP</label>
+              <input class="form-control" formControlName="sip" />
+            </div>
           </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">DNI/NIE</label>
-            <input class="form-control" formControlName="dni" placeholder="Documento" />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">SIP</label>
-            <input class="form-control" formControlName="sip" />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Fecha de nacimiento</label>
-            <input type="date" class="form-control" formControlName="nacimiento" />
-          </div>
-        </div>
+        </section>
 
-        <h5 class="section-title">Datos personales</h5>
-        <div class="row g-3">
-          <div class="col-12 col-md-6">
-            <label class="form-label">Nombre</label>
-            <input class="form-control" formControlName="nombre" />
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-step">2</span>
+            <div>
+              <h5 class="section-title mb-1">Datos de contacto</h5>
+              <p class="text-muted mb-0">Direccion y formas de contacto.</p>
+            </div>
           </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Apellidos</label>
-            <input class="form-control" formControlName="apellidos" />
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Direccion</label>
+              <input class="form-control" formControlName="direccion" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Codigo Postal</label>
+              <input class="form-control" formControlName="cp" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Localidad</label>
+              <input class="form-control" formControlName="localidad" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Provincia</label>
+              <input class="form-control" formControlName="provincia" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Telefono</label>
+              <input class="form-control" formControlName="telefono" />
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-control" formControlName="email" />
+            </div>
           </div>
-          <div class="col-12">
-            <label class="form-label">Direccion</label>
-            <input class="form-control" formControlName="direccion" />
+        </section>
+
+        <section class="form-section">
+          <div class="form-section-head">
+            <span class="form-step">3</span>
+            <div>
+              <h5 class="section-title mb-1">Datos de la asociacion</h5>
+              <p class="text-muted mb-0">Tipo de asociado y cargos dentro de la entidad.</p>
+            </div>
           </div>
-          <div class="col-6 col-md-4">
-            <label class="form-label">Codigo Postal</label>
-            <input class="form-control" formControlName="cp" />
+          <div class="row g-3">
+            <div class="col-12 col-md-5">
+              <label class="form-label">Tipo de asociado</label>
+              <select class="form-select" formControlName="tipo" (change)="actualizarCargoPorTipo()">
+                <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-7">
+              <label class="form-label">Cargo</label>
+              <div class="input-group cargo-input">
+                <select class="form-select" formControlName="cargoId">
+                  <option [ngValue]="null">Selecciona cargo</option>
+                  <option *ngFor="let cargo of cargosFormulario" [ngValue]="cargo.id" [disabled]="cargosSeleccionadosIds.has(cargo.id)">
+                    {{ cargo.nombre }}
+                  </option>
+                </select>
+                <button class="ux-btn ux-btn-secondary" type="button" (click)="agregarCargoSeleccionado()">
+                  Anadir
+                </button>
+              </div>
+              <div class="selected-cargos" *ngIf="cargosSeleccionados.length > 0">
+                <span class="cargo-chip" *ngFor="let cargo of cargosSeleccionados">
+                  {{ cargo.nombre }}
+                  <button type="button" aria-label="Quitar cargo" (click)="quitarCargoSeleccionado(cargo.id)">x</button>
+                </span>
+              </div>
+              <p class="text-danger small mt-1 mb-0" *ngIf="cargosSeleccionados.length === 0">Selecciona al menos un cargo.</p>
+            </div>
           </div>
-          <div class="col-6 col-md-4">
-            <label class="form-label">Localidad</label>
-            <input class="form-control" formControlName="localidad" />
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Provincia</label>
-            <input class="form-control" formControlName="provincia" />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Telefono</label>
-            <input class="form-control" formControlName="telefono" />
-          </div>
-          <div class="col-12 col-md-6">
-            <label class="form-label">Email</label>
-            <input type="email" class="form-control" formControlName="email" />
-          </div>
-        </div>
+        </section>
 
         <div class="actions mt-3 d-flex gap-2">
-          <button class="btn btn-foc-rojo" type="submit" [disabled]="loading || !permissions.hasPermission('solicitudes:write')">
-            {{ modo === 'alta' ? 'Anadir alta al registro pendiente' : 'Anadir cambio al registro pendiente' }}
+          <button class="ux-btn" type="submit" [disabled]="loading || !permissions.hasPermission('solicitudes:write')">
+            {{ modo === 'alta' ? 'Preparar alta' : 'Preparar cambio' }}
           </button>
           <button
             type="button"
-            class="btn btn-outline-secondary"
+            class="ux-btn ux-btn-secondary"
             *ngIf="modo === 'modificacion'"
             (click)="mostrarFormMod = false; resetFormulario()"
           >
@@ -431,15 +460,15 @@
       <div class="pending-section">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
           <div>
-            <h5 class="section-title mb-1">Registro pendiente de {{ labelTipo(tipo) | lowercase }}</h5>
-            <p class="text-muted mb-0">Selecciona los items que quieres agrupar en una solicitud.</p>
+            <h5 class="section-title mb-1">Cambios preparados de {{ labelTipo(tipo) | lowercase }}</h5>
+            <p class="text-muted mb-0">Selecciona los cambios que quieres agrupar en una solicitud.</p>
           </div>
           <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="volverDesdePendientes()">
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="volverDesdePendientes()">
               <i class="bi bi-arrow-left me-1"></i>
               Volver atras
             </button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarRegistroPendiente()">
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarRegistroPendiente()">
               <i class="bi bi-arrow-clockwise me-1"></i>
               Actualizar
             </button>
@@ -447,7 +476,7 @@
         </div>
 
         <div class="table-responsive">
-          <table class="table align-middle">
+          <table class="pending-table">
             <thead>
               <tr>
                 <th></th>
@@ -474,7 +503,7 @@
                 <td>{{ item.estado }}</td>
                 <td class="text-end">
                   <button
-                    class="btn btn-outline-danger btn-sm"
+                    class="ux-btn ux-btn-danger ux-btn-sm"
                     type="button"
                     [disabled]="loading || !permissions.hasPermission('solicitudes:write')"
                     (click)="descartarRegistro(item)"
@@ -484,7 +513,7 @@
                 </td>
               </tr>
               <tr *ngIf="pendientesPorTipo(tipo).length === 0">
-                <td colspan="6" class="text-muted">No hay items pendientes.</td>
+                <td colspan="6" class="text-muted">No hay cambios preparados.</td>
               </tr>
             </tbody>
           </table>
@@ -492,15 +521,15 @@
 
         <div class="actions mt-3 d-flex align-items-center gap-2 flex-wrap">
           <button
-            class="btn btn-foc-rojo"
+            class="ux-btn"
             type="button"
             [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || !permissions.hasPermission('solicitudes:write')"
             (click)="crearSolicitudSeleccionada(tipo)"
           >
-            Generar solicitud
+            Generar solicitud con seleccionados
           </button>
           <span class="text-muted small" *ngIf="seleccionadosPorTipo(tipo).length > 0">
-            {{ seleccionadosPorTipo(tipo).length }} item(s) seleccionado(s).
+            {{ seleccionadosPorTipo(tipo).length }} cambio(s) seleccionado(s).
           </span>
         </div>
       </div>
@@ -535,10 +564,12 @@
     </div>
 
     <footer class="sustitucion-footer">
-      <button class="btn btn-outline-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
-      <button class="btn btn-foc-rojo" type="button" [disabled]="loading" (click)="confirmarSolicitudConSustituciones()">
+      <button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
+      <button class="ux-btn" type="button" [disabled]="loading" (click)="confirmarSolicitudConSustituciones()">
         Crear y enviar solicitud
       </button>
     </footer>
   </section>
 </div>
+
+

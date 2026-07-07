@@ -1,22 +1,22 @@
-<section class="calendario card border-0 shadow-sm">
-  <div class="card-body p-4 p-md-5">
-    <div class="header d-flex justify-content-between align-items-start gap-3 flex-wrap">
+<section class="calendario ux-card">
+  <div class="calendar-body">
+    <div class="header page-head">
       <div>
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Calendario</p>
-        <h1 class="h4 mb-1 text-rojo">Actividades</h1>
-        <p class="text-muted mb-0">Consulta las actividades de secretaria.</p>
+        <p class="ux-overline mb-2">Calendario</p>
+        <h1 class="ux-page-title">Actividades</h1>
+        <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades y accede a las inscripciones vinculadas.' }}</p>
       </div>
-      <div class="d-flex gap-2 flex-wrap">
+      <div class="calendar-actions">
         <button
-          class="btn btn-foc-rojo"
+          class="ux-btn"
           type="button"
           *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
           (click)="abrirCrearActividad()"
         >
           Añadir actividad
         </button>
-        <button class="btn btn-outline-secondary" type="button" (click)="previousMonth()">Anterior</button>
-        <button class="btn btn-outline-secondary" type="button" (click)="nextMonth()">Siguiente</button>
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="previousMonth()">Anterior</button>
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="nextMonth()">Siguiente</button>
       </div>
     </div>
 
@@ -26,7 +26,7 @@
 
     <div class="calendar-layout mt-4">
       <div class="calendar">
-        <h2 class="h5 text-capitalize mb-3">{{ monthLabel }}</h2>
+        <h2 class="month-title text-capitalize">{{ monthLabel }}</h2>
         <div class="weekdays">
           <span>Lun</span>
           <span>Mar</span>
@@ -96,7 +96,7 @@
           <div class="detail-block">
           <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de actividad</p>
           <div class="d-flex align-items-start justify-content-between gap-2">
-            <h2 class="h5 text-rojo mb-1">{{ selected.titulo }}</h2>
+            <h2 class="detail-title mb-1">{{ selected.titulo }}</h2>
             <span class="status" [class.inactive]="selected.estado === 'cerrada'">{{ estadoLabel(selected.estado) }}</span>
           </div>
           <p class="text-muted mb-2">
@@ -143,7 +143,7 @@
               <label class="form-label mt-2">Descripcion</label>
               <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
               <div class="admin-actions mt-3">
-                <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Guardar</button>
+                <button class="ux-btn" type="submit" [disabled]="loading">Guardar cambios</button>
                 <button
                   class="btn btn-outline-secondary"
                   type="button"
@@ -232,7 +232,7 @@
 <section class="modal-panel" *ngIf="showCreateDialog" role="dialog" aria-modal="true" aria-label="Añadir actividad">
   <div class="modal-header-custom">
     <div>
-      <p class="overline text-uppercase text-muted fw-bold mb-1">Calendario</p>
+      <p class="ux-overline mb-2">Calendario</p>
       <h2 class="h5 mb-0 text-rojo">Añadir actividad</h2>
     </div>
     <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarCrearActividad()">Cerrar</button>
@@ -255,8 +255,9 @@
     <label class="form-label mt-2">Descripcion</label>
     <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
     <div class="d-flex gap-2 mt-3">
-      <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Crear actividad</button>
+      <button class="ux-btn" type="submit" [disabled]="loading">Crear actividad</button>
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>
     </div>
   </form>
 </section>
+

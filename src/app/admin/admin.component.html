@@ -1,9 +1,23 @@
 <ng-container *ngIf="!isLoggedIn; else loggedAdmin">
-  <lib-ffsj-login
-    title="Administracion FFSJ"
-    subtitle="Acceso de personas"
-    (logStatus)="onLoginStatus($event)"
-  ></lib-ffsj-login>
+  <section class="admin-login-grid">
+    <div class="ux-help-panel admin-login-intro">
+      <img src="assets/img/logo-intranet.png" alt="FFSJ" />
+      <p class="ux-overline mb-2">Acceso administracion</p>
+      <h1>Administracion FFSJ</h1>
+      <p class="ux-muted mb-0">Acceso solo para personas autorizadas con cargo administrativo.</p>
+      <a class="ux-btn ux-btn-secondary mt-4" routerLink="/login">
+        <i class="bi bi-arrow-left"></i>
+        Volver al acceso de asociaciones
+      </a>
+    </div>
+    <div class="ux-card admin-login-form">
+      <lib-ffsj-login
+        title="Administracion FFSJ"
+        subtitle="Acceso de personas"
+        (logStatus)="onLoginStatus($event)"
+      ></lib-ffsj-login>
+    </div>
+  </section>
 </ng-container>
 
 <ng-template #loggedAdmin>

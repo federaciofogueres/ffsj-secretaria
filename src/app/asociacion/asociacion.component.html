@@ -1,48 +1,167 @@
-<section class="association card border-0 shadow-sm">
-  <div class="card-body p-4 p-md-5">
-    <div *ngIf="loading" class="alert alert-info">Cargando datos de la asociacion...</div>
-    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-    <div class="d-flex align-items-start justify-content-between flex-wrap gap-3 mb-4">
-      <div>
-        <p class="overline text-uppercase text-muted fw-bold mb-1">Módulo</p>
-        <h1 class="h4 mb-1 text-rojo">Datos de la asociación</h1>
-        <p class="text-muted mb-0">
-          Consulta la ficha completa de la entidad. Activa el modo edición sólo cuando necesites actualizar los datos.
-        </p>
-      </div>
-      <div class="actions d-flex flex-wrap align-items-center gap-2">
-        <button
-          *ngIf="!isEditing && permissions.hasPermission('asociacion:write')"
-          type="button"
-          class="btn btn-foc-rojo d-inline-flex align-items-center"
-          (click)="startEdit()"
-        >
-          <i class="bi bi-pencil-square me-2"></i>
-          Editar datos
-        </button>
+<section class="association ux-card">
+  <div *ngIf="loading" class="alert alert-info">Cargando datos de la asociacion...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
-        <ng-container *ngIf="isEditing">
-          <button type="button" class="btn btn-outline-secondary" (click)="cancelEdit()">
-            Cancelar
-          </button>
-          <button type="button" class="btn btn-success" [disabled]="saving" (click)="save()">
-            <i class="bi bi-check2 me-1"></i>
-            {{ saving ? 'Guardando...' : 'Guardar' }}
-          </button>
-        </ng-container>
-      </div>
+  <header class="page-head">
+    <div>
+      <p class="ux-overline mb-2">Datos de la asociacion</p>
+      <h1 class="ux-page-title">Ficha oficial de la entidad</h1>
+      <p class="ux-muted mb-0">
+        Consulta los datos oficiales. Activa la edicion solo cuando necesites actualizarlos.
+      </p>
     </div>
+    <div class="actions">
+      <button
+        *ngIf="!isEditing && permissions.hasPermission('asociacion:write')"
+        type="button"
+        class="ux-btn"
+        (click)="startEdit()"
+      >
+        <i class="bi bi-pencil-square"></i>
+        Editar datos
+      </button>
 
-    <form [formGroup]="form" class="d-flex flex-column gap-4">
-      <section class="section-card" formGroupName="basic">
-        <div class="section-header d-flex align-items-center justify-content-between gap-2 mb-3">
+      <ng-container *ngIf="isEditing">
+        <button type="button" class="ux-btn ux-btn-secondary" (click)="cancelEdit()">Cancelar</button>
+        <button type="button" class="ux-btn" [disabled]="saving" (click)="save()">
+          <i class="bi bi-check2"></i>
+          {{ saving ? 'Guardando...' : 'Guardar cambios' }}
+        </button>
+      </ng-container>
+    </div>
+  </header>
+
+  <div class="confirm-note" *ngIf="isEditing">
+    <i class="bi bi-info-circle-fill"></i>
+    Vas a actualizar los datos oficiales de tu asociacion. Revisa los campos antes de guardar.
+  </div>
+
+  <ng-container *ngIf="!isEditing; else editForm">
+    <div class="read-grid">
+      <section class="section-card">
+        <div class="section-header">
           <div>
-            <p class="section-kicker mb-1">Información básica</p>
-            <p class="section-subtitle text-muted mb-0">Identificación oficial y ámbito de la asociación.</p>
+            <p class="section-kicker">Informacion basica</p>
+            <p class="section-subtitle">Identificacion oficial y ambito de la asociacion.</p>
           </div>
-          <span class="badge rounded-pill bg-light text-rojo fw-semibold text-uppercase">
-            {{ getTipoLabel(form.get('basic.tag')?.value) }}
-          </span>
+          <span class="ux-status ux-status-blue">{{ getTipoLabel(form.get('basic.tag')?.value) }}</span>
+        </div>
+        <dl class="data-list">
+          <div>
+            <dt>Nombre oficial</dt>
+            <dd>{{ form.get('basic.name')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>CIF</dt>
+            <dd>{{ form.get('basic.cif')?.value || '-' }}</dd>
+          </div>
+          <div class="full">
+            <dt>Direccion</dt>
+            <dd>{{ form.get('basic.address')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Codigo postal</dt>
+            <dd>{{ form.get('basic.postalCode')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Localidad</dt>
+            <dd>{{ form.get('basic.city')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Provincia</dt>
+            <dd>{{ form.get('basic.province')?.value || '-' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Informacion publica</p>
+            <p class="section-subtitle">Datos visibles en consultas publicas.</p>
+          </div>
+        </div>
+        <dl class="data-list">
+          <div>
+            <dt>Año de fundacion</dt>
+            <dd>{{ form.get('publicInfo.foundationYear')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Himno</dt>
+            <dd>{{ form.get('publicInfo.hymn')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Lema</dt>
+            <dd>{{ form.get('publicInfo.motto')?.value || '-' }}</dd>
+          </div>
+          <div class="full">
+            <dt>Lugar de planta de los monumentos</dt>
+            <dd>{{ form.get('publicInfo.monumentLocation')?.value || '-' }}</dd>
+          </div>
+          <div class="full">
+            <dt>Lugar de planta de la portada</dt>
+            <dd>{{ form.get('publicInfo.gateLocation')?.value || '-' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Sede social</p>
+            <p class="section-subtitle">Ubicacion de referencia para notificaciones.</p>
+          </div>
+        </div>
+        <dl class="data-list">
+          <div class="full">
+            <dt>Direccion</dt>
+            <dd>{{ form.get('headquarters.address')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Codigo postal</dt>
+            <dd>{{ form.get('headquarters.postalCode')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Poblacion</dt>
+            <dd>{{ form.get('headquarters.city')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Provincia</dt>
+            <dd>{{ form.get('headquarters.province')?.value || '-' }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="section-card">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Contacto</p>
+            <p class="section-subtitle">Datos de comunicacion directa.</p>
+          </div>
+        </div>
+        <dl class="data-list">
+          <div>
+            <dt>Email</dt>
+            <dd>{{ form.get('contact.email')?.value || '-' }}</dd>
+          </div>
+          <div>
+            <dt>Telefono</dt>
+            <dd>{{ form.get('contact.phone')?.value || '-' }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </ng-container>
+
+  <ng-template #editForm>
+    <form [formGroup]="form" class="edit-grid">
+      <section class="section-card" formGroupName="basic">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Informacion basica</p>
+            <p class="section-subtitle">Identificacion oficial y ambito de la asociacion.</p>
+          </div>
+          <span class="ux-status ux-status-blue">{{ getTipoLabel(form.get('basic.tag')?.value) }}</span>
         </div>
 
         <div class="row g-3">
@@ -51,7 +170,7 @@
             <input type="text" class="form-control" formControlName="name" />
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Ámbito / tipo</label>
+            <label class="form-label">Tipo</label>
             <select class="form-select" formControlName="tag">
               <option value="2">Foguera</option>
               <option value="1">Barraca</option>
@@ -62,11 +181,11 @@
             <input type="text" class="form-control" formControlName="cif" />
           </div>
           <div class="col-12">
-            <label class="form-label">Dirección</label>
+            <label class="form-label">Direccion</label>
             <input type="text" class="form-control" formControlName="address" />
           </div>
           <div class="col-6 col-md-3">
-            <label class="form-label">Código postal</label>
+            <label class="form-label">Codigo postal</label>
             <input type="text" class="form-control" formControlName="postalCode" />
           </div>
           <div class="col-12 col-md-5">
@@ -81,14 +200,15 @@
       </section>
 
       <section class="section-card" formGroupName="publicInfo">
-        <div class="section-header mb-3">
-          <p class="section-kicker mb-1">Información pública (comercial)</p>
-          <p class="section-subtitle text-muted mb-0">Datos visibles para quienes consultan tu asociación.</p>
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Informacion publica</p>
+            <p class="section-subtitle">Datos visibles para quienes consultan tu asociacion.</p>
+          </div>
         </div>
-
         <div class="row g-3">
           <div class="col-12 col-md-4">
-            <label class="form-label">Año de fundación</label>
+            <label class="form-label">Año de fundacion</label>
             <input type="text" class="form-control" formControlName="foundationYear" />
           </div>
           <div class="col-12 col-md-4">
@@ -100,33 +220,34 @@
             <input type="text" class="form-control" formControlName="motto" />
           </div>
           <div class="col-12">
-            <label class="form-label">Lugar de plantà de los monumentos</label>
+            <label class="form-label">Lugar de planta de los monumentos</label>
             <input type="text" class="form-control" formControlName="monumentLocation" />
           </div>
           <div class="col-12">
-            <label class="form-label">Lugar de plantà de la portada</label>
+            <label class="form-label">Lugar de planta de la portada</label>
             <input type="text" class="form-control" formControlName="gateLocation" />
           </div>
         </div>
       </section>
 
       <section class="section-card" formGroupName="headquarters">
-        <div class="section-header mb-3">
-          <p class="section-kicker mb-1">Sede social</p>
-          <p class="section-subtitle text-muted mb-0">Ubicación de referencia para notificaciones.</p>
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Sede social</p>
+            <p class="section-subtitle">Ubicacion de referencia para notificaciones.</p>
+          </div>
         </div>
-
         <div class="row g-3">
           <div class="col-12">
-            <label class="form-label">Dirección</label>
+            <label class="form-label">Direccion</label>
             <input type="text" class="form-control" formControlName="address" />
           </div>
           <div class="col-6 col-md-3">
-            <label class="form-label">Código postal</label>
+            <label class="form-label">Codigo postal</label>
             <input type="text" class="form-control" formControlName="postalCode" />
           </div>
           <div class="col-12 col-md-5">
-            <label class="form-label">Población</label>
+            <label class="form-label">Poblacion</label>
             <input type="text" class="form-control" formControlName="city" />
           </div>
           <div class="col-12 col-md-4">
@@ -137,22 +258,23 @@
       </section>
 
       <section class="section-card" formGroupName="contact">
-        <div class="section-header mb-3">
-          <p class="section-kicker mb-1">Contacto</p>
-          <p class="section-subtitle text-muted mb-0">Datos de comunicación directa.</p>
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Contacto</p>
+            <p class="section-subtitle">Datos de comunicacion directa.</p>
+          </div>
         </div>
-
         <div class="row g-3">
           <div class="col-12 col-md-6">
             <label class="form-label">Email</label>
             <input type="email" class="form-control" formControlName="email" />
           </div>
           <div class="col-12 col-md-6">
-            <label class="form-label">Teléfono</label>
+            <label class="form-label">Telefono</label>
             <input type="tel" class="form-control" formControlName="phone" />
           </div>
         </div>
       </section>
     </form>
-  </div>
+  </ng-template>
 </section>

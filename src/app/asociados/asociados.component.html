@@ -1,33 +1,32 @@
-<section class="asociados-layout">
-  <div class="panel-head">
-    <div class="title-line">
-      <mat-icon class="panel-icon" aria-hidden="true">group</mat-icon>
-      <h2 class="title m-0">Asociados</h2>
+<section class="asociados-layout ux-card">
+  <header class="page-head">
+    <div>
+      <p class="ux-overline mb-2">Asociados</p>
+      <h1 class="ux-page-title">Listado de asociados</h1>
+      <p class="ux-muted mb-0">Consulta personas, cargos y estado. Usa la gestion guiada para altas, cambios y bajas.</p>
     </div>
-    <button mat-icon-button [matMenuTriggerFor]="actionsMenu" aria-label="Más acciones">
-      <mat-icon>more_vert</mat-icon>
-    </button>
-    <mat-menu #actionsMenu="matMenu">
-      <button mat-menu-item routerLink="/asociados/gestion">
-        <mat-icon>manage_accounts</mat-icon>
-        <span>Gestión de asociados</span>
+    <div class="head-actions">
+      <a class="ux-btn" routerLink="/asociados/gestion">
+        <i class="bi bi-person-gear"></i>
+        Gestionar altas, cambios y bajas
+      </a>
+      <button class="ux-btn ux-btn-secondary" type="button" (click)="downloadExcel()">
+        <i class="bi bi-download"></i>
+        Descargar listado
       </button>
-      <button mat-menu-item (click)="downloadExcel()">
-        <mat-icon>download</mat-icon>
-        <span>Descargar Excel</span>
-      </button>
-    </mat-menu>
-  </div>
+    </div>
+  </header>
 
-  <div class="search-line">
-    <div *ngIf="loading" class="alert alert-info w-100">Cargando asociados...</div>
-    <div *ngIf="error" class="alert alert-danger w-100">{{ error }}</div>
-    <mat-form-field appearance="outline" class="search-field" floatLabel="never">
-      <mat-label>Buscar</mat-label>
+  <div *ngIf="loading" class="alert alert-info">Cargando asociados...</div>
+  <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+
+  <div class="toolbar">
+    <mat-form-field appearance="outline" class="search-field" floatLabel="always">
+      <mat-label>Buscar asociado</mat-label>
       <input
         matInput
         type="search"
-        placeholder="Nombre, apellidos o cargo"
+        placeholder="Nombre, DNI/NIE o cargo"
         (keyup)="applyFilter($event)"
         aria-label="Buscar asociados"
       />
@@ -35,13 +34,22 @@
         <mat-icon>search</mat-icon>
       </button>
     </mat-form-field>
+    <div class="helper">
+      <i class="bi bi-info-circle-fill"></i>
+      Pulsa sobre una persona para ver su ficha e historico.
+    </div>
   </div>
 
   <mat-tab-group (selectedIndexChange)="onTabChange(tabs[$event].key)" class="tab-container">
     @for (tab of tabs; track tab.key) {
-      <mat-tab [label]="tab.label">
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <span>{{ tab.label }}</span>
+          <span class="tab-count">{{ dataSources[tab.key].filteredData.length }}</span>
+        </ng-template>
+
         <div class="tab-panel">
-          <div class="table-wrapper mat-elevation-z2">
+          <div class="responsive-list">
             <table mat-table [dataSource]="dataSources[tab.key]" matSort #sortAdultos="matSort" *ngIf="tab.key === 'adultos'">
               <ng-container matColumnDef="nombre">
                 <th mat-header-cell *matHeaderCellDef mat-sort-header>Nombre completo</th>
@@ -60,8 +68,11 @@
               </ng-container>
 
               <ng-container matColumnDef="cargo">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo</th>
-                <td mat-cell *matCellDef="let element">{{ element.cargo }}</td>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo del ejercicio</th>
+                <td mat-cell *matCellDef="let element">
+                  <span class="cargo-pill" *ngIf="element.cargo; else noCargo">{{ element.cargo }}</span>
+                  <ng-template #noCargo><span class="text-muted">Sin cargo</span></ng-template>
+                </td>
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -75,7 +86,7 @@
                 [matTooltip]="esBaja(row) ? 'Baja' : ''"
               ></tr>
               <tr class="no-data" *matNoDataRow>
-                <td colspan="2">No hay asociados en esta categorÃ­a.</td>
+                <td colspan="2">No hay asociados en esta categoria.</td>
               </tr>
             </table>
 
@@ -97,8 +108,11 @@
               </ng-container>
 
               <ng-container matColumnDef="cargo">
-                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo</th>
-                <td mat-cell *matCellDef="let element">{{ element.cargo }}</td>
+                <th mat-header-cell *matHeaderCellDef mat-sort-header>Cargo del ejercicio</th>
+                <td mat-cell *matCellDef="let element">
+                  <span class="cargo-pill" *ngIf="element.cargo; else noCargoInf">{{ element.cargo }}</span>
+                  <ng-template #noCargoInf><span class="text-muted">Sin cargo</span></ng-template>
+                </td>
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
@@ -112,25 +126,26 @@
                 [matTooltip]="esBaja(row) ? 'Baja' : ''"
               ></tr>
               <tr class="no-data" *matNoDataRow>
-                <td colspan="2">No hay asociados en esta categoría.</td>
+                <td colspan="2">No hay asociados en esta categoria.</td>
               </tr>
             </table>
           </div>
+
           <div class="paginator-line">
             @if (tab.key === 'adultos') {
               <mat-paginator
-                [pageSize]="5"
-                [pageSizeOptions]="[5, 10, 25]"
+                [pageSize]="25"
+                [pageSizeOptions]="[10, 25, 50, 100]"
                 showFirstLastButtons
-                aria-label="Paginación de asociados"
+                aria-label="Paginacion de asociados"
                 #paginatorAdultos
               ></mat-paginator>
             } @else {
               <mat-paginator
-                [pageSize]="5"
-                [pageSizeOptions]="[5, 10, 25]"
+                [pageSize]="25"
+                [pageSizeOptions]="[10, 25, 50, 100]"
                 showFirstLastButtons
-                aria-label="Paginación de asociados infantiles"
+                aria-label="Paginacion de asociados infantiles"
                 #paginatorInfantiles
               ></mat-paginator>
             }

@@ -244,7 +244,7 @@ export class AsociadosGestionComponent implements OnInit {
     const datosOriginales = this.asociadoEnEdicion ? { ...this.asociadoEnEdicion } : null;
 
     if (this.tieneDuplicadoPendiente(tipo, this.asociadoEnEdicion?.id ?? null, datos)) {
-      this.showError('Ya existe un registro pendiente para este tramite.');
+      this.showError('Ya existe un cambio preparado para este tramite.');
       return;
     }
 
@@ -445,14 +445,14 @@ export class AsociadosGestionComponent implements OnInit {
           this.mostrarFormMod = this.activeTab === 'altas';
           this.dialog.openDialogAlert({
             title: tipo === 'alta' ? 'Alta pendiente' : 'Cambio pendiente',
-            content: 'Se ha añadido al registro pendiente.',
-            innerHtml: '<p>Se ha añadido al registro pendiente.</p>',
+            content: 'Se ha a�adido al borrador de solicitud.',
+            innerHtml: '<p>Se ha a�adido al borrador de solicitud.</p>',
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido añadir al registro pendiente.');
+          this.showError('No se ha podido a�adir al borrador de solicitud.');
         }
       });
   }
@@ -649,8 +649,8 @@ export class AsociadosGestionComponent implements OnInit {
     const listado = seleccionados.map(a => `<li>${a.nombre} ${a.apellidos}</li>`).join('');
     const ref = this.dialog.openDialogAlert({
       title: 'Confirmar bajas',
-      content: `Desea añadir al registro pendiente las bajas seleccionadas?`,
-      innerHtml: `<p>Desea añadir al registro pendiente las bajas seleccionadas?</p><ul>${listado}</ul>`,
+      content: `Desea preparar las bajas seleccionadas para generar una solicitud?`,
+      innerHtml: `<p>Desea preparar las bajas seleccionadas para generar una solicitud?</p><ul>${listado}</ul>`,
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
 
@@ -676,14 +676,14 @@ export class AsociadosGestionComponent implements OnInit {
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Bajas pendientes',
-            content: 'Las bajas se han añadido al registro pendiente.',
-            innerHtml: '<p>Las bajas se han añadido al registro pendiente.</p>',
+            content: 'Las bajas se han a�adido al borrador de solicitud.',
+            innerHtml: '<p>Las bajas se han a�adido al borrador de solicitud.</p>',
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se han podido añadir las bajas al registro pendiente.');
+          this.showError('No se han podido a�adir las bajas al borrador de solicitud.');
         }
       });
     });
@@ -712,7 +712,7 @@ export class AsociadosGestionComponent implements OnInit {
       .map(item => item.id);
 
     if (!ids.length) {
-      this.showError('Selecciona uno o varios items pendientes.');
+      this.showError('Selecciona uno o varios cambios preparados.');
       return;
     }
 
@@ -802,7 +802,7 @@ export class AsociadosGestionComponent implements OnInit {
         this.registroPendiente = response.items;
         this.seleccionRegistro.clear();
       },
-      error: () => this.showError('No se ha podido cargar el registro pendiente.')
+      error: () => this.showError('No se han podido cargar los cambios preparados.')
     });
   }
 
@@ -919,7 +919,7 @@ export class AsociadosGestionComponent implements OnInit {
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido descartar el registro pendiente.');
+          this.showError('No se ha podido descartar el cambio preparado.');
         }
       });
     });
@@ -1335,3 +1335,5 @@ export class AsociadosGestionComponent implements OnInit {
       .trim();
   }
 }
+
+

@@ -147,16 +147,31 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     const rows = rowCandidates.filter(([, value]) => value);
 
     this.dialogService.openDialogAlert({
-      title: 'Detalles del asociado',
+      title: `${asociado.nombre} ${asociado.apellidos}`,
       content: rows.map(([label, value]) => `${label}: ${value}`).join('\n'),
       innerHtml: `
-        ${rows
-          .map(
-            ([label, value]) =>
-              `<p><strong>${this.escapeHtml(label)}:</strong> ${this.escapeHtml(String(value))}</p>`
-          )
-          .join('')}
-        ${this.buildHistoricoHtml(historico)}
+        <section class="asociado-dialog">
+          <header class="asociado-dialog__head">
+            <div class="asociado-dialog__avatar">${this.escapeHtml(this.initials(asociado))}</div>
+            <div>
+              <p class="asociado-dialog__kicker">${asociado.tipo === 'adulto' ? 'Asociado adulto' : 'Asociado infantil'}</p>
+              <h2>${this.escapeHtml(`${asociado.nombre} ${asociado.apellidos}`)}</h2>
+              <span class="asociado-dialog__status ${this.esBaja(asociado) ? 'is-baja' : ''}">
+                ${this.escapeHtml(this.esBaja(asociado) ? 'Baja' : (asociado.estado || 'Activo'))}
+              </span>
+            </div>
+          </header>
+          <dl class="asociado-dialog__grid">
+            ${rows
+              .filter(([label]) => !['Nombre', 'Tipo', 'Estado'].includes(label))
+              .map(
+                ([label, value]) =>
+                  `<div><dt>${this.escapeHtml(label)}</dt><dd>${this.escapeHtml(String(value))}</dd></div>`
+              )
+              .join('')}
+          </dl>
+          ${this.buildHistoricoHtml(historico)}
+        </section>
       `,
       buttonsAlert: [AlertButtonType.Entendido]
     });
@@ -305,7 +320,7 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
 
   private buildHistoricoHtml(historico: HistoricoAsociado[]): string {
     if (historico.length === 0) {
-      return '<hr /><p><strong>Historico:</strong> sin registros.</p>';
+      return '<section class="asociado-dialog__history"><h3>Historico de cargos</h3><p>Sin registros.</p></section>';
     }
 
     const rows = historico
@@ -321,9 +336,9 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
       .join('');
 
     return `
-      <hr />
-      <p><strong>Historico de cargos</strong></p>
-      <table class="table table-sm">
+      <section class="asociado-dialog__history">
+      <h3>Historico de cargos</h3>
+      <table>
         <thead>
           <tr>
             <th>Ejercicio</th>
@@ -333,7 +348,14 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
         </thead>
         <tbody>${rows}</tbody>
       </table>
+      </section>
     `;
+  }
+
+  private initials(asociado: Asociado): string {
+    const first = asociado.nombre?.trim()?.[0] || '';
+    const second = asociado.apellidos?.trim()?.[0] || '';
+    return `${first}${second}`.toUpperCase();
   }
 
   private escapeHtml(value: string): string {
