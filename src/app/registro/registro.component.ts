@@ -492,10 +492,16 @@ export class RegistroComponent implements OnInit {
   }
 
   private descargarJustificante(scope: string, scopeId: string | number): void {
-    this.secretariaService.generarJustificante(scope, scopeId).subscribe({
-      next: justificante => window.open(justificante.url, '_blank'),
+    this.secretariaService.descargarJustificantePdf(scope, scopeId).subscribe({
+      next: ({ blob }) => this.openPdfBlob(blob),
       error: () => undefined
     });
+  }
+
+  private openPdfBlob(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener');
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   private lockDocForm(): void {

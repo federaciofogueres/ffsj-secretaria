@@ -814,6 +814,26 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  imprimirSolicitud(solicitud: SolicitudSecretaria): void {
+    this.loading = true;
+    this.secretariaService.descargarJustificantePdf('solicitud', solicitud.id).subscribe({
+      next: ({ blob }) => {
+        this.openPdfBlob(blob);
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.showError('No se ha podido generar el PDF de la solicitud.');
+      }
+    });
+  }
+
+  private openPdfBlob(blob: Blob): void {
+    const url = URL.createObjectURL(blob);
+    window.open(url, '_blank', 'noopener');
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
   cargarRegistroPendiente(): void {
     this.secretariaService.getRegistroPendiente(this.asociacionId).subscribe({
       next: response => {

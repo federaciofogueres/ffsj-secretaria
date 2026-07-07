@@ -180,9 +180,9 @@ export class SolicitudesComponent implements OnInit {
   generarJustificante(): void {
     if (!this.detalle) return;
     this.loading = true;
-    this.secretariaService.generarJustificante('solicitud', this.detalle.id).subscribe({
-      next: justificante => {
-        window.open(justificante.url, '_blank');
+    this.secretariaService.descargarJustificantePdf('solicitud', this.detalle.id).subscribe({
+      next: ({ justificante, blob }) => {
+        this.downloadBlob(blob, justificante.fileName || `solicitud-${this.detalle?.id}.pdf`);
         this.loading = false;
       },
       error: () => {
@@ -190,6 +190,15 @@ export class SolicitudesComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
   }
 
   asociacionLabel(asociacionId: number): string {

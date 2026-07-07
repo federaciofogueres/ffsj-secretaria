@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from 'ffsj-web-components';
-import { Observable } from 'rxjs';
+import { Observable, map, switchMap } from 'rxjs';
 
 import { ApiUrlService } from './api-url.service';
 import {
@@ -303,7 +303,7 @@ export class SecretariaService {
   }
 
   adjuntoDownloadUrl(id: number): string {
-    return `${this.apiUrl.secretariaBasePath}/adjuntos/${id}/download`;
+    return this.toAbsoluteSecretariaUrl(`${this.apiUrl.secretariaBasePath}/adjuntos/${id}/download`);
   }
 
   getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
@@ -341,14 +341,49 @@ export class SecretariaService {
   generarJustificante(scope: string, scopeId: string | number): Observable<JustificanteSecretaria> {
     return this.http.post<JustificanteSecretaria>(`${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}`, {}, {
       headers: this.authHeaders()
-    });
+    }).pipe(
+      map(justificante => ({
+        ...justificante,
+        url: this.toAbsoluteSecretariaUrl(justificante.url || this.justificanteUrl(scope, scopeId))
+      }))
+    );
+  }
+
+  descargarJustificantePdf(scope: string, scopeId: string | number): Observable<{ justificante: JustificanteSecretaria; blob: Blob }> {
+    return this.generarJustificante(scope, scopeId).pipe(
+      switchMap(justificante =>
+        this.http.get(justificante.url, {
+          headers: this.authHeaders(),
+          responseType: 'blob'
+        }).pipe(map(blob => ({ justificante, blob })))
+      )
+    );
   }
 
   justificanteUrl(scope: string, scopeId: string | number): string {
-    return `${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}/download`;
+    return this.toAbsoluteSecretariaUrl(`${this.apiUrl.secretariaBasePath}/justificantes/${scope}/${scopeId}/download`);
   }
 
   private authHeaders() {
     return { Authorization: `Bearer ${this.auth.getToken()}` };
+  }
+
+  private toAbsoluteSecretariaUrl(url: string): string {
+    if (!url || /^https?:\/\//i.test(url)) {
+      return url;
+    }
+
+    const apiOrigin = this.secretariaApiOrigin();
+    return `${apiOrigin}${url.startsWith('/') ? url : `/${url}`}`;
+  }
+
+  private secretariaApiOrigin(): string {
+    const marker = '/emjf1/Secretaria/1.0.0';
+    const basePath = this.apiUrl.secretariaBasePath;
+    const markerIndex = basePath.indexOf(marker);
+    if (markerIndex >= 0) {
+      return basePath.slice(0, markerIndex);
+    }
+    return basePath.replace(/\/$/, '');
   }
 }

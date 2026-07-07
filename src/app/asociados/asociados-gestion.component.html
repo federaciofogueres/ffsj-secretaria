@@ -308,6 +308,15 @@
                 >
                   Cancelar esta solicitud antes de enviarla
                 </button>
+                <button
+                  class="ux-btn ux-btn-light ux-btn-sm"
+                  type="button"
+                  [disabled]="loading"
+                  (click)="imprimirSolicitud(solicitudDetalle)"
+                >
+                  <i class="bi bi-printer me-1"></i>
+                  Imprimir solicitud
+                </button>
               </div>
               <ul class="pending-list">
                 <li *ngFor="let item of solicitudDetalle.items || []">
