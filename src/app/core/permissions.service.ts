@@ -23,6 +23,7 @@ const DEFAULT_PERMISSIONS = [
 @Injectable({ providedIn: 'root' })
 export class PermissionsService {
   private readonly permissions$ = new BehaviorSubject<string[]>([]);
+  private readonly context$ = new BehaviorSubject<AuthContext | null>(null);
 
   constructor(
     private readonly http: HttpClient,
@@ -47,8 +48,12 @@ export class PermissionsService {
       })
       .pipe(
         timeout(10000),
-        tap(context => this.permissions$.next(context.permisos ?? DEFAULT_PERMISSIONS)),
+        tap(context => {
+          this.context$.next(context);
+          this.permissions$.next(context.permisos ?? DEFAULT_PERMISSIONS);
+        }),
         catchError(error => {
+          this.context$.next(null);
           this.permissions$.next([]);
           if (error?.status === 401 || error?.status === 403) {
             this.auth.logout();
@@ -76,7 +81,16 @@ export class PermissionsService {
     return this.permissions$.value;
   }
 
+  get contextSnapshot(): AuthContext | null {
+    return this.context$.value;
+  }
+
+  get contextChanges(): Observable<AuthContext | null> {
+    return this.context$.asObservable();
+  }
+
   clear(): void {
+    this.context$.next(null);
     this.permissions$.next([]);
   }
 

@@ -31,9 +31,11 @@ export class AppComponent implements OnInit, OnDestroy {
   menuOpen = false;
   isLoggedIn = false;
   isAdmin = false;
+  associationName = '';
   currentUrl = '/';
   private loginSubscription?: Subscription;
   private routerSubscription?: Subscription;
+  private contextSubscription?: Subscription;
 
   constructor(
     readonly auth: AuthService,
@@ -48,6 +50,9 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.isLoggedIn) {
       this.permissions.loadContext().subscribe();
     }
+    this.contextSubscription = this.permissions.contextChanges.subscribe(context => {
+      this.associationName = context?.asociacionNombre || context?.nombre || '';
+    });
     this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(isLogged => {
       this.isLoggedIn = isLogged;
       this.isAdmin = isLogged && this.adminAccess.isAdmin();
@@ -68,6 +73,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.loginSubscription?.unsubscribe();
     this.routerSubscription?.unsubscribe();
+    this.contextSubscription?.unsubscribe();
   }
 
   toggleMenu(): void {
@@ -93,11 +99,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get modeLabel(): string {
-    return this.isAdmin ? 'Administracion' : 'Asociacion';
+    return this.isAdmin ? 'Administracion' : this.associationName || 'Asociacion';
   }
 
   get actorLabel(): string {
-    return this.isAdmin ? 'Personal autorizado' : 'Entidad federada';
+    return this.isAdmin ? 'Personal autorizado' : 'Asociacion';
   }
 
   get visibleMobileLinks(): typeof this.navLinks {
