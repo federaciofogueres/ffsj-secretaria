@@ -1,0 +1,51 @@
+name: Build and deploy Angular - develop
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.x
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Angular development
+        run: npm run build:dev -- --base-href /
+
+      - name: Add SPA fallback
+        run: |
+          cp ./dist/ffsj-secretaria/browser/index.html ./dist/ffsj-secretaria/browser/404.html
+          printf '%s\n' \
+            '<IfModule mod_rewrite.c>' \
+            'RewriteEngine On' \
+            'RewriteBase /' \
+            'RewriteRule ^index\.html$ - [L]' \
+            'RewriteCond %{REQUEST_FILENAME} !-f' \
+            'RewriteCond %{REQUEST_FILENAME} !-d' \
+            'RewriteRule . /index.html [L]' \
+            '</IfModule>' \
+            > ./dist/ffsj-secretaria/browser/.htaccess
+
+      - name: Deploy to develop branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: deploy-develop
+          publish_dir: ./dist/ffsj-secretaria/browser
+          force_orphan: true
