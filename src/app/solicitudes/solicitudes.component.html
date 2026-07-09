@@ -85,7 +85,13 @@
                 <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
               </td>
               <td>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
+                <span
+                  class="estado-badge"
+                  [ngClass]="estadoClassSolicitud(solicitud)"
+                  [attr.title]="estadoTooltipSolicitud(solicitud)"
+                >
+                  {{ labelEstadoSolicitud(solicitud) }}
+                </span>
                 <span class="incidence-badge" *ngIf="tieneIncidenciasAbiertas(solicitud.id)">
                   {{ incidenciasAbiertasBySolicitud[solicitud.id] }} incidencia(s)
                 </span>
@@ -116,7 +122,13 @@
         <h2 id="solicitudDetalleTitle" class="h5 mb-1">{{ detalle.numero }}</h2>
         <div class="d-flex flex-wrap gap-2">
           <span class="tipo-badge" [ngClass]="tipoClass(detalle.tipo)">{{ labelTipo(detalle.tipo) }}</span>
-          <span class="estado-badge" [ngClass]="estadoClass(detalle.estado)">{{ labelEstado(detalle.estado) }}</span>
+          <span
+            class="estado-badge"
+            [ngClass]="estadoClassSolicitud(detalle)"
+            [attr.title]="estadoTooltipSolicitud(detalle)"
+          >
+            {{ labelEstadoSolicitud(detalle) }}
+          </span>
         </div>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()"></button>

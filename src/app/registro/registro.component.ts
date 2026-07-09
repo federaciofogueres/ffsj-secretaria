@@ -7,7 +7,7 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { Asociacion, RegistroSecretaria } from '../core/models';
+import { Asociacion, AutorizacionAlta, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -55,6 +55,7 @@ export class RegistroComponent implements OnInit {
   docResultado: RegistroSecretaria | null = null;
   commResultado: RegistroSecretaria | null = null;
   registros: RegistroSecretaria[] = [];
+  autorizacionesAlta: AutorizacionAlta[] = [];
   commBandeja: ComunicacionBandeja = 'realizadas';
   asociaciones: Asociacion[] = [];
   respuestaComunicacion = '';
@@ -164,7 +165,8 @@ export class RegistroComponent implements OnInit {
   }
 
   get documentacionNuevaCount(): number {
-    return this.registros.filter(registro => registro.tipo === 'documentacion' && this.esRegistroNuevo(registro)).length;
+    return this.registros.filter(registro => registro.tipo === 'documentacion' && this.esRegistroNuevo(registro)).length
+      + this.autorizacionesFirmaVisibles.length;
   }
 
   get comunicacionesNuevasCount(): number {
@@ -193,6 +195,16 @@ export class RegistroComponent implements OnInit {
     return this.docBandeja === 'presentada'
       ? 'No hay documentacion presentada.'
       : 'No hay documentacion solicitada.';
+  }
+
+  get autorizacionesFirmaVisibles(): AutorizacionAlta[] {
+    if (this.isAdminMode || this.mode !== 'documentacion') {
+      return [];
+    }
+    if (!['nuevas', 'solicitada'].includes(this.docBandeja)) {
+      return [];
+    }
+    return this.autorizacionesAlta.filter(item => item.estado === 'pendiente_firma');
   }
 
   get commEmptyMessage(): string {
@@ -474,11 +486,44 @@ export class RegistroComponent implements OnInit {
         this.registros = response.registros;
         this.selectInitialRegistro();
         this.loadingRegistros = false;
+        this.cargarAutorizacionesAlta();
       },
       error: () => {
         this.errorRegistros = 'No se ha podido cargar el historico de registros.';
         this.loadingRegistros = false;
       }
+    });
+  }
+
+  firmarAutorizacion(autorizacion: AutorizacionAlta): void {
+    if (this.isAdminMode || autorizacion.estado !== 'pendiente_firma' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.firmarAutorizacionAlta(autorizacion.id, {
+      firmante: this.asociacionNombreById(this.censoService.asociacionId),
+      observaciones: 'Autorizacion firmada desde el registro de la asociacion'
+    }).subscribe({
+      next: response => {
+        this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
+          item.id === autorizacion.id ? response.autorizacion : item
+        );
+        this.updatingEstado = false;
+      },
+      error: () => this.updatingEstado = false
+    });
+  }
+
+  private cargarAutorizacionesAlta(): void {
+    if (this.isAdminMode || !this.censoService.asociacionId || !this.permissions.hasPermission('registro:read')) {
+      return;
+    }
+    this.secretariaService.getAutorizacionesAlta({
+      asociacionId: this.censoService.asociacionId,
+      scope: 'anterior'
+    }).subscribe({
+      next: response => this.autorizacionesAlta = response.autorizaciones,
+      error: () => this.autorizacionesAlta = []
     });
   }
 
@@ -579,7 +624,7 @@ export class RegistroComponent implements OnInit {
     return lastActor === this.actorActual ? 'enviada' : 'contestada';
   }
 
-  private asociacionNombreById(asociacionId: number): string {
+  asociacionNombreById(asociacionId: number): string {
     const asociacion = this.asociaciones.find(item => Number(item.id) === Number(asociacionId));
     return asociacion ? this.asociacionNombre(asociacion) : `Asociacion ${asociacionId}`;
   }

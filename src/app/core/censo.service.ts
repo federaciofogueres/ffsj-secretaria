@@ -49,6 +49,19 @@ export class CensoService {
       .pipe(map(response => (response.asociados ?? []).map(item => this.mapAsociado(item))));
   }
 
+  getAsociadoByDocumento(documento: string): Observable<Asociado | null> {
+    const safeDocumento = encodeURIComponent(documento.trim());
+    return this.http
+      .get<{ asociados?: unknown[] }>(
+        `${this.apiUrl.censoBasePath}/asociados/buscar/${safeDocumento}`,
+        this.authOptions()
+      )
+      .pipe(map(response => {
+        const first = response.asociados?.[0];
+        return first ? this.mapAsociado(first) : null;
+      }));
+  }
+
   getHistoricoByAsociado(asociadoId: number): Observable<HistoricoAsociado[]> {
     return this.http
       .get<{ historico?: unknown[] }>(
@@ -93,7 +106,9 @@ export class CensoService {
       email: item.email,
       telefono: item.telefono ?? item.phone,
       direccion: item.direccion ?? item.address,
-      codigoPostal: item.codigo_postal ?? item.codigoPostal ?? item.cp
+      codigoPostal: item.codigo_postal ?? item.codigoPostal ?? item.cp,
+      localidad: item.localidad ?? item.location ?? item.poblacion ?? item.city,
+      provincia: item.provincia ?? item.state
     };
   }
 

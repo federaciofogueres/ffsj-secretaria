@@ -89,6 +89,24 @@
               <span class="tab-count">{{ documentacionNuevaCount }}</span>
             </button>
           </div>
+          <div class="registro-list mb-3" *ngIf="autorizacionesFirmaVisibles.length > 0">
+            <article class="registro-row authorization-row" *ngFor="let autorizacion of autorizacionesFirmaVisibles">
+              <span>
+                <strong>{{ autorizacion.solicitudNumero }}</strong>
+                <small>Autorizacion de alta de {{ autorizacion.asociadoNombre }}</small>
+                <small class="registro-meta">
+                  Nueva asociacion: {{ asociacionNombreById(autorizacion.asociacionNuevaId) }}
+                  <span>Creada: {{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </small>
+              </span>
+              <span class="d-flex align-items-center gap-2">
+                <span class="badge estado enviada">Pendiente de firma</span>
+                <button class="ux-btn ux-btn-sm" type="button" [disabled]="updatingEstado" (click)="firmarAutorizacion(autorizacion)">
+                  Firmar autorizacion
+                </button>
+              </span>
+            </article>
+          </div>
           <div class="registro-list" *ngIf="docRefs.length > 0; else emptyDocs">
             <button
               type="button"
@@ -110,7 +128,7 @@
             </button>
           </div>
           <ng-template #emptyDocs>
-            <p class="text-muted mb-0">{{ docEmptyMessage }}</p>
+            <p class="text-muted mb-0" *ngIf="autorizacionesFirmaVisibles.length === 0">{{ docEmptyMessage }}</p>
           </ng-template>
         </section>
 

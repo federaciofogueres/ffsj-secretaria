@@ -11,6 +11,7 @@ import {
   DashboardAdminResumen,
   DashboardAsociacionResumen,
   Incidencia,
+  AutorizacionAlta,
   FormularioInscripcion,
   InscripcionEntradaSecretaria,
   InscripcionSecretaria,
@@ -134,6 +135,41 @@ export class SecretariaService {
     return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes`, payload, {
       headers: this.authHeaders()
     });
+  }
+
+  crearAltaConAutorizacion(payload: {
+    asociacionId: number;
+    asociadoId: number;
+    datos: Record<string, any>;
+    datosOriginales?: Record<string, any> | null;
+    asociacionesAnteriores: Array<{ id: number; nombre?: string | null }>;
+  }): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/alta-autorizacion`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getAutorizacionesAlta(filters: {
+    asociacionId?: number;
+    scope?: 'anterior' | 'nueva';
+    estado?: AutorizacionAlta['estado'];
+  } = {}): Observable<{ autorizaciones: AutorizacionAlta[] }> {
+    let params = new HttpParams();
+    if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.scope) params = params.set('scope', filters.scope);
+    if (filters.estado) params = params.set('estado', filters.estado);
+    return this.http.get<{ autorizaciones: AutorizacionAlta[] }>(`${this.apiUrl.secretariaBasePath}/autorizaciones-alta`, {
+      params,
+      headers: this.authHeaders()
+    });
+  }
+
+  firmarAutorizacionAlta(id: number, payload: { firmante?: string | null; observaciones?: string | null } = {}): Observable<{ autorizacion: AutorizacionAlta; solicitud: SolicitudSecretaria }> {
+    return this.http.post<{ autorizacion: AutorizacionAlta; solicitud: SolicitudSecretaria }>(
+      `${this.apiUrl.secretariaBasePath}/autorizaciones-alta/${id}/firmar`,
+      payload,
+      { headers: this.authHeaders() }
+    );
   }
 
   getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion' } = {}): Observable<{ registros: RegistroSecretaria[] }> {

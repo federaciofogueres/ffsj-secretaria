@@ -40,7 +40,8 @@ export class HomeComponent implements OnInit {
   associationSummary: DashboardAsociacionResumen = {
     solicitudesConIncidencia: 0,
     inscripcionesAbiertas: 0,
-    comunicacionesNuevas: 0
+    comunicacionesNuevas: 0,
+    autorizacionesAltaPendientes: 0
   };
   adminSummary: DashboardAdminResumen = {
     solicitudesPendientes: 0,
@@ -133,6 +134,15 @@ export class HomeComponent implements OnInit {
         tone: 'orange',
         path: '/asociados/gestion',
         queryParams: { tab: 'solicitudes', filtro: 'incidencias' }
+      },
+      {
+        title: 'Altas pendientes de firma',
+        value: this.formatCount(this.associationSummary.autorizacionesAltaPendientes || 0, 'pendiente', 'pendientes'),
+        count: this.associationSummary.autorizacionesAltaPendientes || 0,
+        icon: 'bi-pen-fill',
+        tone: 'orange',
+        path: '/asociados/gestion',
+        queryParams: { tab: 'solicitudes' }
       },
       {
         title: 'Inscripciones abiertas',

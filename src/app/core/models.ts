@@ -20,6 +20,8 @@ export interface Asociado {
   codigoPostal?: string;
   codigo_postal?: string;
   cp?: string;
+  localidad?: string;
+  provincia?: string;
 }
 
 export interface HistoricoAsociado {
@@ -113,18 +115,41 @@ export interface SolicitudSecretaria {
   tipo: SolicitudTipo;
   estado: string;
   totalRegistros: number;
+  autorizacionesPendientes?: number;
+  autorizacionesPendientesNombres?: string;
   fechaAlta: string;
   fechaRegistro?: string;
   fechaEntrada?: string | null;
   fechaValidacion?: string | null;
   observaciones?: string | null;
   items?: SolicitudItemSecretaria[];
+  autorizacionesAlta?: AutorizacionAlta[];
+}
+
+export interface AutorizacionAlta {
+  id: number;
+  solicitudId: number;
+  solicitudNumero: string;
+  solicitudItemId?: number | null;
+  asociadoId: number;
+  asociadoNombre: string;
+  asociacionNuevaId: number;
+  asociacionAnteriorId: number;
+  asociacionAnteriorNombre?: string | null;
+  estado: 'pendiente_firma' | 'firmada' | 'rechazada' | 'cancelada';
+  documento?: Record<string, any> | null;
+  fechaCreacion: string;
+  fechaFirma?: string | null;
+  fechaEnvioSecretaria?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DashboardAsociacionResumen {
   solicitudesConIncidencia: number;
   inscripcionesAbiertas: number;
   comunicacionesNuevas: number;
+  autorizacionesAltaPendientes?: number;
 }
 
 export interface DashboardAdminResumen {

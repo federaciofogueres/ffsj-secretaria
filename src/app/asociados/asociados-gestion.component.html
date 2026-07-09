@@ -263,7 +263,13 @@
                   <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
                   {{ solicitud.totalRegistros }} cambio(s)
                 </span>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
+                <span
+                  class="estado-badge"
+                  [ngClass]="estadoClassSolicitud(solicitud)"
+                  [attr.title]="estadoTooltipSolicitud(solicitud)"
+                >
+                  {{ labelEstadoSolicitud(solicitud) }}
+                </span>
               </div>
             </button>
             <div *ngIf="solicitudesVisibles.length === 0" class="text-muted">
@@ -278,7 +284,13 @@
               <h6 class="fw-bold mb-1">{{ solicitudDetalle.numero }}</h6>
               <div class="d-flex flex-wrap gap-2 mb-3">
                 <span class="tipo-badge" [ngClass]="tipoClass(solicitudDetalle.tipo)">{{ labelTipo(solicitudDetalle.tipo) }}</span>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitudDetalle.estado)">{{ labelEstado(solicitudDetalle.estado) }}</span>
+                <span
+                  class="estado-badge"
+                  [ngClass]="estadoClassSolicitud(solicitudDetalle)"
+                  [attr.title]="estadoTooltipSolicitud(solicitudDetalle)"
+                >
+                  {{ labelEstadoSolicitud(solicitudDetalle) }}
+                </span>
               </div>
               <div class="d-flex flex-wrap gap-2 mb-3">
                 <button
@@ -363,6 +375,17 @@
             </div>
           </div>
           <div class="row g-3">
+            <div class="col-12 col-md-4">
+              <label class="form-label">DNI/NIE</label>
+              <input class="form-control" formControlName="dni" placeholder="Documento" (blur)="comprobarAltaExistentePorDocumento()" />
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">SIP</label>
+              <input class="form-control" formControlName="sip" (blur)="comprobarAltaExistentePorDocumento()" />
+            </div>
+            <div class="col-12 col-md-4 d-flex align-items-end" *ngIf="comprobandoDocumentoAlta">
+              <span class="text-muted small">Comprobando si ya existe...</span>
+            </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Nombre</label>
               <input class="form-control" formControlName="nombre" />
@@ -374,14 +397,6 @@
             <div class="col-12 col-md-4">
               <label class="form-label">Fecha de nacimiento</label>
               <input type="date" class="form-control" formControlName="nacimiento" />
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">DNI/NIE</label>
-              <input class="form-control" formControlName="dni" placeholder="Documento" />
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">SIP</label>
-              <input class="form-control" formControlName="sip" />
             </div>
           </div>
         </section>

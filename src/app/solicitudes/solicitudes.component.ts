@@ -19,6 +19,7 @@ export class SolicitudesComponent implements OnInit {
   readonly estados = [
     { value: 'todos', label: 'Todos' },
     { value: 'registrada', label: 'Registrada' },
+    { value: 'pendiente_firma', label: 'Pendiente de firma' },
     { value: 'enviada', label: 'Enviada' },
     { value: 'en_revision', label: 'En revision' },
     { value: 'con_incidencias', label: 'Con incidencias' },
@@ -136,11 +137,27 @@ export class SolicitudesComponent implements OnInit {
   }
 
   labelEstado(estado: string): string {
+    if (estado === 'pendiente_firma') {
+      return 'Pendiente de firma';
+    }
     return this.estados.find(item => item.value === estado)?.label ?? estado;
   }
 
   estadoClass(estado: string): string {
     return `estado-${estado.replace('_', '-')}`;
+  }
+
+  labelEstadoSolicitud(solicitud: SolicitudSecretaria): string {
+    return this.labelEstado(this.estadoVisibleSolicitud(solicitud));
+  }
+
+  estadoClassSolicitud(solicitud: SolicitudSecretaria): string {
+    return this.estadoClass(this.estadoVisibleSolicitud(solicitud));
+  }
+
+  estadoTooltipSolicitud(solicitud: SolicitudSecretaria): string | null {
+    const nombres = this.autorizacionesPendientesNombres(solicitud);
+    return nombres.length ? `Pendiente de firma por ${nombres.join(', ')}` : null;
   }
 
   tipoClass(tipo: string): string {
@@ -151,13 +168,14 @@ export class SolicitudesComponent implements OnInit {
     const texto = this.filtroTexto.trim().toLowerCase();
     return this.solicitudes.filter(solicitud => {
       const matchesTipo = this.filtroTipo === 'todos' || solicitud.tipo === this.filtroTipo;
-      const matchesEstado = this.filtroEstado === 'todos' || solicitud.estado === this.filtroEstado;
+      const estadoVisible = this.estadoVisibleSolicitud(solicitud);
+      const matchesEstado = this.filtroEstado === 'todos' || solicitud.estado === this.filtroEstado || estadoVisible === this.filtroEstado;
       const searchable = [
         solicitud.numero,
         solicitud.asociacionId,
         this.asociacionLabel(solicitud.asociacionId),
         this.labelTipo(solicitud.tipo),
-        this.labelEstado(solicitud.estado)
+        this.labelEstado(estadoVisible)
       ]
         .join(' ')
         .toLowerCase();
@@ -228,6 +246,27 @@ export class SolicitudesComponent implements OnInit {
 
   estadoItemClass(item: SolicitudItemSecretaria): string {
     return item.estado === 'validado' ? 'estado-validada' : 'estado-registrada';
+  }
+
+  private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
+    return this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
+  }
+
+  private autorizacionesPendientesNombres(solicitud: SolicitudSecretaria): string[] {
+    const detalle = solicitud.autorizacionesAlta
+      ?.filter(item => item.estado === 'pendiente_firma')
+      .map(item => item.asociacionAnteriorNombre || `Asociacion ${item.asociacionAnteriorId}`)
+      .filter(Boolean) || [];
+    if (detalle.length) {
+      return [...new Set(detalle)];
+    }
+    const resumen = String(solicitud.autorizacionesPendientesNombres || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+    return solicitud.autorizacionesPendientes && solicitud.autorizacionesPendientes > 0
+      ? resumen.length ? resumen : ['asociacion anterior']
+      : [];
   }
 
   identifierItem(item: { datos: Record<string, any> }): string {
