@@ -12,7 +12,7 @@ import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
-type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas';
+type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
 type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
 
 @Component({
@@ -67,7 +67,7 @@ export class RegistroComponent implements OnInit {
   updatingEstado = false;
   docLocked = false;
   commLocked = false;
-  readonly estadosRegistro: RegistroSecretaria['estado'][] = ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'finalizada'];
+  readonly estadosRegistro: RegistroSecretaria['estado'][] = ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'finalizada', 'archivada'];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -166,7 +166,7 @@ export class RegistroComponent implements OnInit {
 
   get documentacionNuevaCount(): number {
     return this.registros.filter(registro => registro.tipo === 'documentacion' && this.esRegistroNuevo(registro)).length
-      + this.autorizacionesFirmaVisibles.length;
+      + this.autorizacionesAltaPendientes.length;
   }
 
   get comunicacionesNuevasCount(): number {
@@ -176,6 +176,8 @@ export class RegistroComponent implements OnInit {
   get docRefs(): RegistroSecretaria[] {
     return this.registros.filter(registro => {
       if (registro.tipo !== 'documentacion') return false;
+      if (this.docBandeja === 'archivadas') return registro.estado === 'archivada';
+      if (registro.estado === 'archivada') return false;
       if (this.docBandeja === 'nuevas') return this.esRegistroNuevo(registro);
       if (this.docBandeja === 'presentada') return registro.origen === this.actorActual;
       return registro.origen !== this.actorActual && registro.estado !== 'enviada';
@@ -192,6 +194,12 @@ export class RegistroComponent implements OnInit {
   }
 
   get docEmptyMessage(): string {
+    if (this.docBandeja === 'nuevas') {
+      return 'No hay documentacion nueva.';
+    }
+    if (this.docBandeja === 'archivadas') {
+      return 'No hay documentacion archivada.';
+    }
     return this.docBandeja === 'presentada'
       ? 'No hay documentacion presentada.'
       : 'No hay documentacion solicitada.';
@@ -201,7 +209,16 @@ export class RegistroComponent implements OnInit {
     if (this.isAdminMode || this.mode !== 'documentacion') {
       return [];
     }
-    if (!['nuevas', 'solicitada'].includes(this.docBandeja)) {
+    if (!['nuevas', 'solicitada', 'archivadas'].includes(this.docBandeja)) {
+      return [];
+    }
+    return this.docBandeja === 'archivadas'
+      ? this.autorizacionesAlta.filter(item => item.estado === 'archivada')
+      : this.autorizacionesAltaPendientes;
+  }
+
+  get autorizacionesAltaPendientes(): AutorizacionAlta[] {
+    if (this.isAdminMode) {
       return [];
     }
     return this.autorizacionesAlta.filter(item => item.estado === 'pendiente_firma');
@@ -371,6 +388,7 @@ export class RegistroComponent implements OnInit {
       incidencia: 'Incidencia',
       rechazado: 'Rechazado',
       finalizada: 'Finalizada',
+      archivada: 'Archivada',
       nueva: 'Nueva',
       contestada: 'Contestada'
     };
@@ -391,6 +409,13 @@ export class RegistroComponent implements OnInit {
 
   receptorRegistro(registro: RegistroSecretaria): string {
     if (registro.origen === 'asociacion') {
+      return 'Administracion';
+    }
+    return this.asociacionNombreById(registro.asociacionId);
+  }
+
+  emisorRegistro(registro: RegistroSecretaria): string {
+    if (registro.origen === 'administracion') {
       return 'Administracion';
     }
     return this.asociacionNombreById(registro.asociacionId);
@@ -474,6 +499,22 @@ export class RegistroComponent implements OnInit {
     });
   }
 
+  archivarDocumentacion(registro: RegistroSecretaria): void {
+    if (registro.tipo !== 'documentacion' || registro.estado === 'archivada' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.archivarRegistro(registro.id).subscribe({
+      next: updated => {
+        this.docResultado = updated;
+        this.docBandeja = 'archivadas';
+        this.prependRegistro(updated);
+        this.updatingEstado = false;
+      },
+      error: () => this.updatingEstado = false
+    });
+  }
+
   private cargarRegistros(): void {
     if (!this.permissions.hasPermission('registro:read')) {
       return;
@@ -508,6 +549,7 @@ export class RegistroComponent implements OnInit {
         this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
           item.id === autorizacion.id ? response.autorizacion : item
         );
+        this.docBandeja = 'archivadas';
         this.updatingEstado = false;
       },
       error: () => this.updatingEstado = false
@@ -570,7 +612,7 @@ export class RegistroComponent implements OnInit {
     }
 
     const bandeja = this.route.snapshot.queryParamMap.get('bandeja');
-    if (bandeja === 'solicitada' || bandeja === 'presentada' || bandeja === 'nuevas') {
+    if (bandeja === 'solicitada' || bandeja === 'presentada' || bandeja === 'nuevas' || bandeja === 'archivadas') {
       this.docBandeja = bandeja;
     }
     if (bandeja === 'recibidas' || bandeja === 'realizadas' || bandeja === 'nuevas') {

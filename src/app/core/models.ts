@@ -136,7 +136,7 @@ export interface AutorizacionAlta {
   asociacionNuevaId: number;
   asociacionAnteriorId: number;
   asociacionAnteriorNombre?: string | null;
-  estado: 'pendiente_firma' | 'firmada' | 'rechazada' | 'cancelada';
+  estado: 'pendiente_firma' | 'firmada' | 'rechazada' | 'cancelada' | 'archivada';
   documento?: Record<string, any> | null;
   fechaCreacion: string;
   fechaFirma?: string | null;
@@ -168,7 +168,7 @@ export interface RegistroSecretaria {
   titulo: string;
   mensaje?: string;
   responsable?: string | null;
-  estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada';
+  estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada' | 'archivada';
   fechaEntrada: string;
   fechaCreacion?: string;
   fechaActualizacion?: string;

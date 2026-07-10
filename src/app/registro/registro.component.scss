@@ -28,6 +28,10 @@
   font-weight: 900;
 }
 
+.option-action {
+  position: relative;
+}
+
 .page-head {
   border-bottom: 1px solid var(--ffsj-line);
   display: flex;
@@ -205,6 +209,11 @@
 .estado.finalizada {
   background: #ecfdf3;
   color: #166534;
+}
+
+.estado.archivada {
+  background: #f1f5f9;
+  color: #475569;
 }
 
 .attachments,

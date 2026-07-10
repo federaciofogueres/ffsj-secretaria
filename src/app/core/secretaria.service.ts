@@ -207,6 +207,12 @@ export class SecretariaService {
     });
   }
 
+  archivarRegistro(id: number): Observable<RegistroSecretaria> {
+    return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/archivar`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
   crearMensajeRegistro(id: number, mensaje: string): Observable<RegistroMensajeSecretaria> {
     return this.http.post<RegistroMensajeSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/mensajes`, { mensaje }, {
       headers: this.authHeaders()
