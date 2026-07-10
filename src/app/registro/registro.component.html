@@ -17,7 +17,7 @@
               </div>
               <div class="mt-auto p-3">
                 <a class="ux-btn w-100 option-action" routerLink="/registro/documentacion" [class.disabled]="!permissions.hasPermission('registro:read')">
-                  {{ isAdminMode ? 'Ver documentacion' : 'Abrir presentacion' }}
+                  Ir a documentacion
                   <span class="tab-count" *ngIf="documentacionNuevaCount > 0">{{ documentacionNuevaCount }}</span>
                 </a>
               </div>
@@ -31,7 +31,7 @@
               </div>
               <div class="mt-auto p-3">
                 <a class="ux-btn ux-btn-secondary w-100 option-action" routerLink="/registro/comunicacion" [class.disabled]="!permissions.hasPermission('registro:read')">
-                  {{ isAdminMode ? 'Ver comunicaciones' : 'Abrir comunicacion' }}
+                  Ir a comunicaciones
                   <span class="tab-count" *ngIf="comunicacionesNuevasCount > 0">{{ comunicacionesNuevasCount }}</span>
                 </a>
               </div>
