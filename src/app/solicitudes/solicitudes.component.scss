@@ -295,6 +295,28 @@
   color: #687386;
 }
 
+.signed-documents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 0.9rem;
+  background: #f0fdf4;
+}
+
+.signed-documents h3 {
+  width: 100%;
+}
+
+.signed-documents.missing {
+  display: block;
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 @media (max-width: 1100px) {
   .summary-grid {
     grid-template-columns: 1fr;

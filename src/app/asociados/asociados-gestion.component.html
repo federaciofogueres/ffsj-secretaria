@@ -297,7 +297,7 @@
                   class="ux-btn ux-btn-sm"
                   type="button"
                   *ngIf="puedeEnviarSolicitud(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || !solicitudAdjunta(solicitudDetalle)"
                   (click)="enviarSolicitud(solicitudDetalle)"
                 >
                   Enviar solicitud a Secretaria
@@ -339,6 +339,35 @@
                   Imprimir solicitud
                 </button>
               </div>
+              <section class="alert mb-3" [ngClass]="solicitudAdjunta(solicitudDetalle) ? 'alert-success' : 'alert-warning'" *ngIf="solicitudDetalle.estado === 'registrada'">
+                <div class="d-flex align-items-center gap-2 fw-bold">
+                  <i class="bi" [ngClass]="solicitudAdjunta(solicitudDetalle) ? 'bi-check-circle-fill' : 'bi-exclamation-circle'"></i>
+                  <span>
+                    {{ solicitudAdjunta(solicitudDetalle)
+                      ? 'Solicitud firmada adjunta correctamente'
+                      : 'Adjunta la solicitud firmada para poder enviarla a Secretaria' }}
+                  </span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <label class="ux-btn ux-btn-light ux-btn-sm mb-0" for="solicitudFirmadaInput">
+                    Adjuntar solicitud
+                  </label>
+                  <input
+                    id="solicitudFirmadaInput"
+                    class="visually-hidden"
+                    type="file"
+                    accept=".pdf,image/*"
+                    (change)="seleccionarSolicitudFirmada($event, solicitudDetalle)"
+                  />
+                </div>
+                <ul class="list-unstyled mb-0 mt-2" *ngIf="solicitudAdjuntos(solicitudDetalle).length">
+                  <li *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)">
+                    <button class="btn btn-link p-0 fw-bold text-start" type="button" (click)="descargarAdjuntoSolicitud(adjunto)">
+                      <i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}
+                    </button>
+                  </li>
+                </ul>
+              </section>
               <ul class="pending-list">
                 <li *ngFor="let item of solicitudDetalle.items || []">
                   <i class="bi bi-file-earmark-text me-1"></i>

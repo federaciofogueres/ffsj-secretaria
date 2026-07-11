@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
-import { AutorizacionAlta, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -66,6 +67,7 @@ export class AsociadosGestionComponent implements OnInit {
   comprobandoDocumentoAlta = false;
   altaExistenteAsociado: Asociado | null = null;
   altaAsociacionesAnteriores: Array<{ id: number; nombre?: string | null }> = [];
+  solicitudFirmadaFiles: Record<number, File | null> = {};
   private ultimoDocumentoAltaConsultado = '';
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
@@ -384,9 +386,11 @@ export class AsociadosGestionComponent implements OnInit {
           buttonsAlert: [AlertButtonType.Entendido]
         });
       },
-      error: () => {
+      error: error => {
         this.loading = false;
-        this.showError('No se ha podido crear el alta con autorizacion previa.');
+        if (!this.gestionarErrorAltaDuplicada(error)) {
+          this.showError('No se ha podido crear el alta con autorizacion previa.');
+        }
       }
     });
   }
@@ -531,9 +535,11 @@ export class AsociadosGestionComponent implements OnInit {
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
-        error: () => {
+        error: error => {
           this.loading = false;
-          this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+          if (!this.gestionarErrorAltaDuplicada(error)) {
+            this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+          }
         }
       });
   }
@@ -905,9 +911,11 @@ export class AsociadosGestionComponent implements OnInit {
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
-        error: () => {
+        error: error => {
           this.loading = false;
-          this.showError('No se ha podido crear la solicitud.');
+          if (!this.gestionarErrorAltaDuplicada(error)) {
+            this.showError('No se ha podido crear la solicitud.');
+          }
         }
       });
   }
@@ -926,7 +934,36 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  private verSolicitudPorId(solicitudId: number): void {
+    const solicitud = this.solicitudes.find(item => Number(item.id) === Number(solicitudId));
+    this.activeTab = 'solicitudes';
+    this.pendingViewTipo = null;
+    if (solicitud) {
+      this.verSolicitud(solicitud);
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService.getSolicitud(solicitudId).subscribe({
+      next: detalle => {
+        this.solicitudes = this.solicitudes.some(item => item.id === detalle.id)
+          ? this.solicitudes.map(item => (item.id === detalle.id ? detalle : item))
+          : [detalle, ...this.solicitudes];
+        this.solicitudDetalle = detalle;
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.showError('No se ha podido cargar la solicitud existente.');
+      }
+    });
+  }
+
   enviarSolicitud(solicitud: SolicitudSecretaria): void {
+    if (!this.solicitudAdjunta(solicitud)) {
+      this.showError('Debes adjuntar la solicitud firmada antes de enviarla a Secretaria.');
+      return;
+    }
     this.cambiarEstadoSolicitud(
       solicitud,
       () => this.secretariaService.enviarSolicitud(solicitud.id),
@@ -989,6 +1026,15 @@ export class AsociadosGestionComponent implements OnInit {
     window.setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   cargarRegistroPendiente(): void {
     this.secretariaService.getRegistroPendiente(this.asociacionId).subscribe({
       next: response => {
@@ -1014,6 +1060,65 @@ export class AsociadosGestionComponent implements OnInit {
     return solicitud.estado === 'registrada'
       && this.autorizacionesPendientesNombres(solicitud).length === 0
       && this.permissions.hasPermission('solicitudes:send');
+  }
+
+  solicitudAdjunta(solicitud: SolicitudSecretaria): boolean {
+    return this.solicitudAdjuntos(solicitud).length > 0;
+  }
+
+  solicitudAdjuntos(solicitud: SolicitudSecretaria): AdjuntoSecretaria[] {
+    return solicitud.adjuntos || [];
+  }
+
+  seleccionarSolicitudFirmada(event: Event, solicitud: SolicitudSecretaria): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.solicitudFirmadaFiles[solicitud.id] = file;
+    input.value = '';
+
+    if (file) {
+      this.adjuntarSolicitudFirmada(solicitud);
+    }
+  }
+
+  adjuntarSolicitudFirmada(solicitud: SolicitudSecretaria): void {
+    const file = this.solicitudFirmadaFiles[solicitud.id];
+    if (!file) {
+      this.showError('Selecciona el documento firmado antes de adjuntarlo.');
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService.subirAdjunto('solicitud', solicitud.id, file).subscribe({
+      next: adjunto => {
+        this.loading = false;
+        this.solicitudFirmadaFiles[solicitud.id] = null;
+        const updated = {
+          ...solicitud,
+          adjuntos: [adjunto, ...this.solicitudAdjuntos(solicitud)]
+        };
+        this.solicitudDetalle = updated;
+        this.solicitudes = this.solicitudes.map(item => item.id === updated.id ? updated : item);
+        this.dialog.openDialogAlert({
+          title: 'Solicitud adjunta',
+          content: 'La solicitud firmada se ha adjuntado correctamente.',
+          innerHtml: '<p>La solicitud firmada se ha adjuntado correctamente.</p>',
+          buttonsAlert: [AlertButtonType.Entendido]
+        });
+      },
+      error: error => {
+        this.loading = false;
+        this.solicitudFirmadaFiles[solicitud.id] = null;
+        this.showError(error?.error?.message || 'No se ha podido adjuntar la solicitud firmada.');
+      }
+    });
+  }
+
+  descargarAdjuntoSolicitud(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => this.downloadBlob(blob, adjunto.originalName || `adjunto-${adjunto.id}`),
+      error: () => this.showError('No se ha podido descargar la solicitud firmada.')
+    });
   }
 
   puedeReenviarAutorizacion(solicitud: SolicitudSecretaria): boolean {
@@ -1099,7 +1204,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
-    return solicitud.estado === 'autorizacion_rechazada'
+    return ['finalizada', 'rechazada', 'cancelada', 'validada', 'autorizacion_rechazada'].includes(solicitud.estado)
       ? solicitud.estado
       : this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
   }
@@ -1378,6 +1483,33 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  private gestionarErrorAltaDuplicada(error: unknown): boolean {
+    const response = error as HttpErrorResponse;
+    const details = response?.error?.details;
+    if (response?.status !== 409 || details?.code !== 'SOLICITUD_ALTA_DUPLICADA' || !details?.solicitudId) {
+      return false;
+    }
+
+    const verSolicitudButton = 'Ver solicitud' as AlertButtonType;
+    const ref = this.dialog.openDialogAlert({
+      title: 'Solicitud existente',
+      content: 'Ya existe una solicitud para esta persona, finalicela antes de crear otra',
+      innerHtml: `
+        <p>Ya existe una solicitud para esta persona, finalicela antes de crear otra.</p>
+        <p>Solicitud existente: <strong>${details.solicitudNumero || details.solicitudId}</strong></p>
+      `,
+      buttonsAlert: [AlertButtonType.Cancelar, verSolicitudButton]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result === verSolicitudButton) {
+        this.verSolicitudPorId(Number(details.solicitudId));
+      }
+    });
+
+    return true;
+  }
+
   private tieneDuplicadoPendiente(
     tipo: SolicitudTipo,
     asociadoId: number | null,
@@ -1406,7 +1538,7 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     return this.solicitudes.some(solicitud => {
-      if (solicitud.tipo !== tipo || ['finalizada', 'cancelada'].includes(solicitud.estado)) {
+      if (solicitud.tipo !== tipo || ['finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
         return false;
       }
 
@@ -1575,7 +1707,7 @@ export class AsociadosGestionComponent implements OnInit {
   private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
     const abiertasSinDetalle = solicitudes.filter(
       solicitud => ['cambio', 'baja'].includes(solicitud.tipo) &&
-        !['finalizada', 'cancelada'].includes(solicitud.estado) &&
+        !['finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado) &&
         !solicitud.items?.length
     );
 

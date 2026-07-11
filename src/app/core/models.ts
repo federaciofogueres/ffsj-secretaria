@@ -124,6 +124,7 @@ export interface SolicitudSecretaria {
   observaciones?: string | null;
   items?: SolicitudItemSecretaria[];
   autorizacionesAlta?: AutorizacionAlta[];
+  adjuntos?: AdjuntoSecretaria[];
 }
 
 export interface AutorizacionAlta {

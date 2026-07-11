@@ -27,7 +27,7 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">Finalizadas</span>
-        <strong>{{ totalEstado('finalizada') }}</strong>
+        <strong>{{ totalEstado('finalizada', 'rechazada') }}</strong>
       </div>
     </div>
 
@@ -197,6 +197,25 @@
           </span>
         </article>
       </section>
+
+      <section class="signed-documents" *ngIf="adjuntosSolicitud(detalle).length > 0; else noSignedDocuments">
+        <h3 class="h6 mb-2">Solicitud firmada adjunta</h3>
+        <button
+          class="btn btn-outline-secondary btn-sm"
+          type="button"
+          *ngFor="let adjunto of adjuntosSolicitud(detalle)"
+          (click)="descargarAdjunto(adjunto)"
+        >
+          <i class="bi bi-paperclip me-1"></i>
+          {{ adjunto.originalName }}
+        </button>
+      </section>
+      <ng-template #noSignedDocuments>
+        <section class="signed-documents missing">
+          <h3 class="h6 mb-1">Solicitud firmada adjunta</h3>
+          <p class="mb-0">No hay documento firmado adjunto a esta solicitud.</p>
+        </section>
+      </ng-template>
 
       <app-incidencias-panel scope="solicitud" [scopeId]="detalle.id"></app-incidencias-panel>
     </div>

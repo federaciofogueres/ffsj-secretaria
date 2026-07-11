@@ -364,6 +364,13 @@ export class SecretariaService {
     return this.toAbsoluteSecretariaUrl(`${this.apiUrl.secretariaBasePath}/adjuntos/${id}/download`);
   }
 
+  descargarAdjunto(id: number): Observable<Blob> {
+    return this.http.get(this.adjuntoDownloadUrl(id), {
+      headers: this.authHeaders(),
+      responseType: 'blob'
+    });
+  }
+
   getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
     const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades`, {

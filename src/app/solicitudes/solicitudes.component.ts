@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 
-import { AutorizacionAlta, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -122,9 +122,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeValidar(): boolean {
-    return !!this.detalle &&
-      ['enviada', 'en_revision', 'con_incidencias'].includes(this.detalle.estado) &&
-      !this.tieneIncidenciasAbiertas(this.detalle.id);
+    return !!this.detalle && !['validada', 'rechazada', 'finalizada'].includes(this.detalle.estado);
   }
 
   puedeCancelarEnvio(): boolean {
@@ -132,7 +130,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeFinalizar(): boolean {
-    return !!this.detalle && this.detalle.estado !== 'finalizada';
+    return !!this.detalle && !['rechazada', 'finalizada'].includes(this.detalle.estado);
   }
 
   tieneAccionesDisponibles(): boolean {
@@ -245,6 +243,19 @@ export class SolicitudesComponent implements OnInit {
     });
   }
 
+  adjuntosSolicitud(solicitud: SolicitudSecretaria): AdjuntoSecretaria[] {
+    return solicitud.adjuntos || [];
+  }
+
+  descargarAdjunto(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => this.downloadBlob(blob, adjunto.originalName || `adjunto-${adjunto.id}`),
+      error: () => {
+        this.error = 'No se ha podido descargar la solicitud firmada.';
+      }
+    });
+  }
+
   private downloadBlob(blob: Blob, fileName: string): void {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement('a');
@@ -284,7 +295,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
-    return solicitud.estado === 'autorizacion_rechazada'
+    return ['finalizada', 'rechazada', 'cancelada', 'validada', 'autorizacion_rechazada'].includes(solicitud.estado)
       ? solicitud.estado
       : this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
   }
