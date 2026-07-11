@@ -266,6 +266,81 @@
   background: #fff;
 }
 
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(13, 19, 31, 0.46);
+}
+
+.auth-dialog {
+  width: min(760px, 100%);
+  max-height: min(720px, calc(100vh - 2.5rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.auth-header,
+.auth-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+}
+
+.auth-header {
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.auth-footer {
+  border-top: 1px solid var(--ffsj-line);
+}
+
+.auth-body {
+  overflow: auto;
+  padding: 1.2rem;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.auth-grid dt {
+  color: var(--ffsj-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.auth-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.auth-note {
+  margin-top: 1rem;
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .form-grid {
   display: flex;
   flex-direction: column;

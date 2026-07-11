@@ -57,6 +57,7 @@
     </div>
 
     <div *ngIf="loading" class="alert alert-info">Cargando solicitudes...</div>
+    <div *ngIf="success" class="alert alert-success validation-toast" role="status">{{ success }}</div>
     <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
     <div class="registro-table">
@@ -174,6 +175,28 @@
           </small>
         </li>
       </ul>
+
+      <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(detalle).length > 0">
+        <h3 class="h6 mb-2">Autorizaciones de alta</h3>
+        <article class="authorization-item" *ngFor="let autorizacion of autorizacionesAltaRegistradas(detalle)">
+          <div>
+            <strong>{{ autorizacion.asociadoNombre }}</strong>
+            <small>
+              {{ autorizacion.asociacionAnteriorNombre || ('Asociacion ' + autorizacion.asociacionAnteriorId) }}
+              autoriza el alta en {{ asociacionLabel(autorizacion.asociacionNuevaId) }}
+            </small>
+            <small *ngIf="firmaAutorizacion(autorizacion)">
+              Firmada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}
+              <ng-container *ngIf="firmaAutorizacion(autorizacion)?.fecha">
+                el {{ firmaAutorizacion(autorizacion)?.fecha | date: 'dd/MM/yyyy HH:mm' }}
+              </ng-container>
+            </small>
+          </div>
+          <span class="estado-badge" [ngClass]="estadoAutorizacionClass(autorizacion.estado)">
+            {{ labelEstadoAutorizacion(autorizacion.estado) }}
+          </span>
+        </article>
+      </section>
 
       <app-incidencias-panel scope="solicitud" [scopeId]="detalle.id"></app-incidencias-panel>
     </div>

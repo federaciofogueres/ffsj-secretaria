@@ -56,6 +56,7 @@ export class RegistroComponent implements OnInit {
   commResultado: RegistroSecretaria | null = null;
   registros: RegistroSecretaria[] = [];
   autorizacionesAlta: AutorizacionAlta[] = [];
+  autorizacionDetalle: AutorizacionAlta | null = null;
   commBandeja: ComunicacionBandeja = 'realizadas';
   asociaciones: Asociacion[] = [];
   respuestaComunicacion = '';
@@ -549,11 +550,50 @@ export class RegistroComponent implements OnInit {
         this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
           item.id === autorizacion.id ? response.autorizacion : item
         );
+        this.autorizacionDetalle = null;
         this.docBandeja = 'archivadas';
         this.updatingEstado = false;
       },
       error: () => this.updatingEstado = false
     });
+  }
+
+  rechazarAutorizacion(autorizacion: AutorizacionAlta): void {
+    if (this.isAdminMode || autorizacion.estado !== 'pendiente_firma' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.rechazarAutorizacionAlta(autorizacion.id, {
+      firmante: this.asociacionNombreById(this.censoService.asociacionId),
+      motivo: 'Autorizacion rechazada desde el registro de la asociacion'
+    }).subscribe({
+      next: response => {
+        this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
+          item.id === autorizacion.id ? response.autorizacion : item
+        );
+        this.autorizacionDetalle = null;
+        this.updatingEstado = false;
+      },
+      error: () => this.updatingEstado = false
+    });
+  }
+
+  abrirDetalleAutorizacion(autorizacion: AutorizacionAlta): void {
+    this.autorizacionDetalle = autorizacion;
+  }
+
+  cerrarDetalleAutorizacion(): void {
+    this.autorizacionDetalle = null;
+  }
+
+  descargarSolicitudAutorizacion(autorizacion: AutorizacionAlta): void {
+    this.descargarJustificante('solicitud', autorizacion.solicitudId);
+  }
+
+  datoAutorizacion(autorizacion: AutorizacionAlta, key: string): string {
+    const item = autorizacion.documento?.['asociado'] as Record<string, any> | undefined;
+    const value = item?.[key] ?? autorizacion.documento?.[key];
+    return value === null || value === undefined || value === '' ? '-' : String(value);
   }
 
   private cargarAutorizacionesAlta(): void {

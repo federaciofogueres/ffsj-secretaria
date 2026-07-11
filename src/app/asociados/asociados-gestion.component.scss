@@ -267,6 +267,11 @@
   font-size: 0.875rem;
 }
 
+.authorization-item {
+  display: flex;
+  justify-content: space-between;
+}
+
 .pending-table {
   width: 100%;
   border-collapse: separate;

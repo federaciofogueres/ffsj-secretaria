@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 
-import { SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
+import { AutorizacionAlta, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -20,6 +20,7 @@ export class SolicitudesComponent implements OnInit {
     { value: 'todos', label: 'Todos' },
     { value: 'registrada', label: 'Registrada' },
     { value: 'pendiente_firma', label: 'Pendiente de firma' },
+    { value: 'autorizacion_rechazada', label: 'Autorizacion rechazada' },
     { value: 'enviada', label: 'Enviada' },
     { value: 'en_revision', label: 'En revision' },
     { value: 'con_incidencias', label: 'Con incidencias' },
@@ -39,6 +40,7 @@ export class SolicitudesComponent implements OnInit {
   detalle: SolicitudSecretaria | null = null;
   loading = false;
   error = '';
+  success = '';
   filtroTexto = '';
   filtroEstado = 'todos';
   filtroTipo = 'todos';
@@ -96,7 +98,12 @@ export class SolicitudesComponent implements OnInit {
 
   validar(): void {
     if (!this.detalle) return;
-    this.cambiarEstado(() => this.secretariaService.validarSolicitud(this.detalle!.id));
+    const numero = this.detalle.numero;
+    this.cambiarEstado(
+      () => this.secretariaService.validarSolicitud(this.detalle!.id),
+      `Solicitud ${numero} validada correctamente. Los cambios se han aplicado en el censo.`,
+      true
+    );
   }
 
   rechazar(): void {
@@ -125,7 +132,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeFinalizar(): boolean {
-    return !!this.detalle && ['validada', 'rechazada'].includes(this.detalle.estado);
+    return !!this.detalle && this.detalle.estado !== 'finalizada';
   }
 
   tieneAccionesDisponibles(): boolean {
@@ -140,11 +147,39 @@ export class SolicitudesComponent implements OnInit {
     if (estado === 'pendiente_firma') {
       return 'Pendiente de firma';
     }
+    if (estado === 'autorizacion_rechazada') {
+      return 'Autorizacion rechazada';
+    }
     return this.estados.find(item => item.value === estado)?.label ?? estado;
   }
 
   estadoClass(estado: string): string {
     return `estado-${estado.replace('_', '-')}`;
+  }
+
+  autorizacionesAltaRegistradas(solicitud: SolicitudSecretaria): AutorizacionAlta[] {
+    return solicitud.autorizacionesAlta || [];
+  }
+
+  labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
+    const labels: Record<AutorizacionAlta['estado'], string> = {
+      pendiente_firma: 'Pendiente de firma',
+      firmada: 'Autorizada',
+      archivada: 'Autorizada',
+      rechazada: 'Rechazada',
+      cancelada: 'Cancelada'
+    };
+    return labels[estado] || estado;
+  }
+
+  estadoAutorizacionClass(estado: AutorizacionAlta['estado']): string {
+    return estado === 'firmada' || estado === 'archivada'
+      ? 'estado-validada'
+      : this.estadoClass(estado);
+  }
+
+  firmaAutorizacion(autorizacion: AutorizacionAlta): { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | null {
+    return (autorizacion.documento?.['firma'] as { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | undefined) || null;
   }
 
   labelEstadoSolicitud(solicitud: SolicitudSecretaria): string {
@@ -249,7 +284,9 @@ export class SolicitudesComponent implements OnInit {
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
-    return this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
+    return solicitud.estado === 'autorizacion_rechazada'
+      ? solicitud.estado
+      : this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
   }
 
   private autorizacionesPendientesNombres(solicitud: SolicitudSecretaria): string[] {
@@ -295,15 +332,24 @@ export class SolicitudesComponent implements OnInit {
     return [...cambios, ...sustituciones];
   }
 
-  private cambiarEstado(action: () => any): void {
+  private cambiarEstado(action: () => any, successMessage = '', closeDialog = false): void {
     this.loading = true;
+    this.error = '';
+    this.success = '';
     action().subscribe({
       next: (updated: SolicitudSecretaria) => {
         this.detalle = updated;
         this.solicitudes = this.solicitudes.map(item => (item.id === updated.id ? updated : item));
+        if (successMessage) {
+          this.success = successMessage;
+        }
+        if (closeDialog) {
+          this.detalleDialogOpen = false;
+        }
         this.loading = false;
       },
       error: () => {
+        this.success = '';
         this.error = 'No se ha podido cambiar el estado de la solicitud.';
         this.loading = false;
       }

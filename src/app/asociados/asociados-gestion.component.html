@@ -303,6 +303,15 @@
                   Enviar solicitud a Secretaria
                 </button>
                 <button
+                  class="ux-btn ux-btn-sm"
+                  type="button"
+                  *ngIf="puedeReenviarAutorizacion(solicitudDetalle)"
+                  [disabled]="loading"
+                  (click)="reenviarAutorizacion(solicitudDetalle)"
+                >
+                  Enviar autorizacion
+                </button>
+                <button
                   class="ux-btn ux-btn-secondary ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarEnvio(solicitudDetalle)"
@@ -339,6 +348,27 @@
                   </ul>
                 </li>
               </ul>
+              <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(solicitudDetalle).length > 0">
+                <h6 class="fw-bold mb-2">Autorizaciones de alta</h6>
+                <article class="authorization-item" *ngFor="let autorizacion of autorizacionesAltaRegistradas(solicitudDetalle)">
+                  <div>
+                    <strong>{{ autorizacion.asociadoNombre }}</strong>
+                    <small>
+                      {{ autorizacion.asociacionAnteriorNombre || ('Asociacion ' + autorizacion.asociacionAnteriorId) }}
+                      autoriza el alta en Asociacion {{ autorizacion.asociacionNuevaId }}
+                    </small>
+                    <small *ngIf="firmaAutorizacion(autorizacion)">
+                      Firmada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}
+                      <ng-container *ngIf="firmaAutorizacion(autorizacion)?.fecha">
+                        el {{ firmaAutorizacion(autorizacion)?.fecha | date: 'dd/MM/yyyy HH:mm' }}
+                      </ng-container>
+                    </small>
+                  </div>
+                  <span class="estado-badge" [ngClass]="estadoAutorizacionClass(autorizacion.estado)">
+                    {{ labelEstadoAutorizacion(autorizacion.estado) }}
+                  </span>
+                </article>
+              </section>
               <app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel>
             </ng-container>
             <ng-template #emptyDetail>

@@ -109,8 +109,8 @@
                 <span class="badge estado" [ngClass]="autorizacion.estado === 'archivada' ? 'archivada' : 'enviada'">
                   {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de firma' }}
                 </span>
-                <button class="ux-btn ux-btn-sm" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="firmarAutorizacion(autorizacion)">
-                  Firmar autorizacion
+                <button class="ux-btn ux-btn-sm" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="abrirDetalleAutorizacion(autorizacion)">
+                  Ver detalles
                 </button>
               </span>
             </article>
@@ -409,3 +409,61 @@
   </div>
 </section>
 
+<div class="auth-backdrop" *ngIf="autorizacionDetalle as autorizacion" role="presentation" (click)="cerrarDetalleAutorizacion()">
+  <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle" (click)="$event.stopPropagation()">
+    <header class="auth-header">
+      <div>
+        <p class="ux-overline mb-1">Autorizacion de alta</p>
+        <h2 id="authTitle" class="h5 mb-1">{{ autorizacion.solicitudNumero }}</h2>
+        <p class="text-muted mb-0">Revisa la solicitud antes de autorizar o rechazar el alta.</p>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalleAutorizacion()"></button>
+    </header>
+
+    <div class="auth-body">
+      <dl class="auth-grid">
+        <div>
+          <dt>Asociado</dt>
+          <dd>{{ autorizacion.asociadoNombre }}</dd>
+        </div>
+        <div>
+          <dt>Solicitud</dt>
+          <dd>{{ autorizacion.solicitudNumero }}</dd>
+        </div>
+        <div>
+          <dt>Asociacion anterior</dt>
+          <dd>{{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}</dd>
+        </div>
+        <div>
+          <dt>Nueva asociacion</dt>
+          <dd>{{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de solicitud</dt>
+          <dd>{{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ autorizacion.estado === 'pendiente_firma' ? 'Pendiente de autorizacion' : estadoLabel(autorizacion.estado) }}</dd>
+        </div>
+      </dl>
+      <div class="auth-note">
+        Esta autorizacion confirma que la asociacion anterior no se opone al alta del asociado en la nueva asociacion.
+      </div>
+    </div>
+
+    <footer class="auth-footer">
+      <button class="ux-btn ux-btn-secondary" type="button" [disabled]="updatingEstado" (click)="descargarSolicitudAutorizacion(autorizacion)">
+        Descargar solicitud PDF
+      </button>
+      <div class="auth-actions">
+        <button class="ux-btn ux-btn-danger" type="button" [disabled]="updatingEstado" (click)="rechazarAutorizacion(autorizacion)">
+          Rechazar solicitud
+        </button>
+        <button class="ux-btn" type="button" [disabled]="updatingEstado" (click)="firmarAutorizacion(autorizacion)">
+          Autorizar solicitud
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

@@ -6,7 +6,7 @@ import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
-import { CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { AutorizacionAlta, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -942,6 +942,14 @@ export class AsociadosGestionComponent implements OnInit {
     );
   }
 
+  reenviarAutorizacion(solicitud: SolicitudSecretaria): void {
+    this.cambiarEstadoSolicitud(
+      solicitud,
+      () => this.secretariaService.reenviarAutorizacionesAlta(solicitud.id),
+      'No se ha podido reenviar la autorizacion.'
+    );
+  }
+
   cancelarSolicitud(solicitud: SolicitudSecretaria): void {
     const ref = this.dialog.openDialogAlert({
       title: 'Cancelar solicitud',
@@ -1008,6 +1016,11 @@ export class AsociadosGestionComponent implements OnInit {
       && this.permissions.hasPermission('solicitudes:send');
   }
 
+  puedeReenviarAutorizacion(solicitud: SolicitudSecretaria): boolean {
+    return solicitud.estado === 'autorizacion_rechazada'
+      && this.permissions.hasPermission('solicitudes:send');
+  }
+
   puedeCancelarEnvio(solicitud: SolicitudSecretaria): boolean {
     return ['enviada', 'en_revision', 'con_incidencias'].includes(solicitud.estado) && this.permissions.hasPermission('solicitudes:send');
   }
@@ -1027,6 +1040,7 @@ export class AsociadosGestionComponent implements OnInit {
   labelEstado(estado: string): string {
     const labels: Record<string, string> = {
       registrada: 'Registrada',
+      autorizacion_rechazada: 'Autorizacion rechazada',
       pendiente_firma: 'Pendiente de firma',
       enviada: 'Enviada',
       en_revision: 'En revision',
@@ -1040,7 +1054,35 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   estadoClass(estado: string): string {
+    if (estado === 'autorizacion_rechazada') {
+      return 'estado-rechazada';
+    }
     return `estado-${estado.replace('_', '-')}`;
+  }
+
+  autorizacionesAltaRegistradas(solicitud: SolicitudSecretaria): AutorizacionAlta[] {
+    return solicitud.autorizacionesAlta || [];
+  }
+
+  labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
+    const labels: Record<AutorizacionAlta['estado'], string> = {
+      pendiente_firma: 'Pendiente de firma',
+      firmada: 'Autorizada',
+      archivada: 'Autorizada',
+      rechazada: 'Rechazada',
+      cancelada: 'Cancelada'
+    };
+    return labels[estado] || estado;
+  }
+
+  estadoAutorizacionClass(estado: AutorizacionAlta['estado']): string {
+    return estado === 'firmada' || estado === 'archivada'
+      ? 'estado-validada'
+      : this.estadoClass(estado);
+  }
+
+  firmaAutorizacion(autorizacion: AutorizacionAlta): { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | null {
+    return (autorizacion.documento?.['firma'] as { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | undefined) || null;
   }
 
   labelEstadoSolicitud(solicitud: SolicitudSecretaria): string {
@@ -1057,7 +1099,9 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
-    return this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
+    return solicitud.estado === 'autorizacion_rechazada'
+      ? solicitud.estado
+      : this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
   }
 
   private autorizacionesPendientesNombres(solicitud: SolicitudSecretaria): string[] {

@@ -172,6 +172,22 @@ export class SecretariaService {
     );
   }
 
+  rechazarAutorizacionAlta(id: number, payload: { firmante?: string | null; motivo?: string | null } = {}): Observable<{ autorizacion: AutorizacionAlta; solicitud: SolicitudSecretaria }> {
+    return this.http.post<{ autorizacion: AutorizacionAlta; solicitud: SolicitudSecretaria }>(
+      `${this.apiUrl.secretariaBasePath}/autorizaciones-alta/${id}/rechazar`,
+      payload,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  reenviarAutorizacionesAlta(solicitudId: number): Observable<SolicitudSecretaria> {
+    return this.http.post<SolicitudSecretaria>(
+      `${this.apiUrl.secretariaBasePath}/solicitudes/${solicitudId}/reenviar-autorizaciones`,
+      {},
+      { headers: this.authHeaders() }
+    );
+  }
+
   getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion' } = {}): Observable<{ registros: RegistroSecretaria[] }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
