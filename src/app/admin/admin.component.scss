@@ -59,6 +59,39 @@
   background: #fff;
 }
 
+.exercise-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 340px);
+  gap: 1rem;
+}
+
+.exercise-list {
+  display: grid;
+  gap: .75rem;
+}
+
+.exercise-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: .75rem;
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+  padding: .75rem;
+}
+
+.exercise-row small {
+  display: block;
+  color: #6c757d;
+}
+
+.exercise-form {
+  border: 1px solid #edf0f5;
+  border-radius: 8px;
+  padding: .85rem;
+  background: #f8fafc;
+}
+
 .admin-help {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(220px, 320px);
@@ -169,6 +202,11 @@
   }
 
   .admin-help {
+    grid-template-columns: 1fr;
+  }
+
+  .exercise-layout,
+  .exercise-row {
     grid-template-columns: 1fr;
   }
 }

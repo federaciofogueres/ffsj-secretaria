@@ -114,6 +114,26 @@
   max-width: min(320px, 28vw);
 }
 
+.exercise-picker {
+  display: inline-flex;
+  margin: 0;
+}
+
+.exercise-picker select {
+  min-height: 44px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+  font-weight: 800;
+  padding: 0 2rem 0 0.9rem;
+  outline: none;
+}
+
+.exercise-picker option {
+  color: var(--ffsj-ink);
+}
+
 .mode-pill span {
   min-width: 0;
 }

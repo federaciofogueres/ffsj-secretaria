@@ -80,7 +80,28 @@ export interface AuthContext {
   usuario: string;
   nombre: string;
   asociacionNombre: string;
+  ejercicioActivo?: EjercicioSecretaria | null;
+  ejercicios?: EjercicioSecretaria[];
   permisos: string[];
+}
+
+export interface EjercicioSecretaria {
+  id: number;
+  ejercicio: number;
+  fechaInicio: string;
+  fechaFin: string;
+  activo: boolean;
+}
+
+export interface EjercicioInicioResultado {
+  ejercicio: EjercicioSecretaria;
+  ejercicioAnterior: EjercicioSecretaria;
+  censoEjercicioId: number;
+  censoEjercicioAnteriorId: number;
+  totalPreviosActivos: number;
+  creados: number;
+  yaExistian: number;
+  omitidos: number;
 }
 
 export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
@@ -88,6 +109,8 @@ export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
 export interface RegistroPendiente {
   id: number;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   tipo: SolicitudTipo;
   asociadoId?: number | null;
   estado: 'pendiente' | 'incluido_en_solicitud' | 'descartado';
@@ -112,6 +135,8 @@ export interface SolicitudSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   tipo: SolicitudTipo;
   estado: string;
   totalRegistros: number;
@@ -164,6 +189,7 @@ export interface RegistroSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicio?: number | null;
   tipo: 'documentacion' | 'comunicacion';
   origen: 'asociacion' | 'administracion';
   titulo: string;
@@ -189,6 +215,8 @@ export interface RegistroMensajeSecretaria {
 export interface InscripcionSecretaria {
   id: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   formularioId: string | null;
   actividadId?: string | null;
   titulo: string;
@@ -203,6 +231,8 @@ export interface InscripcionEntradaSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   asociacionNombre?: string;
   formularioId: string;
   estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada';
@@ -276,6 +306,8 @@ export interface JustificanteSecretaria {
 
 export interface ActividadSecretaria {
   id: string;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   titulo: string;
   estado: string;
   responsable: string;

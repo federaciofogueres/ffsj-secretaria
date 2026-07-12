@@ -10,6 +10,8 @@ import {
   CargoResumen,
   DashboardAdminResumen,
   DashboardAsociacionResumen,
+  EjercicioInicioResultado,
+  EjercicioSecretaria,
   Incidencia,
   AutorizacionAlta,
   FormularioInscripcion,
@@ -32,8 +34,11 @@ export class SecretariaService {
   ) {}
 
   getRegistroPendiente(asociacionId: number): Observable<{ items: RegistroPendiente[] }> {
+    let params = new HttpParams().set('asociacionId', asociacionId).set('estado', 'pendiente');
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ items: RegistroPendiente[] }>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, {
-      params: new HttpParams().set('asociacionId', asociacionId).set('estado', 'pendiente'),
+      params,
       headers: this.authHeaders()
     });
   }
@@ -46,7 +51,7 @@ export class SecretariaService {
     datosOriginales?: Record<string, any> | null;
     observaciones?: string | null;
   }): Observable<RegistroPendiente> {
-    return this.http.post<RegistroPendiente>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, payload, {
+    return this.http.post<RegistroPendiente>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, this.withEjercicio(payload), {
       headers: this.authHeaders()
     });
   }
@@ -59,8 +64,11 @@ export class SecretariaService {
   }
 
   getSolicitudes(asociacionId: number): Observable<{ solicitudes: SolicitudSecretaria[] }> {
+    let params = new HttpParams().set('asociacionId', asociacionId);
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ solicitudes: SolicitudSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/solicitudes`, {
-      params: new HttpParams().set('asociacionId', asociacionId),
+      params,
       headers: this.authHeaders()
     });
   }
@@ -79,7 +87,11 @@ export class SecretariaService {
   }
 
   getSolicitudesGlobal(): Observable<{ solicitudes: SolicitudSecretaria[] }> {
+    let params = new HttpParams();
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ solicitudes: SolicitudSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/solicitudes/global`, {
+      params,
       headers: this.authHeaders()
     });
   }
@@ -132,7 +144,7 @@ export class SecretariaService {
     registroPendienteIds: number[];
     observaciones?: string | null;
   }): Observable<SolicitudSecretaria> {
-    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes`, payload, {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes`, this.withEjercicio(payload), {
       headers: this.authHeaders()
     });
   }
@@ -144,7 +156,7 @@ export class SecretariaService {
     datosOriginales?: Record<string, any> | null;
     asociacionesAnteriores: Array<{ id: number; nombre?: string | null }>;
   }): Observable<SolicitudSecretaria> {
-    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/alta-autorizacion`, payload, {
+    return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/alta-autorizacion`, this.withEjercicio(payload), {
       headers: this.authHeaders()
     });
   }
@@ -188,11 +200,12 @@ export class SecretariaService {
     );
   }
 
-  getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion' } = {}): Observable<{ registros: RegistroSecretaria[] }> {
+  getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion'; anio?: number | string } = {}): Observable<{ registros: RegistroSecretaria[] }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
     if (filters.tipo) params = params.set('tipo', filters.tipo);
     if (filters.origen) params = params.set('origen', filters.origen);
+    if (filters.anio) params = params.set('anio', filters.anio);
     return this.http.get<{ registros: RegistroSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/registros`, {
       params,
       headers: this.authHeaders()
@@ -238,6 +251,8 @@ export class SecretariaService {
   getInscripciones(asociacionId: number, includeInactive = false): Observable<{ inscripciones: InscripcionSecretaria[] }> {
     let params = new HttpParams().set('asociacionId', asociacionId);
     if (includeInactive) params = params.set('includeInactive', 'true');
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ inscripciones: InscripcionSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones`, {
       params,
       headers: this.authHeaders()
@@ -251,8 +266,11 @@ export class SecretariaService {
   }
 
   getInscripcionEntradas(formularioId: string): Observable<{ entradas: InscripcionEntradaSecretaria[] }> {
+    let params = new HttpParams().set('formularioId', formularioId);
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ entradas: InscripcionEntradaSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas`, {
-      params: new HttpParams().set('formularioId', formularioId),
+      params,
       headers: this.authHeaders()
     });
   }
@@ -372,7 +390,10 @@ export class SecretariaService {
   }
 
   getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
-    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
+    let params = new HttpParams();
+    if (includeInactive) params = params.set('includeInactive', 'true');
+    const ejercicio = this.ejercicioSeleccionado();
+    if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades`, {
       params,
       headers: this.authHeaders()
@@ -399,6 +420,30 @@ export class SecretariaService {
 
   getCargosResumen(): Observable<{ cargos: CargoResumen[] }> {
     return this.http.get<{ cargos: CargoResumen[] }>(`${this.apiUrl.secretariaBasePath}/cargos/resumen`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getEjercicios(): Observable<{ ejercicios: EjercicioSecretaria[] }> {
+    return this.http.get<{ ejercicios: EjercicioSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/ejercicios`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearOActualizarEjercicio(payload: Partial<EjercicioSecretaria>): Observable<EjercicioSecretaria> {
+    return this.http.post<EjercicioSecretaria>(`${this.apiUrl.secretariaBasePath}/admin/ejercicios`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  activarEjercicio(id: number): Observable<EjercicioSecretaria> {
+    return this.http.post<EjercicioSecretaria>(`${this.apiUrl.secretariaBasePath}/admin/ejercicios/${id}/activo`, {}, {
+      headers: this.authHeaders()
+    });
+  }
+
+  iniciarEjercicio(id: number): Observable<EjercicioInicioResultado> {
+    return this.http.post<EjercicioInicioResultado>(`${this.apiUrl.secretariaBasePath}/admin/ejercicios/${id}/iniciar`, {}, {
       headers: this.authHeaders()
     });
   }
@@ -431,6 +476,19 @@ export class SecretariaService {
 
   private authHeaders() {
     return { Authorization: `Bearer ${this.auth.getToken()}` };
+  }
+
+  private ejercicioSeleccionado(): string | null {
+    try {
+      return localStorage.getItem('ffsj-secretaria-ejercicio') || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private withEjercicio<T extends Record<string, any>>(payload: T): T {
+    const ejercicio = this.ejercicioSeleccionado();
+    return ejercicio ? { ...payload, ejercicio } : payload;
   }
 
   private toAbsoluteSecretariaUrl(url: string): string {

@@ -12,6 +12,14 @@
       </a>
     </header>
 
+    <div class="alert alert-warning d-flex align-items-start gap-2" *ngIf="accionesBloqueadasPorEjercicio">
+      <i class="bi bi-lock-fill mt-1"></i>
+      <div>
+        <strong>Ejercicio solo consulta.</strong>
+        <span class="d-block">{{ mensajeEjercicioNoActivo }}</span>
+      </div>
+    </div>
+
     <div class="workflow-tabs">
       <button class="workflow-tab" [class.active]="activeTab === 'altas'" (click)="setTab('altas')">Altas</button>
       <button class="workflow-tab" [class.active]="activeTab === 'modificaciones'" (click)="setTab('modificaciones')">
@@ -215,7 +223,7 @@
         </div>
 
         <div class="actions mt-3">
-          <button class="ux-btn" type="button" [disabled]="seleccionBaja.size === 0 || loading || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
+          <button class="ux-btn" type="button" [disabled]="seleccionBaja.size === 0 || loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
             Preparar bajas
           </button>
         </div>
@@ -297,7 +305,7 @@
                   class="ux-btn ux-btn-sm"
                   type="button"
                   *ngIf="puedeEnviarSolicitud(solicitudDetalle)"
-                  [disabled]="loading || !solicitudAdjunta(solicitudDetalle)"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio || !solicitudAdjunta(solicitudDetalle)"
                   (click)="enviarSolicitud(solicitudDetalle)"
                 >
                   Enviar solicitud a Secretaria
@@ -306,7 +314,7 @@
                   class="ux-btn ux-btn-sm"
                   type="button"
                   *ngIf="puedeReenviarAutorizacion(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="reenviarAutorizacion(solicitudDetalle)"
                 >
                   Enviar autorizacion
@@ -315,7 +323,7 @@
                   class="ux-btn ux-btn-secondary ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarEnvio(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="cancelarEnvioSolicitud(solicitudDetalle)"
                 >
                   Cancelar envio
@@ -324,7 +332,7 @@
                   class="ux-btn ux-btn-danger ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarSolicitud(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="cancelarSolicitud(solicitudDetalle)"
                 >
                   Cancelar esta solicitud antes de enviarla
@@ -536,7 +544,7 @@
         </section>
 
         <div class="actions mt-3 d-flex gap-2">
-          <button class="ux-btn" type="submit" [disabled]="loading || !permissions.hasPermission('solicitudes:write')">
+          <button class="ux-btn" type="submit" [disabled]="loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')">
             {{ modo === 'alta' ? 'Preparar alta' : 'Preparar cambio' }}
           </button>
           <button
@@ -585,7 +593,7 @@
             <tbody>
               <tr *ngFor="let item of pendientesPorTipo(tipo)" [class.table-danger]="seleccionRegistro.has(item.id)">
                 <td>
-                  <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" (change)="toggleRegistro(item)" />
+                  <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" [disabled]="accionesBloqueadasPorEjercicio" (change)="toggleRegistro(item)" />
                 </td>
                 <td>{{ resumenItem(item) }}</td>
                 <td>
@@ -600,7 +608,7 @@
                   <button
                     class="ux-btn ux-btn-danger ux-btn-sm"
                     type="button"
-                    [disabled]="loading || !permissions.hasPermission('solicitudes:write')"
+                    [disabled]="loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')"
                     (click)="descartarRegistro(item)"
                   >
                     Descartar
@@ -618,7 +626,7 @@
           <button
             class="ux-btn"
             type="button"
-            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || !permissions.hasPermission('solicitudes:write')"
+            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')"
             (click)="crearSolicitudSeleccionada(tipo)"
           >
             Generar solicitud con seleccionados
@@ -660,7 +668,7 @@
 
     <footer class="sustitucion-footer">
       <button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
-      <button class="ux-btn" type="button" [disabled]="loading" (click)="confirmarSolicitudConSustituciones()">
+      <button class="ux-btn" type="button" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="confirmarSolicitudConSustituciones()">
         Crear y enviar solicitud
       </button>
     </footer>

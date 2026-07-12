@@ -47,6 +47,11 @@
 
       <div *ngIf="loading" class="alert alert-info">Cargando configuracion...</div>
       <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
+      <div *ngIf="ejercicioInicioResultado" class="alert alert-success">
+        Ejercicio {{ ejercicioInicioResultado.ejercicio.ejercicio }} iniciado desde {{ ejercicioInicioResultado.ejercicioAnterior.ejercicio }}:
+        {{ ejercicioInicioResultado.creados }} registros creados,
+        {{ ejercicioInicioResultado.omitidos }} omitidos por existir ya en el ejercicio destino.
+      </div>
 
       <div class="admin-help mb-4">
         <div>
@@ -68,6 +73,63 @@
         </div>
         <div class="help-note">
           <strong>Importante:</strong> los cargos solo aplican a administracion. El acceso de asociaciones no identifica a una persona concreta.
+        </div>
+      </div>
+
+      <div class="section-panel exercise-panel mb-4">
+        <div class="role-header">
+          <div>
+            <h2 class="h6 mb-1">Ejercicios</h2>
+            <p class="text-muted mb-0 small">Define el ejercicio activo y sus fechas. Las asociaciones entran por defecto en el ejercicio activo.</p>
+          </div>
+          <span class="badge bg-success" *ngIf="ejercicios.length">
+            Activo: {{ ejercicioActivoLabel }}
+          </span>
+        </div>
+
+        <div class="exercise-layout">
+          <div class="exercise-list">
+            <article class="exercise-row" *ngFor="let ejercicio of ejercicios">
+              <div>
+                <strong>Ejercicio {{ ejercicio.ejercicio }}</strong>
+                <small>{{ ejercicio.fechaInicio | date: 'dd/MM/yyyy' }} - {{ ejercicio.fechaFin | date: 'dd/MM/yyyy' }}</small>
+              </div>
+              <span class="badge" [ngClass]="ejercicio.activo ? 'bg-success' : 'bg-light text-dark'">
+                {{ ejercicio.activo ? 'Activo' : 'Consulta' }}
+              </span>
+              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="editarEjercicio(ejercicio)">Editar</button>
+              <button class="btn btn-outline-success btn-sm" type="button" [disabled]="ejercicio.activo || loading" (click)="activarEjercicio(ejercicio)">
+                Activar
+              </button>
+              <button
+                *ngIf="ejercicio.activo"
+                class="btn btn-danger btn-sm"
+                type="button"
+                [disabled]="loading"
+                (click)="iniciarEjercicio(ejercicio)"
+              >
+                Iniciar ejercicio {{ ejercicio.ejercicio }}
+              </button>
+            </article>
+            <p class="text-muted mb-0" *ngIf="!ejercicios.length">No hay ejercicios configurados.</p>
+          </div>
+
+          <form class="exercise-form" (ngSubmit)="guardarEjercicio()">
+            <label class="form-label">Ejercicio</label>
+            <input class="form-control" type="number" name="ejercicio" [(ngModel)]="ejercicioForm.ejercicio" />
+            <label class="form-label mt-2">Inicio</label>
+            <input class="form-control" type="date" name="fechaInicio" [(ngModel)]="ejercicioForm.fechaInicio" />
+            <label class="form-label mt-2">Fin</label>
+            <input class="form-control" type="date" name="fechaFin" [(ngModel)]="ejercicioForm.fechaFin" />
+            <label class="form-check mt-3">
+              <input class="form-check-input" type="checkbox" name="activo" [(ngModel)]="ejercicioForm.activo" />
+              <span class="form-check-label">Marcar como activo al guardar</span>
+            </label>
+            <div class="d-flex gap-2 mt-3">
+              <button class="btn btn-danger btn-sm" type="submit" [disabled]="loading">Guardar ejercicio</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" (click)="resetEjercicioForm()">Nuevo</button>
+            </div>
+          </form>
         </div>
       </div>
 

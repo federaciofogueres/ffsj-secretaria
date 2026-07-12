@@ -8,6 +8,7 @@ import { CensoService } from '../core/censo.service';
 import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -67,7 +68,8 @@ export class InscripcionesComponent implements OnInit {
     private readonly adminAccess: AdminAccessService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
@@ -79,6 +81,17 @@ export class InscripcionesComponent implements OnInit {
 
   get isAdminMode(): boolean {
     return this.adminAccess.isAdmin();
+  }
+
+  get accionesAsociacionBloqueadasPorEjercicio(): boolean {
+    return !this.isAdminMode && !this.ejercicioService.isSelectedActive;
+  }
+
+  get mensajeEjercicioNoActivo(): string {
+    const selected = this.ejercicioService.selectedSnapshot;
+    return selected
+      ? `Estas consultando el ejercicio ${selected.ejercicio}. Para presentar o modificar inscripciones debes seleccionar el ejercicio activo.`
+      : 'Para presentar o modificar inscripciones debes seleccionar el ejercicio activo.';
   }
 
   get availableParticipants(): Asociado[] {
@@ -467,6 +480,10 @@ export class InscripcionesComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedInscription) return;
+    if (this.accionesAsociacionBloqueadasPorEjercicio) {
+      this.error = this.mensajeEjercicioNoActivo;
+      return;
+    }
     if (!this.canSubmit) {
       this.form.markAllAsTouched();
       return;
@@ -489,6 +506,10 @@ export class InscripcionesComponent implements OnInit {
   }
 
   modificarMiInscripcion(): void {
+    if (this.accionesAsociacionBloqueadasPorEjercicio) {
+      this.error = this.mensajeEjercicioNoActivo;
+      return;
+    }
     if (!this.selectedInscription || !this.isWithinDeadline(this.selectedInscription)) {
       this.error = 'El plazo de inscripcion esta cerrado.';
       return;

@@ -6,6 +6,7 @@ import { FfsjDialogAlertService } from 'ffsj-web-components';
 import { CensoService } from '../core/censo.service';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
 import { AsociadosService } from './asociados.service';
 import { AsociadosGestionComponent } from './asociados-gestion.component';
 
@@ -98,6 +99,7 @@ describe('AsociadosGestionComponent', () => {
         { provide: AsociadosService, useValue: asociadosService },
         { provide: CensoService, useValue: censoService },
         { provide: PermissionsService, useValue: { hasPermission: () => true } },
+        { provide: EjercicioService, useValue: { isSelectedActive: true, selectedSnapshot: { ejercicio: new Date().getFullYear(), activo: true } } },
         { provide: FfsjDialogAlertService, useValue: { openDialogAlert: () => ({ afterClosed: () => of(null) }) } }
       ]
     }).compileComponents();

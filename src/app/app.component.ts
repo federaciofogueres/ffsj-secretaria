@@ -1,15 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { AdminAccessService } from './core/admin-access.service';
 import { PermissionsService } from './core/permissions.service';
+import { EjercicioService } from './core/ejercicio.service';
+import { EjercicioSecretaria } from './core/models';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -32,15 +35,20 @@ export class AppComponent implements OnInit, OnDestroy {
   isLoggedIn = false;
   isAdmin = false;
   associationName = '';
+  ejercicios: EjercicioSecretaria[] = [];
+  selectedEjercicioId: number | null = null;
   currentUrl = '/';
   private loginSubscription?: Subscription;
   private routerSubscription?: Subscription;
   private contextSubscription?: Subscription;
+  private ejerciciosSubscription?: Subscription;
+  private selectedEjercicioSubscription?: Subscription;
 
   constructor(
     readonly auth: AuthService,
     readonly adminAccess: AdminAccessService,
     private readonly permissions: PermissionsService,
+    readonly ejerciciosService: EjercicioService,
     private readonly router: Router
   ) {}
 
@@ -52,6 +60,12 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     this.contextSubscription = this.permissions.contextChanges.subscribe(context => {
       this.associationName = context?.asociacionNombre || context?.nombre || '';
+    });
+    this.ejerciciosSubscription = this.ejerciciosService.ejerciciosChanges.subscribe(ejercicios => {
+      this.ejercicios = ejercicios;
+    });
+    this.selectedEjercicioSubscription = this.ejerciciosService.selectedChanges.subscribe(ejercicio => {
+      this.selectedEjercicioId = ejercicio?.id ?? null;
     });
     this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(isLogged => {
       this.isLoggedIn = isLogged;
@@ -74,6 +88,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loginSubscription?.unsubscribe();
     this.routerSubscription?.unsubscribe();
     this.contextSubscription?.unsubscribe();
+    this.ejerciciosSubscription?.unsubscribe();
+    this.selectedEjercicioSubscription?.unsubscribe();
   }
 
   toggleMenu(): void {
@@ -86,6 +102,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  onEjercicioChange(ejercicioId: number | string | null): void {
+    if (!ejercicioId) {
+      return;
+    }
+    this.ejerciciosService.select(Number(ejercicioId));
+    const url = this.router.url;
+    this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => this.router.navigateByUrl(url));
   }
 
   canShowLink(link: { permission?: string; adminOnly?: boolean }): boolean {

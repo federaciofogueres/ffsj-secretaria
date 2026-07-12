@@ -60,7 +60,17 @@
 
       <div class="body">
         <div class="alert alert-danger" *ngIf="errorRegistros">{{ errorRegistros }}</div>
+        <div class="alert alert-warning" *ngIf="mode === 'comunicacion' && comunicacionBloqueadaPorEjercicio">
+          <strong>Ejercicio solo consulta.</strong> {{ mensajeComunicacionBloqueada }}
+        </div>
         <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
+        <div class="year-filter mb-3" *ngIf="mode !== null">
+          <label class="form-label mb-0">Filtrar por año</label>
+          <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="cargarRegistros()">
+            <option [ngValue]="''">Todos</option>
+            <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
+          </select>
+        </div>
 
         <section class="list-card" *ngIf="mode === 'documentacion' && !isFormView && !isDetailView">
           <div class="list-card-head">
@@ -157,6 +167,9 @@
               <i class="bi bi-plus-lg me-1"></i>
               Enviar nueva comunicacion
             </a>
+            <span class="text-muted small" *ngIf="comunicacionBloqueadaPorEjercicio">
+              Selecciona el ejercicio activo para enviar comunicaciones.
+            </span>
           </div>
           <div class="comm-tabs mb-2">
             <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'realizadas'" [class.ux-btn-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">

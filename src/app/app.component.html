@@ -32,6 +32,15 @@
           </span>
         </div>
 
+        <label class="exercise-picker" *ngIf="isLoggedIn && ejercicios.length">
+          <span class="visually-hidden">Ejercicio</span>
+          <select [ngModel]="selectedEjercicioId" (ngModelChange)="onEjercicioChange($event)">
+            <option *ngFor="let ejercicio of ejercicios" [ngValue]="ejercicio.id">
+              Ejercicio {{ ejercicio.ejercicio }}
+            </option>
+          </select>
+        </label>
+
         <a *ngIf="isLoggedIn" class="pending-pill d-none d-lg-inline-flex" routerLink="/solicitudes">
           <i class="bi bi-bell-fill"></i>
           <span>Tareas</span>

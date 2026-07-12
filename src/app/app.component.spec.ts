@@ -5,6 +5,7 @@ import { AuthService } from 'ffsj-web-components';
 
 import { AppComponent } from './app.component';
 import { AdminAccessService } from './core/admin-access.service';
+import { EjercicioService } from './core/ejercicio.service';
 import { PermissionsService } from './core/permissions.service';
 
 describe('AppComponent', () => {
@@ -14,6 +15,7 @@ describe('AppComponent', () => {
       providers: [
         { provide: AuthService, useValue: { isLoggedIn: () => false, logout: () => undefined, loginStatusObservable: of(false) } },
         { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+        { provide: EjercicioService, useValue: { ejerciciosChanges: of([]), selectedChanges: of(null), select: () => undefined } },
         { provide: PermissionsService, useValue: { loadContext: () => of(null), hasPermission: () => true, clear: () => undefined } }
       ]
     }).compileComponents();

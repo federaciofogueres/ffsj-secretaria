@@ -10,6 +10,7 @@ import { AdminAccessService } from '../core/admin-access.service';
 import { Asociacion, AutorizacionAlta, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
@@ -55,6 +56,7 @@ export class RegistroComponent implements OnInit {
   docResultado: RegistroSecretaria | null = null;
   commResultado: RegistroSecretaria | null = null;
   registros: RegistroSecretaria[] = [];
+  filtroAnio: number | '' = '';
   autorizacionesAlta: AutorizacionAlta[] = [];
   autorizacionDetalle: AutorizacionAlta | null = null;
   commBandeja: ComunicacionBandeja = 'realizadas';
@@ -77,7 +79,8 @@ export class RegistroComponent implements OnInit {
     private readonly adminAccess: AdminAccessService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
@@ -150,7 +153,32 @@ export class RegistroComponent implements OnInit {
   }
 
   get canCreateComm(): boolean {
-    return this.permissions.hasPermission('registro:write');
+    return this.permissions.hasPermission('registro:write') && (this.isAdminMode || this.ejercicioService.isSelectedActive);
+  }
+
+  get comunicacionBloqueadaPorEjercicio(): boolean {
+    return !this.isAdminMode && !this.ejercicioService.isSelectedActive;
+  }
+
+  get mensajeComunicacionBloqueada(): string {
+    const selected = this.ejercicioService.selectedSnapshot;
+    return selected
+      ? `Estas consultando el ejercicio ${selected.ejercicio}. Para enviar comunicaciones debes seleccionar el ejercicio activo.`
+      : 'Para enviar comunicaciones debes seleccionar el ejercicio activo.';
+  }
+
+  get aniosDisponibles(): number[] {
+    const years = new Set<number>();
+    this.registros.forEach(registro => {
+      const date = registro.fechaEntrada || registro.fechaCreacion || registro.fechaActualizacion;
+      const year = date ? new Date(date).getFullYear() : Number(registro.ejercicio);
+      if (Number.isFinite(year)) {
+        years.add(year);
+      }
+    });
+    const current = new Date().getFullYear();
+    years.add(current);
+    return Array.from(years).sort((a, b) => b - a);
   }
 
   get isFormView(): boolean {
@@ -516,13 +544,16 @@ export class RegistroComponent implements OnInit {
     });
   }
 
-  private cargarRegistros(): void {
+  cargarRegistros(): void {
     if (!this.permissions.hasPermission('registro:read')) {
       return;
     }
     this.loadingRegistros = true;
     this.errorRegistros = '';
     const filters = this.isAdminMode ? {} : { asociacionId: this.censoService.asociacionId };
+    if (this.filtroAnio) {
+      Object.assign(filters, { anio: this.filtroAnio });
+    }
     this.secretariaService.getRegistros(filters).subscribe({
       next: response => {
         this.registros = response.registros;

@@ -12,6 +12,9 @@
 
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+      <div class="alert alert-warning" *ngIf="accionesAsociacionBloqueadasPorEjercicio">
+        <strong>Ejercicio solo consulta.</strong> {{ mensajeEjercicioNoActivo }}
+      </div>
       <div class="text-muted" *ngIf="loading">Cargando...</div>
 
       <div class="layout" *ngIf="!detailMode">
@@ -155,7 +158,7 @@
                 <span>4</span>
                 Revisar
               </button>
-              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit" (click)="submit()">
+              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <span>5</span>
                 Enviar
               </button>
@@ -322,7 +325,7 @@
                   <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
-                <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription)" (click)="modificarMiInscripcion()">
+                <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription) || accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
                   Modificar inscripcion
                 </button>
               </div>
@@ -483,7 +486,7 @@
             </div>
 
             <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode && associationMode === 'edit'">
-              <button type="button" class="ux-btn" [disabled]="!canSubmit" (click)="submit()">
+              <button type="button" class="ux-btn" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <i class="bi bi-send me-1"></i>
                 {{ miEntrada ? 'Guardar cambios' : 'Inscribirse' }}
               </button>

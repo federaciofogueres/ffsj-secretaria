@@ -4,6 +4,7 @@ import { Observable, catchError, forkJoin, map, of, shareReplay, switchMap } fro
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
 import { Asociado, HistoricoAsociado } from '../core/models';
+import { EjercicioService } from '../core/ejercicio.service';
 
 export { Asociado };
 export { HistoricoAsociado };
@@ -12,14 +13,19 @@ export { HistoricoAsociado };
   providedIn: 'root'
 })
 export class AsociadosService {
-  private readonly asociados$ = this.censoService
-    .getAsociadosByAsociacion(this.censoService.asociacionId)
-    .pipe(switchMap(asociados => this.enrichWithCargoActual(asociados)))
-    .pipe(shareReplay(1));
+  private readonly asociados$ = this.ejercicioService.selectedChanges.pipe(
+    switchMap(ejercicio =>
+      this.censoService
+        .getAsociadosByAsociacion(this.censoService.asociacionId)
+        .pipe(switchMap(asociados => this.enrichWithCargoActual(asociados, ejercicio?.ejercicio ?? new Date().getFullYear())))
+    ),
+    shareReplay(1)
+  );
 
   constructor(
     private readonly censoService: CensoService,
-    private readonly adminAccess: AdminAccessService
+    private readonly adminAccess: AdminAccessService,
+    private readonly ejercicioService: EjercicioService
   ) {}
 
   getAdultos(): Observable<Asociado[]> {
@@ -47,7 +53,7 @@ export class AsociadosService {
     );
   }
 
-  private enrichWithCargoActual(asociados: Asociado[]): Observable<Asociado[]> {
+  private enrichWithCargoActual(asociados: Asociado[], ejercicio: number): Observable<Asociado[]> {
     if (asociados.length === 0) {
       return of([]);
     }
@@ -55,23 +61,38 @@ export class AsociadosService {
     return forkJoin(
       asociados.map(asociado =>
         this.getHistorico(asociado.id).pipe(
-          map(historico => ({
-            ...asociado,
-            cargo: this.getCargoActual(historico) || asociado.cargo
-          })),
-          catchError(() => of(asociado))
+          map(historico => {
+            const relativoAlEjercicio = historico.some(item => Number(item.ejercicio) === Number(ejercicio));
+            if (!relativoAlEjercicio) {
+              return null;
+            }
+
+            return {
+              ...asociado,
+              cargo: this.getCargoActual(historico, ejercicio) || asociado.cargo,
+              estado: this.getEstadoEjercicio(asociado, historico, ejercicio)
+            };
+          }),
+          catchError(() => of(null))
         )
       )
-    );
+    ).pipe(map(items => items.filter(Boolean) as Asociado[]));
   }
 
-  private getCargoActual(historico: HistoricoAsociado[]): string {
-    const currentYear = new Date().getFullYear();
+  private getCargoActual(historico: HistoricoAsociado[], ejercicio: number): string {
     const cargos = historico
-      .filter(item => Number(item.ejercicio) === currentYear && Number(item.active) === 1)
+      .filter(item => Number(item.ejercicio) === Number(ejercicio) && Number(item.active) === 1)
       .map(item => item.cargo)
       .filter(Boolean);
 
     return Array.from(new Set(cargos)).join(' / ');
+  }
+
+  private getEstadoEjercicio(asociado: Asociado, historico: HistoricoAsociado[], ejercicio: number): string {
+    const rows = historico.filter(item => Number(item.ejercicio) === Number(ejercicio));
+    if (!rows.length) {
+      return 'baja';
+    }
+    return rows.some(item => Number(item.active) === 1) ? asociado.estado || 'activo' : 'baja';
   }
 }

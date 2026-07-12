@@ -10,6 +10,7 @@ import { CensoService } from '../core/censo.service';
 import { AdjuntoSecretaria, AutorizacionAlta, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
 
@@ -107,7 +108,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly secretariaService: SecretariaService,
     private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
@@ -130,6 +132,21 @@ export class AsociadosGestionComponent implements OnInit {
 
   get asociacionId(): number {
     return this.censoService.asociacionId;
+  }
+
+  get ejercicioActivoSeleccionado(): boolean {
+    return this.ejercicioService.isSelectedActive;
+  }
+
+  get accionesBloqueadasPorEjercicio(): boolean {
+    return !this.ejercicioActivoSeleccionado;
+  }
+
+  get mensajeEjercicioNoActivo(): string {
+    const ejercicio = this.ejercicioService.selectedSnapshot?.ejercicio;
+    return ejercicio
+      ? `El ejercicio ${ejercicio} es solo de consulta. Selecciona el ejercicio activo para tramitar.`
+      : 'Selecciona el ejercicio activo para tramitar.';
   }
 
   get registrosSeleccionados(): RegistroPendiente[] {
@@ -269,6 +286,10 @@ export class AsociadosGestionComponent implements OnInit {
   guardarRegistroAltaOCambio(): void {
     if (!this.permissions.hasPermission('solicitudes:write')) {
       this.showError('No tienes permiso para crear registros pendientes.');
+      return;
+    }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
       return;
     }
     if (this.altaForm.invalid) {
@@ -645,6 +666,10 @@ export class AsociadosGestionComponent implements OnInit {
       this.showError('No tienes permiso para crear registros pendientes.');
       return;
     }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     if (this.seleccionBaja.size === 0) return;
     const seleccionados = [...this.seleccionBaja]
       .map(id => this.buscarAsociado(id))
@@ -690,6 +715,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   confirmarSolicitudConSustituciones(): void {
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     if (!this.sustitucionesCargo.every(item => item.sustitutoId)) {
       this.showError('Selecciona sustituto para todos los cargos obligatorios.');
       return;
@@ -878,6 +907,10 @@ export class AsociadosGestionComponent implements OnInit {
       this.showError('No tienes permiso para crear solicitudes.');
       return;
     }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     const ids = this.registroPendiente
       .filter(item => item.tipo === tipo && this.seleccionRegistro.has(item.id))
       .map(item => item.id);
@@ -960,6 +993,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   enviarSolicitud(solicitud: SolicitudSecretaria): void {
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     if (!this.solicitudAdjunta(solicitud)) {
       this.showError('Debes adjuntar la solicitud firmada antes de enviarla a Secretaria.');
       return;
