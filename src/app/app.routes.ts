@@ -6,6 +6,7 @@ import { AsociacionComponent } from './asociacion/asociacion.component';
 import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { CalendarioComponent } from './calendario/calendario.component';
+import { EjerciciosComponent } from './ejercicios/ejercicios.component';
 import { FormulariosComponent } from './formularios/formularios.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
@@ -96,6 +97,17 @@ export const routes: Routes = [
       permission: 'inscripciones:write',
       moduleName: 'Formularios',
       moduleDescription: 'Constructor de plantillas de formulario reutilizables para inscripciones.'
+    }
+  },
+  {
+    path: 'ejercicios',
+    component: EjerciciosComponent,
+    title: 'Ejercicios',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'admin:permissions',
+      moduleName: 'Ejercicios',
+      moduleDescription: 'Gestion del ejercicio activo, fechas e inicio de datos desde el ejercicio anterior.'
     }
   },
   {

@@ -26,9 +26,10 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/calendario', label: 'Calendario', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
     { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
     { path: '/formularios', label: 'Formularios', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
+    { path: '/ejercicios', label: 'Ejercicios', icon: 'bi-calendar2-range-fill', permission: 'admin:permissions', adminOnly: true },
     { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill', permission: 'registro:read' },
     { path: '/solicitudes', label: 'Solicitudes', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
-    { path: '/admin', label: 'Permisos', icon: 'bi-shield-lock-fill', adminOnly: true }
+    { path: '/admin', label: 'Permisos', icon: 'bi-shield-lock-fill', permission: 'admin:permissions', adminOnly: true }
   ];
 
   menuOpen = false;
@@ -114,8 +115,8 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   canShowLink(link: { permission?: string; adminOnly?: boolean }): boolean {
-    if (link.adminOnly) {
-      return this.isAdmin;
+    if (link.adminOnly && !this.isAdmin) {
+      return false;
     }
     if ('associationOnly' in link && link.associationOnly && this.isAdmin) {
       return false;

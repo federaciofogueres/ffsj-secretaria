@@ -91,6 +91,8 @@ export interface EjercicioSecretaria {
   fechaInicio: string;
   fechaFin: string;
   activo: boolean;
+  iniciado?: boolean;
+  iniciadoAt?: string | null;
 }
 
 export interface EjercicioInicioResultado {

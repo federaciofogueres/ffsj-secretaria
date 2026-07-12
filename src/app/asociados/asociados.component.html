@@ -10,10 +10,20 @@
         <i class="bi bi-person-gear"></i>
         Gestionar altas, cambios y bajas
       </a>
-      <button class="ux-btn ux-btn-secondary" type="button" (click)="downloadExcel()">
+      <button class="ux-btn ux-btn-secondary" type="button" [matMenuTriggerFor]="downloadMenu">
         <i class="bi bi-download"></i>
         Descargar listado
       </button>
+      <mat-menu #downloadMenu="matMenu">
+        <button mat-menu-item type="button" (click)="downloadExcel()">
+          <mat-icon>table_view</mat-icon>
+          <span>Excel</span>
+        </button>
+        <button mat-menu-item type="button" (click)="downloadPdf()">
+          <mat-icon>picture_as_pdf</mat-icon>
+          <span>PDF</span>
+        </button>
+      </mat-menu>
     </div>
   </header>
 

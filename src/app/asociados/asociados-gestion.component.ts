@@ -269,10 +269,11 @@ export class AsociadosGestionComponent implements OnInit {
     this.comprobandoDocumentoAlta = true;
     this.censoService.getAsociadoByDocumento(documento).subscribe({
       next: asociado => {
-        this.comprobandoDocumentoAlta = false;
         if (asociado) {
-          this.cargarAsociadoExistenteEnAlta(asociado);
+          this.comprobarHistoricoAsociadoParaAlta(asociado);
+          return;
         }
+        this.comprobandoDocumentoAlta = false;
       },
       error: (error: any) => {
         this.comprobandoDocumentoAlta = false;
@@ -604,7 +605,31 @@ export class AsociadosGestionComponent implements OnInit {
       .toUpperCase();
   }
 
-  private cargarAsociadoExistenteEnAlta(asociado: Asociado): void {
+  private comprobarHistoricoAsociadoParaAlta(asociado: Asociado): void {
+    this.censoService.getHistoricoByAsociado(asociado.id).subscribe({
+      next: historico => {
+        this.comprobandoDocumentoAlta = false;
+        const estaActivoEnEstaAsociacion = historico.some(item =>
+          Number(item.idAsociacion) === Number(this.asociacionId) &&
+          (item.active === true || item.active === 1 || String(item.active) === '1')
+        );
+        if (estaActivoEnEstaAsociacion) {
+          this.altaExistenteAsociado = null;
+          this.altaAsociacionesAnteriores = [];
+          this.limpiarDocumentoAltaDuplicado();
+          this.showError('Esta persona ya esta dada de alta en esta asociacion. No se puede crear un alta duplicada.');
+          return;
+        }
+        this.cargarAsociadoExistenteEnAlta(asociado, historico);
+      },
+      error: () => {
+        this.comprobandoDocumentoAlta = false;
+        this.showError('No se ha podido consultar el historico de asociaciones de esta persona.');
+      }
+    });
+  }
+
+  private cargarAsociadoExistenteEnAlta(asociado: Asociado, historico: HistoricoAsociado[]): void {
     this.altaExistenteAsociado = asociado;
     this.altaAsociacionesAnteriores = [];
     const tipo = asociado.tipo === 'infantil' ? 'Hoguera infantil' : 'Hoguera adulta';
@@ -631,22 +656,19 @@ export class AsociadosGestionComponent implements OnInit {
       buttonsAlert: [AlertButtonType.Entendido]
     });
 
-    this.censoService.getHistoricoByAsociado(asociado.id).subscribe({
-      next: historico => {
-        const anteriores = new Map<number, { id: number; nombre?: string | null }>();
-        historico
-          .filter(item => Number(item.idAsociacion) > 0 && Number(item.idAsociacion) !== Number(this.asociacionId))
-          .forEach(item => anteriores.set(Number(item.idAsociacion), {
-            id: Number(item.idAsociacion),
-            nombre: item.nombreAsociacion || null
-          }));
-        this.altaAsociacionesAnteriores = [...anteriores.values()];
-      },
-      error: () => {
-        this.altaAsociacionesAnteriores = [];
-        this.showError('No se ha podido consultar el historico de asociaciones de esta persona.');
-      }
-    });
+    const anteriores = new Map<number, { id: number; nombre?: string | null }>();
+    historico
+      .filter(item => Number(item.idAsociacion) > 0 && Number(item.idAsociacion) !== Number(this.asociacionId))
+      .forEach(item => anteriores.set(Number(item.idAsociacion), {
+        id: Number(item.idAsociacion),
+        nombre: item.nombreAsociacion || null
+      }));
+    this.altaAsociacionesAnteriores = [...anteriores.values()];
+  }
+
+  private limpiarDocumentoAltaDuplicado(): void {
+    this.altaForm.patchValue({ dni: '', sip: '' });
+    this.ultimoDocumentoAltaConsultado = '';
   }
 
   toggleSeleccionBaja(asociado: Asociado): void {

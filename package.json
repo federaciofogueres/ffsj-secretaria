@@ -33,6 +33,7 @@
     "bootstrap-icons": "^1.11.3",
     "crypto-js": "^4.2.0",
     "ffsj-web-components": "file:src/lib/ffsj-web-components",
+    "jspdf": "^3.0.1",
     "ngx-cookie-service": "^20.1.1",
     "rxjs": "~7.8.1",
     "tslib": "^2.6.2",
