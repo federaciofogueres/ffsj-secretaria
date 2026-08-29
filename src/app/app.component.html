@@ -24,27 +24,112 @@
       </nav>
 
       <div class="header-actions">
-        <div class="mode-pill" *ngIf="isLoggedIn">
-          <span class="mode-dot"></span>
-          <span>
-            <strong>{{ modeLabel }}</strong>
-            <small>{{ actorLabel }}</small>
-          </span>
+        <div class="header-popover-wrapper association-wrapper" *ngIf="isLoggedIn">
+          <div class="association-context-group">
+            <button
+              class="association-selector"
+              type="button"
+              (click)="toggleAssociationSelector()"
+              [attr.aria-expanded]="associationSelectorOpen"
+              aria-haspopup="dialog"
+            >
+              <span class="mode-dot"></span>
+              <span class="association-selector-copy">
+                <strong>{{ associationDisplayName }}</strong>
+                <small>{{ associationTypeLabel }} · {{ selectedEjercicioLabel }}</small>
+              </span>
+              <i class="bi" [ngClass]="associationSelectorOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+            <button
+              class="tasks-bell"
+              type="button"
+              (click)="toggleTareas()"
+              [attr.aria-expanded]="tareasOpen"
+              aria-haspopup="dialog"
+              [attr.aria-label]="tareasPendientes ? tareasPendientes + ' tareas pendientes' : 'No hay tareas pendientes'"
+            >
+              <i class="bi bi-bell-fill"></i>
+              <span *ngIf="!tareasLoading && tareasPendientes" class="tasks-badge">{{ tareasPendientes }}</span>
+              <span *ngIf="tareasLoading" class="tasks-loading-dot" aria-hidden="true"></span>
+            </button>
+          </div>
+
+          <section class="header-popover association-popover" *ngIf="associationSelectorOpen" role="dialog" aria-label="Asociacion y ejercicio">
+            <p class="ux-overline mb-1">Contexto de trabajo</p>
+            <strong class="popover-title">{{ associationDisplayName }}</strong>
+            <p class="popover-subtitle">{{ associationTypeLabel }}</p>
+            <section class="selector-tasks" aria-label="Tareas pendientes">
+              <div class="selector-tasks-heading">
+                <span><i class="bi bi-bell-fill"></i> Tareas pendientes</span>
+                <strong *ngIf="!tareasLoading && tareasPendientes">{{ tareasPendientes }}</strong>
+              </div>
+              <p *ngIf="tareasLoading" class="mb-0 ux-muted">Cargando tareas pendientes...</p>
+              <p *ngIf="!tareasLoading && tareasError" class="mb-0 text-danger">No se ha podido cargar el resumen.</p>
+              <p *ngIf="!tareasLoading && !tareasError && !tareasPendientes" class="mb-0 ux-muted">No hay tareas pendientes.</p>
+              <div class="selector-task-list" *ngIf="!tareasLoading && !tareasError && tareasPendientes">
+                <a *ngFor="let tarea of tareas" [routerLink]="tarea.path" [queryParams]="tarea.queryParams || null" (click)="associationSelectorOpen = false">
+                  <span>{{ tarea.title }}</span>
+                  <strong>{{ tarea.count }}</strong>
+                </a>
+              </div>
+            </section>
+            <div class="exercise-list" *ngIf="ejercicios.length; else noEjercicios">
+              <p class="exercise-list-title">Ejercicio de trabajo</p>
+              <button class="selected-exercise" type="button" (click)="toggleExerciseList()" [attr.aria-expanded]="exerciseListOpen">
+                <span>
+                  <strong>{{ selectedEjercicioLabel }}</strong>
+                  <small>Pulsa para cambiar de ejercicio</small>
+                </span>
+                <i class="bi" [ngClass]="exerciseListOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+              </button>
+              <div class="exercise-options-panel" *ngIf="exerciseListOpen">
+                <label class="visually-hidden" for="exercise-search">Buscar ejercicio</label>
+                <div class="exercise-search">
+                  <i class="bi bi-search"></i>
+                  <input id="exercise-search" type="search" [(ngModel)]="ejercicioSearch" placeholder="Buscar ejercicio" autocomplete="off" />
+                </div>
+                <p class="exercise-results-info">Mostrando hasta 10 ejercicios</p>
+                <button
+                  *ngFor="let ejercicio of ejerciciosFiltrados"
+                  class="exercise-option"
+                  type="button"
+                  [class.active]="ejercicio.id === selectedEjercicioId"
+                  (click)="onEjercicioChange(ejercicio.id)"
+                >
+                  <span>
+                    <strong>Ejercicio {{ ejercicio.ejercicio }}</strong>
+                    <small *ngIf="ejercicio.estadoAsociacion === 'SIN_INICIAR'">Pendiente de iniciar</small>
+                  </span>
+                  <i *ngIf="ejercicio.id === selectedEjercicioId" class="bi bi-check-circle-fill"></i>
+                </button>
+                <p *ngIf="!ejerciciosFiltrados.length" class="mb-0 ux-muted">No hay ejercicios que coincidan con la búsqueda.</p>
+              </div>
+            </div>
+            <ng-template #noEjercicios>
+              <p class="mb-0 ux-muted">No hay ejercicios disponibles.</p>
+            </ng-template>
+          </section>
+
+          <section class="header-popover tasks-popover" *ngIf="tareasOpen" role="dialog" aria-label="Tareas pendientes">
+            <div class="tasks-popover-heading">
+              <div>
+                <p class="ux-overline mb-1">Resumen</p>
+                <strong class="popover-title">Tareas</strong>
+              </div>
+              <button class="popover-close" type="button" (click)="closeTareas()" aria-label="Cerrar tareas"><i class="bi bi-x-lg"></i></button>
+            </div>
+            <p *ngIf="tareasLoading" class="mb-0 ux-muted">Cargando tareas pendientes...</p>
+            <p *ngIf="!tareasLoading && tareasError" class="mb-0 text-danger">No se ha podido cargar el resumen de tareas.</p>
+            <p *ngIf="!tareasLoading && !tareasError && !tareasPendientes" class="mb-0 ux-muted">No hay tareas pendientes.</p>
+            <div class="task-list" *ngIf="!tareasLoading && !tareasError && tareasPendientes">
+              <a *ngFor="let tarea of tareas" class="task-list-item" [routerLink]="tarea.path" [queryParams]="tarea.queryParams || null" (click)="closeTareas()">
+                <i class="bi" [ngClass]="tarea.icon"></i>
+                <span>{{ tarea.title }}</span>
+                <strong>{{ tarea.count }}</strong>
+              </a>
+            </div>
+          </section>
         </div>
-
-        <label class="exercise-picker" *ngIf="isLoggedIn && ejercicios.length">
-          <span class="visually-hidden">Ejercicio</span>
-          <select [ngModel]="selectedEjercicioId" (ngModelChange)="onEjercicioChange($event)">
-            <option *ngFor="let ejercicio of ejercicios" [ngValue]="ejercicio.id">
-              Ejercicio {{ ejercicio.ejercicio }}
-            </option>
-          </select>
-        </label>
-
-        <a *ngIf="isLoggedIn" class="pending-pill d-none d-lg-inline-flex" routerLink="/solicitudes">
-          <i class="bi bi-bell-fill"></i>
-          <span>Tareas</span>
-        </a>
 
         <button *ngIf="isLoggedIn" class="logout-button d-none d-md-inline-flex" type="button" (click)="logout()">
           Salir
@@ -88,11 +173,12 @@
     <div class="content-container">
       <section *ngIf="ejercicioSinIniciar" class="alert alert-warning d-flex flex-wrap align-items-center justify-content-between gap-2" role="status">
         <span>El ejercicio seleccionado aun no esta iniciado para tu asociacion.</span>
-        <button class="btn btn-danger btn-sm" type="button" [disabled]="iniciandoEjercicio" (click)="iniciarEjercicioAsociacion()">
-          {{ iniciandoEjercicio ? 'Iniciando...' : 'Iniciar ejercicio' }}
+        <button class="btn btn-danger btn-sm" type="button" [disabled]="iniciandoEjercicio" (click)="abrirDialogoIniciarEjercicio()">
+          Iniciar ejercicio
         </button>
       </section>
       <div *ngIf="ejercicioError" class="alert alert-danger" role="alert">{{ ejercicioError }}</div>
+      <div *ngIf="ejercicioSuccess" class="alert alert-success" role="status">{{ ejercicioSuccess }}</div>
       <router-outlet></router-outlet>
     </div>
   </main>
@@ -113,3 +199,24 @@
 
   <lib-ffsj-alert></lib-ffsj-alert>
 </div>
+
+<div class="modal-backdrop-custom" *ngIf="showIniciarEjercicioDialog" (click)="cerrarDialogoIniciarEjercicio()"></div>
+<section class="modal-panel" *ngIf="showIniciarEjercicioDialog" role="dialog" aria-modal="true" aria-labelledby="iniciar-ejercicio-title">
+  <div class="modal-header-custom">
+    <div>
+      <p class="ux-overline mb-2">Asociados</p>
+      <h2 id="iniciar-ejercicio-title" class="h5 mb-0 text-rojo">Iniciar ejercicio {{ ejerciciosService.selectedSnapshot?.ejercicio }}</h2>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="iniciandoEjercicio" (click)="cerrarDialogoIniciarEjercicio()">Cerrar</button>
+  </div>
+  <p>Al iniciar este ejercicio se cargaran como base los asociados activos del ejercicio anterior.</p>
+  <p class="mb-4">Podras revisar y gestionar despues los asociados correspondientes al nuevo ejercicio.</p>
+  <p *ngIf="ejercicioError" class="alert alert-danger py-2" role="alert">{{ ejercicioError }}</p>
+  <div class="d-flex flex-wrap gap-2 justify-content-end">
+    <button class="btn btn-outline-secondary" type="button" [disabled]="iniciandoEjercicio" (click)="cerrarDialogoIniciarEjercicio()">Cancelar</button>
+    <button class="ux-btn" type="button" [disabled]="iniciandoEjercicio" (click)="iniciarEjercicioAsociacion()">
+      <span *ngIf="iniciandoEjercicio" class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+      {{ iniciandoEjercicio ? 'Iniciando...' : 'Iniciar ejercicio' }}
+    </button>
+  </div>
+</section>
