@@ -22,7 +22,10 @@ import {
   RegistroPendiente,
   RegistroSecretaria,
   SolicitudSecretaria,
-  SolicitudTipo
+  SolicitudTipo,
+  SoporteCategoria,
+  SoporteEstado,
+  SoporteIncidencia
 } from './models';
 
 @Injectable({ providedIn: 'root' })
@@ -32,6 +35,37 @@ export class SecretariaService {
     private readonly apiUrl: ApiUrlService,
     private readonly auth: AuthService
   ) {}
+
+  getSoporteCategorias(): Observable<{ categorias: SoporteCategoria[]; estados: SoporteEstado[] }> {
+    return this.http.get<{ categorias: SoporteCategoria[]; estados: SoporteEstado[] }>(`${this.apiUrl.secretariaBasePath}/soporte/categorias`, { headers: this.authHeaders() });
+  }
+
+  getSoporteIncidencias(): Observable<{ incidencias: SoporteIncidencia[] }> {
+    return this.http.get<{ incidencias: SoporteIncidencia[] }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias`, { headers: this.authHeaders() });
+  }
+
+  getSoporteIncidencia(id: number): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.get<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias/${id}`, { headers: this.authHeaders() });
+  }
+
+  crearSoporteIncidencia(payload: { categoria: string; asunto: string; descripcion: string; ejercicio?: number | null; ruta?: string; userAgent?: string }): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.post<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias`, payload, { headers: this.authHeaders() });
+  }
+
+  getAdminSoporteIncidencias(filters: { estado?: string; categoria?: string } = {}): Observable<{ incidencias: SoporteIncidencia[] }> {
+    let params = new HttpParams();
+    if (filters.estado) params = params.set('estado', filters.estado);
+    if (filters.categoria) params = params.set('categoria', filters.categoria);
+    return this.http.get<{ incidencias: SoporteIncidencia[] }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias`, { params, headers: this.authHeaders() });
+  }
+
+  getAdminSoporteIncidencia(id: number): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.get<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, { headers: this.authHeaders() });
+  }
+
+  actualizarAdminSoporteIncidencia(id: number, payload: { estado: SoporteEstado; mensaje?: string }): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.put<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, payload, { headers: this.authHeaders() });
+  }
 
   getRegistroPendiente(asociacionId: number): Observable<{ items: RegistroPendiente[] }> {
     let params = new HttpParams().set('asociacionId', asociacionId).set('estado', 'pendiente');

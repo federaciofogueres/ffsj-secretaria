@@ -13,6 +13,8 @@ import { InscripcionesComponent } from './inscripciones/inscripciones.component'
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
 import { SolicitudesComponent } from './solicitudes/solicitudes.component';
+import { SoporteComponent } from './soporte/soporte.component';
+import { SoporteAdminComponent } from './soporte/soporte-admin.component';
 import { adminGuard } from './core/admin.guard';
 import { permissionGuard } from './core/permission.guard';
 
@@ -32,6 +34,12 @@ export const routes: Routes = [
     component: HomeComponent,
     title: 'Inicio',
     canActivate: [AuthGuard]
+  },
+  {
+    path: 'soporte', component: SoporteComponent, title: 'Soporte', canActivate: [AuthGuard]
+  },
+  {
+    path: 'admin/soporte', component: SoporteAdminComponent, title: 'Soporte administrativo', canActivate: [AuthGuard, adminGuard]
   },
   {
     path: 'asociados',
