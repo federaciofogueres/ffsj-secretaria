@@ -8,6 +8,7 @@ import { AdminAccessService } from './core/admin-access.service';
 import { PermissionsService } from './core/permissions.service';
 import { EjercicioService } from './core/ejercicio.service';
 import { EjercicioSecretaria } from './core/models';
+import { SecretariaService } from './core/secretaria.service';
 
 @Component({
   selector: 'app-root',
@@ -39,6 +40,8 @@ export class AppComponent implements OnInit, OnDestroy {
   ejercicios: EjercicioSecretaria[] = [];
   selectedEjercicioId: number | null = null;
   currentUrl = '/';
+  ejercicioError = '';
+  iniciandoEjercicio = false;
   private loginSubscription?: Subscription;
   private routerSubscription?: Subscription;
   private contextSubscription?: Subscription;
@@ -50,7 +53,8 @@ export class AppComponent implements OnInit, OnDestroy {
     readonly adminAccess: AdminAccessService,
     private readonly permissions: PermissionsService,
     readonly ejerciciosService: EjercicioService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly secretariaService: SecretariaService
   ) {}
 
   ngOnInit(): void {
@@ -112,6 +116,30 @@ export class AppComponent implements OnInit, OnDestroy {
     this.ejerciciosService.select(Number(ejercicioId));
     const url = this.router.url;
     this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => this.router.navigateByUrl(url));
+  }
+
+  get ejercicioSinIniciar(): boolean {
+    return !this.isAdmin && this.ejerciciosService.isSelectedActive
+      && this.ejerciciosService.selectedSnapshot?.estadoAsociacion === 'SIN_INICIAR';
+  }
+
+  iniciarEjercicioAsociacion(): void {
+    const ejercicio = this.ejerciciosService.selectedSnapshot;
+    if (!ejercicio || !this.ejercicioSinIniciar || this.iniciandoEjercicio) return;
+    if (!window.confirm(`Se copiaran los asociados activos del ejercicio anterior a ${ejercicio.ejercicio}.`)) return;
+
+    this.iniciandoEjercicio = true;
+    this.ejercicioError = '';
+    this.secretariaService.iniciarEjercicio(ejercicio.id).subscribe({
+      next: () => {
+        this.iniciandoEjercicio = false;
+        this.ejerciciosService.load();
+      },
+      error: () => {
+        this.iniciandoEjercicio = false;
+        this.ejercicioError = 'No se ha podido iniciar el ejercicio. Intentalo de nuevo.';
+      }
+    });
   }
 
   canShowLink(link: { permission?: string; adminOnly?: boolean }): boolean {

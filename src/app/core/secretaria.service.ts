@@ -443,7 +443,7 @@ export class SecretariaService {
   }
 
   iniciarEjercicio(id: number): Observable<EjercicioInicioResultado> {
-    return this.http.post<EjercicioInicioResultado>(`${this.apiUrl.secretariaBasePath}/admin/ejercicios/${id}/iniciar`, {}, {
+    return this.http.post<EjercicioInicioResultado>(`${this.apiUrl.secretariaBasePath}/ejercicios/${id}/iniciar`, {}, {
       headers: this.authHeaders()
     });
   }
