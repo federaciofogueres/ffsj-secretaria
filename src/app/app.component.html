@@ -25,25 +25,54 @@
 
       <div class="header-actions">
         <div class="header-popover-wrapper association-wrapper" *ngIf="isLoggedIn">
-          <button
-            class="association-selector"
-            type="button"
-            (click)="toggleAssociationSelector()"
-            [attr.aria-expanded]="associationSelectorOpen"
-            aria-haspopup="dialog"
-          >
-            <span class="mode-dot"></span>
-            <span class="association-selector-copy">
-              <strong>{{ associationDisplayName }}</strong>
-              <small>{{ associationTypeLabel }} · {{ selectedEjercicioLabel }}</small>
-            </span>
-            <i class="bi" [ngClass]="associationSelectorOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
-          </button>
+          <div class="association-context-group">
+            <button
+              class="association-selector"
+              type="button"
+              (click)="toggleAssociationSelector()"
+              [attr.aria-expanded]="associationSelectorOpen"
+              aria-haspopup="dialog"
+            >
+              <span class="mode-dot"></span>
+              <span class="association-selector-copy">
+                <strong>{{ associationDisplayName }}</strong>
+                <small>{{ associationTypeLabel }} · {{ selectedEjercicioLabel }}</small>
+              </span>
+              <i class="bi" [ngClass]="associationSelectorOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
+            </button>
+            <button
+              class="tasks-bell"
+              type="button"
+              (click)="toggleTareas()"
+              [attr.aria-expanded]="tareasOpen"
+              aria-haspopup="dialog"
+              [attr.aria-label]="tareasPendientes ? tareasPendientes + ' tareas pendientes' : 'No hay tareas pendientes'"
+            >
+              <i class="bi bi-bell-fill"></i>
+              <span *ngIf="!tareasLoading && tareasPendientes" class="tasks-badge">{{ tareasPendientes }}</span>
+              <span *ngIf="tareasLoading" class="tasks-loading-dot" aria-hidden="true"></span>
+            </button>
+          </div>
 
           <section class="header-popover association-popover" *ngIf="associationSelectorOpen" role="dialog" aria-label="Asociacion y ejercicio">
             <p class="ux-overline mb-1">Contexto de trabajo</p>
             <strong class="popover-title">{{ associationDisplayName }}</strong>
             <p class="popover-subtitle">{{ associationTypeLabel }}</p>
+            <section class="selector-tasks" aria-label="Tareas pendientes">
+              <div class="selector-tasks-heading">
+                <span><i class="bi bi-bell-fill"></i> Tareas pendientes</span>
+                <strong *ngIf="!tareasLoading && tareasPendientes">{{ tareasPendientes }}</strong>
+              </div>
+              <p *ngIf="tareasLoading" class="mb-0 ux-muted">Cargando tareas pendientes...</p>
+              <p *ngIf="!tareasLoading && tareasError" class="mb-0 text-danger">No se ha podido cargar el resumen.</p>
+              <p *ngIf="!tareasLoading && !tareasError && !tareasPendientes" class="mb-0 ux-muted">No hay tareas pendientes.</p>
+              <div class="selector-task-list" *ngIf="!tareasLoading && !tareasError && tareasPendientes">
+                <a *ngFor="let tarea of tareas" [routerLink]="tarea.path" [queryParams]="tarea.queryParams || null" (click)="associationSelectorOpen = false">
+                  <span>{{ tarea.title }}</span>
+                  <strong>{{ tarea.count }}</strong>
+                </a>
+              </div>
+            </section>
             <div class="exercise-list" *ngIf="ejercicios.length; else noEjercicios">
               <p class="exercise-list-title">Selecciona el ejercicio</p>
               <button
@@ -64,18 +93,6 @@
               <p class="mb-0 ux-muted">No hay ejercicios disponibles.</p>
             </ng-template>
           </section>
-        </div>
-
-        <div class="header-popover-wrapper d-none d-lg-block" *ngIf="isLoggedIn">
-          <button class="pending-pill" type="button" (click)="toggleTareas()" [attr.aria-expanded]="tareasOpen" aria-haspopup="dialog">
-            <i class="bi bi-bell-fill"></i>
-            <span>
-              <strong>Tareas</strong>
-              <small *ngIf="tareasLoading">Cargando...</small>
-              <small *ngIf="!tareasLoading && tareasPendientes">{{ tareasPendientes }} pendientes</small>
-              <small *ngIf="!tareasLoading && !tareasPendientes">No hay tareas pendientes</small>
-            </span>
-          </button>
 
           <section class="header-popover tasks-popover" *ngIf="tareasOpen" role="dialog" aria-label="Tareas pendientes">
             <div class="tasks-popover-heading">
@@ -132,10 +149,6 @@
       <button *ngIf="isLoggedIn" class="mobile-link border-0 w-100" type="button" (click)="logout()">
         <span>Salir</span>
         <i class="bi bi-box-arrow-right"></i>
-      </button>
-      <button *ngIf="isLoggedIn" class="mobile-link border-0 w-100" type="button" (click)="openTareasFromMenu()">
-        <span class="d-flex align-items-center gap-2"><i class="bi bi-bell-fill"></i>Tareas <small *ngIf="!tareasLoading && tareasPendientes">({{ tareasPendientes }})</small></span>
-        <i class="bi bi-chevron-right"></i>
       </button>
     </div>
   </header>
