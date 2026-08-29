@@ -1,60 +1,52 @@
 # ffsj-secretaria
 
-Aplicacion Angular 20 para la nueva gestion de secretaria de la Federacio de Les Fogueres de Sant Joan. Este proyecto sustituye progresivamente funcionalidades de la intranet antigua (`web-intranet`) relacionadas con asociaciones, asociados, inscripciones y registro documental.
+Nueva aplicación Angular 20 para la gestión de secretaría de la Federació de Fogueres de Sant Joan (FFSJ). Sustituye progresivamente funciones de la intranet antigua: gestión de asociados y asociación, calendario, inscripciones, formularios, registro documental, solicitudes y administración de permisos.
 
-## Desarrollo local
+## Relación con el workspace
 
-Instala dependencias:
+- Consume `ffsj-secretaria-api` para los módulos propios de secretaría en `http://localhost:3001/emjf1/Secretaria/1.0.0` en local.
+- Consume `ffsj-new-censo-api` para el censo en `http://localhost:8080/emjf1/Censo-Hogueras/1.0.0` en local.
+- Usa la librería Angular empaquetada `ffsj-web-components`, incluida en `src/lib/ffsj-web-components`.
 
-```bash
-npm install
-```
+## Requisitos
 
-Arranca el servidor local:
+- Node.js **20.19 o 22.12 o posterior**, requisito de Angular CLI 20.
+- npm.
+- Las dos APIs anteriores en ejecución para probar integraciones reales.
 
-```bash
-npm start
-```
+## Arranque local
 
-Tambien puedes usar explicitamente:
-
-```bash
+```powershell
+npm ci
 npm run start:local
 ```
 
-Abre `http://localhost:4200/`. La aplicacion se recargara automaticamente al modificar archivos.
+Abre `http://localhost:4200/`. La configuración local está en `src/environments/environment.local.ts` y define por separado `CENSO_API_BASE_PATH`, `SECRETARIA_API_BASE_PATH` y la ruta de ficheros.
 
-## Entornos
+> Si `npm ls` informa que `ffsj-web-components` apunta a otro directorio, elimina solo `node_modules` y ejecuta `npm ci` con Node compatible: la dependencia correcta es la copia incluida en este repositorio.
 
-El proyecto tiene configuraciones Angular explicitas para local, test, desarrollo y produccion:
+## Entornos y comandos
 
-| Entorno | Serve command | Build command | Fichero de entorno |
-| --- | --- | --- | --- |
-| Local | `npm run start:local` | `npm run build:local` | `src/environments/environment.local.ts` |
-| Test | `npm run start:test` | `npm run build:test` | `src/environments/environment.test.ts` |
-| Desarrollo | `npm run start:dev` | `npm run build:dev` | `src/environments/environment.development.ts` |
-| Produccion | `npm run start:prod` | `npm run build:prod` | `src/environments/environment.production.ts` |
+| Entorno | Servidor | Compilación |
+| --- | --- | --- |
+| Local | `npm run start:local` | `npm run build:local` |
+| Test | `npm run start:test` | `npm run build:test` |
+| Desarrollo | `npm run start:dev` | `npm run build:dev` |
+| Producción | `npm run start:prod` | `npm run build:prod` |
 
-`npm run build` genera produccion por defecto. Las URLs de API y ficheros se configuran en cada entorno mediante `API_BASE_PATH` y `FILES_BASE_PATH`.
+`npm run build` genera producción y `npm test` ejecuta Karma.
 
-## Modulos actuales
+## Módulos
 
-- **Inicio**: pantalla de entrada con accesos a los modulos principales.
-- **Asociados**: listado, busqueda, paginacion, detalle y exportacion Excel de asociados adultos e infantiles. Actualmente usa datos mock.
-- **Gestion de asociados**: interfaz para preparar altas, modificaciones y bajas. Actualmente simula pendientes en cliente.
-- **Asociacion**: consulta y edicion de datos oficiales, contacto, sede y datos publicos de la asociacion. Actualmente usa datos mock.
-- **Inscripciones**: listado de formularios disponibles, seleccion de asociados y envio simulado de inscripciones.
-- **Registro**: presentacion de documentacion y comunicaciones con adjuntos, generando referencias simuladas.
+- **Asociados y asociación**: consulta, altas, cambios y bajas vinculados al censo.
+- **Calendario, inscripciones y formularios**: publicación y participación en actividades.
+- **Registro**: documentación y comunicaciones.
+- **Solicitudes**: revisión, validación y seguimiento de peticiones.
+- **Administración**: permisos y roles.
 
-## Pendiente de integracion
+## Estructura
 
-La aplicacion aun no esta conectada a una API de secretaria. La integracion debera sustituir mocks por servicios HTTP, reutilizando los valores de `src/environments/*` y manteniendo la separacion de entornos ya definida.
-
-Consulta `funcionalidades.MD` para el backlog funcional recomendado y prompts preparados para ir pasandoselos a Codex por fases.
-
-## Comandos utiles
-
-```bash
-npm run build
-npm test
-```
+- `src/app/`: componentes, rutas, guards y servicios de la aplicación.
+- `src/environments/`: URLs por entorno.
+- `src/lib/ffsj-web-components/`: distribución local de componentes compartidos.
+- `funcionalidades.MD` y `features-*.MD`: backlog y planificación funcional.
