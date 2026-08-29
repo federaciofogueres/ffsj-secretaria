@@ -100,8 +100,7 @@
   position: relative;
 }
 
-.association-selector,
-.logout-button {
+.association-selector {
   min-height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
@@ -198,10 +197,6 @@
   box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.18);
 }
 
-.logout-button {
-  background: transparent;
-}
-
 .header-popover {
   position: absolute;
   top: calc(100% + 0.65rem);
@@ -278,6 +273,50 @@
 .selector-task-list a:hover,
 .selector-task-list a:focus-visible {
   color: var(--ffsj-red);
+}
+
+.association-menu-actions {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--ffsj-line);
+}
+
+.association-menu-action {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 1.25rem 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ffsj-ink);
+  font-weight: 800;
+  text-align: left;
+  text-decoration: none;
+}
+
+.association-menu-action:hover,
+.association-menu-action:focus-visible {
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+}
+
+.association-menu-action > .bi:first-child {
+  color: var(--ffsj-red);
+}
+
+.action-chevron {
+  color: var(--ffsj-muted);
+  font-size: 0.8rem;
+}
+
+.association-logout {
+  color: #a11b2c;
 }
 
 .tasks-popover-heading {

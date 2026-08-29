@@ -33,7 +33,6 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/', label: 'Inicio', icon: 'bi-house-fill' },
     { path: '/asociados', label: 'Asociados', icon: 'bi-people-fill', permission: 'asociados:read', associationOnly: true },
     { path: '/asociacion', label: 'Datos', icon: 'bi-building-fill', permission: 'asociacion:read', associationOnly: true },
-    { path: '/soporte', label: 'Soporte', icon: 'bi-headset' },
     { path: '/calendario', label: 'Calendario', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
     { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
     { path: '/formularios', label: 'Formularios', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
@@ -41,7 +40,6 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill', permission: 'registro:read' },
     { path: '/solicitudes', label: 'Solicitudes', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
     { path: '/admin', label: 'Permisos', icon: 'bi-shield-lock-fill', permission: 'admin:permissions', adminOnly: true }
-    ,{ path: '/admin/soporte', label: 'Soporte', icon: 'bi-headset', adminOnly: true }
   ];
 
   menuOpen = false;

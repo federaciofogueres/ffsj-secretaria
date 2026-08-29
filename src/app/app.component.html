@@ -108,6 +108,21 @@
             <ng-template #noEjercicios>
               <p class="mb-0 ux-muted">No hay ejercicios disponibles.</p>
             </ng-template>
+            <div class="association-menu-actions">
+              <a
+                class="association-menu-action"
+                [routerLink]="isAdmin ? '/admin/soporte' : '/soporte'"
+                (click)="associationSelectorOpen = false"
+              >
+                <i class="bi bi-headset"></i>
+                <span>{{ isAdmin ? 'Soporte administrativo' : 'Soporte' }}</span>
+                <i class="bi bi-chevron-right action-chevron"></i>
+              </a>
+              <button class="association-menu-action association-logout" type="button" (click)="logout()">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Salir</span>
+              </button>
+            </div>
           </section>
 
           <section class="header-popover tasks-popover" *ngIf="tareasOpen" role="dialog" aria-label="Tareas pendientes">
@@ -130,10 +145,6 @@
             </div>
           </section>
         </div>
-
-        <button *ngIf="isLoggedIn" class="logout-button d-none d-md-inline-flex" type="button" (click)="logout()">
-          Salir
-        </button>
 
         <button
           class="menu-button d-md-none"
@@ -162,10 +173,6 @@
         </span>
         <i class="bi bi-chevron-right"></i>
       </a>
-      <button *ngIf="isLoggedIn" class="mobile-link border-0 w-100" type="button" (click)="logout()">
-        <span>Salir</span>
-        <i class="bi bi-box-arrow-right"></i>
-      </button>
     </div>
   </header>
 
