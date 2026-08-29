@@ -80,6 +80,7 @@ export interface AuthContext {
   usuario: string;
   nombre: string;
   asociacionNombre: string;
+  asociacionTipo?: string;
   ejercicioActivo?: EjercicioSecretaria | null;
   ejercicios?: EjercicioSecretaria[];
   permisos: string[];

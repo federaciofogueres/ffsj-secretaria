@@ -2,10 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminAccessService } from '../core/admin-access.service';
-import { CensoService } from '../core/censo.service';
 import { DashboardAdminResumen, DashboardAsociacionResumen } from '../core/models';
+import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { PermissionsService } from '../core/permissions.service';
-import { SecretariaService } from '../core/secretaria.service';
 
 interface ModuleTile {
   title: string;
@@ -96,17 +95,24 @@ export class HomeComponent implements OnInit {
   constructor(
     readonly permissions: PermissionsService,
     readonly adminAccess: AdminAccessService,
-    private readonly secretariaService: SecretariaService,
-    private readonly censoService: CensoService
+    private readonly dashboardSummary: DashboardSummaryService
   ) {
     this.isAdmin = this.adminAccess.isAdmin();
   }
 
   ngOnInit(): void {
+    this.dashboardSummary.associationChanges.subscribe(summary => this.associationSummary = summary);
+    this.dashboardSummary.adminChanges.subscribe(summary => this.adminSummary = summary);
+    this.dashboardSummary.loadingChanges.subscribe(loading => this.dashboardLoading = loading);
+    this.dashboardSummary.errorChanges.subscribe(error => this.dashboardError = error);
+
     if (this.isAdmin) {
-      this.cargarResumenAdmin();
+      this.dashboardSummary.loadAdmin();
     } else {
-      this.cargarResumenAsociacion();
+      const asociacionId = this.permissions.contextSnapshot?.asociacionId;
+      if (asociacionId) {
+        this.dashboardSummary.loadAssociation(asociacionId);
+      }
     }
   }
 
@@ -199,41 +205,6 @@ export class HomeComponent implements OnInit {
         path: '/registro/documentacion'
       }
     ];
-  }
-
-  private cargarResumenAsociacion(): void {
-    const asociacionId = this.censoService.asociacionId;
-    if (!asociacionId) {
-      return;
-    }
-
-    this.dashboardLoading = true;
-    this.dashboardError = false;
-    this.secretariaService.getDashboardAsociacion(asociacionId).subscribe({
-      next: resumen => {
-        this.associationSummary = resumen;
-        this.dashboardLoading = false;
-      },
-      error: () => {
-        this.dashboardError = true;
-        this.dashboardLoading = false;
-      }
-    });
-  }
-
-  private cargarResumenAdmin(): void {
-    this.dashboardLoading = true;
-    this.dashboardError = false;
-    this.secretariaService.getDashboardAdmin().subscribe({
-      next: resumen => {
-        this.adminSummary = resumen;
-        this.dashboardLoading = false;
-      },
-      error: () => {
-        this.dashboardError = true;
-        this.dashboardLoading = false;
-      }
-    });
   }
 
   private formatCount(value: number, singular: string, plural: string): string {
