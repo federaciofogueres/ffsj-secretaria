@@ -74,20 +74,36 @@
               </div>
             </section>
             <div class="exercise-list" *ngIf="ejercicios.length; else noEjercicios">
-              <p class="exercise-list-title">Selecciona el ejercicio</p>
-              <button
-                *ngFor="let ejercicio of ejercicios"
-                class="exercise-option"
-                type="button"
-                [class.active]="ejercicio.id === selectedEjercicioId"
-                (click)="onEjercicioChange(ejercicio.id)"
-              >
+              <p class="exercise-list-title">Ejercicio de trabajo</p>
+              <button class="selected-exercise" type="button" (click)="toggleExerciseList()" [attr.aria-expanded]="exerciseListOpen">
                 <span>
-                  <strong>Ejercicio {{ ejercicio.ejercicio }}</strong>
-                  <small *ngIf="ejercicio.estadoAsociacion === 'SIN_INICIAR'">Pendiente de iniciar</small>
+                  <strong>{{ selectedEjercicioLabel }}</strong>
+                  <small>Pulsa para cambiar de ejercicio</small>
                 </span>
-                <i *ngIf="ejercicio.id === selectedEjercicioId" class="bi bi-check-circle-fill"></i>
+                <i class="bi" [ngClass]="exerciseListOpen ? 'bi-chevron-up' : 'bi-chevron-down'"></i>
               </button>
+              <div class="exercise-options-panel" *ngIf="exerciseListOpen">
+                <label class="visually-hidden" for="exercise-search">Buscar ejercicio</label>
+                <div class="exercise-search">
+                  <i class="bi bi-search"></i>
+                  <input id="exercise-search" type="search" [(ngModel)]="ejercicioSearch" placeholder="Buscar ejercicio" autocomplete="off" />
+                </div>
+                <p class="exercise-results-info">Mostrando hasta 10 ejercicios</p>
+                <button
+                  *ngFor="let ejercicio of ejerciciosFiltrados"
+                  class="exercise-option"
+                  type="button"
+                  [class.active]="ejercicio.id === selectedEjercicioId"
+                  (click)="onEjercicioChange(ejercicio.id)"
+                >
+                  <span>
+                    <strong>Ejercicio {{ ejercicio.ejercicio }}</strong>
+                    <small *ngIf="ejercicio.estadoAsociacion === 'SIN_INICIAR'">Pendiente de iniciar</small>
+                  </span>
+                  <i *ngIf="ejercicio.id === selectedEjercicioId" class="bi bi-check-circle-fill"></i>
+                </button>
+                <p *ngIf="!ejerciciosFiltrados.length" class="mb-0 ux-muted">No hay ejercicios que coincidan con la búsqueda.</p>
+              </div>
             </div>
             <ng-template #noEjercicios>
               <p class="mb-0 ux-muted">No hay ejercicios disponibles.</p>

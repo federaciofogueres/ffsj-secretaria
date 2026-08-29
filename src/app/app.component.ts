@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
@@ -21,7 +22,7 @@ interface PendingTask {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -54,6 +55,8 @@ export class AppComponent implements OnInit, OnDestroy {
   iniciandoEjercicio = false;
   showIniciarEjercicioDialog = false;
   associationSelectorOpen = false;
+  exerciseListOpen = false;
+  ejercicioSearch = '';
   tareasOpen = false;
   tareasLoading = false;
   tareasError = false;
@@ -131,6 +134,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe(event => {
         this.currentUrl = event.urlAfterRedirects;
         this.closeMenu();
+        this.closeHeaderPopovers();
       });
   }
 
@@ -162,7 +166,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.ejerciciosService.select(Number(ejercicioId));
-    this.associationSelectorOpen = false;
+    this.closeHeaderPopovers();
     const url = this.router.url;
     this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => this.router.navigateByUrl(url));
   }
@@ -241,6 +245,13 @@ export class AppComponent implements OnInit, OnDestroy {
     return ejercicio ? `Ejercicio ${ejercicio.ejercicio}` : 'Sin ejercicio seleccionado';
   }
 
+  get ejerciciosFiltrados(): EjercicioSecretaria[] {
+    const search = this.ejercicioSearch.trim().toLowerCase();
+    return this.ejercicios
+      .filter(ejercicio => !search || String(ejercicio.ejercicio).includes(search))
+      .slice(0, 10);
+  }
+
   get tareasPendientes(): number {
     return this.tareas.reduce((total, task) => total + task.count, 0);
   }
@@ -266,6 +277,8 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleAssociationSelector(): void {
     this.associationSelectorOpen = !this.associationSelectorOpen;
     this.tareasOpen = false;
+    this.exerciseListOpen = false;
+    this.ejercicioSearch = '';
   }
 
   toggleTareas(): void {
@@ -281,5 +294,30 @@ export class AppComponent implements OnInit, OnDestroy {
 
   closeTareas(): void {
     this.tareasOpen = false;
+  }
+
+  toggleExerciseList(): void {
+    this.exerciseListOpen = !this.exerciseListOpen;
+    this.ejercicioSearch = '';
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent): void {
+    const target = event.target;
+    if (target instanceof Element && !target.closest('.association-wrapper')) {
+      this.closeHeaderPopovers();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscape(): void {
+    this.closeHeaderPopovers();
+  }
+
+  private closeHeaderPopovers(): void {
+    this.associationSelectorOpen = false;
+    this.tareasOpen = false;
+    this.exerciseListOpen = false;
+    this.ejercicioSearch = '';
   }
 }
