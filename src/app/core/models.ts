@@ -190,6 +190,19 @@ export interface DashboardAdminResumen {
   documentacionRecibida: number;
 }
 
+export interface SoporteCategoria { codigo: string; nombre: string; }
+export type SoporteEstado = 'ABIERTA' | 'EN_PROCESO' | 'RESUELTA' | 'CERRADA';
+export interface SoporteEvento {
+  id: number; tipo: 'CREADA' | 'ESTADO'; actor: 'USUARIO' | 'ADMINISTRACION'; actorNombre?: string | null;
+  estadoAnterior?: SoporteEstado | null; estadoNuevo?: SoporteEstado | null; mensaje?: string | null; createdAt: string;
+}
+export interface SoporteIncidencia {
+  id: number; categoria: string; categoriaNombre: string; asunto: string; descripcion: string; estado: SoporteEstado;
+  creador?: string | null; asociacionId?: number | null; asociacion?: string | null; tipoAsociacion?: string | null;
+  ejercicio?: number | null; ruta?: string | null; userAgent?: string | null; createdAt: string; updatedAt?: string; resolvedAt?: string | null;
+  eventos?: SoporteEvento[];
+}
+
 export interface RegistroSecretaria {
   id: number;
   numero: string;

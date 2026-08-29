@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.0#ESMERALDA - 2026-08-30
+
+### Añadido
+
+- Área de soporte para crear y consultar incidencias, con categoría, contexto del ejercicio y seguimiento de estado.
+- Acceso de soporte administrativo para las personas autorizadas.
+
+### Mejorado
+
+- Soporte y cierre de sesión se integran en el desplegable de asociación, liberando espacio en la navegación principal.
+- La pantalla de soporte organiza de forma compacta la creación y el seguimiento de incidencias.
+
+### Corregido
+
+- La navegación desde el menú de asociación conserva correctamente la ruta de soporte.
+
 ## 0.1.2#ESMERALDA - 2026-08-30
 
 ### Añadido
