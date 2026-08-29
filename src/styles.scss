@@ -421,3 +421,33 @@ body {
   border-color: #c4141c;
   color: #fff;
 }
+// Dialog reutilizable para los modales propios de Secretaria Virtual.
+.modal-backdrop-custom {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(16, 24, 40, 0.48);
+}
+
+.modal-panel {
+  position: fixed;
+  z-index: 1051;
+  top: 50%;
+  left: 50%;
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+  transform: translate(-50%, -50%);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(16, 24, 40, 0.28);
+  padding: 1.25rem;
+}
+
+.modal-header-custom {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
