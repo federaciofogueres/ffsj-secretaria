@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 
-import { EjercicioInicioResultado, EjercicioSecretaria } from '../core/models';
+import { EjercicioSecretaria } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 
 @Component({
@@ -15,7 +15,6 @@ import { SecretariaService } from '../core/secretaria.service';
 export class EjerciciosComponent implements OnInit {
   ejercicios: EjercicioSecretaria[] = [];
   ejercicioForm: Partial<EjercicioSecretaria> = {};
-  ejercicioInicioResultado?: EjercicioInicioResultado;
   loading = false;
   error = '';
 
@@ -100,29 +99,4 @@ export class EjerciciosComponent implements OnInit {
     });
   }
 
-  iniciarEjercicio(ejercicio: EjercicioSecretaria): void {
-    const confirmed = window.confirm(
-      `Se importaran al ejercicio ${ejercicio.ejercicio} los asociados activos del ejercicio anterior. Esta accion no duplicara registros existentes.`
-    );
-    if (!confirmed) return;
-
-    this.loading = true;
-    this.error = '';
-    this.ejercicioInicioResultado = undefined;
-    this.secretariaService.iniciarEjercicio(ejercicio.id).subscribe({
-      next: resultado => {
-        this.ejercicioInicioResultado = resultado;
-        this.ejercicios = this.ejercicios.map(item =>
-          item.id === resultado.ejercicio.id
-            ? { ...item, iniciado: true, iniciadoAt: resultado.ejercicio.iniciadoAt || new Date().toISOString() }
-            : item
-        );
-        this.loading = false;
-      },
-      error: () => {
-        this.error = 'No se ha podido iniciar el ejercicio.';
-        this.loading = false;
-      }
-    });
-  }
 }

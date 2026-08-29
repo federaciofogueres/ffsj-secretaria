@@ -51,7 +51,7 @@ export class EjercicioService {
         this.ejercicios$.next(response.ejercicios);
         const current = this.selected$.value;
         const selected = current && response.ejercicios.some(item => item.id === current.id)
-          ? current
+          ? response.ejercicios.find(item => item.id === current.id) ?? null
           : response.ejercicios.find(item => item.activo) ?? response.ejercicios[0] ?? null;
         this.setSelected(selected);
       }

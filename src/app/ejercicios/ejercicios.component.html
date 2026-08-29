@@ -15,13 +15,6 @@
 
   <div *ngIf="loading" class="alert alert-info">Cargando ejercicios...</div>
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
-  <div *ngIf="ejercicioInicioResultado" class="alert alert-success">
-    Ejercicio {{ ejercicioInicioResultado.ejercicio.ejercicio }} iniciado desde
-    {{ ejercicioInicioResultado.ejercicioAnterior.ejercicio }}:
-    {{ ejercicioInicioResultado.creados }} registros creados,
-    {{ ejercicioInicioResultado.omitidos }} omitidos por existir ya en el ejercicio destino.
-  </div>
-
   <div class="section-panel exercise-panel">
     <div class="role-header">
       <div>
@@ -53,15 +46,6 @@
             (click)="activarEjercicio(ejercicio)"
           >
             Activar
-          </button>
-          <button
-            *ngIf="ejercicio.activo"
-            class="btn btn-danger btn-sm"
-            type="button"
-            [disabled]="loading || ejercicio.iniciado"
-            (click)="iniciarEjercicio(ejercicio)"
-          >
-            {{ ejercicio.iniciado ? 'Ejercicio iniciado' : 'Iniciar ejercicio ' + ejercicio.ejercicio }}
           </button>
         </article>
         <p class="ux-muted mb-0" *ngIf="!ejercicios.length">No hay ejercicios configurados.</p>

@@ -91,19 +91,21 @@ export interface EjercicioSecretaria {
   fechaInicio: string;
   fechaFin: string;
   activo: boolean;
+  estadoAsociacion?: 'SIN_INICIAR' | 'INICIADO';
   iniciado?: boolean;
   iniciadoAt?: string | null;
 }
 
 export interface EjercicioInicioResultado {
   ejercicio: EjercicioSecretaria;
-  ejercicioAnterior: EjercicioSecretaria;
+  ejercicioAnterior: EjercicioSecretaria | null;
   censoEjercicioId: number;
   censoEjercicioAnteriorId: number;
   totalPreviosActivos: number;
   creados: number;
   yaExistian: number;
   omitidos: number;
+  yaIniciado?: boolean;
 }
 
 export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
