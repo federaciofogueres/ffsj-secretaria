@@ -247,20 +247,20 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get tareas(): PendingTask[] {
     if (this.isAdmin) {
-      return [
+      return ([
         { title: 'Solicitudes pendientes', count: this.adminSummary.solicitudesPendientes, icon: 'bi-file-earmark-check-fill', path: '/solicitudes' },
         { title: 'Incidencias respondidas', count: this.adminSummary.incidenciasRespondidas, icon: 'bi-chat-dots-fill', path: '/solicitudes' },
         { title: 'Comunicaciones pendientes', count: this.adminSummary.comunicacionesPendientes, icon: 'bi-envelope-fill', path: '/registro/comunicacion' },
         { title: 'Documentacion recibida', count: this.adminSummary.documentacionRecibida, icon: 'bi-inbox-fill', path: '/registro/documentacion' }
-      ];
+      ] as PendingTask[]).filter(tarea => tarea.count > 0);
     }
 
-    return [
+    return ([
       { title: 'Solicitudes con incidencia', count: this.associationSummary.solicitudesConIncidencia, icon: 'bi-exclamation-triangle-fill', path: '/asociados/gestion', queryParams: { tab: 'solicitudes', filtro: 'incidencias' } },
       { title: 'Altas pendientes de firma', count: this.associationSummary.autorizacionesAltaPendientes || 0, icon: 'bi-pen-fill', path: '/asociados/gestion', queryParams: { tab: 'solicitudes' } },
       { title: 'Inscripciones abiertas', count: this.associationSummary.inscripcionesAbiertas, icon: 'bi-clipboard-check-fill', path: '/inscripciones' },
       { title: 'Comunicaciones nuevas', count: this.associationSummary.comunicacionesNuevas, icon: 'bi-envelope-fill', path: '/registro/comunicacion', queryParams: { bandeja: 'recibidas', filtro: 'nuevas' } }
-    ];
+    ] as PendingTask[]).filter(tarea => tarea.count > 0);
   }
 
   toggleAssociationSelector(): void {
