@@ -114,7 +114,7 @@
                 [routerLink]="isAdmin ? '/admin/soporte' : '/soporte'"
               >
                 <i class="bi bi-headset"></i>
-                <span>{{ isAdmin ? 'Soporte administrativo' : 'Soporte' }}</span>
+                <span>{{ isAdmin ? 'Soporte administrativo' : 'Soporte' }} <span *ngIf="!isAdmin && soporteNovedades" class="badge text-bg-danger">{{ soporteNovedades }}</span></span>
                 <i class="bi bi-chevron-right action-chevron"></i>
               </a>
               <button class="association-menu-action association-logout" type="button" (click)="logout()">

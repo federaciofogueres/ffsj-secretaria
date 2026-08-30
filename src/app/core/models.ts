@@ -191,10 +191,10 @@ export interface DashboardAdminResumen {
 }
 
 export interface SoporteCategoria { codigo: string; nombre: string; }
-export type SoporteEstado = 'ABIERTA' | 'EN_PROCESO' | 'RESUELTA' | 'CERRADA';
+export type SoporteEstado = 'ABIERTA' | 'EN_PROCESO' | 'ESPERANDO_RESPUESTA_USUARIO' | 'RESUELTA' | 'CERRADA';
 export interface SoporteEvento {
-  id: number; tipo: 'CREADA' | 'ESTADO'; actor: 'USUARIO' | 'ADMINISTRACION'; actorNombre?: string | null;
-  estadoAnterior?: SoporteEstado | null; estadoNuevo?: SoporteEstado | null; mensaje?: string | null; createdAt: string;
+  id: number; tipo: 'CREADA' | 'ESTADO' | 'MENSAJE'; actor: 'USUARIO' | 'ADMINISTRACION'; actorNombre?: string | null;
+  estadoAnterior?: SoporteEstado | null; estadoNuevo?: SoporteEstado | null; mensaje?: string | null; createdAt: string; adjuntos?: AdjuntoSecretaria[];
 }
 export interface SoporteIncidencia {
   id: number; categoria: string; categoriaNombre: string; asunto: string; descripcion: string; estado: SoporteEstado;

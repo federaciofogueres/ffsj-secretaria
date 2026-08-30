@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.2#ESMERALDA - 2026-08-30
+
+### Añadido
+
+- Las incidencias de Soporte incorporan conversación cronológica, respuestas de usuario y el estado «Esperando respuesta del usuario».
+- El formulario admite adjuntos PNG, JPG, PDF, TXT, DOC, DOCX, XLS y XLSX, hasta 10 MB por archivo.
+- El desplegable de asociación muestra el número de incidencias con respuestas de soporte pendientes de leer.
+
+### Seguridad
+
+- Las descargas de adjuntos de Soporte comprueban en la API la propiedad de la incidencia o el permiso administrativo.
+
 ## 0.2.1#ESMERALDA - 2026-08-30
 
 ### Corregido

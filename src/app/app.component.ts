@@ -60,6 +60,7 @@ export class AppComponent implements OnInit, OnDestroy {
   tareasOpen = false;
   tareasLoading = false;
   tareasError = false;
+  soporteNovedades = 0;
   associationSummary: DashboardAsociacionResumen = {
     solicitudesConIncidencia: 0,
     inscripcionesAbiertas: 0,
@@ -124,9 +125,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isAdmin = isLogged && this.adminAccess.isAdmin();
       if (isLogged) {
         this.permissions.loadContext().subscribe();
+        if (!this.isAdmin) this.secretariaService.getSoporteNovedades().subscribe({ next: summary => this.soporteNovedades = summary.incidenciasConNovedades });
       } else {
         this.permissions.clear();
         this.dashboardSummary.clear();
+        this.soporteNovedades = 0;
       }
     });
     this.routerSubscription = this.router.events

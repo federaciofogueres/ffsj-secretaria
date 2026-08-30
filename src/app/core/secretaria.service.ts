@@ -63,8 +63,29 @@ export class SecretariaService {
     return this.http.get<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, { headers: this.authHeaders() });
   }
 
-  actualizarAdminSoporteIncidencia(id: number, payload: { estado?: SoporteEstado; mensaje?: string }): Observable<{ incidencia: SoporteIncidencia }> {
+  actualizarAdminSoporteIncidencia(id: number, payload: { estado?: SoporteEstado; mensaje?: string; solicitarInformacion?: boolean }): Observable<{ incidencia: SoporteIncidencia }> {
     return this.http.put<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, payload, { headers: this.authHeaders() });
+  }
+
+  responderSoporteIncidencia(id: number, payload: { mensaje: string }): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.post<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias/${id}/mensajes`, payload, { headers: this.authHeaders() });
+  }
+
+  responderAdminSoporteIncidencia(id: number, payload: { mensaje: string; solicitarInformacion?: boolean }): Observable<{ incidencia: SoporteIncidencia }> {
+    return this.http.post<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}/mensajes`, payload, { headers: this.authHeaders() });
+  }
+
+  marcarSoporteLeido(id: number): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias/${id}/leido`, {}, { headers: this.authHeaders() });
+  }
+
+  getSoporteNovedades(): Observable<{ incidenciasConNovedades: number; mensajesSinLeer: number }> {
+    return this.http.get<{ incidenciasConNovedades: number; mensajesSinLeer: number }>(`${this.apiUrl.secretariaBasePath}/soporte/novedades`, { headers: this.authHeaders() });
+  }
+
+  subirAdjuntoSoporte(ticketId: number, messageId: number, file: File, admin = false): Observable<AdjuntoSecretaria> {
+    const prefix = admin ? '/admin' : '';
+    return this.http.post<AdjuntoSecretaria>(`${this.apiUrl.secretariaBasePath}${prefix}/soporte/incidencias/${ticketId}/mensajes/${messageId}/adjuntos`, file, { params: new HttpParams().set('fileName', file.name).set('mimeType', file.type || 'application/octet-stream'), headers: { ...this.authHeaders(), 'Content-Type': file.type || 'application/octet-stream' } });
   }
 
   getRegistroPendiente(asociacionId: number): Observable<{ items: RegistroPendiente[] }> {
