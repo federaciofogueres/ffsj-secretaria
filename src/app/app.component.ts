@@ -60,7 +60,6 @@ export class AppComponent implements OnInit, OnDestroy {
   tareasOpen = false;
   tareasLoading = false;
   tareasError = false;
-  soporteNovedades = 0;
   associationSummary: DashboardAsociacionResumen = {
     solicitudesConIncidencia: 0,
     inscripcionesAbiertas: 0,
@@ -125,11 +124,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isAdmin = isLogged && this.adminAccess.isAdmin();
       if (isLogged) {
         this.permissions.loadContext().subscribe();
-        if (!this.isAdmin) this.secretariaService.getSoporteNovedades().subscribe({ next: summary => this.soporteNovedades = summary.incidenciasConNovedades });
       } else {
         this.permissions.clear();
         this.dashboardSummary.clear();
-        this.soporteNovedades = 0;
       }
     });
     this.routerSubscription = this.router.events
@@ -274,6 +271,7 @@ export class AppComponent implements OnInit, OnDestroy {
       { title: 'Altas pendientes de firma', count: this.associationSummary.autorizacionesAltaPendientes || 0, icon: 'bi-pen-fill', path: '/asociados/gestion', queryParams: { tab: 'solicitudes' } },
       { title: 'Inscripciones abiertas', count: this.associationSummary.inscripcionesAbiertas, icon: 'bi-clipboard-check-fill', path: '/inscripciones' },
       { title: 'Comunicaciones nuevas', count: this.associationSummary.comunicacionesNuevas, icon: 'bi-envelope-fill', path: '/registro/comunicacion', queryParams: { bandeja: 'recibidas', filtro: 'nuevas' } }
+      ,...(this.associationSummary.soporteTareas || []).map(tarea => ({ title: tarea.requiereRespuesta ? `Soporte solicita información: ${tarea.asunto}` : `Respuesta de soporte: ${tarea.asunto}`, count: 1, icon: 'bi-headset', path: '/soporte', queryParams: { ticket: String(tarea.ticketId) } }))
     ] as PendingTask[]).filter(tarea => tarea.count > 0);
   }
 

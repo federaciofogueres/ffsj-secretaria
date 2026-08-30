@@ -8,7 +8,8 @@ const EMPTY_ASSOCIATION_SUMMARY: DashboardAsociacionResumen = {
   solicitudesConIncidencia: 0,
   inscripcionesAbiertas: 0,
   comunicacionesNuevas: 0,
-  autorizacionesAltaPendientes: 0
+  autorizacionesAltaPendientes: 0,
+  soporteTareas: []
 };
 
 const EMPTY_ADMIN_SUMMARY: DashboardAdminResumen = {
@@ -25,6 +26,7 @@ export class DashboardSummaryService {
   private readonly loading$ = new BehaviorSubject(false);
   private readonly error$ = new BehaviorSubject(false);
   private loadedKey: string | null = null;
+  private associationId: number | null = null;
 
   constructor(private readonly secretaria: SecretariaService) {}
 
@@ -53,6 +55,7 @@ export class DashboardSummaryService {
   }
 
   loadAssociation(asociacionId: number): void {
+    this.associationId = asociacionId;
     const key = `association:${asociacionId}`;
     if (this.loadedKey === key) {
       return;
@@ -72,6 +75,12 @@ export class DashboardSummaryService {
         this.loading$.next(false);
       }
     });
+  }
+
+  refreshAssociation(): void {
+    if (!this.associationId) return;
+    this.loadedKey = null;
+    this.loadAssociation(this.associationId);
   }
 
   loadAdmin(): void {
@@ -98,6 +107,7 @@ export class DashboardSummaryService {
 
   clear(): void {
     this.loadedKey = null;
+    this.associationId = null;
     this.associationSummary$.next(EMPTY_ASSOCIATION_SUMMARY);
     this.adminSummary$.next(EMPTY_ADMIN_SUMMARY);
     this.loading$.next(false);

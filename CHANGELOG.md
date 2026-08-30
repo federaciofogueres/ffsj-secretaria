@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.3#ESMERALDA - 2026-08-30
+
+### Corregido
+
+- La apertura de adjuntos de Soporte realiza una descarga autenticada, evitando navegaciones internas y errores de permisos.
+- La apertura directa de una incidencia desde una tarea pendiente deja de recargar el detalle de forma cíclica.
+
+### Mejorado
+
+- Las incidencias con novedades pendientes se identifican claramente en el seguimiento y en el resumen de tareas.
+- El diálogo de conversación y los selectores de adjuntos ofrecen una presentación más clara y consistente.
+
 ## 0.2.2#ESMERALDA - 2026-08-30
 
 ### Añadido

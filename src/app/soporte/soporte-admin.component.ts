@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { SoporteCategoria, SoporteEstado, SoporteIncidencia } from '../core/models';
+import { AdjuntoSecretaria, SoporteCategoria, SoporteEstado, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 
 @Component({ selector: 'app-soporte-admin', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './soporte-admin.component.html', styleUrls: ['./soporte.component.scss'] })
@@ -33,6 +33,7 @@ export class SoporteAdminComponent implements OnInit {
   }
   solicitarInformacion(): void { if (!this.detalle) return; this.solicitandoInformacion = true; this.mensaje = ''; }
   cerrarDetalle(): void { this.detalle = null; }
+  abrirAdjunto(adjunto: AdjuntoSecretaria): void { this.secretaria.descargarAdjuntoSoporte(adjunto.id).subscribe({ next: blob => { const url = URL.createObjectURL(blob); window.open(url, '_blank', 'noopener'); setTimeout(() => URL.revokeObjectURL(url), 60000); }, error: () => this.error = 'No se ha podido abrir el adjunto.' }); }
   estadoLabel(estado: string): string { return ({ ABIERTA: 'Abierta', EN_PROCESO: 'En proceso', ESPERANDO_RESPUESTA_USUARIO: 'Esperando respuesta del usuario', RESUELTA: 'Resuelta', CERRADA: 'Cerrada' } as Record<string, string>)[estado] || estado; }
   private fail(message: string): void { this.loading = false; this.error = message; }
 }
