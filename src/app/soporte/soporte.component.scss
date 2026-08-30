@@ -34,6 +34,7 @@
 .support-admin-dialog { width: min(920px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .support-admin-dialog .modal-header-custom { flex: none; margin: 0; padding: 1.5rem; border-bottom: 1px solid var(--ffsj-line); }
 .support-admin-body { min-height: 0; overflow-y: auto; padding: 1.5rem; }
+.support-admin-dialog > .support-history { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0; padding: 0 1.5rem 1.25rem; border-top: 1px solid var(--ffsj-line); }
 .support-detail-section { margin-bottom: 1.5rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--ffsj-line); }
 .support-detail-heading { margin: 0 0 .85rem; font-size: .85rem; font-weight: 850; letter-spacing: .04em; text-transform: uppercase; color: var(--ffsj-muted); }
 .support-context-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; margin: 0; }
