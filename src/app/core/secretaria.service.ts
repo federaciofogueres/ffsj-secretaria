@@ -63,7 +63,7 @@ export class SecretariaService {
     return this.http.get<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, { headers: this.authHeaders() });
   }
 
-  actualizarAdminSoporteIncidencia(id: number, payload: { estado: SoporteEstado; mensaje?: string }): Observable<{ incidencia: SoporteIncidencia }> {
+  actualizarAdminSoporteIncidencia(id: number, payload: { estado?: SoporteEstado; mensaje?: string }): Observable<{ incidencia: SoporteIncidencia }> {
     return this.http.put<{ incidencia: SoporteIncidencia }>(`${this.apiUrl.secretariaBasePath}/admin/soporte/incidencias/${id}`, payload, { headers: this.authHeaders() });
   }
 
