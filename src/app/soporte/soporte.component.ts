@@ -1,11 +1,25 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { EjercicioService } from '../core/ejercicio.service';
 import { SoporteCategoria, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+
+function trimmedRequired(control: AbstractControl): ValidationErrors | null {
+  return String(control.value ?? '').trim() ? null : { required: true };
+}
+
+function trimmedLength(minimum: number, maximum: number) {
+  return (control: AbstractControl): ValidationErrors | null => {
+    const length = String(control.value ?? '').trim().length;
+    if (!length) return null;
+    if (length < minimum) return { minlength: { requiredLength: minimum, actualLength: length } };
+    if (length > maximum) return { maxlength: { requiredLength: maximum, actualLength: length } };
+    return null;
+  };
+}
 
 @Component({ selector: 'app-soporte', standalone: true, imports: [CommonModule, ReactiveFormsModule], templateUrl: './soporte.component.html', styleUrls: ['./soporte.component.scss'] })
 export class SoporteComponent implements OnInit {
@@ -19,8 +33,8 @@ export class SoporteComponent implements OnInit {
   success = '';
   readonly form = this.fb.group({
     categoria: ['', Validators.required],
-    asunto: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(180)]],
-    descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(5000)]]
+    asunto: ['', [trimmedRequired, trimmedLength(3, 180)]],
+    descripcion: ['', [trimmedRequired, trimmedLength(10, 5000)]]
   });
 
   constructor(private readonly fb: FormBuilder, private readonly secretaria: SecretariaService, private readonly router: Router, private readonly ejercicios: EjercicioService) {}
