@@ -1,4 +1,5 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -13,9 +14,14 @@ export class SoporteComponent implements OnInit {
   detalle: SoporteIncidencia | null = null;
   loading = true;
   sending = false;
+  submitted = false;
   error = '';
   success = '';
-  readonly form = this.fb.group({ categoria: ['', Validators.required], asunto: ['', [Validators.required, Validators.maxLength(180)]], descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(5000)]] });
+  readonly form = this.fb.group({
+    categoria: ['', Validators.required],
+    asunto: ['', [Validators.required, Validators.minLength(3), Validators.maxLength(180)]],
+    descripcion: ['', [Validators.required, Validators.minLength(10), Validators.maxLength(5000)]]
+  });
 
   constructor(private readonly fb: FormBuilder, private readonly secretaria: SecretariaService, private readonly router: Router, private readonly ejercicios: EjercicioService) {}
 
@@ -31,12 +37,28 @@ export class SoporteComponent implements OnInit {
   }
 
   enviar(): void {
-    if (this.form.invalid || this.sending) { this.form.markAllAsTouched(); return; }
+    this.submitted = true;
+    if (this.form.invalid || this.sending) {
+      this.form.markAllAsTouched();
+      return;
+    }
     this.sending = true; this.error = ''; this.success = '';
     this.secretaria.crearSoporteIncidencia({ ...this.form.getRawValue() as { categoria: string; asunto: string; descripcion: string }, ejercicio: this.ejercicios.selectedEjercicio, ruta: this.router.url, userAgent: navigator.userAgent }).subscribe({
-      next: response => { this.incidencias = [response.incidencia, ...this.incidencias]; this.form.reset(); this.sending = false; this.success = `Incidencia #${response.incidencia.id} creada correctamente.`; },
-      error: () => { this.sending = false; this.error = 'No se ha podido enviar la incidencia. Inténtalo de nuevo.'; }
+      next: response => {
+        this.incidencias = [response.incidencia, ...this.incidencias];
+        this.form.reset(); this.submitted = false; this.sending = false;
+        this.success = `Incidencia #${response.incidencia.id} creada correctamente.`;
+      },
+      error: (response: HttpErrorResponse) => {
+        this.sending = false;
+        this.error = response.error?.message || 'No se ha podido enviar la incidencia. Inténtalo de nuevo.';
+      }
     });
+  }
+
+  isInvalid(controlName: 'categoria' | 'asunto' | 'descripcion'): boolean {
+    const control = this.form.controls[controlName];
+    return control.invalid && (control.touched || this.submitted);
   }
 
   verDetalle(id: number): void { this.secretaria.getSoporteIncidencia(id).subscribe({ next: response => this.detalle = response.incidencia, error: () => this.error = 'No se ha podido cargar el detalle de la incidencia.' }); }
