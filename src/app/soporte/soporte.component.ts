@@ -7,7 +7,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { EjercicioService } from '../core/ejercicio.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
-import { SoporteCategoria, SoporteIncidencia } from '../core/models';
+import { AdjuntoSecretaria, SoporteCategoria, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 
 function trimmedRequired(control: AbstractControl): ValidationErrors | null {
@@ -89,6 +89,7 @@ export class SoporteComponent implements OnInit {
   responder(): void { if (!this.detalle || !this.respuesta.trim() || this.sending) return; this.sending = true; this.secretaria.responderSoporteIncidencia(this.detalle.id, { mensaje: this.respuesta.trim() }).pipe(switchMap(response => { const message = response.incidencia.eventos?.at(-1); return message && this.adjuntos.length ? forkJoin(this.adjuntos.map(file => this.secretaria.subirAdjuntoSoporte(response.incidencia.id, message.id, file))).pipe(switchMap(() => this.secretaria.getSoporteIncidencia(response.incidencia.id))) : of(response); })).subscribe({ next: response => { this.detalle = response.incidencia; this.incidencias = this.incidencias.map(item => item.id === response.incidencia.id ? { ...item, ...response.incidencia } : item); this.respuesta = ''; this.adjuntos = []; this.sending = false; this.dashboardSummary.refreshAssociation(); }, error: response => { this.sending = false; this.error = response.error?.message || 'No se ha podido enviar la respuesta.'; } }); }
   seleccionarAdjuntos(event: Event): void { const files = Array.from((event.target as HTMLInputElement).files || []); const invalid = files.find(file => !['image/png','image/jpeg','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(file.type) || file.size > this.maxAdjuntoBytes); if (invalid) { this.error = 'Solo se admiten PNG, JPG, PDF, TXT, DOC, DOCX, XLS y XLSX de hasta 10 MB.'; return; } if (this.adjuntos.length + files.length > 5) { this.error = 'Puedes adjuntar un máximo de 5 archivos por mensaje.'; return; } this.adjuntos = [...this.adjuntos, ...files]; }
   quitarAdjunto(index: number): void { this.adjuntos = this.adjuntos.filter((_, current) => current !== index); }
+  abrirAdjunto(adjunto: AdjuntoSecretaria): void { this.secretaria.descargarAdjuntoSoporte(adjunto.id).subscribe({ next: blob => { const url = URL.createObjectURL(blob); window.open(url, '_blank', 'noopener'); setTimeout(() => URL.revokeObjectURL(url), 60000); }, error: () => this.error = 'No se ha podido abrir el adjunto.' }); }
   puedeResponder(): boolean { return Boolean(this.detalle && !['RESUELTA', 'CERRADA'].includes(this.detalle.estado)); }
   cerrarDetalle(): void { this.detalle = null; }
   estadoLabel(estado: string): string { return ({ ABIERTA: 'Abierta', EN_PROCESO: 'En proceso', ESPERANDO_RESPUESTA_USUARIO: 'Esperando respuesta del usuario', RESUELTA: 'Resuelta', CERRADA: 'Cerrada' } as Record<string, string>)[estado] || estado; }

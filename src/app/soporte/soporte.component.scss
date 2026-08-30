@@ -63,6 +63,7 @@
 .support-reply input[type=file] { min-width: 0; max-width: 100%; padding: .45rem; border: 1px dashed var(--ffsj-line); border-radius: 8px; background: #fff; font-size: .82rem; }
 .support-reply .support-files { grid-column: 1 / -1; }
 .support-reply .ux-btn { margin: 0 !important; white-space: nowrap; }
+.support-attachment { display: block; margin-top: .45rem; padding: 0; border: 0; background: transparent; color: var(--ffsj-red); font-weight: 700; text-align: left; }
 .support-files { margin-top: .35rem; font-size: .85rem; color: var(--ffsj-muted); }
 .support-admin-actions { flex: none; display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--ffsj-line); background: #fff; }
 @media (max-width: 900px) { .support-content { grid-template-columns: 1fr; } }
