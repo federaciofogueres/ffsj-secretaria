@@ -181,7 +181,10 @@ export interface DashboardAsociacionResumen {
   inscripcionesAbiertas: number;
   comunicacionesNuevas: number;
   autorizacionesAltaPendientes?: number;
+  soporteTareas?: SoporteTarea[];
 }
+
+export interface SoporteTarea { ticketId: number; asunto: string; requiereRespuesta: boolean; }
 
 export interface DashboardAdminResumen {
   solicitudesPendientes: number;
@@ -200,7 +203,7 @@ export interface SoporteIncidencia {
   id: number; categoria: string; categoriaNombre: string; asunto: string; descripcion: string; estado: SoporteEstado;
   creador?: string | null; asociacionId?: number | null; asociacion?: string | null; tipoAsociacion?: string | null;
   ejercicio?: number | null; ruta?: string | null; userAgent?: string | null; createdAt: string; updatedAt?: string; resolvedAt?: string | null;
-  eventos?: SoporteEvento[];
+  eventos?: SoporteEvento[]; tieneNovedades?: boolean;
 }
 
 export interface RegistroSecretaria {

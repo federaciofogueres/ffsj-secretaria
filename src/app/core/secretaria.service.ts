@@ -88,6 +88,10 @@ export class SecretariaService {
     return this.http.post<AdjuntoSecretaria>(`${this.apiUrl.secretariaBasePath}${prefix}/soporte/incidencias/${ticketId}/mensajes/${messageId}/adjuntos`, file, { params: new HttpParams().set('fileName', file.name).set('mimeType', file.type || 'application/octet-stream'), headers: { ...this.authHeaders(), 'Content-Type': file.type || 'application/octet-stream' } });
   }
 
+  descargarAdjuntoSoporte(id: number): Observable<Blob> {
+    return this.http.get(`${this.apiUrl.secretariaBasePath}/soporte/adjuntos/${id}/download`, { headers: this.authHeaders(), responseType: 'blob' });
+  }
+
   getRegistroPendiente(asociacionId: number): Observable<{ items: RegistroPendiente[] }> {
     let params = new HttpParams().set('asociacionId', asociacionId).set('estado', 'pendiente');
     const ejercicio = this.ejercicioSeleccionado();

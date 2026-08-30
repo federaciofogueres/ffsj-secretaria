@@ -3,9 +3,10 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { EjercicioService } from '../core/ejercicio.service';
+import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { SoporteCategoria, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 
@@ -42,7 +43,7 @@ export class SoporteComponent implements OnInit {
     descripcion: ['', [trimmedRequired, trimmedLength(10, 5000)]]
   });
 
-  constructor(private readonly fb: FormBuilder, private readonly secretaria: SecretariaService, private readonly router: Router, private readonly ejercicios: EjercicioService) {}
+  constructor(private readonly fb: FormBuilder, private readonly secretaria: SecretariaService, private readonly router: Router, private readonly route: ActivatedRoute, private readonly ejercicios: EjercicioService, private readonly dashboardSummary: DashboardSummaryService) {}
 
   ngOnInit(): void { this.load(); }
 
@@ -52,7 +53,7 @@ export class SoporteComponent implements OnInit {
   }
 
   loadIncidencias(): void {
-    this.secretaria.getSoporteIncidencias().subscribe({ next: response => { this.incidencias = response.incidencias; this.loading = false; }, error: () => this.fail('No se han podido cargar tus incidencias.') });
+    this.secretaria.getSoporteIncidencias().subscribe({ next: response => { this.incidencias = response.incidencias; this.loading = false; const ticket = Number(this.route.snapshot.queryParamMap.get('ticket')); if (ticket && response.incidencias.some(item => item.id === ticket)) this.verDetalle(ticket); }, error: () => this.fail('No se han podido cargar tus incidencias.') });
   }
 
   enviar(): void {
@@ -83,8 +84,8 @@ export class SoporteComponent implements OnInit {
     return control.invalid && (control.touched || this.submitted);
   }
 
-  verDetalle(id: number): void { this.secretaria.getSoporteIncidencia(id).subscribe({ next: response => { this.detalle = response.incidencia; this.secretaria.marcarSoporteLeido(id).subscribe(); }, error: () => this.error = 'No se ha podido cargar el detalle de la incidencia.' }); }
-  responder(): void { if (!this.detalle || !this.respuesta.trim() || this.sending) return; this.sending = true; this.secretaria.responderSoporteIncidencia(this.detalle.id, { mensaje: this.respuesta.trim() }).pipe(switchMap(response => { const message = response.incidencia.eventos?.at(-1); return message && this.adjuntos.length ? forkJoin(this.adjuntos.map(file => this.secretaria.subirAdjuntoSoporte(response.incidencia.id, message.id, file))).pipe(switchMap(() => this.secretaria.getSoporteIncidencia(response.incidencia.id))) : of(response); })).subscribe({ next: response => { this.detalle = response.incidencia; this.incidencias = this.incidencias.map(item => item.id === response.incidencia.id ? { ...item, ...response.incidencia } : item); this.respuesta = ''; this.adjuntos = []; this.sending = false; }, error: response => { this.sending = false; this.error = response.error?.message || 'No se ha podido enviar la respuesta.'; } }); }
+  verDetalle(id: number): void { this.secretaria.getSoporteIncidencia(id).subscribe({ next: response => { this.detalle = response.incidencia; this.secretaria.marcarSoporteLeido(id).subscribe({ next: () => { this.loadIncidencias(); this.dashboardSummary.refreshAssociation(); } }); }, error: () => this.error = 'No se ha podido cargar el detalle de la incidencia.' }); }
+  responder(): void { if (!this.detalle || !this.respuesta.trim() || this.sending) return; this.sending = true; this.secretaria.responderSoporteIncidencia(this.detalle.id, { mensaje: this.respuesta.trim() }).pipe(switchMap(response => { const message = response.incidencia.eventos?.at(-1); return message && this.adjuntos.length ? forkJoin(this.adjuntos.map(file => this.secretaria.subirAdjuntoSoporte(response.incidencia.id, message.id, file))).pipe(switchMap(() => this.secretaria.getSoporteIncidencia(response.incidencia.id))) : of(response); })).subscribe({ next: response => { this.detalle = response.incidencia; this.incidencias = this.incidencias.map(item => item.id === response.incidencia.id ? { ...item, ...response.incidencia } : item); this.respuesta = ''; this.adjuntos = []; this.sending = false; this.dashboardSummary.refreshAssociation(); }, error: response => { this.sending = false; this.error = response.error?.message || 'No se ha podido enviar la respuesta.'; } }); }
   seleccionarAdjuntos(event: Event): void { const files = Array.from((event.target as HTMLInputElement).files || []); const invalid = files.find(file => !['image/png','image/jpeg','application/pdf','text/plain','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document','application/vnd.ms-excel','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'].includes(file.type) || file.size > this.maxAdjuntoBytes); if (invalid) { this.error = 'Solo se admiten PNG, JPG, PDF, TXT, DOC, DOCX, XLS y XLSX de hasta 10 MB.'; return; } if (this.adjuntos.length + files.length > 5) { this.error = 'Puedes adjuntar un máximo de 5 archivos por mensaje.'; return; } this.adjuntos = [...this.adjuntos, ...files]; }
   quitarAdjunto(index: number): void { this.adjuntos = this.adjuntos.filter((_, current) => current !== index); }
   puedeResponder(): boolean { return Boolean(this.detalle && !['RESUELTA', 'CERRADA'].includes(this.detalle.estado)); }
