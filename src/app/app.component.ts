@@ -125,7 +125,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isAdmin = isLogged && this.adminAccess.isAdmin();
       if (isLogged) {
         this.permissions.loadContext().subscribe();
-        if (!this.isAdmin) this.secretaria.getSoporteNovedades().subscribe({ next: summary => this.soporteNovedades = summary.incidenciasConNovedades });
+        if (!this.isAdmin) this.secretariaService.getSoporteNovedades().subscribe({ next: summary => this.soporteNovedades = summary.incidenciasConNovedades });
       } else {
         this.permissions.clear();
         this.dashboardSummary.clear();
