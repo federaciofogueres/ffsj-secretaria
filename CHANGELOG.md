@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1#ESMERALDA - 2026-08-30
+
+### Corregido
+
+- El formulario de soporte muestra las validaciones de categoría, asunto y descripción al intentar enviarlo.
+- La administración de incidencias actualiza el detalle y el listado sin requerir una recarga manual.
+
+### Mejorado
+
+- Las filas administrativas indican claramente que se pueden abrir y permiten navegación por teclado.
+- El diálogo administrativo organiza contexto, descripción, gestión e historial en un diseño amplio y responsive.
+
 ## 0.2.0#ESMERALDA - 2026-08-30
 
 ### Añadido
