@@ -36,6 +36,7 @@ export class SoporteComponent implements OnInit {
   success = '';
   respuesta = '';
   adjuntos: File[] = [];
+  private ticketDeNavegacionAbierto = false;
   readonly maxAdjuntoBytes = 10 * 1024 * 1024;
   readonly form = this.fb.group({
     categoria: ['', Validators.required],
@@ -53,7 +54,7 @@ export class SoporteComponent implements OnInit {
   }
 
   loadIncidencias(): void {
-    this.secretaria.getSoporteIncidencias().subscribe({ next: response => { this.incidencias = response.incidencias; this.loading = false; const ticket = Number(this.route.snapshot.queryParamMap.get('ticket')); if (ticket && response.incidencias.some(item => item.id === ticket)) this.verDetalle(ticket); }, error: () => this.fail('No se han podido cargar tus incidencias.') });
+    this.secretaria.getSoporteIncidencias().subscribe({ next: response => { this.incidencias = response.incidencias; this.loading = false; const ticket = Number(this.route.snapshot.queryParamMap.get('ticket')); if (ticket && !this.ticketDeNavegacionAbierto && response.incidencias.some(item => item.id === ticket)) { this.ticketDeNavegacionAbierto = true; this.verDetalle(ticket); } }, error: () => this.fail('No se han podido cargar tus incidencias.') });
   }
 
   enviar(): void {
