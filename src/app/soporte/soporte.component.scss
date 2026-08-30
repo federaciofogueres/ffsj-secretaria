@@ -51,7 +51,18 @@
 .support-history-event { padding: .8rem 0; border-top: 1px solid var(--ffsj-line); }
 .support-history-event small { display: block; margin-bottom: .3rem; color: var(--ffsj-muted); }
 .support-admin-message { padding-left: 1rem; border-left: 3px solid var(--ffsj-red); }
-.support-reply { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--ffsj-line); }
+.modal-panel:not(.support-admin-dialog) { width: min(680px, calc(100vw - 2rem)); max-height: calc(100vh - 2rem); overflow-y: auto; padding: 1.5rem; }
+.modal-panel:not(.support-admin-dialog) > p { display: flex; align-items: center; gap: .5rem; margin: 1rem 0; }
+.modal-panel:not(.support-admin-dialog) .support-history { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--ffsj-line); }
+.modal-panel:not(.support-admin-dialog) .support-history-event { margin: .65rem 0; padding: .85rem 1rem; border: 1px solid var(--ffsj-line); border-radius: 10px; background: #fafbfc; }
+.modal-panel:not(.support-admin-dialog) .support-history-event.support-admin-message { border-left: 4px solid var(--ffsj-red); background: #fff8f8; }
+.modal-panel:not(.support-admin-dialog) .support-history-event a { margin-top: .45rem; color: var(--ffsj-red); font-weight: 700; text-decoration: none; }
+.support-reply { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: end; margin-top: 1.25rem; padding: 1.15rem; border: 1px solid var(--ffsj-line); border-radius: 12px; background: #f8fafc; }
+.support-reply .form-label { grid-column: 1 / -1; margin: 0; font-weight: 750; }
+.support-reply textarea { margin-top: .4rem; resize: vertical; }
+.support-reply input[type=file] { min-width: 0; max-width: 100%; padding: .45rem; border: 1px dashed var(--ffsj-line); border-radius: 8px; background: #fff; font-size: .82rem; }
+.support-reply .support-files { grid-column: 1 / -1; }
+.support-reply .ux-btn { margin: 0 !important; white-space: nowrap; }
 .support-files { margin-top: .35rem; font-size: .85rem; color: var(--ffsj-muted); }
 .support-admin-actions { flex: none; display: flex; justify-content: flex-end; gap: .5rem; padding: 1rem 1.5rem; border-top: 1px solid var(--ffsj-line); background: #fff; }
 @media (max-width: 900px) { .support-content { grid-template-columns: 1fr; } }
