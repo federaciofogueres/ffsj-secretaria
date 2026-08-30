@@ -60,7 +60,10 @@
 .support-reply { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .75rem; align-items: end; margin-top: 1.25rem; padding: 1.15rem; border: 1px solid var(--ffsj-line); border-radius: 12px; background: #f8fafc; }
 .support-reply .form-label { grid-column: 1 / -1; margin: 0; font-weight: 750; }
 .support-reply textarea { margin-top: .4rem; resize: vertical; }
-.support-reply input[type=file] { min-width: 0; max-width: 100%; padding: .45rem; border: 1px dashed var(--ffsj-line); border-radius: 8px; background: #fff; font-size: .82rem; }
+.support-reply input[type=file] { min-width: 0; max-width: 100%; padding: .3rem; border: 1px dashed #d6b7bc; border-radius: 9px; background: #fff; color: var(--ffsj-muted); font-size: .78rem; cursor: pointer; }
+.support-reply input[type=file]::file-selector-button { margin-right: .6rem; padding: .42rem .7rem; border: 0; border-radius: 6px; background: var(--ffsj-soft-red); color: var(--ffsj-red); font-size: .78rem; font-weight: 800; cursor: pointer; }
+.support-reply input[type=file]:hover, .support-reply input[type=file]:focus-visible { border-color: var(--ffsj-red); box-shadow: 0 0 0 3px var(--ffsj-soft-red); outline: 0; }
+.support-reply input[type=file]:hover::file-selector-button { background: var(--ffsj-red); color: #fff; }
 .support-reply .support-files { grid-column: 1 / -1; }
 .support-reply .ux-btn { margin: 0 !important; white-space: nowrap; }
 .support-attachment { display: block; margin-top: .45rem; padding: 0; border: 0; background: transparent; color: var(--ffsj-red); font-weight: 700; text-align: left; }
