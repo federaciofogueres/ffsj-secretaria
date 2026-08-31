@@ -646,7 +646,7 @@
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Cargos obligatorios</p>
         <h2 id="sustitucionTitle" class="h5 mb-1 text-rojo">Selecciona sustitutos</h2>
-        <p class="text-muted mb-0">El tramite afecta a cargos obligatorios. Indica quien debe ocupar cada cargo antes de enviar la solicitud.</p>
+        <p class="text-muted mb-0">El tramite afecta a cargos obligatorios. Indica quien debe ocupar cada cargo. Despues adjuntaras la solicitud firmada antes de enviarla.</p>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarSustitucionesDialog()"></button>
     </header>
@@ -669,7 +669,7 @@
     <footer class="sustitucion-footer">
       <button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
       <button class="ux-btn" type="button" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="confirmarSolicitudConSustituciones()">
-        Crear y enviar solicitud
+        Crear solicitud
       </button>
     </footer>
   </section>

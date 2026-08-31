@@ -141,7 +141,11 @@ describe('AsociadosGestionComponent', () => {
       registroPendienteIds: [1, 2],
       observaciones: 'Solicitud conjunta: baja y cambio de cargo obligatorio'
     }));
-    expect(secretariaService.enviarSolicitud).toHaveBeenCalledWith(50);
+    expect(secretariaService.enviarSolicitud).not.toHaveBeenCalled();
+    expect(component.solicitudDetalle).toEqual(jasmine.objectContaining({
+      id: 50,
+      estado: 'registrada'
+    }));
   });
 
   it('no bloquea al asociado por una solicitud de cambio ya validada', () => {

@@ -538,8 +538,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: `Solicitud conjunta: ${tipo} y cesion de cargo obligatorio`
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -551,16 +550,16 @@ export class AsociadosGestionComponent implements OnInit {
           this.activeTab = 'solicitudes';
           this.loading = false;
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: error => {
           this.loading = false;
           if (!this.gestionarErrorAltaDuplicada(error)) {
-            this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+            this.showError('No se ha podido crear la solicitud con cesion de cargo.');
           }
         }
       });
@@ -826,8 +825,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: observacionesSolicitud
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -841,15 +839,15 @@ export class AsociadosGestionComponent implements OnInit {
           this.loading = false;
           this.cerrarSustitucionesDialog();
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido crear y enviar la solicitud con sustitucion.');
+          this.showError('No se ha podido crear la solicitud con sustitucion.');
         }
       });
   }
