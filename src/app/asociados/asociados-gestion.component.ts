@@ -1597,7 +1597,7 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     return this.solicitudes.some(solicitud => {
-      if (solicitud.tipo !== tipo || ['finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
+      if (solicitud.tipo !== tipo || ['validada', 'finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
         return false;
       }
 

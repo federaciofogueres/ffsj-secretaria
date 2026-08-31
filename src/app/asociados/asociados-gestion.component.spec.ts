@@ -143,4 +143,26 @@ describe('AsociadosGestionComponent', () => {
     }));
     expect(secretariaService.enviarSolicitud).toHaveBeenCalledWith(50);
   });
+
+  it('no bloquea al asociado por una solicitud de cambio ya validada', () => {
+    component.solicitudes = [{
+      id: 51,
+      numero: 'SOL-2027-000051',
+      asociacionId: 25,
+      tipo: 'cambio',
+      estado: 'validada',
+      totalRegistros: 1,
+      fechaAlta: '',
+      items: [{
+        id: 1,
+        solicitudId: 51,
+        registroPendienteId: 9,
+        tipo: 'cambio',
+        datos: { asociadoId: presidente.id },
+        estado: 'validado'
+      }]
+    } as any];
+
+    expect(component.asociadoBloqueado(presidente)).toBeFalse();
+  });
 });
