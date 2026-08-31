@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.0#ESMERALDA - 2026-09-01
+
+### Añadido
+
+- La gestión de asociados usa las reglas de obligatoriedad y ocupación de cargos configuradas en Censo.
+
+### Corregido
+
+- Las solicitudes validadas ya no mantienen bloqueado al asociado para nuevos trámites.
+- Las sustituciones de cargos obligatorios crean la solicitud y solicitan adjuntar el documento firmado antes de enviarla, respetando el flujo de validación.
+
 ## 0.2.3#ESMERALDA - 2026-08-30
 
 ### Corregido
