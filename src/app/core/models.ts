@@ -341,14 +341,17 @@ export interface ActividadSecretaria {
 export interface CargoResumen {
   id: number;
   nombre: string;
-  requerido: number;
-  maximo: number;
+  requerido?: number;
+  obligatorio?: boolean | number;
+  modo_ocupacion?: 'multiple' | 'exclusivo';
+  modoOcupacion?: 'multiple' | 'exclusivo';
+  maximo?: number;
   activo: boolean;
   active?: boolean | number;
   es_infantil?: boolean | number;
   esInfantil?: boolean | number;
-  validados: number;
-  solicitados: number;
+  validados?: number;
+  solicitados?: number;
 }
 
 export interface PermisoSecretaria {

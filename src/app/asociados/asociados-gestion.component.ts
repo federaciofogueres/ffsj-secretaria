@@ -1649,12 +1649,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   private esCargoRequerido(historico: HistoricoAsociado): boolean {
     const cargo = this.cargos.find(item => Number(item.id) === Number(historico.idCargo));
-    if (Number((cargo as any)?.requerido || 0) > 0) {
-      return true;
-    }
-
-    const nombre = this.normalizeText(cargo?.nombre || historico.cargo);
-    return nombre.includes('presid') || nombre.includes('secretar');
+    return Number(cargo?.obligatorio ?? cargo?.requerido ?? 0) === 1;
   }
 
   private precargarCargoActual(asociado: Asociado): void {
@@ -1759,8 +1754,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private cargoExclusivo(cargo: CargoResumen | undefined): boolean {
-    const nombre = this.normalizeText(cargo?.nombre || '');
-    return nombre.includes('presid') || nombre.includes('secretar');
+    return (cargo?.modo_ocupacion ?? cargo?.modoOcupacion) === 'exclusivo';
   }
 
   private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
