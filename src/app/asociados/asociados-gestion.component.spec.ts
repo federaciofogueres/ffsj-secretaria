@@ -141,6 +141,32 @@ describe('AsociadosGestionComponent', () => {
       registroPendienteIds: [1, 2],
       observaciones: 'Solicitud conjunta: baja y cambio de cargo obligatorio'
     }));
-    expect(secretariaService.enviarSolicitud).toHaveBeenCalledWith(50);
+    expect(secretariaService.enviarSolicitud).not.toHaveBeenCalled();
+    expect(component.solicitudDetalle).toEqual(jasmine.objectContaining({
+      id: 50,
+      estado: 'registrada'
+    }));
+  });
+
+  it('no bloquea al asociado por una solicitud de cambio ya validada', () => {
+    component.solicitudes = [{
+      id: 51,
+      numero: 'SOL-2027-000051',
+      asociacionId: 25,
+      tipo: 'cambio',
+      estado: 'validada',
+      totalRegistros: 1,
+      fechaAlta: '',
+      items: [{
+        id: 1,
+        solicitudId: 51,
+        registroPendienteId: 9,
+        tipo: 'cambio',
+        datos: { asociadoId: presidente.id },
+        estado: 'validado'
+      }]
+    } as any];
+
+    expect(component.asociadoBloqueado(presidente)).toBeFalse();
   });
 });

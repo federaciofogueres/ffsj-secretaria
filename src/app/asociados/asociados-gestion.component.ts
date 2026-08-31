@@ -538,8 +538,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: `Solicitud conjunta: ${tipo} y cesion de cargo obligatorio`
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -551,16 +550,16 @@ export class AsociadosGestionComponent implements OnInit {
           this.activeTab = 'solicitudes';
           this.loading = false;
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: error => {
           this.loading = false;
           if (!this.gestionarErrorAltaDuplicada(error)) {
-            this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+            this.showError('No se ha podido crear la solicitud con cesion de cargo.');
           }
         }
       });
@@ -826,8 +825,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: observacionesSolicitud
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -841,15 +839,15 @@ export class AsociadosGestionComponent implements OnInit {
           this.loading = false;
           this.cerrarSustitucionesDialog();
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido crear y enviar la solicitud con sustitucion.');
+          this.showError('No se ha podido crear la solicitud con sustitucion.');
         }
       });
   }
@@ -1597,7 +1595,7 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     return this.solicitudes.some(solicitud => {
-      if (solicitud.tipo !== tipo || ['finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
+      if (solicitud.tipo !== tipo || ['validada', 'finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
         return false;
       }
 
@@ -1649,12 +1647,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   private esCargoRequerido(historico: HistoricoAsociado): boolean {
     const cargo = this.cargos.find(item => Number(item.id) === Number(historico.idCargo));
-    if (Number((cargo as any)?.requerido || 0) > 0) {
-      return true;
-    }
-
-    const nombre = this.normalizeText(cargo?.nombre || historico.cargo);
-    return nombre.includes('presid') || nombre.includes('secretar');
+    return Number(cargo?.obligatorio ?? cargo?.requerido ?? 0) === 1;
   }
 
   private precargarCargoActual(asociado: Asociado): void {
@@ -1759,8 +1752,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private cargoExclusivo(cargo: CargoResumen | undefined): boolean {
-    const nombre = this.normalizeText(cargo?.nombre || '');
-    return nombre.includes('presid') || nombre.includes('secretar');
+    return (cargo?.modo_ocupacion ?? cargo?.modoOcupacion) === 'exclusivo';
   }
 
   private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
