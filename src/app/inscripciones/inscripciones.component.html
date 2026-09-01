@@ -298,6 +298,16 @@
                     <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                   </ng-container>
                 </dl>
+                <section class="mt-3">
+                  <h5 class="h6">Adjuntos de la entrada</h5>
+                  <input class="form-control form-control-sm mb-2" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
+                  <div class="document-list" *ngIf="adjuntosEntrada.length; else noEntryAttachments">
+                    <button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">
+                      {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : adjunto.mimeType.startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
+                    </button>
+                  </div>
+                  <ng-template #noEntryAttachments><p class="text-muted mb-0">No hay adjuntos para esta entrada.</p></ng-template>
+                </section>
                 <section class="mt-3" *ngIf="entrada.eventos?.length"><h5 class="h6">Historial</h5><ul class="mb-0"><li *ngFor="let evento of entrada.eventos">{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ evento.actor }} · {{ evento.detalle || evento.tipo }}</li></ul></section>
                 <app-incidencias-panel scope="inscripcion" [scopeId]="entrada.id"></app-incidencias-panel>
               </div>
@@ -321,6 +331,10 @@
                   <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                 </ng-container>
               </dl>
+              <section class="mt-3" *ngIf="adjuntosEntrada.length">
+                <h4 class="h6">Adjuntos de la entrada</h4>
+                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
+              </section>
             </section>
 
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'view' && miEntrada as entrada">
@@ -342,6 +356,10 @@
                   <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                 </ng-container>
               </dl>
+              <section class="mt-3" *ngIf="adjuntosEntrada.length">
+                <h4 class="h6">Adjuntos de la entrada</h4>
+                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
+              </section>
               <p class="text-muted mb-0 mt-2" *ngIf="!isWithinDeadline(inscription)">El plazo de modificacion esta cerrado.</p>
             </section>
 
