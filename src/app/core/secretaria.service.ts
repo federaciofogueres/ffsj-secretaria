@@ -350,6 +350,12 @@ export class SecretariaService {
     });
   }
 
+  actualizarEstadoInscripcionEntrada(id: number, estado: InscripcionEntradaSecretaria['estado'], detalle = ''): Observable<InscripcionEntradaSecretaria> {
+    return this.http.post<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas/${id}/estado`, { estado, detalle }, {
+      headers: this.authHeaders()
+    });
+  }
+
   getMiEntradaInscripcion(formularioId: string): Observable<InscripcionEntradaSecretaria> {
     return this.http.get<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/${formularioId}/mi-entrada`, {
       headers: this.authHeaders()

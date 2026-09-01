@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.0#ESMERALDA - 2026-09-02
+
+### Añadido
+
+- Workflow administrativo de Inscripciones con estados recibida, en revisión, con incidencias, validada y rechazada.
+- Detalle administrativo con historial persistente, gestión de incidencias vinculadas y generación del justificante PDF final.
+- Reordenación y duplicado de campos en la configuración de formularios.
+
+### Mejorado
+
+- La bandeja y el detalle de Inscripciones muestran y actualizan el estado de cada entrada de forma clara.
+
 ## 0.4.1#ESMERALDA - 2026-09-01
 
 ### Mejorado

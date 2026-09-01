@@ -306,6 +306,7 @@ export interface InscripcionEntradaSecretaria {
   fechaEntrada: string;
   participantes: string[];
   datos: Record<string, unknown>;
+  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
 }
 
 export interface CampoInscripcion {
@@ -351,7 +352,7 @@ export interface IncidenciaEvento {
 
 export interface AdjuntoSecretaria {
   id: number;
-  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'inscripcion_entrada' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
   scopeId: string;
   fileName: string;
   originalName: string;

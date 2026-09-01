@@ -95,6 +95,24 @@ export class FormulariosComponent implements OnInit {
     this.campos.removeAt(index);
   }
 
+  moveCampo(index: number, delta: number): void {
+    const target = index + delta;
+    if (target < 0 || target >= this.campos.length) return;
+    const control = this.campos.at(index);
+    this.campos.removeAt(index);
+    this.campos.insert(target, control);
+  }
+
+  duplicar(): void {
+    if (!this.selected) return;
+    const payload = { ...(this.buildPayload() as Record<string, unknown>), nombre: `${this.selected.nombre} (copia)` };
+    this.loading = true;
+    this.secretariaService.crearFormulario(payload).subscribe({
+      next: formulario => { this.formularios = [...this.formularios, formulario].sort((a, b) => a.nombre.localeCompare(b.nombre)); this.select(formulario); this.success = 'Formulario duplicado correctamente.'; this.loading = false; },
+      error: response => { this.error = response?.error?.message || 'No se ha podido duplicar el formulario.'; this.loading = false; }
+    });
+  }
+
   guardar(): void {
     if (this.form.invalid || !this.campos.length) {
       this.form.markAllAsTouched();

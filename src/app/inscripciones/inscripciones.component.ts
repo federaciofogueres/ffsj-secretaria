@@ -9,6 +9,7 @@ import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, Formulari
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -18,7 +19,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
@@ -391,6 +392,26 @@ export class InscripcionesComponent implements OnInit {
         URL.revokeObjectURL(url);
       },
       error: () => this.error = 'No se ha podido abrir el documento adjunto.'
+    });
+  }
+
+  cambiarEstadoEntrada(entrada: InscripcionEntradaSecretaria, estado: InscripcionEntradaSecretaria['estado']): void {
+    if (!this.isAdminMode || entrada.estado === estado) return;
+    this.loading = true;
+    this.secretariaService.actualizarEstadoInscripcionEntrada(entrada.id, estado).subscribe({
+      next: updated => {
+        this.entradas = this.entradas.map(item => item.id === updated.id ? { ...item, ...updated } : item);
+        this.selectedEntrada = this.selectedEntrada?.id === updated.id ? { ...this.selectedEntrada, ...updated } : this.selectedEntrada;
+        this.loading = false;
+      },
+      error: response => { this.error = response?.error?.message || 'No se ha podido actualizar el estado.'; this.loading = false; }
+    });
+  }
+
+  descargarJustificanteEntrada(entrada: InscripcionEntradaSecretaria): void {
+    this.secretariaService.descargarJustificantePdf('inscripcion', entrada.id).subscribe({
+      next: ({ blob, justificante }) => { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = justificante.fileName || `${entrada.numero}.pdf`; anchor.click(); URL.revokeObjectURL(url); },
+      error: () => this.error = 'No se ha podido generar el justificante de inscripción.'
     });
   }
 
