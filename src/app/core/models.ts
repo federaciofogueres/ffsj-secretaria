@@ -240,12 +240,34 @@ export interface RegistroSecretaria {
   titulo: string;
   mensaje?: string;
   responsable?: string | null;
+  departamentoId?: number | null;
+  departamentoNombre?: string | null;
+  destinatarioId?: number | null;
+  destinatarioNombre?: string | null;
   estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada' | 'archivada';
   fechaEntrada: string;
   fechaCreacion?: string;
   fechaActualizacion?: string;
   adjuntos: AdjuntoSecretaria[];
   mensajes?: RegistroMensajeSecretaria[];
+  eventos?: RegistroEventoSecretaria[];
+}
+
+export interface RegistroDestinatario {
+  id: number;
+  nombre: string;
+  email?: string | null;
+  departamentoId: number;
+  departamentoCodigo: string;
+  departamentoNombre: string;
+}
+
+export interface RegistroEventoSecretaria {
+  id: number;
+  tipo: 'CREADO' | 'ESTADO' | 'MENSAJE' | 'LEIDO' | 'FINALIZADO' | 'ARCHIVADO';
+  actor: 'asociacion' | 'administracion' | 'sistema';
+  detalle?: string | null;
+  createdAt: string;
 }
 
 export interface RegistroMensajeSecretaria {

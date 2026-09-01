@@ -7,10 +7,11 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { Asociacion, AutorizacionAlta, RegistroSecretaria } from '../core/models';
+import { Asociacion, AutorizacionAlta, RegistroDestinatario, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
@@ -19,7 +20,7 @@ type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })
@@ -29,12 +30,11 @@ export class RegistroComponent implements OnInit {
   detailMode: Exclude<RegistroMode, null> | null = null;
   docBandeja: DocumentacionBandeja = 'presentada';
 
-  readonly responsables = [
-    { id: 'sec', label: 'Secretaria' },
-    { id: 'pres', label: 'Presidencia' },
-    { id: 'inf', label: 'Delegacion de Infantiles' },
-    { id: 'act', label: 'Actividades' }
-  ];
+  destinatarios: RegistroDestinatario[] = [];
+  nuevoDepartamento = '';
+  nuevoDestinatario = '';
+  nuevoDestinatarioEmail = '';
+  guardandoDestinatario = false;
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -57,6 +57,8 @@ export class RegistroComponent implements OnInit {
   commResultado: RegistroSecretaria | null = null;
   registros: RegistroSecretaria[] = [];
   filtroAnio: number | '' = '';
+  filtroTexto = '';
+  filtroEstado = '';
   autorizacionesAlta: AutorizacionAlta[] = [];
   autorizacionDetalle: AutorizacionAlta | null = null;
   commBandeja: ComunicacionBandeja = 'realizadas';
@@ -87,6 +89,10 @@ export class RegistroComponent implements OnInit {
     this.commBandeja = this.isAdminMode ? 'recibidas' : 'realizadas';
     this.applyRouteState();
     this.cargarRegistros();
+    this.secretariaService.getRegistroDestinatarios().subscribe({
+      next: response => this.destinatarios = response.destinatarios,
+      error: () => this.errorRegistros = 'No se han podido cargar los destinatarios de Registro.'
+    });
     if (this.isAdminMode) {
       this.censoService.getAsociaciones().subscribe(asociaciones => {
         this.asociaciones = asociaciones.sort((a, b) => this.asociacionNombre(a).localeCompare(this.asociacionNombre(b), 'es'));
@@ -100,6 +106,33 @@ export class RegistroComponent implements OnInit {
 
   setMode(mode: Exclude<RegistroMode, null>): void {
     this.router.navigate(['/registro', mode]);
+  }
+
+  crearDestinatario(): void {
+    if (!this.isAdminMode || !this.permissions.hasPermission('registro:write')) return;
+    const departamento = this.nuevoDepartamento.trim();
+    const nombre = this.nuevoDestinatario.trim();
+    const email = this.nuevoDestinatarioEmail.trim();
+    if (!departamento || !nombre || !email) {
+      this.errorRegistros = 'Indica el departamento, la persona responsable y su correo.';
+      return;
+    }
+    this.guardandoDestinatario = true;
+    this.errorRegistros = '';
+    this.secretariaService.crearRegistroDestinatario({ departamento, nombre, email }).subscribe({
+      next: destinatario => {
+        this.destinatarios = [...this.destinatarios, destinatario]
+          .sort((a, b) => `${a.departamentoNombre} ${a.nombre}`.localeCompare(`${b.departamentoNombre} ${b.nombre}`, 'es'));
+        this.nuevoDepartamento = '';
+        this.nuevoDestinatario = '';
+        this.nuevoDestinatarioEmail = '';
+        this.guardandoDestinatario = false;
+      },
+      error: response => {
+        this.errorRegistros = response?.error?.message || 'No se ha podido crear el destinatario.';
+        this.guardandoDestinatario = false;
+      }
+    });
   }
 
   resetMode(): void {
@@ -274,6 +307,7 @@ export class RegistroComponent implements OnInit {
       tipo: 'documentacion',
       titulo: this.docForm.value.titulo,
       mensaje: this.docForm.value.mensaje,
+      destinatarioId: Number(this.docForm.value.responsable),
       adjuntos: this.docAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
     }).pipe(
       switchMap(registro => this.docAdjuntos.length
@@ -292,8 +326,9 @@ export class RegistroComponent implements OnInit {
         this.submittingDoc = false;
         this.router.navigate(['/registro/documentacion'], { replaceUrl: true });
       },
-      error: () => {
+      error: (response) => {
         this.submittingDoc = false;
+        this.errorRegistros = response?.error?.message || 'No se ha podido presentar la documentación.';
       }
     });
   }
@@ -310,6 +345,7 @@ export class RegistroComponent implements OnInit {
       tipo: 'comunicacion',
       origen: this.isAdminMode ? 'administracion' : 'asociacion',
       responsable: this.commForm.value.responsable,
+      destinatarioId: Number(this.commForm.value.responsable),
       titulo: this.commForm.value.titulo,
       mensaje: this.commForm.value.mensaje,
       adjuntos: this.commAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
@@ -331,8 +367,9 @@ export class RegistroComponent implements OnInit {
         this.submittingComm = false;
         this.router.navigate(['/registro/comunicacion'], { replaceUrl: true });
       },
-      error: () => {
+      error: (response) => {
         this.submittingComm = false;
+        this.errorRegistros = response?.error?.message || 'No se ha podido enviar la comunicación.';
       }
     });
   }
@@ -486,7 +523,7 @@ export class RegistroComponent implements OnInit {
         }
         this.updatingEstado = false;
       },
-      error: () => this.updatingEstado = false
+      error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido actualizar el estado.'; }
     });
   }
 
@@ -509,7 +546,7 @@ export class RegistroComponent implements OnInit {
         this.prependRegistro(registro);
         this.submittingComm = false;
       },
-      error: () => this.submittingComm = false
+      error: (response) => { this.submittingComm = false; this.errorRegistros = response?.error?.message || 'No se ha podido enviar la respuesta.'; }
     });
   }
 
@@ -524,7 +561,7 @@ export class RegistroComponent implements OnInit {
         this.prependRegistro(updated);
         this.submittingComm = false;
       },
-      error: () => this.submittingComm = false
+      error: (response) => { this.submittingComm = false; this.errorRegistros = response?.error?.message || 'No se ha podido cerrar la comunicación.'; }
     });
   }
 
@@ -540,7 +577,7 @@ export class RegistroComponent implements OnInit {
         this.prependRegistro(updated);
         this.updatingEstado = false;
       },
-      error: () => this.updatingEstado = false
+      error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido archivar la documentación.'; }
     });
   }
 
@@ -553,6 +590,12 @@ export class RegistroComponent implements OnInit {
     const filters = this.isAdminMode ? {} : { asociacionId: this.censoService.asociacionId };
     if (this.filtroAnio) {
       Object.assign(filters, { anio: this.filtroAnio });
+    }
+    if (this.filtroTexto.trim()) {
+      Object.assign(filters, { busqueda: this.filtroTexto.trim() });
+    }
+    if (this.filtroEstado) {
+      Object.assign(filters, { estado: this.filtroEstado });
     }
     this.secretariaService.getRegistros(filters).subscribe({
       next: response => {
