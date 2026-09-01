@@ -1,9 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
+import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 
-import { AdjuntoSecretaria, AutorizacionAlta, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -44,6 +45,8 @@ export class SolicitudesComponent implements OnInit {
   filtroTexto = '';
   filtroEstado = 'todos';
   filtroTipo = 'todos';
+  orden: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
+  soloProblematicas = false;
   asociacionNombres: Record<number, string> = {};
   incidenciasAbiertasBySolicitud: Record<number, number> = {};
   detalleDialogOpen = false;
@@ -212,7 +215,10 @@ export class SolicitudesComponent implements OnInit {
       ]
         .join(' ')
         .toLowerCase();
-      return matchesTipo && matchesEstado && (!texto || searchable.includes(texto));
+      return matchesTipo && matchesEstado && (!this.soloProblematicas || this.esProblematica(solicitud)) && (!texto || searchable.includes(texto));
+    }).sort((a, b) => {
+      if (this.orden === 'estado') return this.labelEstadoSolicitud(a).localeCompare(this.labelEstadoSolicitud(b)) || this.fechaSolicitud(b) - this.fechaSolicitud(a);
+      return this.orden === 'fecha_asc' ? this.fechaSolicitud(a) - this.fechaSolicitud(b) : this.fechaSolicitud(b) - this.fechaSolicitud(a);
     });
   }
 
@@ -226,6 +232,12 @@ export class SolicitudesComponent implements OnInit {
 
   tieneIncidenciasAbiertas(solicitudId: number): boolean {
     return (this.incidenciasAbiertasBySolicitud[solicitudId] || 0) > 0;
+  }
+
+  esProblematica(solicitud: SolicitudSecretaria): boolean {
+    return this.tieneIncidenciasAbiertas(solicitud.id)
+      || this.autorizacionesPendientesNombres(solicitud).length > 0
+      || ['con_incidencias', 'autorizacion_rechazada'].includes(solicitud.estado);
   }
 
   generarJustificante(): void {
@@ -294,6 +306,22 @@ export class SolicitudesComponent implements OnInit {
     return item.estado === 'validado' ? 'estado-validada' : 'estado-registrada';
   }
 
+  labelEvento(evento: SolicitudEventoSecretaria): string {
+    if (evento.tipo === 'CREADA') return 'Solicitud registrada';
+    if (evento.tipo === 'APLICADA_EN_CENSO') return 'Cambios aplicados en Censo';
+    if (evento.tipo === 'ESTADO') return `Estado: ${this.labelEstado(evento.estadoAnterior || '—')} → ${this.labelEstado(evento.estadoNuevo || '—')}`;
+    return evento.tipo;
+  }
+
+  diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {
+    const actual = item.datos || {};
+    const anterior = item.datosOriginales || {};
+    return Object.keys(actual)
+      .filter(campo => !['asociadoId', 'sustitucionesCargo'].includes(campo))
+      .filter(campo => String(actual[campo] ?? '') !== String(anterior[campo] ?? ''))
+      .map(campo => ({ campo, anterior: this.valorVisible(anterior[campo]), nuevo: this.valorVisible(actual[campo]) }));
+  }
+
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
     return ['finalizada', 'rechazada', 'cancelada', 'validada', 'autorizacion_rechazada'].includes(solicitud.estado)
       ? solicitud.estado
@@ -359,12 +387,21 @@ export class SolicitudesComponent implements OnInit {
         }
         this.loading = false;
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.success = '';
-        this.error = 'No se ha podido cambiar el estado de la solicitud.';
+        this.error = error?.error?.message || 'No se ha podido cambiar el estado de la solicitud.';
         this.loading = false;
       }
     });
+  }
+
+  private valorVisible(valor: unknown): string {
+    if (valor === null || valor === undefined || valor === '') return '—';
+    return Array.isArray(valor) ? valor.join(', ') : String(valor);
+  }
+
+  private fechaSolicitud(solicitud: SolicitudSecretaria): number {
+    return new Date(solicitud.fechaRegistro || solicitud.fechaAlta || 0).getTime() || 0;
   }
 
   private cargarNombresAsociacion(): void {

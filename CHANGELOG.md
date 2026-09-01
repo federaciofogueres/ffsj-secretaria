@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.1#ESMERALDA - 2026-09-01
+
+### Añadido
+
+- Pantalla de cupos y cargos por asociación, con ocupación validada, reservas pendientes, disponibilidad y conflictos.
+- La bandeja administrativa permite ordenar solicitudes y aislar las problemáticas.
+- El detalle administrativo muestra cambios de datos y la trazabilidad de la solicitud.
+
 ## 0.3.0#ESMERALDA - 2026-09-01
 
 ### Añadido

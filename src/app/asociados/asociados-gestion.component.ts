@@ -7,14 +7,14 @@ import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
-import { AdjuntoSecretaria, AutorizacionAlta, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, CargoCupoSecretaria, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
 
-type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
+type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
 type ListadoContexto = 'modificaciones' | 'bajas';
 
@@ -48,6 +48,8 @@ export class AsociadosGestionComponent implements OnInit {
   adultos: Asociado[] = [];
   infantiles: Asociado[] = [];
   cargos: CargoResumen[] = [];
+  cuposCargos: CargoCupoSecretaria[] = [];
+  errorCupos = '';
 
   registroPendiente: RegistroPendiente[] = [];
   solicitudes: SolicitudSecretaria[] = [];
@@ -128,10 +130,30 @@ export class AsociadosGestionComponent implements OnInit {
     });
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
+    this.cargarCupos();
   }
 
   get asociacionId(): number {
     return this.censoService.asociacionId;
+  }
+
+  cargarCupos(): void {
+    const ejercicio = Number(this.ejercicioService.selectedSnapshot?.ejercicio || new Date().getFullYear());
+    if (!this.asociacionId || !ejercicio) return;
+    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio).subscribe({
+      next: response => {
+        this.cuposCargos = response.cargos;
+        this.errorCupos = '';
+      },
+      error: error => {
+        this.cuposCargos = [];
+        this.errorCupos = error?.error?.message || 'No se ha podido cargar el resumen de cupos.';
+      }
+    });
+  }
+
+  labelConflictoCupo(conflicto: string): string {
+    return conflicto === 'obligatorio_sin_cubrir' ? 'Obligatorio sin cubrir' : conflicto === 'cupo_superado' ? 'Cupo superado' : conflicto;
   }
 
   get ejercicioActivoSeleccionado(): boolean {

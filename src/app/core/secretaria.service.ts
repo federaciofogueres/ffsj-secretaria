@@ -8,6 +8,7 @@ import {
   ActividadSecretaria,
   AdjuntoSecretaria,
   CargoResumen,
+  CargoCupoSecretaria,
   DashboardAdminResumen,
   DashboardAsociacionResumen,
   EjercicioInicioResultado,
@@ -479,6 +480,14 @@ export class SecretariaService {
 
   getCargosResumen(): Observable<{ cargos: CargoResumen[] }> {
     return this.http.get<{ cargos: CargoResumen[] }>(`${this.apiUrl.secretariaBasePath}/cargos/resumen`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getCargosCupos(asociacionId: number, ejercicio: number): Observable<{ cargos: CargoCupoSecretaria[] }> {
+    const params = new HttpParams().set('asociacionId', asociacionId).set('ejercicio', ejercicio);
+    return this.http.get<{ cargos: CargoCupoSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/cargos/cupos`, {
+      params,
       headers: this.authHeaders()
     });
   }

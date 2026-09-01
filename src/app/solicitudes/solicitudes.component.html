@@ -54,6 +54,20 @@
           <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
         </select>
       </div>
+      <div>
+        <label class="form-label" for="ordenSolicitudes">Orden</label>
+        <select id="ordenSolicitudes" class="form-select" [(ngModel)]="orden">
+          <option value="fecha_desc">Más recientes primero</option>
+          <option value="fecha_asc">Más antiguas primero</option>
+          <option value="estado">Por estado</option>
+        </select>
+      </div>
+      <div class="d-flex align-items-end pb-2">
+        <label class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" />
+          <span class="form-check-label">Solo problemáticas</span>
+        </label>
+      </div>
     </div>
 
     <div *ngIf="loading" class="alert alert-info">Cargando solicitudes...</div>
@@ -175,6 +189,27 @@
           </small>
         </li>
       </ul>
+
+      <section class="mt-4" *ngIf="detalle.items?.length">
+        <h3 class="h6 mb-2">Cambios detallados</h3>
+        <div class="small border rounded p-2 mb-2" *ngFor="let item of detalle.items">
+          <strong>{{ resumenItem(item) }}</strong>
+          <div class="d-flex gap-2 mt-1" *ngFor="let diferencia of diferenciasItem(item)">
+            <span class="text-muted">{{ diferencia.campo }}</span>
+            <s>{{ diferencia.anterior }}</s><span>→</span><strong>{{ diferencia.nuevo }}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="mt-4" *ngIf="detalle.eventos?.length">
+        <h3 class="h6 mb-2">Trazabilidad</h3>
+        <ol class="list-group list-group-numbered">
+          <li class="list-group-item" *ngFor="let evento of detalle.eventos">
+            <strong>{{ labelEvento(evento) }}</strong>
+            <small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small>
+          </li>
+        </ol>
+      </section>
 
       <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(detalle).length > 0">
         <h3 class="h6 mb-2">Autorizaciones de alta</h3>
