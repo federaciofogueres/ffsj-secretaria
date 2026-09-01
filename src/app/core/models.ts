@@ -136,6 +136,29 @@ export interface SolicitudItemSecretaria {
   estado: string;
 }
 
+export interface SolicitudEventoSecretaria {
+  id: number;
+  tipo: string;
+  actor?: string | null;
+  estadoAnterior?: string | null;
+  estadoNuevo?: string | null;
+  detalle?: Record<string, any> | null;
+  createdAt: string;
+}
+
+export interface CargoCupoSecretaria {
+  id: number;
+  nombre: string;
+  esInfantil: boolean;
+  obligatorio: boolean;
+  modoOcupacion: 'multiple' | 'exclusivo';
+  maximo: number;
+  ocupados: number;
+  reservados: number;
+  plazasDisponibles: number | null;
+  conflictos: string[];
+}
+
 export interface SolicitudSecretaria {
   id: number;
   numero: string;
@@ -153,6 +176,7 @@ export interface SolicitudSecretaria {
   fechaValidacion?: string | null;
   observaciones?: string | null;
   items?: SolicitudItemSecretaria[];
+  eventos?: SolicitudEventoSecretaria[];
   autorizacionesAlta?: AutorizacionAlta[];
   adjuntos?: AdjuntoSecretaria[];
 }

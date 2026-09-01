@@ -29,7 +29,35 @@
       <button class="workflow-tab" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
         Solicitudes pendientes
       </button>
+      <button class="workflow-tab" [class.active]="activeTab === 'cupos'" (click)="setTab('cupos')">
+        Cupos y cargos
+      </button>
     </div>
+
+    <section class="mt-4" *ngIf="activeTab === 'cupos'">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1">Cupos del ejercicio</h2>
+          <p class="text-muted mb-0">Incluye titulares validados y reservas de solicitudes todavía pendientes.</p>
+        </div>
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarCupos()">Actualizar</button>
+      </div>
+      <div class="alert alert-danger" *ngIf="errorCupos">{{ errorCupos }}</div>
+      <div class="table-responsive" *ngIf="cuposCargos.length">
+        <table class="table align-middle">
+          <thead><tr><th>Cargo</th><th>Regla</th><th class="text-center">Ocupados</th><th class="text-center">Reservados</th><th class="text-center">Disponibles</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let cupo of cuposCargos" [class.table-warning]="cupo.conflictos.length">
+              <td><strong>{{ cupo.nombre }}</strong><small class="d-block text-muted">{{ cupo.esInfantil ? 'Infantil' : 'Adulto' }}</small></td>
+              <td>{{ cupo.obligatorio ? 'Obligatorio' : 'Opcional' }} · {{ cupo.modoOcupacion === 'exclusivo' ? 'Exclusivo' : (cupo.maximo ? 'Máximo ' + cupo.maximo : 'Sin límite') }}</td>
+              <td class="text-center">{{ cupo.ocupados }}</td><td class="text-center">{{ cupo.reservados }}</td>
+              <td class="text-center">{{ cupo.plazasDisponibles === null ? '—' : cupo.plazasDisponibles }}</td>
+              <td><span class="badge text-bg-warning" *ngFor="let conflicto of cupo.conflictos">{{ labelConflictoCupo(conflicto) }}</span><span *ngIf="!cupo.conflictos.length" class="text-success">Correcto</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <ng-container *ngIf="activeTab === 'altas'">
       <ng-container *ngIf="estaViendoPendientes('alta'); else altaFormView">
