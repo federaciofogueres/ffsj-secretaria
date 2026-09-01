@@ -375,8 +375,23 @@ export class InscripcionesComponent implements OnInit {
     participants.forEach(person => this.selectedParticipants.add(String(person.id)));
   }
 
-  documentUrl(adjunto: AdjuntoSecretaria): string {
-    return this.secretariaService.adjuntoDownloadUrl(adjunto.id);
+  abrirDocumento(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        if (adjunto.mimeType === 'application/pdf' || adjunto.mimeType.startsWith('image/')) {
+          window.open(url, '_blank', 'noopener');
+          window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+          return;
+        }
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.originalName || adjunto.fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error = 'No se ha podido abrir el documento adjunto.'
+    });
   }
 
   setAdminTab(tab: AdminTab): void {

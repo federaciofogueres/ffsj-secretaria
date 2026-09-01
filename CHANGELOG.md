@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.1#ESMERALDA - 2026-09-01
+
+### Mejorado
+
+- Registro e Inscripciones abren adjuntos autenticados, con previsualización de PDF e imágenes y descarga para el resto de formatos.
+- Los adjuntos se identifican visualmente por tipo y comunican los errores de apertura.
+
 ## 0.4.0#ESMERALDA - 2026-09-01
 
 ### Añadido
