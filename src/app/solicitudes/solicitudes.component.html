@@ -190,9 +190,9 @@
         </li>
       </ul>
 
-      <section class="mt-4" *ngIf="detalle.items?.length">
+      <section class="mt-4" *ngIf="detalle.items?.some(tieneDiferencias.bind(this))">
         <h3 class="h6 mb-2">Cambios detallados</h3>
-        <div class="small border rounded p-2 mb-2" *ngFor="let item of detalle.items">
+        <div class="difference-card" *ngFor="let item of detalle.items" [hidden]="!tieneDiferencias(item)">
           <strong>{{ resumenItem(item) }}</strong>
           <div class="d-flex gap-2 mt-1" *ngFor="let diferencia of diferenciasItem(item)">
             <span class="text-muted">{{ diferencia.campo }}</span>

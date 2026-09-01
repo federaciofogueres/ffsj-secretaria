@@ -90,16 +90,16 @@ export class AsociadosGestionComponent implements OnInit {
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
     cargoId: [null as number | null],
-    dni: ['', Validators.required],
-    sip: [''],
+    dni: ['', [Validators.required, Validators.pattern(/^(?:\d{8}|[XYZ]\d{7})[A-Za-z]$/)]],
+    sip: ['', [Validators.maxLength(30)]],
     nacimiento: [''],
-    nombre: ['', Validators.required],
-    apellidos: ['', Validators.required],
-    direccion: [''],
-    cp: [''],
-    localidad: [''],
-    provincia: [''],
-    telefono: [''],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
+    apellidos: ['', [Validators.required, Validators.maxLength(150)]],
+    direccion: ['', Validators.maxLength(200)],
+    cp: ['', Validators.pattern(/^\d{5}$/)],
+    localidad: ['', Validators.maxLength(100)],
+    provincia: ['', Validators.maxLength(100)],
+    telefono: ['', Validators.pattern(/^[+0-9][0-9\s-]{7,19}$/)],
     email: ['', [Validators.email]]
   });
 
@@ -317,6 +317,12 @@ export class AsociadosGestionComponent implements OnInit {
     }
     if (this.altaForm.invalid) {
       this.altaForm.markAllAsTouched();
+      this.showError(this.mensajeErrorFormulario());
+      return;
+    }
+    if (!this.fechaNacimientoValida()) {
+      this.altaForm.get('nacimiento')?.markAsTouched();
+      this.showError('La fecha de nacimiento debe ser una fecha real y no puede ser futura.');
       return;
     }
     if (this.cargosSeleccionadosIds.size === 0) {
@@ -1555,9 +1561,9 @@ export class AsociadosGestionComponent implements OnInit {
         this.solicitudes = this.solicitudes.map(item => (item.id === updated.id ? updated : item));
         this.solicitudDetalle = updated;
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.loading = false;
-        this.showError(errorMessage);
+        this.showError(error?.error?.message || errorMessage);
       }
     });
   }
@@ -1802,7 +1808,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private isGestionTab(value: string | null): value is GestionTab {
-    return value === 'altas' || value === 'modificaciones' || value === 'bajas' || value === 'solicitudes';
+    return value === 'altas' || value === 'modificaciones' || value === 'bajas' || value === 'solicitudes' || value === 'cupos';
   }
 
   private showError(message: string): void {
@@ -1812,6 +1818,32 @@ export class AsociadosGestionComponent implements OnInit {
       innerHtml: `<p>${message}</p>`,
       buttonsAlert: [AlertButtonType.Entendido]
     });
+  }
+
+  controlInvalido(nombre: string): boolean {
+    const control = this.altaForm.get(nombre);
+    return !!control && control.invalid && (control.touched || control.dirty);
+  }
+
+  private mensajeErrorFormulario(): string {
+    const errors: Array<[string, string]> = [
+      ['dni', 'Indica un DNI o NIE válido (por ejemplo, 12345678Z o X1234567L).'],
+      ['nombre', 'El nombre es obligatorio y no puede superar 100 caracteres.'],
+      ['apellidos', 'Los apellidos son obligatorios y no pueden superar 150 caracteres.'],
+      ['cp', 'El código postal debe tener cinco cifras.'],
+      ['telefono', 'El teléfono debe contener entre 8 y 20 caracteres válidos.'],
+      ['email', 'Indica una dirección de correo electrónico válida.'],
+      ['sip', 'El SIP no puede superar 30 caracteres.']
+    ];
+    return errors.find(([name]) => this.altaForm.get(name)?.invalid)?.[1]
+      || 'Revisa los datos obligatorios del formulario.';
+  }
+
+  private fechaNacimientoValida(): boolean {
+    const value = String(this.altaForm.value.nacimiento || '').trim();
+    if (!value) return true;
+    const date = new Date(`${value}T00:00:00`);
+    return !Number.isNaN(date.getTime()) && date <= new Date() && date.toISOString().slice(0, 10) === value;
   }
 
   private normalizeText(value: unknown): string {

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.2#ESMERALDA - 2026-09-01
+
+### Mejorado
+
+- El formulario de altas y cambios informa de forma inmediata de los errores en datos personales y de contacto.
+- El detalle administrativo muestra únicamente diferencias relevantes, con etiquetas comprensibles entre el valor anterior y el nuevo.
+- La bandeja administrativa se actualiza al procesar una solicitud y muestra los mensajes devueltos por la API.
+
+### Corregido
+
+- La administración sólo puede validar o rechazar solicitudes enviadas, y finalizar solicitudes ya resueltas.
+- El acceso directo a la pestaña de cupos se reconoce correctamente.
+
 ## 0.3.1#ESMERALDA - 2026-09-01
 
 ### Añadido

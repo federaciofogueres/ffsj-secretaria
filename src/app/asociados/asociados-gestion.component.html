@@ -472,7 +472,8 @@
           <div class="row g-3">
             <div class="col-12 col-md-4">
               <label class="form-label">DNI/NIE</label>
-              <input class="form-control" formControlName="dni" placeholder="Documento" (blur)="comprobarAltaExistentePorDocumento()" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('dni')" formControlName="dni" placeholder="Documento" (blur)="comprobarAltaExistentePorDocumento()" />
+              <div class="invalid-feedback">Indica un DNI o NIE válido.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">SIP</label>
@@ -483,11 +484,13 @@
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Nombre</label>
-              <input class="form-control" formControlName="nombre" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('nombre')" formControlName="nombre" />
+              <div class="invalid-feedback">El nombre es obligatorio.</div>
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Apellidos</label>
-              <input class="form-control" formControlName="apellidos" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('apellidos')" formControlName="apellidos" />
+              <div class="invalid-feedback">Los apellidos son obligatorios.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Fecha de nacimiento</label>
@@ -511,7 +514,8 @@
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Codigo Postal</label>
-              <input class="form-control" formControlName="cp" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('cp')" formControlName="cp" />
+              <div class="invalid-feedback">El código postal debe tener cinco cifras.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Localidad</label>
@@ -523,11 +527,13 @@
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Telefono</label>
-              <input class="form-control" formControlName="telefono" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('telefono')" formControlName="telefono" />
+              <div class="invalid-feedback">Revisa el formato del teléfono.</div>
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control" formControlName="email" />
+              <input type="email" class="form-control" [class.is-invalid]="controlInvalido('email')" formControlName="email" />
+              <div class="invalid-feedback">Indica un correo electrónico válido.</div>
             </div>
           </div>
         </section>

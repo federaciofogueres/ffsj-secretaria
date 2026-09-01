@@ -73,8 +73,8 @@ export class SolicitudesComponent implements OnInit {
         this.cargarContadoresIncidencias();
         this.loading = false;
       },
-      error: () => {
-        this.error = 'No se han podido cargar las solicitudes.';
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se han podido cargar las solicitudes.';
         this.loading = false;
       }
     });
@@ -88,8 +88,8 @@ export class SolicitudesComponent implements OnInit {
         this.detalleDialogOpen = true;
         this.loading = false;
       },
-      error: () => {
-        this.error = 'No se ha podido cargar la solicitud.';
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se ha podido cargar la solicitud.';
         this.loading = false;
       }
     });
@@ -125,7 +125,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeValidar(): boolean {
-    return !!this.detalle && !['validada', 'rechazada', 'finalizada'].includes(this.detalle.estado);
+    return !!this.detalle && ['enviada', 'en_revision', 'con_incidencias'].includes(this.detalle.estado);
   }
 
   puedeCancelarEnvio(): boolean {
@@ -133,7 +133,7 @@ export class SolicitudesComponent implements OnInit {
   }
 
   puedeFinalizar(): boolean {
-    return !!this.detalle && !['rechazada', 'finalizada'].includes(this.detalle.estado);
+    return !!this.detalle && ['validada', 'rechazada'].includes(this.detalle.estado);
   }
 
   tieneAccionesDisponibles(): boolean {
@@ -248,8 +248,8 @@ export class SolicitudesComponent implements OnInit {
         this.downloadBlob(blob, justificante.fileName || `solicitud-${this.detalle?.id}.pdf`);
         this.loading = false;
       },
-      error: () => {
-        this.error = 'No se ha podido generar el justificante.';
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se ha podido generar el justificante.';
         this.loading = false;
       }
     });
@@ -262,8 +262,8 @@ export class SolicitudesComponent implements OnInit {
   descargarAdjunto(adjunto: AdjuntoSecretaria): void {
     this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
       next: blob => this.downloadBlob(blob, adjunto.originalName || `adjunto-${adjunto.id}`),
-      error: () => {
-        this.error = 'No se ha podido descargar la solicitud firmada.';
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se ha podido descargar la solicitud firmada.';
       }
     });
   }
@@ -316,10 +316,14 @@ export class SolicitudesComponent implements OnInit {
   diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {
     const actual = item.datos || {};
     const anterior = item.datosOriginales || {};
-    return Object.keys(actual)
-      .filter(campo => !['asociadoId', 'sustitucionesCargo'].includes(campo))
+    return Object.keys({ ...anterior, ...actual })
+      .filter(campo => !this.camposInternosDiferencia().includes(campo))
       .filter(campo => String(actual[campo] ?? '') !== String(anterior[campo] ?? ''))
-      .map(campo => ({ campo, anterior: this.valorVisible(anterior[campo]), nuevo: this.valorVisible(actual[campo]) }));
+      .map(campo => ({ campo: this.labelCampo(campo), anterior: this.valorVisible(anterior[campo]), nuevo: this.valorVisible(actual[campo]) }));
+  }
+
+  tieneDiferencias(item: SolicitudItemSecretaria): boolean {
+    return this.diferenciasItem(item).length > 0;
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
@@ -385,6 +389,7 @@ export class SolicitudesComponent implements OnInit {
         if (closeDialog) {
           this.detalleDialogOpen = false;
         }
+        this.cargarSolicitudes();
         this.loading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -398,6 +403,25 @@ export class SolicitudesComponent implements OnInit {
   private valorVisible(valor: unknown): string {
     if (valor === null || valor === undefined || valor === '') return '—';
     return Array.isArray(valor) ? valor.join(', ') : String(valor);
+  }
+
+  private camposInternosDiferencia(): string[] {
+    return [
+      'asociadoId', 'asociadoExistenteId', 'tipoCambio', 'tipoHoguera', 'tramiteOrigen',
+      'cargoId', 'cargoIds', 'cargoNombre', 'cargoNombres', 'sustitucionesCargo',
+      'cesionesCargo', 'requiereAutorizacionAsociacionAnterior', 'asociacionesAnteriores'
+    ];
+  }
+
+  private labelCampo(campo: string): string {
+    const labels: Record<string, string> = {
+      dni: 'DNI/NIE', nif: 'DNI/NIE', sip: 'SIP', nombre: 'Nombre', apellidos: 'Apellidos',
+      nacimiento: 'Fecha de nacimiento', fechaNacimiento: 'Fecha de nacimiento',
+      direccion: 'Dirección', cp: 'Código postal', codigoPostal: 'Código postal',
+      localidad: 'Localidad', provincia: 'Provincia', telefono: 'Teléfono', email: 'Correo electrónico',
+      tipo: 'Tipo de asociado'
+    };
+    return labels[campo] || campo;
   }
 
   private fechaSolicitud(solicitud: SolicitudSecretaria): number {
