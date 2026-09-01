@@ -264,7 +264,9 @@
                 <div class="entries-row" *ngFor="let entrada of entradas">
                   <span>{{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</span>
                   <span>{{ entrada.numero }}</span>
-                  <span>{{ entrada.estado }}</span>
+                  <span><select class="form-select form-select-sm" [ngModel]="entrada.estado" [disabled]="loading" (ngModelChange)="cambiarEstadoEntrada(entrada, $event)">
+                    <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
+                  </select></span>
                   <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
                   <span class="entry-actions">
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
@@ -296,6 +298,8 @@
                     <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                   </ng-container>
                 </dl>
+                <section class="mt-3" *ngIf="entrada.eventos?.length"><h5 class="h6">Historial</h5><ul class="mb-0"><li *ngFor="let evento of entrada.eventos">{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ evento.actor }} · {{ evento.detalle || evento.tipo }}</li></ul></section>
+                <app-incidencias-panel scope="inscripcion" [scopeId]="entrada.id"></app-incidencias-panel>
               </div>
             </section>
 
@@ -307,6 +311,7 @@
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
                 <button class="ux-btn" type="button" (click)="cerrarResumen()">Cerrar</button>
+                <button class="ux-btn ux-btn-secondary" type="button" (click)="descargarJustificanteEntrada(entrada)">Justificante PDF</button>
               </div>
               <dl class="entry-data">
                 <dt>Participantes</dt>
