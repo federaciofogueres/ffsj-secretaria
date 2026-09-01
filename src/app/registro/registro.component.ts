@@ -7,7 +7,7 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { Asociacion, AutorizacionAlta, RegistroDestinatario, RegistroSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, RegistroDestinatario, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -503,8 +503,23 @@ export class RegistroComponent implements OnInit {
       && this.permissions.hasPermission('registro:write');
   }
 
-  descargarAdjunto(url: string): void {
-    window.open(url, '_blank');
+  descargarAdjunto(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        if (adjunto.mimeType === 'application/pdf' || adjunto.mimeType.startsWith('image/')) {
+          window.open(url, '_blank', 'noopener');
+          window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+          return;
+        }
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.originalName || adjunto.fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: response => this.errorRegistros = response?.error?.message || 'No se ha podido descargar el adjunto.'
+    });
   }
 
   cambiarEstado(registro: RegistroSecretaria, estado: RegistroSecretaria['estado']): void {

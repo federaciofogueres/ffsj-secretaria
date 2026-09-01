@@ -170,9 +170,9 @@
                 Lee las condiciones y documentos adjuntos. Despues podras rellenar los datos y seleccionar participantes.
               </p>
               <div class="document-list" *ngIf="adjuntos.length; else noDocs">
-                <a class="document-item" *ngFor="let adjunto of adjuntos" [href]="documentUrl(adjunto)" target="_blank" rel="noopener">
-                  {{ adjunto.originalName || adjunto.fileName }}
-                </a>
+                <button class="document-item" type="button" *ngFor="let adjunto of adjuntos" (click)="abrirDocumento(adjunto)">
+                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : adjunto.mimeType.startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
+                </button>
               </div>
               <div class="actions mt-3" *ngIf="!isAdminMode">
                 <button class="ux-btn" type="button" (click)="goAssociationStep(2)">Continuar</button>
