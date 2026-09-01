@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.4.0#ESMERALDA - 2026-09-01
+
+### Añadido
+
+- Registro usa selectores reales de asociación, departamento y destinatario, sin introducir identificadores manualmente.
+- La administración puede mantener los departamentos y personas destinatarias desde la propia bandeja de Registro.
+- Las bandejas permiten buscar por número, título o contenido y filtrar por estado.
+- El detalle muestra la trazabilidad de cada registro e integra las incidencias vinculadas.
+
+### Mejorado
+
+- Las comunicaciones y la documentación hacen visible su destinatario, área, historial, adjuntos y estado de lectura.
+
 ## 0.3.2#ESMERALDA - 2026-09-01
 
 ### Mejorado

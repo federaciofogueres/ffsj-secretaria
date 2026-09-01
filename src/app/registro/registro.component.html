@@ -70,7 +70,24 @@
             <option [ngValue]="''">Todos</option>
             <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
           </select>
+          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="cargarRegistros()" placeholder="Buscar número, título o texto" />
+          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarRegistros()">
+            <option value="">Todos los estados</option>
+            <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
+          </select>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarRegistros()">Buscar</button>
         </div>
+
+        <section class="border rounded p-3 mb-3" *ngIf="isAdminMode && mode !== null && permissions.hasPermission('registro:write')">
+          <h2 class="h6 mb-1">Destinatarios administrativos</h2>
+          <p class="text-muted small mb-3">Añade departamentos y las personas responsables que aparecerán en los formularios de Registro.</p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label small">Departamento</label><input class="form-control form-control-sm" [(ngModel)]="nuevoDepartamento" placeholder="Ej. Secretaría" /></div>
+            <div class="col-md-4"><label class="form-label small">Persona responsable</label><input class="form-control form-control-sm" [(ngModel)]="nuevoDestinatario" placeholder="Nombre y apellidos" /></div>
+            <div class="col-md-3"><label class="form-label small">Correo</label><input class="form-control form-control-sm" type="email" [(ngModel)]="nuevoDestinatarioEmail" placeholder="correo@ffsj.es" /></div>
+            <div class="col-md-1 d-grid"><button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="guardandoDestinatario" (click)="crearDestinatario()">Añadir</button></div>
+          </div>
+        </section>
 
         <section class="list-card" *ngIf="mode === 'documentacion' && !isFormView && !isDetailView">
           <div class="list-card-head">
@@ -233,6 +250,8 @@
           <div class="registro-detail-meta mt-2" *ngIf="mode === 'documentacion'">
             <span>Procedencia: <strong>{{ emisorRegistro(resultado) }}</strong></span>
             <span>Dirigida a: <strong>{{ receptorRegistro(resultado) }}</strong></span>
+            <span *ngIf="resultado.departamentoNombre">Área: <strong>{{ resultado.departamentoNombre }}</strong></span>
+            <span *ngIf="resultado.destinatarioNombre">Destinatario: <strong>{{ resultado.destinatarioNombre }}</strong></span>
             <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
           </div>
 
@@ -291,6 +310,17 @@
               <p class="text-muted mb-0">Esta comunicacion esta finalizada y no admite nuevas respuestas.</p>
             </ng-template>
           </div>
+
+          <section class="thread mt-3" *ngIf="resultado.eventos?.length">
+            <h2 class="h6 mb-2">Trazabilidad</h2>
+            <article class="thread-message" *ngFor="let evento of resultado.eventos">
+              <strong>{{ evento.tipo }}</strong>
+              <small class="text-muted ms-2">{{ evento.actor }} · {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+              <p class="mb-0" *ngIf="evento.detalle">{{ evento.detalle }}</p>
+            </article>
+          </section>
+
+          <app-incidencias-panel scope="registro" [scopeId]="resultado.id"></app-incidencias-panel>
         </section>
 
         <div class="alert alert-light border" *ngIf="isAdminMode && !isFormView">
@@ -301,8 +331,8 @@
           <div class="field">
             <label class="form-label">Responsable (destinatario) <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="responsable">
-              <option value="" disabled>Selecciona un responsable</option>
-              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+              <option value="" disabled>Selecciona un destinatario</option>
+              <option *ngFor="let destinatario of destinatarios" [value]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
             </select>
             <div class="invalid-field" *ngIf="docForm.get('responsable')?.touched && docForm.get('responsable')?.invalid">
               Campo obligatorio.
@@ -358,7 +388,7 @@
           </div>
 
           <div class="field" *ngIf="isAdminMode">
-            <label class="form-label">ID asociacion destino <span class="text-rojo">*</span></label>
+            <label class="form-label">Asociación destino <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="asociacionId">
               <option value="" disabled>Selecciona una asociacion</option>
               <option *ngFor="let asociacion of asociaciones" [value]="asociacion.id">
@@ -370,8 +400,8 @@
           <div class="field">
             <label class="form-label">Destinatario <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="responsable">
-              <option value="" disabled>Selecciona un responsable</option>
-              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+              <option value="" disabled>Selecciona un destinatario</option>
+              <option *ngFor="let destinatario of destinatarios" [value]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
             </select>
             <div class="invalid-field" *ngIf="commForm.get('responsable')?.touched && commForm.get('responsable')?.invalid">
               Campo obligatorio.
