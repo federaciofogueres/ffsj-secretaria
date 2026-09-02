@@ -90,7 +90,7 @@
               (click)="select(actividad)"
             >
               <span>{{ actividad.titulo }}</span>
-              <small>{{ estadoLabel(actividad.estado) }}</small>
+              <app-estado-badge [estado]="actividad.estado"></app-estado-badge>
             </button>
           </div>
           <ng-template #noDayEvents>

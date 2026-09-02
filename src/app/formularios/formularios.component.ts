@@ -5,13 +5,14 @@ import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Va
 import { CampoInscripcion, FormularioInscripcion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 
 type FieldType = CampoInscripcion['type'];
 
 @Component({
   selector: 'app-formularios',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent, EstadoBadgeComponent],
   templateUrl: './formularios.component.html',
   styleUrls: ['./formularios.component.scss']
 })
