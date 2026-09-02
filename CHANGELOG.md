@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.2#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- El acceso de asociaciones usa la URL de Censo configurada para cada entorno; DEV deja de invocar el endpoint de producción embebido en la librería de autenticación.
+
 ## 0.9.1#ESMERALDA - 2026-09-02
 
 ### Mejorado
