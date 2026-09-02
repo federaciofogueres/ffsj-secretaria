@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.2#ESMERALDA - 2026-09-02
+
+### Mejorado
+
+- Calendario con filtros por estado y visibilidad, consulta administrativa de archivadas y presentación móvil más compacta.
+- La gestión de actividades permite definir si una actividad es visible para las asociaciones.
+
 ## 0.5.1#ESMERALDA - 2026-09-02
 
 ### Añadido

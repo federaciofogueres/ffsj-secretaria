@@ -378,6 +378,7 @@ export interface ActividadSecretaria {
   ejercicio?: number | null;
   titulo: string;
   estado: string;
+  visiblePublico: boolean;
   responsable: string;
   fechaInicio: string;
   fechaFin: string;

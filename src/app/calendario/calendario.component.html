@@ -24,6 +24,12 @@
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
     <div class="text-muted mt-3" *ngIf="loading">Cargando calendario...</div>
 
+    <div class="calendar-filters mt-3">
+      <label>Estado<select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()"><option value="">Todos los visibles</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option><option value="cancelada" *ngIf="isAdminMode">Archivadas</option></select></label>
+      <label *ngIf="isAdminMode">Visibilidad<select class="form-select" [(ngModel)]="filtroVisibilidad" (ngModelChange)="aplicarFiltros()"><option value="">Todas</option><option value="publica">Públicas</option><option value="privada">Internas</option></select></label>
+      <label class="form-check" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" [(ngModel)]="incluirArchivadas" (ngModelChange)="aplicarFiltros()" /> Mostrar archivadas</label>
+    </div>
+
     <div class="calendar-layout mt-4">
       <div class="calendar">
         <h2 class="month-title text-capitalize">{{ monthLabel }}</h2>
@@ -142,6 +148,7 @@
               </div>
               <label class="form-label mt-2">Descripcion</label>
               <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+              <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
               <div class="admin-actions mt-3">
                 <button class="ux-btn" type="submit" [disabled]="loading">Guardar cambios</button>
                 <button
@@ -254,6 +261,7 @@
     </div>
     <label class="form-label mt-2">Descripcion</label>
     <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+    <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
     <div class="d-flex gap-2 mt-3">
       <button class="ux-btn" type="submit" [disabled]="loading">Crear actividad</button>
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>

@@ -470,9 +470,12 @@ export class SecretariaService {
     });
   }
 
-  getActividades(includeInactive = false): Observable<{ actividades: ActividadSecretaria[] }> {
+  getActividades(includeInactive = false, filters: { includeArchived?: boolean; estado?: string; visibilidad?: string } = {}): Observable<{ actividades: ActividadSecretaria[] }> {
     let params = new HttpParams();
     if (includeInactive) params = params.set('includeInactive', 'true');
+    if (filters.includeArchived) params = params.set('includeArchived', 'true');
+    if (filters.estado) params = params.set('estado', filters.estado);
+    if (filters.visibilidad) params = params.set('visibilidad', filters.visibilidad);
     const ejercicio = this.ejercicioSeleccionado();
     if (ejercicio) params = params.set('ejercicio', ejercicio);
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades`, {

@@ -31,6 +31,9 @@ export class CalendarioComponent implements OnInit {
   loading = false;
   error = '';
   success = '';
+  filtroEstado = '';
+  filtroVisibilidad = '';
+  incluirArchivadas = false;
 
   actividadForm = this.fb.group({
     titulo: ['', Validators.required],
@@ -38,6 +41,7 @@ export class CalendarioComponent implements OnInit {
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
     descripcion: ['']
+    , visiblePublico: [true]
   });
 
   editActividadForm = this.fb.group({
@@ -46,6 +50,7 @@ export class CalendarioComponent implements OnInit {
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
     descripcion: ['']
+    , visiblePublico: [true]
   });
 
   linkInscripcionForm = this.fb.group({
@@ -116,6 +121,7 @@ export class CalendarioComponent implements OnInit {
       fechaInicio: this.toDateInput(hydrated.fechaInicio),
       fechaFin: this.toDateInput(hydrated.fechaFin),
       descripcion: hydrated.descripcion || ''
+      , visiblePublico: hydrated.visiblePublico !== false
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
   }
@@ -312,8 +318,16 @@ export class CalendarioComponent implements OnInit {
     return 'Activa';
   }
 
+  aplicarFiltros(): void {
+    this.cargar();
+  }
+
   private recargarTrasCrear(createdId: string): void {
-    this.secretariaService.getActividades(this.isAdminMode).subscribe({
+    this.secretariaService.getActividades(this.isAdminMode, {
+      includeArchived: this.isAdminMode && this.incluirArchivadas,
+      estado: this.filtroEstado || undefined,
+      visibilidad: this.filtroVisibilidad || undefined
+    }).subscribe({
       next: response => {
         this.actividades = response.actividades;
         this.selected = this.actividades.find(actividad => actividad.id === createdId) || this.actividades[0] || null;
