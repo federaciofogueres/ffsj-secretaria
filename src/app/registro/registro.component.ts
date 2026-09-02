@@ -314,7 +314,8 @@ export class RegistroComponent implements OnInit {
       switchMap(registro => this.docAdjuntos.length
         ? forkJoin(this.docAdjuntos.map(file => this.secretariaService.subirAdjunto('registro', registro.id, file))).pipe(switchMap(() => of(registro)))
         : of(registro)
-      )
+      ),
+      switchMap(registro => this.secretariaService.getRegistro(registro.id))
     ).subscribe({
       next: registro => {
         this.docBandeja = 'presentada';

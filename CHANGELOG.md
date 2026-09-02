@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.4#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- La documentación y las comunicaciones recargan el registro tras subir adjuntos, de modo que pueden abrirse inmediatamente sin referencias `undefined`.
+- El selector compartido de adjuntos evita repetir el mismo archivo y presenta una acción de retirada más clara.
+- El detalle administrativo de Soporte muestra estados como etiquetas y separa visualmente la retirada de adjuntos y el guardado de estado.
+
 ## 0.9.3#ESMERALDA - 2026-09-02
 
 ### Corregido
