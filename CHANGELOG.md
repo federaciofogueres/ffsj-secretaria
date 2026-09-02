@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.1#ESMERALDA - 2026-09-02
+
+### Testing
+
+- Se cubren filtros, paginación y cambio de página de la bandeja de Solicitudes.
+- Se estabilizan los mocks de cupos e incidencias para que la suite Angular complete sus pruebas de regresión.
+
 ## 0.8.0#ESMERALDA - 2026-09-02
 
 ### Mejorado
