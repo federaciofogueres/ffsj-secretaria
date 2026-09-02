@@ -309,7 +309,7 @@ export interface InscripcionEntradaSecretaria {
   ejercicio?: number | null;
   asociacionNombre?: string;
   formularioId: string;
-  estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada';
+  estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada' | 'retirada_solicitada' | 'retirada';
   fechaEntrada: string;
   participantes: string[];
   datos: Record<string, unknown>;
