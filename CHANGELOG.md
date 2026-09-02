@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1#ESMERALDA - 2026-09-02
+
+### Añadido
+
+- El detalle de cada entrada de inscripción permite seleccionar, consultar y abrir sus adjuntos mediante descarga autenticada.
+
 ## 0.5.0#ESMERALDA - 2026-09-02
 
 ### Añadido

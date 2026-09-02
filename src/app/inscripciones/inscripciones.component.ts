@@ -34,6 +34,7 @@ export class InscripcionesComponent implements OnInit {
   entradaAsociados: Record<number, Asociado[]> = {};
   asociados: Asociado[] = [];
   adjuntos: AdjuntoSecretaria[] = [];
+  adjuntosEntrada: AdjuntoSecretaria[] = [];
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   loading = false;
@@ -164,6 +165,7 @@ export class InscripcionesComponent implements OnInit {
     this.selectedInscription = inscription;
     this.selectedParticipants.clear();
     this.miEntrada = null;
+    this.adjuntosEntrada = [];
     this.associationMode = this.isAdminMode ? 'edit' : 'edit';
     this.success = '';
     this.error = '';
@@ -456,6 +458,30 @@ export class InscripcionesComponent implements OnInit {
 
   verEntrada(entrada: InscripcionEntradaSecretaria): void {
     this.selectedEntrada = entrada;
+    this.cargarAdjuntosEntrada(entrada.id);
+  }
+
+  onAdjuntosEntradaChange(event: Event, entrada: InscripcionEntradaSecretaria): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    this.loading = true;
+    this.error = '';
+    let pendientes = files.length;
+    const finalizar = () => {
+      pendientes -= 1;
+      if (pendientes) return;
+      input.value = '';
+      this.loading = false;
+      this.cargarAdjuntosEntrada(entrada.id);
+    };
+    files.forEach(file => this.secretariaService.subirAdjunto('inscripcion_entrada', entrada.id, file).subscribe({
+      next: () => finalizar(),
+      error: () => {
+        this.error = 'No se ha podido adjuntar uno de los documentos de la inscripción.';
+        finalizar();
+      }
+    }));
   }
 
   imprimirEntrada(entrada: InscripcionEntradaSecretaria): void {
@@ -658,10 +684,19 @@ export class InscripcionesComponent implements OnInit {
     });
   }
 
+  private cargarAdjuntosEntrada(entradaId: number): void {
+    this.adjuntosEntrada = [];
+    this.secretariaService.getAdjuntos('inscripcion_entrada', entradaId).subscribe({
+      next: response => this.adjuntosEntrada = response.adjuntos,
+      error: () => this.adjuntosEntrada = []
+    });
+  }
+
   private cargarMiEntrada(inscription: InscripcionSecretaria): void {
     this.secretariaService.getMiEntradaInscripcion(inscription.id).subscribe({
       next: entrada => {
         this.miEntrada = entrada;
+        this.cargarAdjuntosEntrada(entrada.id);
         this.patchEntradaForm(entrada);
         this.associationMode = 'view';
       },
