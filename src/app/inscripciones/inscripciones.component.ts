@@ -929,7 +929,7 @@ export class InscripcionesComponent implements OnInit {
     if (!inscription.fechaLimite) {
       return true;
     }
-    return new Date(String(inscription.fechaLimite).slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10));
+    return String(inscription.fechaLimite).slice(0, 10) >= this.fechaHoyLocal();
   }
 
   isInscripcionDisponible(inscription: InscripcionSecretaria): boolean {
@@ -937,7 +937,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   mensajeDisponibilidadInscripcion(inscription: InscripcionSecretaria): string | null {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = this.fechaHoyLocal();
     const publicacion = String(inscription.fechaPublicacion || '').slice(0, 10);
     const limite = String(inscription.fechaLimite || '').slice(0, 10);
     if (publicacion && publicacion > today) return `La inscripción se abrirá el ${this.fechaLegible(publicacion)}.`;
@@ -1127,6 +1127,11 @@ export class InscripcionesComponent implements OnInit {
   private fechaLegible(value: string): string {
     const [year, month, day] = value.split('-');
     return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  private fechaHoyLocal(): string {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
   }
 
   private toDateInput(value: string | null | undefined): string {
