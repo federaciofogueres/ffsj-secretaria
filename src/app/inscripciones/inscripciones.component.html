@@ -200,6 +200,11 @@
                   {{ formulario.nombre }} ({{ formulario.campos.length }} campo(s))
                 </option>
               </select>
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                <input class="form-control" type="text" [(ngModel)]="nuevoFormularioNombre" [ngModelOptions]="{standalone: true}" placeholder="Nombre de nueva plantilla" />
+                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading || !nuevoFormularioNombre.trim()" (click)="crearFormularioDesdeInscripcion()">Crear formulario</button>
+              </div>
+              <p class="text-muted small mb-0 mt-1">Crea una plantilla con los campos actuales y después guarda esta gestión para asociarla.</p>
               <label class="form-label mt-2">Actividad vinculada</label>
               <select class="form-select" formControlName="actividadId">
                 <option value="">Sin actividad vinculada</option>
@@ -349,9 +354,10 @@
                   <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
-                <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription) || accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
+                <button class="ux-btn" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
                   Modificar inscripcion
                 </button>
+                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="loading" (click)="solicitarBorradoMiEntrada()">Borrar inscripción</button>
                 <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeSolicitarRetirada(entrada)" [disabled]="loading" (click)="solicitarRetirada(entrada)">
                   Solicitar retirada
                 </button>
@@ -368,7 +374,8 @@
                 <h4 class="h6">Adjuntos de la entrada</h4>
                 <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
               </section>
-              <p class="text-muted mb-0 mt-2" *ngIf="!isWithinDeadline(inscription)">El plazo de modificacion esta cerrado.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'validada'">Validada: no se puede modificar ni borrar.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado !== 'validada' && !isWithinDeadline(inscription)">Plazo cerrado: no se puede modificar ni borrar.</p>
               <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada_solicitada'">Retirada pendiente de validación administrativa.</p>
               <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
             </section>
@@ -544,5 +551,14 @@
   confirmLabel="Borrar inscripción"
   (cancel)="confirmDelete = false"
   (confirmed)="confirmarBorradoInscripcion()"
+></app-confirm-dialog>
+
+<app-confirm-dialog
+  *ngIf="confirmDeleteEntry"
+  title="Borrar inscripción presentada"
+  message="Se eliminará la entrada y su historial. Esta acción no se puede deshacer."
+  confirmLabel="Borrar inscripción"
+  (cancel)="confirmDeleteEntry = false"
+  (confirmed)="confirmarBorradoMiEntrada()"
 ></app-confirm-dialog>
 

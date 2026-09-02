@@ -386,6 +386,12 @@ export class SecretariaService {
     });
   }
 
+  borrarMiEntradaInscripcion(id: number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas/${id}`, {
+      headers: this.authHeaders()
+    });
+  }
+
   crearInscripcion(payload: unknown): Observable<InscripcionSecretaria> {
     return this.http.post<InscripcionSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones`, payload, {
       headers: this.authHeaders()
