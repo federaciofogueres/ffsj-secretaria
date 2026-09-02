@@ -150,6 +150,7 @@ export class InscripcionesComponent implements OnInit {
     return !this.isAdminMode &&
       this.permissions.hasPermission('inscripciones:write') &&
       this.associationMode === 'edit' &&
+      Boolean(this.selectedInscription && this.isInscripcionDisponible(this.selectedInscription)) &&
       this.form.valid &&
       (!this.requiresParticipants || this.selectedParticipants.size > 0);
   }
@@ -554,6 +555,11 @@ export class InscripcionesComponent implements OnInit {
       this.error = this.mensajeEjercicioNoActivo;
       return;
     }
+    const disponibilidad = this.mensajeDisponibilidadInscripcion(this.selectedInscription);
+    if (disponibilidad) {
+      this.error = disponibilidad;
+      return;
+    }
     if (!this.canSubmit) {
       this.form.markAllAsTouched();
       return;
@@ -569,8 +575,8 @@ export class InscripcionesComponent implements OnInit {
         this.associationMode = 'summary';
         this.success = 'Inscripcion enviada correctamente.';
       },
-      error: () => {
-        this.error = 'No se ha podido enviar la inscripcion.';
+      error: error => {
+        this.error = error?.error?.message || 'No se ha podido enviar la inscripción.';
       }
     });
   }
@@ -926,6 +932,19 @@ export class InscripcionesComponent implements OnInit {
     return new Date(String(inscription.fechaLimite).slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10));
   }
 
+  isInscripcionDisponible(inscription: InscripcionSecretaria): boolean {
+    return !this.mensajeDisponibilidadInscripcion(inscription);
+  }
+
+  mensajeDisponibilidadInscripcion(inscription: InscripcionSecretaria): string | null {
+    const today = new Date().toISOString().slice(0, 10);
+    const publicacion = String(inscription.fechaPublicacion || '').slice(0, 10);
+    const limite = String(inscription.fechaLimite || '').slice(0, 10);
+    if (publicacion && publicacion > today) return `La inscripción se abrirá el ${this.fechaLegible(publicacion)}.`;
+    if (limite && limite < today) return `El plazo de presentación finalizó el ${this.fechaLegible(limite)}. No es posible enviar la inscripción.`;
+    return null;
+  }
+
   puedeSolicitarRetirada(entrada: InscripcionEntradaSecretaria): boolean {
     return entrada.estado === 'validada' || !this.isWithinDeadline(this.selectedInscription!);
   }
@@ -1103,6 +1122,11 @@ export class InscripcionesComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
+  }
+
+  private fechaLegible(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
   }
 
   private toDateInput(value: string | null | undefined): string {
