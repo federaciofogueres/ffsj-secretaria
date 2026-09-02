@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.7.3#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- Inscripciones consulta los asociados de Censo para el ejercicio activo, incluido el selector de responsables y participantes adultos.
+- La consulta administrativa de participantes usa el mismo ejercicio activo para no resolver nombres con datos de otro ejercicio.
+
 ## 0.7.2#ESMERALDA - 2026-09-02
 
 ### Corregido
