@@ -200,6 +200,11 @@
                   {{ formulario.nombre }} ({{ formulario.campos.length }} campo(s))
                 </option>
               </select>
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                <input class="form-control" type="text" [(ngModel)]="nuevoFormularioNombre" [ngModelOptions]="{standalone: true}" placeholder="Nombre de nueva plantilla" />
+                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading || !nuevoFormularioNombre.trim()" (click)="crearFormularioDesdeInscripcion()">Crear formulario</button>
+              </div>
+              <p class="text-muted small mb-0 mt-1">Crea una plantilla con los campos actuales y después guarda esta gestión para asociarla.</p>
               <label class="form-label mt-2">Actividad vinculada</label>
               <select class="form-select" formControlName="actividadId">
                 <option value="">Sin actividad vinculada</option>

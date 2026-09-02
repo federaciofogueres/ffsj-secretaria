@@ -47,6 +47,7 @@ export class InscripcionesComponent implements OnInit {
   createMode = false;
   confirmDelete = false;
   confirmDeleteEntry = false;
+  nuevoFormularioNombre = '';
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -610,6 +611,27 @@ export class InscripcionesComponent implements OnInit {
         this.loading = false;
       },
       error: error => { this.error = error?.error?.message || 'No se ha podido borrar la inscripción.'; this.loading = false; }
+    });
+  }
+
+  crearFormularioDesdeInscripcion(): void {
+    const nombre = this.nuevoFormularioNombre.trim();
+    if (!this.isAdminMode || !this.selectedInscription || !nombre || this.loading) return;
+    this.loading = true;
+    this.secretariaService.crearFormulario({
+      nombre,
+      descripcion: `Plantilla creada desde la inscripción ${this.selectedInscription.titulo}`,
+      campos: this.selectedInscription.campos,
+      estado: 'activo'
+    }).subscribe({
+      next: formulario => {
+        this.formularios = [...this.formularios.filter(item => item.id !== formulario.id), formulario];
+        this.inscripcionAdminForm.patchValue({ formularioId: formulario.id });
+        this.nuevoFormularioNombre = '';
+        this.success = 'Formulario creado y seleccionado. Guarda la gestión para asociarlo a la inscripción.';
+        this.loading = false;
+      },
+      error: error => { this.error = error?.error?.message || 'No se ha podido crear el formulario.'; this.loading = false; }
     });
   }
 
