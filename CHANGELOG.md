@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.1#ESMERALDA - 2026-09-02
+
+### Mejorado
+
+- Inscripciones muestra de forma explícita cuándo una entrada validada o fuera de plazo no se puede modificar ni borrar.
+- Las asociaciones pueden borrar con confirmación una entrada propia mientras el plazo esté abierto y no esté validada.
+- Administración puede crear una plantilla reutilizable desde la gestión de una inscripción y asociarla al guardar.
+
 ## 0.9.0#ESMERALDA - 2026-09-02
 
 ### Añadido
