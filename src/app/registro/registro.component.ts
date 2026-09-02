@@ -507,7 +507,7 @@ export class RegistroComponent implements OnInit {
     this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
       next: blob => {
         const url = URL.createObjectURL(blob);
-        if (adjunto.mimeType === 'application/pdf' || adjunto.mimeType.startsWith('image/')) {
+        if (adjunto.mimeType === 'application/pdf' || (adjunto.mimeType || '').startsWith('image/')) {
           window.open(url, '_blank', 'noopener');
           window.setTimeout(() => URL.revokeObjectURL(url), 60000);
           return;
