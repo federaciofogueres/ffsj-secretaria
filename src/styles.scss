@@ -96,6 +96,19 @@ a {
   text-decoration: none;
 }
 
+:focus-visible {
+  outline: 3px solid #175cd3;
+  outline-offset: 3px;
+}
+
+@media (max-width: 767px) {
+  .table-responsive,
+  .mat-mdc-table {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+
 router-outlet+* {
   width: 100%;
   display: block;

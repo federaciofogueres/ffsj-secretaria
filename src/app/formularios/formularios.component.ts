@@ -4,13 +4,14 @@ import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Va
 
 import { CampoInscripcion, FormularioInscripcion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 
 type FieldType = CampoInscripcion['type'];
 
 @Component({
   selector: 'app-formularios',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent],
   templateUrl: './formularios.component.html',
   styleUrls: ['./formularios.component.scss']
 })
@@ -20,6 +21,7 @@ export class FormulariosComponent implements OnInit {
   loading = false;
   error = '';
   success = '';
+  confirmDelete = false;
 
   readonly fieldTypes: { value: FieldType; label: string }[] = [
     { value: 'text', label: 'Texto corto' },
@@ -149,9 +151,12 @@ export class FormulariosComponent implements OnInit {
 
   borrar(): void {
     if (!this.selected) return;
-    if (!window.confirm('Solo se puede borrar si no esta vinculado a inscripciones. Esta accion no se puede deshacer.')) {
-      return;
-    }
+    this.confirmDelete = true;
+  }
+
+  confirmarBorrado(): void {
+    if (!this.selected) return;
+    this.confirmDelete = false;
     this.loading = true;
     this.secretariaService.borrarFormulario(this.selected.id).subscribe({
       next: () => {

@@ -131,3 +131,12 @@
   </div>
 </section>
 
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar formulario"
+  message="Solo se puede borrar si no está vinculado a inscripciones. Esta acción no se puede deshacer."
+  confirmLabel="Borrar formulario"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorrado()"
+></app-confirm-dialog>
+

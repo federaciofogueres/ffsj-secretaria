@@ -103,7 +103,7 @@
           <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de actividad</p>
           <div class="d-flex align-items-start justify-content-between gap-2">
             <h2 class="detail-title mb-1">{{ selected.titulo }}</h2>
-            <span class="status" [class.inactive]="selected.estado === 'cerrada'">{{ estadoLabel(selected.estado) }}</span>
+            <app-estado-badge [estado]="selected.estado"></app-estado-badge>
           </div>
           <p class="text-muted mb-2">
             {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
@@ -234,6 +234,15 @@
     </div>
   </div>
 </section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar actividad"
+  message="Esta acción borrará definitivamente la actividad. No se puede deshacer."
+  confirmLabel="Borrar actividad"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorradoActividad()"
+></app-confirm-dialog>
 
 <div class="modal-backdrop-custom" *ngIf="showCreateDialog" (click)="cerrarCrearActividad()"></div>
 <section class="modal-panel" *ngIf="showCreateDialog" role="dialog" aria-modal="true" aria-label="Añadir actividad">

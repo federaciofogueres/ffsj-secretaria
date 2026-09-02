@@ -42,6 +42,8 @@
               role="button"
               tabindex="0"
               (click)="openInscription(item)"
+              (keydown.enter)="openInscription(item)"
+              (keydown.space)="openInscription(item); $event.preventDefault()"
             >
               <div class="text-start">
                 <p class="title mb-1">{{ item.titulo }}</p>
@@ -49,7 +51,7 @@
                 <div class="dates small text-muted">
                   <span>Publicada: {{ item.fechaPublicacion | date : 'dd/MM/y' }}</span>
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
-                  <span class="ms-2" *ngIf="isAdminMode">Estado: {{ item.estado }}</span>
+                  <app-estado-badge class="ms-2" *ngIf="isAdminMode" [estado]="item.estado"></app-estado-badge>
                 </div>
               </div>
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
@@ -526,4 +528,13 @@
       </div>
   </div>
 </section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar inscripción"
+  message="Esta acción borrará definitivamente la inscripción. No se puede deshacer."
+  confirmLabel="Borrar inscripción"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorradoInscripcion()"
+></app-confirm-dialog>
 
