@@ -372,6 +372,14 @@ export class SecretariaService {
     });
   }
 
+  solicitarRetiradaInscripcion(id: number, detalle = ''): Observable<InscripcionEntradaSecretaria> {
+    return this.http.post<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas/${id}/retirada`, { detalle }, { headers: this.authHeaders() });
+  }
+
+  resolverRetiradaInscripcion(id: number, aprobar: boolean, detalle = ''): Observable<InscripcionEntradaSecretaria> {
+    return this.http.post<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/entradas/${id}/retirada/decision`, { aprobar, detalle }, { headers: this.authHeaders() });
+  }
+
   getMiEntradaInscripcion(formularioId: string): Observable<InscripcionEntradaSecretaria> {
     return this.http.get<InscripcionEntradaSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/${formularioId}/mi-entrada`, {
       headers: this.authHeaders()

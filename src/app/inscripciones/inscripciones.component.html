@@ -266,8 +266,9 @@
                 <div class="entries-row" *ngFor="let entrada of entradas">
                   <span>{{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</span>
                   <span>{{ entrada.numero }}</span>
-                  <span><select class="form-select form-select-sm" [ngModel]="entrada.estado" [disabled]="loading" (ngModelChange)="cambiarEstadoEntrada(entrada, $event)">
+                  <span><select class="form-select form-select-sm" [ngModel]="entrada.estado" [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'" (ngModelChange)="cambiarEstadoEntrada(entrada, $event)">
                     <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
+                    <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
                   </select></span>
                   <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
                   <span class="entry-actions">
@@ -275,6 +276,8 @@
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
                   </span>
                 </div>
               </div>
@@ -349,6 +352,9 @@
                 <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription) || accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
                   Modificar inscripcion
                 </button>
+                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeSolicitarRetirada(entrada)" [disabled]="loading" (click)="solicitarRetirada(entrada)">
+                  Solicitar retirada
+                </button>
               </div>
               <dl class="entry-data">
                 <dt>Participantes</dt>
@@ -363,6 +369,8 @@
                 <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
               </section>
               <p class="text-muted mb-0 mt-2" *ngIf="!isWithinDeadline(inscription)">El plazo de modificacion esta cerrado.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada_solicitada'">Retirada pendiente de validación administrativa.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
             </section>
 
             <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'edit'">

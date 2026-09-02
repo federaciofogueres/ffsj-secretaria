@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.9.0#ESMERALDA - 2026-09-02
+
+### Añadido
+
+- Las asociaciones pueden solicitar la retirada de una inscripción validada o cuyo plazo haya terminado.
+- Administración puede aprobar o rechazar la retirada desde el listado de entradas y consultar el historial resultante.
+
 ## 0.8.1#ESMERALDA - 2026-09-02
 
 ### Testing

@@ -878,6 +878,33 @@ export class InscripcionesComponent implements OnInit {
     return new Date(String(inscription.fechaLimite).slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10));
   }
 
+  puedeSolicitarRetirada(entrada: InscripcionEntradaSecretaria): boolean {
+    return entrada.estado === 'validada' || !this.isWithinDeadline(this.selectedInscription!);
+  }
+
+  solicitarRetirada(entrada: InscripcionEntradaSecretaria): void {
+    if (this.loading || !this.puedeSolicitarRetirada(entrada)) return;
+    this.loading = true;
+    this.secretariaService.solicitarRetiradaInscripcion(entrada.id).subscribe({
+      next: updated => { this.miEntrada = updated; this.success = 'Solicitud de retirada enviada a administración.'; this.loading = false; },
+      error: error => { this.error = error?.error?.message || 'No se ha podido solicitar la retirada.'; this.loading = false; }
+    });
+  }
+
+  resolverRetirada(entrada: InscripcionEntradaSecretaria, aprobar: boolean): void {
+    if (!this.isAdminMode || this.loading || entrada.estado !== 'retirada_solicitada') return;
+    this.loading = true;
+    this.secretariaService.resolverRetiradaInscripcion(entrada.id, aprobar).subscribe({
+      next: updated => {
+        this.entradas = this.entradas.map(item => item.id === updated.id ? { ...item, ...updated } : item);
+        this.selectedEntrada = this.selectedEntrada?.id === updated.id ? { ...this.selectedEntrada, ...updated } : this.selectedEntrada;
+        this.success = aprobar ? 'Retirada aprobada.' : 'Solicitud de retirada rechazada.';
+        this.loading = false;
+      },
+      error: error => { this.error = error?.error?.message || 'No se ha podido resolver la retirada.'; this.loading = false; }
+    });
+  }
+
   private buildAdminPayload(estado = this.selectedInscription?.estado || 'abierta'): unknown {
     const formularioSeleccionado = this.formularios.find(item => item.id === this.inscripcionAdminForm.value.formularioId);
     return {
