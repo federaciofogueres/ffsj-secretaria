@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.0#ESMERALDA - 2026-09-02
+
+### Mejorado
+
+- Confirmaciones accesibles propias para las acciones destructivas de calendario, inscripciones y formularios.
+- Etiquetas de estado reutilizables con color e icono en calendario, inscripciones y formularios.
+- Navegación por teclado en el listado de inscripciones, foco visible y mejor comportamiento de tablas en pantallas pequeñas.
+
 ## 0.5.2#ESMERALDA - 2026-09-02
 
 ### Mejorado

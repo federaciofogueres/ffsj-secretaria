@@ -10,6 +10,8 @@ import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -19,7 +21,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
@@ -43,6 +45,7 @@ export class InscripcionesComponent implements OnInit {
   editingInscription = false;
   detailMode = false;
   createMode = false;
+  confirmDelete = false;
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -296,9 +299,12 @@ export class InscripcionesComponent implements OnInit {
     if (!this.selectedInscription || !this.isAdminMode) {
       return;
     }
-    if (!window.confirm('Esta accion borrara definitivamente la inscripcion. No se puede deshacer.')) {
-      return;
-    }
+    this.confirmDelete = true;
+  }
+
+  confirmarBorradoInscripcion(): void {
+    if (!this.selectedInscription || !this.isAdminMode) return;
+    this.confirmDelete = false;
     this.loading = true;
     this.error = '';
     this.success = '';

@@ -7,6 +7,8 @@ import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 
 interface CalendarDay {
   date: Date;
@@ -17,7 +19,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })
@@ -28,6 +30,7 @@ export class CalendarioComponent implements OnInit {
   selected: ActividadSecretaria | null = null;
   selectedDate: Date | null = null;
   showCreateDialog = false;
+  confirmDelete = false;
   loading = false;
   error = '';
   success = '';
@@ -229,8 +232,12 @@ export class CalendarioComponent implements OnInit {
 
   borrarActividad(): void {
     if (!this.selected) return;
-    const confirmed = window.confirm('Esta accion borrara definitivamente la actividad. No se puede deshacer.');
-    if (!confirmed) return;
+    this.confirmDelete = true;
+  }
+
+  confirmarBorradoActividad(): void {
+    if (!this.selected) return;
+    this.confirmDelete = false;
     const deletedId = this.selected.id;
     this.loading = true;
     this.error = '';

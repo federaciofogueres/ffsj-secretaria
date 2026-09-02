@@ -27,7 +27,7 @@
             <strong>{{ formulario.nombre }}</strong>
             <small>{{ formulario.campos.length }} campo(s) - {{ formulario.inscripcionesCount }} inscripcion(es)</small>
           </span>
-          <em [class.archived]="formulario.estado === 'archivado'">{{ formulario.estado }}</em>
+          <app-estado-badge [estado]="formulario.estado"></app-estado-badge>
         </button>
       </aside>
 
@@ -130,4 +130,13 @@
     </div>
   </div>
 </section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar formulario"
+  message="Solo se puede borrar si no está vinculado a inscripciones. Esta acción no se puede deshacer."
+  confirmLabel="Borrar formulario"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorrado()"
+></app-confirm-dialog>
 
