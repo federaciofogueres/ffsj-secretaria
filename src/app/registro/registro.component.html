@@ -259,7 +259,7 @@
 
           <div class="attachments mt-2" *ngIf="resultado.adjuntos.length">
             <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of resultado.adjuntos" (click)="descargarAdjunto(adjunto)">
-              {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : adjunto.mimeType.startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
+              {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
             </button>
           </div>
 
@@ -286,7 +286,7 @@
               <p class="mb-2">{{ mensaje.mensaje }}</p>
               <div class="attachments" *ngIf="mensaje.adjuntos.length">
                 <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto)">
-                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : adjunto.mimeType.startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
+                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
                 </button>
               </div>
             </article>
