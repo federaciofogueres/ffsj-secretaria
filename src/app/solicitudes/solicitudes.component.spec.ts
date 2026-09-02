@@ -43,9 +43,11 @@ describe('SolicitudesComponent', () => {
       'validarSolicitud',
       'rechazarSolicitud',
       'finalizarSolicitud',
-      'cancelarEnvioSolicitud'
+      'cancelarEnvioSolicitud',
+      'getIncidencias'
     ]);
-    secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes }));
+    secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes, paginacion: { page: 1, pageSize: 20, total: 25, totalPages: 2 } }));
+    secretariaService.getIncidencias.and.returnValue(of({ incidencias: [] }));
     secretariaService.getSolicitud.and.returnValue(of({
       ...solicitudes[0],
       items: [
@@ -87,12 +89,25 @@ describe('SolicitudesComponent', () => {
     expect(component.solicitudes.length).toBe(2);
   });
 
-  it('filtra por tipo y texto', () => {
+  it('envía filtros al servidor y reinicia la página', () => {
     component.filtroTipo = 'alta';
     component.filtroTexto = '25';
+    component.paginaActual = 2;
+    component.aplicarFiltros();
 
-    expect(component.solicitudesFiltradas.length).toBe(1);
-    expect(component.solicitudesFiltradas[0].numero).toBe('SOL-2026-000001');
+    expect(component.paginaActual).toBe(1);
+    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({
+      page: 1, tipo: 'alta', busqueda: '25'
+    }));
+  });
+
+  it('cambia de página respetando los límites', () => {
+    component.cambiarPagina(1);
+    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ page: 2 }));
+
+    component.paginaActual = 1;
+    component.cambiarPagina(-1);
+    expect(component.paginaActual).toBe(1);
   });
 
   it('permite validar una solicitud enviada', () => {

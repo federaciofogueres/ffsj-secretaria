@@ -37,10 +37,12 @@ describe('AsociadosGestionComponent', () => {
       'getSolicitudes',
       'crearRegistroPendiente',
       'crearSolicitud',
-      'enviarSolicitud'
+      'enviarSolicitud',
+      'getCargosCupos'
     ]);
     secretariaService.getRegistroPendiente.and.returnValue(of({ items: [] }));
     secretariaService.getSolicitudes.and.returnValue(of({ solicitudes: [] }));
+    secretariaService.getCargosCupos.and.returnValue(of({ cargos: [] }));
     let registroId = 1;
     secretariaService.crearRegistroPendiente.and.callFake((payload: any) => of({
       id: registroId++,
