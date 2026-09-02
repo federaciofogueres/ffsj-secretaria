@@ -494,7 +494,8 @@
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Fecha de nacimiento</label>
-              <input type="date" class="form-control" formControlName="nacimiento" />
+              <input type="date" class="form-control" [class.is-invalid]="controlInvalido('nacimiento')" formControlName="nacimiento" />
+              <div class="invalid-feedback">La fecha de nacimiento debe ser válida y no puede ser futura.</div>
             </div>
           </div>
         </section>
