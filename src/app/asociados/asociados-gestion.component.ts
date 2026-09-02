@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
@@ -16,6 +16,14 @@ import { Asociado, AsociadosService } from './asociados.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
+
+function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | null {
+  const value = String(control.value || '').trim();
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= new Date().toISOString().slice(0, 10)
+    ? null : { fechaNacimientoInvalida: true };
+}
 type ListadoContexto = 'modificaciones' | 'bajas';
 
 interface SustitucionCargoRequerido {
@@ -92,7 +100,7 @@ export class AsociadosGestionComponent implements OnInit {
     cargoId: [null as number | null],
     dni: ['', [Validators.required, Validators.pattern(/^(?:\d{8}|[XYZ]\d{7})[A-Za-z]$/)]],
     sip: ['', [Validators.maxLength(30)]],
-    nacimiento: [''],
+    nacimiento: ['', fechaNacimientoValidator],
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     apellidos: ['', [Validators.required, Validators.maxLength(150)]],
     direccion: ['', Validators.maxLength(200)],

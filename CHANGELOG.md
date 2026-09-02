@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.9.3#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- Se estabiliza el flujo de cambios de cargo con sustitución para que los datos requeridos se resuelvan en API.
+
 ## 0.9.2#ESMERALDA - 2026-09-02
 
 ### Corregido
