@@ -155,6 +155,7 @@ export class SecretariaService {
     estado?: string;
     busqueda?: string;
     orden?: 'fecha_desc' | 'fecha_asc' | 'estado';
+    soloProblematicas?: boolean;
   } = {}): Observable<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams();
     const ejercicio = this.ejercicioSeleccionado();
@@ -165,6 +166,7 @@ export class SecretariaService {
     if (filters.estado) params = params.set('estado', filters.estado);
     if (filters.busqueda) params = params.set('busqueda', filters.busqueda);
     if (filters.orden) params = params.set('orden', filters.orden);
+    if (filters.soloProblematicas) params = params.set('soloProblematicas', 'true');
     return this.http.get<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }>(`${this.apiUrl.secretariaBasePath}/solicitudes/global`, {
       params,
       headers: this.authHeaders()

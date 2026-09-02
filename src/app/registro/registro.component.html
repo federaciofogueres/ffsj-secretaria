@@ -296,7 +296,7 @@
             <ng-container *ngIf="resultado.estado !== 'finalizada'; else comunicacionFinalizada">
               <label class="form-label">Responder en este hilo</label>
               <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe una respuesta"></textarea>
-              <input class="form-control form-control-sm mt-2" type="file" multiple (change)="onRespuestaFiles($event)" />
+              <app-adjuntos-selector label="Adjuntos de la respuesta" [files]="respuestaAdjuntos" [disabled]="submittingComm" (filesChange)="respuestaAdjuntos = $event" />
               <div class="d-flex flex-wrap gap-2 mt-2">
                 <button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
                   Responder
@@ -357,14 +357,10 @@
 
           <div class="field">
             <label class="form-label">Adjuntar documentos <span class="text-rojo">*</span></label>
-            <input type="file" class="form-control" multiple (change)="onDocFiles($event)" [disabled]="docLocked" />
-            <small class="text-muted d-block mt-1">Puedes adjuntar varios archivos y enviarlos juntos.</small>
+            <app-adjuntos-selector label="Documentación adjunta" [files]="docAdjuntos" [disabled]="docLocked || submittingDoc" (filesChange)="docAdjuntos = $event" />
             <div class="invalid-field" *ngIf="docAdjuntos.length === 0 && docForm.touched">
               Anade al menos un documento.
             </div>
-            <ul class="adjuntos" *ngIf="docAdjuntos.length > 0">
-              <li *ngFor="let file of docAdjuntos">{{ file.name }}</li>
-            </ul>
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
@@ -426,11 +422,7 @@
 
           <div class="field">
             <label class="form-label">Adjuntar documentacion (opcional)</label>
-            <input type="file" class="form-control" multiple (change)="onCommFiles($event)" [disabled]="commLocked" />
-            <small class="text-muted d-block mt-1">Recuerda: para registro oficial, usa la opcion de documentacion.</small>
-            <ul class="adjuntos" *ngIf="commAdjuntos.length > 0">
-              <li *ngFor="let file of commAdjuntos">{{ file.name }}</li>
-            </ul>
+            <app-adjuntos-selector label="Adjuntos de la comunicación" [files]="commAdjuntos" [disabled]="commLocked || submittingComm" (filesChange)="commAdjuntos = $event" />
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">

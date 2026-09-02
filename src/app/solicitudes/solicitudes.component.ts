@@ -74,7 +74,8 @@ export class SolicitudesComponent implements OnInit {
       tipo: this.filtroTipo === 'todos' ? undefined : this.filtroTipo,
       estado: this.filtroEstado === 'todos' ? undefined : this.filtroEstado,
       busqueda: this.filtroTexto.trim() || undefined,
-      orden: this.orden
+      orden: this.orden,
+      soloProblematicas: this.soloProblematicas
     }).subscribe({
       next: response => {
         this.solicitudes = response.solicitudes;
