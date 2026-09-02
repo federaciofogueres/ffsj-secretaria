@@ -46,6 +46,7 @@ export class InscripcionesComponent implements OnInit {
   detailMode = false;
   createMode = false;
   confirmDelete = false;
+  confirmDeleteEntry = false;
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -578,13 +579,38 @@ export class InscripcionesComponent implements OnInit {
       this.error = this.mensajeEjercicioNoActivo;
       return;
     }
-    if (!this.selectedInscription || !this.isWithinDeadline(this.selectedInscription)) {
-      this.error = 'El plazo de inscripcion esta cerrado.';
+    if (!this.puedeModificarMiEntrada()) {
+      this.error = this.miEntrada?.estado === 'validada' ? 'La inscripción está validada y no se puede modificar.' : 'El plazo de inscripcion esta cerrado.';
       return;
     }
     this.associationMode = 'edit';
     this.success = '';
     this.error = '';
+  }
+
+  puedeModificarMiEntrada(): boolean {
+    return Boolean(this.miEntrada && this.selectedInscription && this.miEntrada.estado !== 'validada' && this.miEntrada.estado !== 'retirada_solicitada' && this.miEntrada.estado !== 'retirada' && this.isWithinDeadline(this.selectedInscription));
+  }
+
+  solicitarBorradoMiEntrada(): void {
+    if (!this.puedeModificarMiEntrada() || this.loading) return;
+    this.confirmDeleteEntry = true;
+  }
+
+  confirmarBorradoMiEntrada(): void {
+    if (!this.miEntrada || !this.puedeModificarMiEntrada()) return;
+    this.confirmDeleteEntry = false;
+    this.loading = true;
+    this.secretariaService.borrarMiEntradaInscripcion(this.miEntrada.id).subscribe({
+      next: () => {
+        this.miEntrada = null;
+        this.adjuntosEntrada = [];
+        this.associationMode = 'edit';
+        this.success = 'Inscripción eliminada.';
+        this.loading = false;
+      },
+      error: error => { this.error = error?.error?.message || 'No se ha podido borrar la inscripción.'; this.loading = false; }
+    });
   }
 
   cerrarResumen(): void {
