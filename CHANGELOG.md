@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.8.0#ESMERALDA - 2026-09-02
+
+### Mejorado
+
+- La bandeja administrativa de Solicitudes usa filtros, orden y paginación reales desde la API, incluyendo el filtro global de solicitudes problemáticas.
+- Registro reutiliza un selector de adjuntos con lista, tamaño, eliminación, límite visible y bloqueo durante la subida.
+
 ## 0.7.3#ESMERALDA - 2026-09-02
 
 ### Corregido
