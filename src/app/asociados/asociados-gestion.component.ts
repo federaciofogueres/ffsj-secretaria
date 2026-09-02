@@ -1850,8 +1850,9 @@ export class AsociadosGestionComponent implements OnInit {
   private fechaNacimientoValida(): boolean {
     const value = String(this.altaForm.value.nacimiento || '').trim();
     if (!value) return true;
-    const date = new Date(`${value}T00:00:00`);
-    return !Number.isNaN(date.getTime()) && date <= new Date() && date.toISOString().slice(0, 10) === value;
+    const date = new Date(`${value}T00:00:00Z`);
+    const today = new Date().toISOString().slice(0, 10);
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= today;
   }
 
   private normalizeText(value: unknown): string {
