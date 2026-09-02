@@ -131,6 +131,11 @@
               </span>
             </div>
 
+            <div class="alert alert-warning mt-3 mb-0" *ngIf="!isAdminMode && mensajeDisponibilidadInscripcion(inscription)">
+              <i class="bi bi-clock-history me-1" aria-hidden="true"></i>
+              {{ mensajeDisponibilidadInscripcion(inscription) }}
+            </div>
+
             <div class="admin-tabs" *ngIf="isAdminMode">
               <button type="button" class="tab-button" [class.active]="adminTab === 'documentacion'" (click)="setAdminTab('documentacion')">
                 Documentacion

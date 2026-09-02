@@ -21,8 +21,13 @@ function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | 
   const value = String(control.value || '').trim();
   if (!value) return null;
   const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= new Date().toISOString().slice(0, 10)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= fechaHoyLocal()
     ? null : { fechaNacimientoInvalida: true };
+}
+
+function fechaHoyLocal(): string {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 }
 type ListadoContexto = 'modificaciones' | 'bajas';
 
@@ -100,7 +105,7 @@ export class AsociadosGestionComponent implements OnInit {
     cargoId: [null as number | null],
     dni: ['', [Validators.required, Validators.pattern(/^(?:\d{8}|[XYZ]\d{7})[A-Za-z]$/)]],
     sip: ['', [Validators.maxLength(30)]],
-    nacimiento: ['', fechaNacimientoValidator],
+    nacimiento: ['', [Validators.required, fechaNacimientoValidator]],
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     apellidos: ['', [Validators.required, Validators.maxLength(150)]],
     direccion: ['', Validators.maxLength(200)],
@@ -1841,7 +1846,8 @@ export class AsociadosGestionComponent implements OnInit {
       ['cp', 'El código postal debe tener cinco cifras.'],
       ['telefono', 'El teléfono debe contener entre 8 y 20 caracteres válidos.'],
       ['email', 'Indica una dirección de correo electrónico válida.'],
-      ['sip', 'El SIP no puede superar 30 caracteres.']
+      ['sip', 'El SIP no puede superar 30 caracteres.'],
+      ['nacimiento', 'La fecha de nacimiento es obligatoria, debe ser real y no puede ser futura.']
     ];
     return errors.find(([name]) => this.altaForm.get(name)?.invalid)?.[1]
       || 'Revisa los datos obligatorios del formulario.';
@@ -1850,8 +1856,9 @@ export class AsociadosGestionComponent implements OnInit {
   private fechaNacimientoValida(): boolean {
     const value = String(this.altaForm.value.nacimiento || '').trim();
     if (!value) return true;
-    const date = new Date(`${value}T00:00:00`);
-    return !Number.isNaN(date.getTime()) && date <= new Date() && date.toISOString().slice(0, 10) === value;
+    const date = new Date(`${value}T00:00:00Z`);
+    const today = fechaHoyLocal();
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= today;
   }
 
   private normalizeText(value: unknown): string {

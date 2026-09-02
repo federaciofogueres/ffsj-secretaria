@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.9.6#ESMERALDA - 2026-09-03
+
+### Corregido
+
+- Las fechas de nacimiento se validan con el día local, por lo que la fecha actual se acepta también después de medianoche en España.
+- La fecha de nacimiento es obligatoria y una fecha imposible no puede convertirse silenciosamente en un valor vacío válido.
+- Los plazos de inscripción del cliente utilizan el día local para coincidir con la regla de negocio.
+
 ## 0.9.4#ESMERALDA - 2026-09-02
 
 ### Corregido
