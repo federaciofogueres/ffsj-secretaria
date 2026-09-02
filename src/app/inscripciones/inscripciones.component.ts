@@ -666,7 +666,10 @@ export class InscripcionesComponent implements OnInit {
       this.loading = false;
       return;
     }
-    this.censoService.getAsociadosByAsociacion(this.censoService.asociacionId).subscribe({
+    this.censoService.getAsociadosByAsociacion(
+      this.censoService.asociacionId,
+      this.ejercicioService.selectedEjercicio ?? undefined
+    ).subscribe({
       next: asociados => {
         this.asociados = asociados;
         this.loading = false;
@@ -777,7 +780,10 @@ export class InscripcionesComponent implements OnInit {
     };
 
     asociaciones.forEach(asociacionId => {
-      this.censoService.getAsociadosByAsociacion(asociacionId).subscribe({
+      this.censoService.getAsociadosByAsociacion(
+        asociacionId,
+        this.ejercicioService.selectedEjercicio ?? undefined
+      ).subscribe({
         next: asociados => {
           this.entradaAsociados = { ...this.entradaAsociados, [asociacionId]: asociados };
           done();
@@ -825,7 +831,10 @@ export class InscripcionesComponent implements OnInit {
           );
         }
       });
-      this.censoService.getAsociadosByAsociacion(asociacionId).subscribe({
+      this.censoService.getAsociadosByAsociacion(
+        asociacionId,
+        this.ejercicioService.selectedEjercicio ?? undefined
+      ).subscribe({
         next: asociados => {
           this.entradaAsociados = {
             ...this.entradaAsociados,
