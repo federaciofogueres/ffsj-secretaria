@@ -181,6 +181,13 @@ export interface SolicitudSecretaria {
   adjuntos?: AdjuntoSecretaria[];
 }
 
+export interface PaginacionSecretaria {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
 export interface AutorizacionAlta {
   id: number;
   solicitudId: number;
