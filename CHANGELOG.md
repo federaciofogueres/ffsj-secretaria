@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0#ESMERALDA - 2026-09-02
+
+### Mejorado
+
+- El detalle administrativo de Soporte prioriza el historial, identifica la asociación y permite mostrar u ocultar el contexto.
+- Administración puede responder a una incidencia con adjuntos protegidos y consultar los adjuntos de cada evento de la conversación.
+- La bandeja administrativa de Soporte simplifica filtros y listado para una lectura más clara.
+
 ## 0.6.0#ESMERALDA - 2026-09-02
 
 ### Mejorado
