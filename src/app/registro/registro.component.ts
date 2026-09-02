@@ -12,6 +12,7 @@ import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
+import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
@@ -20,7 +21,7 @@ type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })

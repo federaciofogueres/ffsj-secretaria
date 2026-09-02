@@ -47,6 +47,10 @@ export class SolicitudesComponent implements OnInit {
   filtroTipo = 'todos';
   orden: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
   soloProblematicas = false;
+  paginaActual = 1;
+  tamanoPagina = 20;
+  totalSolicitudes = 0;
+  totalPaginas = 1;
   asociacionNombres: Record<number, string> = {};
   incidenciasAbiertasBySolicitud: Record<number, number> = {};
   detalleDialogOpen = false;
@@ -60,12 +64,25 @@ export class SolicitudesComponent implements OnInit {
     this.cargarSolicitudes();
   }
 
-  cargarSolicitudes(): void {
+  cargarSolicitudes(resetPage = false): void {
+    if (resetPage) this.paginaActual = 1;
     this.loading = true;
     this.error = '';
-    this.secretariaService.getSolicitudesGlobal().subscribe({
+    this.secretariaService.getSolicitudesGlobal({
+      page: this.paginaActual,
+      pageSize: this.tamanoPagina,
+      tipo: this.filtroTipo === 'todos' ? undefined : this.filtroTipo,
+      estado: this.filtroEstado === 'todos' ? undefined : this.filtroEstado,
+      busqueda: this.filtroTexto.trim() || undefined,
+      orden: this.orden,
+      soloProblematicas: this.soloProblematicas
+    }).subscribe({
       next: response => {
         this.solicitudes = response.solicitudes;
+        this.paginaActual = response.paginacion?.page ?? this.paginaActual;
+        this.tamanoPagina = response.paginacion?.pageSize ?? this.tamanoPagina;
+        this.totalSolicitudes = response.paginacion?.total ?? response.solicitudes.length;
+        this.totalPaginas = response.paginacion?.totalPages ?? 1;
         if (this.detalle && !this.solicitudes.some(item => item.id === this.detalle?.id)) {
           this.detalle = null;
         }
@@ -201,25 +218,18 @@ export class SolicitudesComponent implements OnInit {
   }
 
   get solicitudesFiltradas(): SolicitudSecretaria[] {
-    const texto = this.filtroTexto.trim().toLowerCase();
-    return this.solicitudes.filter(solicitud => {
-      const matchesTipo = this.filtroTipo === 'todos' || solicitud.tipo === this.filtroTipo;
-      const estadoVisible = this.estadoVisibleSolicitud(solicitud);
-      const matchesEstado = this.filtroEstado === 'todos' || solicitud.estado === this.filtroEstado || estadoVisible === this.filtroEstado;
-      const searchable = [
-        solicitud.numero,
-        solicitud.asociacionId,
-        this.asociacionLabel(solicitud.asociacionId),
-        this.labelTipo(solicitud.tipo),
-        this.labelEstado(estadoVisible)
-      ]
-        .join(' ')
-        .toLowerCase();
-      return matchesTipo && matchesEstado && (!this.soloProblematicas || this.esProblematica(solicitud)) && (!texto || searchable.includes(texto));
-    }).sort((a, b) => {
-      if (this.orden === 'estado') return this.labelEstadoSolicitud(a).localeCompare(this.labelEstadoSolicitud(b)) || this.fechaSolicitud(b) - this.fechaSolicitud(a);
-      return this.orden === 'fecha_asc' ? this.fechaSolicitud(a) - this.fechaSolicitud(b) : this.fechaSolicitud(b) - this.fechaSolicitud(a);
-    });
+    return this.solicitudes.filter(solicitud => !this.soloProblematicas || this.esProblematica(solicitud));
+  }
+
+  aplicarFiltros(): void {
+    this.cargarSolicitudes(true);
+  }
+
+  cambiarPagina(delta: number): void {
+    const pagina = this.paginaActual + delta;
+    if (pagina < 1 || pagina > this.totalPaginas || this.loading) return;
+    this.paginaActual = pagina;
+    this.cargarSolicitudes();
   }
 
   totalEstado(...estados: string[]): number {
@@ -422,10 +432,6 @@ export class SolicitudesComponent implements OnInit {
       tipo: 'Tipo de asociado'
     };
     return labels[campo] || campo;
-  }
-
-  private fechaSolicitud(solicitud: SolicitudSecretaria): number {
-    return new Date(solicitud.fechaRegistro || solicitud.fechaAlta || 0).getTime() || 0;
   }
 
   private cargarNombresAsociacion(): void {

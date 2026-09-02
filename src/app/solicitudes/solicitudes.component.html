@@ -40,23 +40,24 @@
           type="search"
           placeholder="Numero, asociacion, tipo o estado"
           [(ngModel)]="filtroTexto"
+          (keyup.enter)="aplicarFiltros()"
         />
       </div>
       <div>
         <label class="form-label" for="filtroTipo">Tipo</label>
-        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo">
+        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo" (ngModelChange)="aplicarFiltros()">
           <option *ngFor="let tipo of tipos" [value]="tipo.value">{{ tipo.label }}</option>
         </select>
       </div>
       <div>
         <label class="form-label" for="filtroEstado">Estado</label>
-        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado">
+        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
           <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
         </select>
       </div>
       <div>
         <label class="form-label" for="ordenSolicitudes">Orden</label>
-        <select id="ordenSolicitudes" class="form-select" [(ngModel)]="orden">
+        <select id="ordenSolicitudes" class="form-select" [(ngModel)]="orden" (ngModelChange)="aplicarFiltros()">
           <option value="fecha_desc">Más recientes primero</option>
           <option value="fecha_asc">Más antiguas primero</option>
           <option value="estado">Por estado</option>
@@ -64,9 +65,12 @@
       </div>
       <div class="d-flex align-items-end pb-2">
         <label class="form-check mb-0">
-          <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" />
+          <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" (ngModelChange)="aplicarFiltros()" />
           <span class="form-check-label">Solo problemáticas</span>
         </label>
+      </div>
+      <div class="d-flex align-items-end">
+        <button class="btn btn-outline-secondary" type="button" (click)="aplicarFiltros()">Buscar</button>
       </div>
     </div>
 
@@ -124,6 +128,13 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" *ngIf="totalSolicitudes > 0">
+      <span class="text-muted small">{{ totalSolicitudes }} solicitud(es) · Página {{ paginaActual }} de {{ totalPaginas }}</span>
+      <div class="btn-group" role="group" aria-label="Paginación de solicitudes">
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loading" (click)="cambiarPagina(-1)">Anterior</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === totalPaginas || loading" (click)="cambiarPagina(1)">Siguiente</button>
       </div>
     </div>
   </div>
