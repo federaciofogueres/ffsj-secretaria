@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- Registro e Inscripciones toleran adjuntos sin tipo MIME, evitando errores de consola que impedían mostrar el detalle tras crear documentación o comunicaciones.
+
 ## 0.7.1#ESMERALDA - 2026-09-02
 
 ### Corregido
