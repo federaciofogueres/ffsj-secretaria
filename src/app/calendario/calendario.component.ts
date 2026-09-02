@@ -337,7 +337,7 @@ export class CalendarioComponent implements OnInit {
     }).subscribe({
       next: response => {
         this.actividades = response.actividades;
-        this.selected = this.actividades.find(actividad => actividad.id === createdId) || this.actividades[0] || null;
+        this.selected = this.actividades.find(actividad => String(actividad.id) === String(createdId)) || this.actividades[0] || null;
         this.success = 'Actividad creada correctamente.';
         this.actividadForm.reset({ responsable: 'Secretaria' });
         if (this.selectedDate) {

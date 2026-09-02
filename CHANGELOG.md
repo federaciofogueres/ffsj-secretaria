@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.1#ESMERALDA - 2026-09-02
+
+### Corregido
+
+- Calendario vuelve a seleccionar la actividad recién creada aunque el identificador proceda con distinto tipo desde la API.
+
 ## 0.7.0#ESMERALDA - 2026-09-02
 
 ### Mejorado
