@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.2#ESMERALDA - 2026-09-03
+
+### Corregido
+
+- El detalle de cambios de cargo ya no muestra `Sustituye a: -` cuando el cambio no sustituye a nadie; diferencia correctamente sustitución, cesión y cambio independiente.
+
+### Testing
+
+- Se cubre una solicitud conjunta con cambio de cargo sin relación personal para conservar cargo y ejercicio sin datos vacíos engañosos.
+
 ## 0.11.1#ESMERALDA - 2026-09-03
 
 ### Corregido
