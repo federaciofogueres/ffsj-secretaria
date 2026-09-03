@@ -201,8 +201,27 @@ describe('SolicitudesComponent', () => {
     expect(component.cambiosItem(item)).toEqual([
       'Cargo: Vocal',
       'Ejercicio: 2026',
-      'Sustituye a: Daniel Perez Brotons'
+      'Cede a: Daniel Perez Brotons'
     ]);
     expect(component.diferenciasItem(item)[1].nuevo).toBe('2026');
+  });
+
+  it('no muestra una sustitución inexistente en un cambio de cargo conjunto', () => {
+    component.detalle = { ...solicitudes[1], ejercicio: 2027 };
+    const item = {
+      id: 14,
+      solicitudId: 2,
+      registroPendienteId: 9,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: { tipoCambio: 'cargo', cargoNombres: ['Asociado/a', 'Presidencia'] },
+      datosOriginales: null
+    };
+
+    expect(component.cambiosItem(item)).toEqual([
+      'Cargo: Asociado/a, Presidencia',
+      'Ejercicio: 2027'
+    ]);
+    expect(component.diferenciasItem(item).map(diferencia => diferencia.campo)).not.toContain('Sustituye a');
   });
 });

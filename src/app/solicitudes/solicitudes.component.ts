@@ -356,15 +356,7 @@ export class SolicitudesComponent implements OnInit {
 
   diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {
     if (item.datos?.['tipoCambio'] === 'cargo') {
-      const datos = item.datos || {};
-      const cargo = datos['cargoNombres']?.join?.(', ') || datos['cargoNombre'] || datos['cargo'] || datos['cargoId'];
-      const relacionado = datos['sustituyeANombre'] || datos['cedeCargoANombre']
-        || datos['cargosCedidos']?.map((cargoCedido: any) => cargoCedido.titularAnteriorNombre).filter(Boolean).join(', ');
-      return [
-        { campo: 'Cargo', anterior: '—', nuevo: this.valorVisible(cargo) },
-        { campo: 'Ejercicio', anterior: '—', nuevo: this.valorVisible(datos['ejercicio'] || this.detalle?.ejercicio) },
-        { campo: 'Sustituye a', anterior: '—', nuevo: this.valorVisible(relacionado) }
-      ];
+      return this.detallesCambioCargo(item).map(detalle => ({ campo: detalle.campo, anterior: '—', nuevo: detalle.valor }));
     }
     const actual = item.datos || {};
     const anterior = item.datosOriginales || {};
@@ -417,14 +409,7 @@ export class SolicitudesComponent implements OnInit {
   cambiosItem(item: { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string[] {
     const datos = item.datos || {};
     if (datos['tipoCambio'] === 'cargo') {
-      const cargo = datos['cargoNombres']?.join?.(', ') || datos['cargoNombre'] || datos['cargo'] || datos['cargoId'] || '-';
-      const relacionado = datos['sustituyeANombre'] || datos['cedeCargoANombre']
-        || datos['cargosCedidos']?.map((cargoCedido: any) => cargoCedido.titularAnteriorNombre).filter(Boolean).join(', ') || '-';
-      return [
-        `Cargo: ${cargo}`,
-        `Ejercicio: ${datos['ejercicio'] || this.detalle?.ejercicio || '-'}`,
-        `Sustituye a: ${relacionado}`
-      ];
+      return this.detallesCambioCargo(item).map(detalle => `${detalle.campo}: ${detalle.valor}`);
     }
     const sustituciones = Array.isArray(datos['sustitucionesCargo'])
       ? datos['sustitucionesCargo'].map((sustitucion: any) =>
@@ -436,6 +421,22 @@ export class SolicitudesComponent implements OnInit {
       .filter(key => !['asociadoId', 'sustitucionesCargo'].includes(key) && String(datos[key] ?? '') !== String(originales[key] ?? ''))
       .slice(0, 5);
     return [...cambios, ...sustituciones];
+  }
+
+  private detallesCambioCargo(item: { datos: Record<string, any> }): Array<{ campo: string; valor: string }> {
+    const datos = item.datos || {};
+    const detalles = [
+      { campo: 'Cargo', valor: this.valorVisible(datos['cargoNombres']?.join?.(', ') || datos['cargoNombre'] || datos['cargo'] || datos['cargoId']) },
+      { campo: 'Ejercicio', valor: this.valorVisible(datos['ejercicio'] || this.detalle?.ejercicio) }
+    ];
+    const sustituto = datos['sustituyeANombre'] || datos['sustituyeAId'];
+    const cedidoA = datos['cedeCargoANombre'] || datos['cedeCargoAId'];
+    if (sustituto) {
+      detalles.push({ campo: 'Sustituye a', valor: this.valorVisible(sustituto) });
+    } else if (cedidoA) {
+      detalles.push({ campo: 'Cede a', valor: this.valorVisible(cedidoA) });
+    }
+    return detalles;
   }
 
   private cambiarEstado(action: () => any, successMessage = '', closeDialog = false): void {
