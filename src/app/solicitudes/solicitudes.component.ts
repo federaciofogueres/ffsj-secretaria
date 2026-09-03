@@ -320,9 +320,11 @@ export class SolicitudesComponent implements OnInit {
     return this.asociacionNombres[asociacionId] || `Asociacion ${asociacionId}`;
   }
 
-  resumenItem(item: { datos: Record<string, any> }): string {
+  resumenItem(item: { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string {
     const datos = item.datos || {};
-    return [datos.nombre, datos.apellidos].filter(Boolean).join(' ') || `Asociado ${datos.asociadoId ?? ''}`.trim();
+    const originales = item.datosOriginales || {};
+    return [datos.nombre || originales.nombre, datos.apellidos || originales.apellidos].filter(Boolean).join(' ')
+      || `Asociado ${datos.asociadoId || originales.id || ''}`.trim();
   }
 
   tipoItem(item: SolicitudItemSecretaria): string {
@@ -354,10 +356,14 @@ export class SolicitudesComponent implements OnInit {
 
   diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {
     if (item.datos?.['tipoCambio'] === 'cargo') {
+      const datos = item.datos || {};
+      const cargo = datos['cargoNombres']?.join?.(', ') || datos['cargoNombre'] || datos['cargo'] || datos['cargoId'];
+      const relacionado = datos['sustituyeANombre'] || datos['cedeCargoANombre']
+        || datos['cargosCedidos']?.map((cargoCedido: any) => cargoCedido.titularAnteriorNombre).filter(Boolean).join(', ');
       return [
-        { campo: 'Cargo', anterior: '—', nuevo: this.valorVisible(item.datos?.['cargoNombre'] || item.datos?.['cargoId']) },
-        { campo: 'Ejercicio', anterior: '—', nuevo: this.valorVisible(item.datos?.['ejercicio']) },
-        { campo: 'Sustituye a', anterior: '—', nuevo: this.valorVisible(item.datos?.['sustituyeANombre'] || item.datos?.['sustituyeAId']) }
+        { campo: 'Cargo', anterior: '—', nuevo: this.valorVisible(cargo) },
+        { campo: 'Ejercicio', anterior: '—', nuevo: this.valorVisible(datos['ejercicio'] || this.detalle?.ejercicio) },
+        { campo: 'Sustituye a', anterior: '—', nuevo: this.valorVisible(relacionado) }
       ];
     }
     const actual = item.datos || {};
@@ -402,18 +408,22 @@ export class SolicitudesComponent implements OnInit {
       : [];
   }
 
-  identifierItem(item: { datos: Record<string, any> }): string {
+  identifierItem(item: { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string {
     const datos = item.datos || {};
-    return datos.dni || datos.nif || datos.sip || '-';
+    const originales = item.datosOriginales || {};
+    return datos.dni || datos.nif || datos.sip || originales.dni || originales.nif || originales.sip || '-';
   }
 
   cambiosItem(item: { datos: Record<string, any>; datosOriginales?: Record<string, any> | null }): string[] {
     const datos = item.datos || {};
     if (datos['tipoCambio'] === 'cargo') {
+      const cargo = datos['cargoNombres']?.join?.(', ') || datos['cargoNombre'] || datos['cargo'] || datos['cargoId'] || '-';
+      const relacionado = datos['sustituyeANombre'] || datos['cedeCargoANombre']
+        || datos['cargosCedidos']?.map((cargoCedido: any) => cargoCedido.titularAnteriorNombre).filter(Boolean).join(', ') || '-';
       return [
-        `Cargo: ${datos['cargoNombre'] || datos['cargoId'] || '-'}`,
-        `Ejercicio: ${datos['ejercicio'] || '-'}`,
-        `Sustituye a: ${datos['sustituyeANombre'] || datos['sustituyeAId'] || '-'}`
+        `Cargo: ${cargo}`,
+        `Ejercicio: ${datos['ejercicio'] || this.detalle?.ejercicio || '-'}`,
+        `Sustituye a: ${relacionado}`
       ];
     }
     const sustituciones = Array.isArray(datos['sustitucionesCargo'])

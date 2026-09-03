@@ -458,6 +458,12 @@ export class SecretariaService {
     });
   }
 
+  comentarIncidencia(id: string | number, mensaje: string): Observable<Incidencia> {
+    return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias/${id}/comentarios`, { mensaje }, {
+      headers: this.authHeaders()
+    });
+  }
+
   cerrarIncidencia(id: string | number, respuesta?: string, estado: 'subsanada' | 'cerrada' = 'cerrada'): Observable<Incidencia> {
     return this.http.post<Incidencia>(`${this.apiUrl.secretariaBasePath}/incidencias/${id}/cerrar`, { respuesta, estado }, {
       headers: this.authHeaders()

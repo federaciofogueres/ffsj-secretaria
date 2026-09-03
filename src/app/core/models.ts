@@ -350,7 +350,7 @@ export interface Incidencia {
 export interface IncidenciaEvento {
   id: number;
   incidenciaId: number;
-  tipo: 'creada' | 'respuesta_asociacion' | 'devuelta_admin' | 'subsanada' | 'cerrada';
+  tipo: 'creada' | 'respuesta_asociacion' | 'comentario_administracion' | 'devuelta_admin' | 'subsanada' | 'cerrada';
   actor: 'administracion' | 'asociacion' | 'sistema';
   mensaje: string;
   createdAt: string;
