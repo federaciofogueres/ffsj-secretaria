@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.0#ESMERALDA - 2026-09-03
+
+### Mejorado
+
+- El detalle administrativo de Solicitudes se organiza en las pestañas Resumen, Cambios, Incidencias, Adjuntos e Historial.
+- Los cambios se presentan por asociado con su efecto y una comparación legible de campo, valor anterior y valor propuesto, incluida la información de cambios de cargo.
+- Las pestañas son accesibles por teclado con flechas, Inicio y Fin, y la comparación se adapta a móvil sin perder sus etiquetas.
+
 ## 0.10.2#ESMERALDA - 2026-09-03
 
 ### Corregido

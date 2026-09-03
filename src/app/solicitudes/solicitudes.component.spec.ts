@@ -128,6 +128,29 @@ describe('SolicitudesComponent', () => {
     expect(component.detalleDialogOpen).toBeFalse();
   });
 
+  it('organiza el detalle en pestañas navegables con teclado', () => {
+    component.verSolicitud(solicitudes[0]);
+    component.activarPestanaDetalle('cambios');
+    component.navegarPestanasDetalle(new KeyboardEvent('keydown', { key: 'ArrowRight' }), 1);
+
+    expect(component.pestanaDetalle).toBe('incidencias');
+  });
+
+  it('presenta los cambios de un asociado con efecto y valores comparables', () => {
+    const item = {
+      id: 12,
+      solicitudId: 1,
+      registroPendienteId: 7,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: { nombre: 'Maria', telefono: '600000001' },
+      datosOriginales: { nombre: 'Maria', telefono: '600000000' }
+    };
+
+    expect(component.efectoItem(item)).toBe('Actualización de datos propuesta');
+    expect(component.diferenciasItem(item)).toEqual([{ campo: 'Teléfono', anterior: '600000000', nuevo: '600000001' }]);
+  });
+
   it('identifica cambios de cargo dentro de una solicitud conjunta de baja', () => {
     const item = {
       id: 11,

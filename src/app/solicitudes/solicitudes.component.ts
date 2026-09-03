@@ -9,6 +9,8 @@ import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 
+type PestanaDetalleSolicitud = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
+
 @Component({
   selector: 'app-solicitudes',
   standalone: true,
@@ -54,6 +56,14 @@ export class SolicitudesComponent implements OnInit {
   asociacionNombres: Record<number, string> = {};
   incidenciasAbiertasBySolicitud: Record<number, number> = {};
   detalleDialogOpen = false;
+  pestanaDetalle: PestanaDetalleSolicitud = 'resumen';
+  readonly pestanasDetalle: Array<{ id: PestanaDetalleSolicitud; label: string }> = [
+    { id: 'resumen', label: 'Resumen' },
+    { id: 'cambios', label: 'Cambios' },
+    { id: 'incidencias', label: 'Incidencias' },
+    { id: 'adjuntos', label: 'Adjuntos' },
+    { id: 'historial', label: 'Historial' }
+  ];
 
   constructor(
     private readonly secretariaService: SecretariaService,
@@ -102,6 +112,7 @@ export class SolicitudesComponent implements OnInit {
     this.secretariaService.getSolicitud(solicitud.id).subscribe({
       next: detalle => {
         this.detalle = detalle;
+        this.pestanaDetalle = 'resumen';
         this.detalleDialogOpen = true;
         this.loading = false;
       },
@@ -114,6 +125,24 @@ export class SolicitudesComponent implements OnInit {
 
   cerrarDetalle(): void {
     this.detalleDialogOpen = false;
+  }
+
+  activarPestanaDetalle(pestana: PestanaDetalleSolicitud): void {
+    this.pestanaDetalle = pestana;
+  }
+
+  navegarPestanasDetalle(event: KeyboardEvent, indiceActual: number): void {
+    let siguiente = indiceActual;
+    if (event.key === 'ArrowRight') siguiente = (indiceActual + 1) % this.pestanasDetalle.length;
+    else if (event.key === 'ArrowLeft') siguiente = (indiceActual - 1 + this.pestanasDetalle.length) % this.pestanasDetalle.length;
+    else if (event.key === 'Home') siguiente = 0;
+    else if (event.key === 'End') siguiente = this.pestanasDetalle.length - 1;
+    else return;
+
+    event.preventDefault();
+    const pestana = this.pestanasDetalle[siguiente];
+    this.activarPestanaDetalle(pestana.id);
+    setTimeout(() => document.getElementById(`solicitud-tab-${pestana.id}`)?.focus());
   }
 
   validar(): void {
@@ -324,6 +353,13 @@ export class SolicitudesComponent implements OnInit {
   }
 
   diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {
+    if (item.datos?.['tipoCambio'] === 'cargo') {
+      return [
+        { campo: 'Cargo', anterior: '—', nuevo: this.valorVisible(item.datos?.['cargoNombre'] || item.datos?.['cargoId']) },
+        { campo: 'Ejercicio', anterior: '—', nuevo: this.valorVisible(item.datos?.['ejercicio']) },
+        { campo: 'Sustituye a', anterior: '—', nuevo: this.valorVisible(item.datos?.['sustituyeANombre'] || item.datos?.['sustituyeAId']) }
+      ];
+    }
     const actual = item.datos || {};
     const anterior = item.datosOriginales || {};
     return Object.keys({ ...anterior, ...actual })
@@ -333,7 +369,14 @@ export class SolicitudesComponent implements OnInit {
   }
 
   tieneDiferencias(item: SolicitudItemSecretaria): boolean {
-    return this.diferenciasItem(item).length > 0;
+    return this.diferenciasItem(item).length > 0 || ['alta', 'baja'].includes(this.tipoItem(item));
+  }
+
+  efectoItem(item: SolicitudItemSecretaria): string {
+    const tipo = this.tipoItem(item);
+    if (tipo === 'alta') return 'Alta propuesta';
+    if (tipo === 'baja') return 'Baja propuesta';
+    return item.datos?.['tipoCambio'] === 'cargo' ? 'Cambio de cargo propuesto' : 'Actualización de datos propuesta';
   }
 
   private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
