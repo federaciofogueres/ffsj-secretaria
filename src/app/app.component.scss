@@ -412,6 +412,7 @@
 
 .app-content {
   flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
   padding: 1.5rem 1rem calc(env(safe-area-inset-bottom, 0px) + var(--footer-height) + 1rem);
   overflow-x: hidden;
@@ -419,6 +420,7 @@
 
 .content-container {
   width: min(1280px, 100%);
+  min-width: 0;
   margin: 0 auto;
 }
 
