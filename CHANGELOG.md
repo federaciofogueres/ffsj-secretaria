@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.2#ESMERALDA - 2026-09-03
+
+### Corregido
+
+- En móvil, la bandeja de Soporte elimina el botón redundante `Ver`: la fila conserva la apertura de detalle con pulsación, Enter y Espacio.
+- `Guardar estado` muestra un estado visual deshabilitado inequívoco hasta que se modifica el selector.
+
 ## 0.10.1#ESMERALDA - 2026-09-03
 
 ### Corregido
