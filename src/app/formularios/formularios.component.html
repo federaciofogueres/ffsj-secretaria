@@ -1,6 +1,6 @@
 <section class="formularios card border-0 shadow-sm">
   <div class="card-body p-4 p-md-5">
-    <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
+    <div class="d-flex justify-content-between gap-3 flex-wrap mb-4" *ngIf="!contextual">
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Administracion</p>
         <h1 class="h4 mb-1 text-rojo">Formularios</h1>
@@ -13,8 +13,8 @@
     <div class="alert alert-success" *ngIf="success">{{ success }}</div>
     <div class="text-muted" *ngIf="loading">Cargando...</div>
 
-    <div class="layout">
-      <aside class="list">
+    <div class="layout" [class.contextual]="contextual">
+      <aside class="list" *ngIf="!contextual">
         <h2 class="h6 mb-3">Plantillas</h2>
         <button
           class="form-item"
@@ -124,6 +124,7 @@
             <button class="btn btn-outline-warning" type="button" *ngIf="selected && selected.estado !== 'archivado'" [disabled]="loading" (click)="archivar()">Archivar</button>
             <button class="btn btn-outline-secondary" type="button" *ngIf="selected" [disabled]="loading" (click)="duplicar()">Duplicar</button>
             <button class="btn btn-outline-danger" type="button" *ngIf="selected" [disabled]="loading" (click)="borrar()">Borrar</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="contextual" [disabled]="loading" (click)="cancelar()">Cancelar</button>
           </div>
         </form>
       </section>

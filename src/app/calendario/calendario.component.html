@@ -124,14 +124,13 @@
           </p>
           </div>
 
-          <form
-            class="admin-edit"
-            *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
-            [formGroup]="editActividadForm"
-            (ngSubmit)="guardarActividad()"
-          >
+          <section class="admin-edit" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
             <div class="border-top pt-3 mt-3">
-              <p class="overline text-uppercase text-muted fw-bold mb-1">Gestion del evento</p>
+              <button class="section-toggle" type="button" [attr.aria-expanded]="showActividadGestion" (click)="toggleActividadGestion()">
+                <span class="overline text-uppercase text-muted fw-bold">Gestion del evento</span>
+                <span>{{ showActividadGestion ? 'Ocultar' : 'Editar' }}</span>
+              </button>
+              <form *ngIf="showActividadGestion" [formGroup]="editActividadForm" (ngSubmit)="guardarActividad()" class="mt-3">
               <label class="form-label">Titulo</label>
               <input class="form-control" formControlName="titulo" />
               <label class="form-label mt-2">Responsable</label>
@@ -176,12 +175,18 @@
                   Borrar definitivamente
                 </button>
               </div>
+              </form>
             </div>
-          </form>
+          </section>
 
           <section class="admin-link-inscripciones" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
             <div class="border-top pt-3 mt-3">
-              <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones del evento</p>
+              <button class="section-toggle" type="button" [attr.aria-expanded]="showInscripcionesGestion" (click)="toggleInscripcionesGestion()">
+                <span class="overline text-uppercase text-muted fw-bold">Inscripciones del evento</span>
+                <span>{{ showInscripcionesGestion ? 'Ocultar' : 'Gestionar' }}</span>
+              </button>
+
+              <div *ngIf="showInscripcionesGestion" class="mt-3">
 
               <form [formGroup]="linkInscripcionForm" (ngSubmit)="vincularInscripcion()" class="linked-form">
                 <label class="form-label">Añadir inscripcion existente</label>
@@ -223,6 +228,7 @@
                 </div>
                 <button class="btn btn-foc-rojo mt-2" type="submit" [disabled]="loading">Crear y vincular</button>
               </form>
+              </div>
             </div>
           </section>
         </ng-container>

@@ -5,13 +5,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
-import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { FormulariosComponent } from '../formularios/formularios.component';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -21,7 +22,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
@@ -47,7 +48,7 @@ export class InscripcionesComponent implements OnInit {
   createMode = false;
   confirmDelete = false;
   confirmDeleteEntry = false;
-  nuevoFormularioNombre = '';
+  showFormularioDialog = false;
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -620,24 +621,45 @@ export class InscripcionesComponent implements OnInit {
     });
   }
 
-  crearFormularioDesdeInscripcion(): void {
-    const nombre = this.nuevoFormularioNombre.trim();
-    if (!this.isAdminMode || !this.selectedInscription || !nombre || this.loading) return;
+  abrirFormularioContextual(): void {
+    if (!this.isAdminMode || !this.selectedInscription || this.loading) return;
+    this.error = '';
+    this.success = '';
+    this.showFormularioDialog = true;
+  }
+
+  cerrarFormularioContextual(): void {
+    if (!this.loading) {
+      this.showFormularioDialog = false;
+    }
+  }
+
+  formularioContextual(): FormularioInscripcion | null {
+    return this.formularios.find(item => item.id === this.inscripcionAdminForm.value.formularioId) || null;
+  }
+
+  camposFormularioContextual(): CampoInscripcion[] {
+    return this.formularioContextual() ? [] : this.selectedInscription?.campos || [];
+  }
+
+  asociarFormularioGuardado(formulario: FormularioInscripcion): void {
+    if (!this.isAdminMode || !this.selectedInscription || this.loading) return;
     this.loading = true;
-    this.secretariaService.crearFormulario({
-      nombre,
-      descripcion: `Plantilla creada desde la inscripción ${this.selectedInscription.titulo}`,
-      campos: this.selectedInscription.campos,
-      estado: 'activo'
-    }).subscribe({
-      next: formulario => {
-        this.formularios = [...this.formularios.filter(item => item.id !== formulario.id), formulario];
-        this.inscripcionAdminForm.patchValue({ formularioId: formulario.id });
-        this.nuevoFormularioNombre = '';
-        this.success = 'Formulario creado y seleccionado. Guarda la gestión para asociarlo a la inscripción.';
+    this.error = '';
+    this.formularios = [formulario, ...this.formularios.filter(item => item.id !== formulario.id)];
+    this.inscripcionAdminForm.patchValue({ formularioId: formulario.id });
+    this.showFormularioDialog = false;
+    this.secretariaService.actualizarInscripcion(this.selectedInscription.id, this.buildAdminPayload(this.selectedInscription.estado || 'abierta')).subscribe({
+      next: inscripcion => {
+        this.inscripciones = [inscripcion, ...this.inscripciones.filter(item => item.id !== inscripcion.id)];
+        this.selectInscription(inscripcion);
+        this.success = 'Formulario guardado y asociado a la inscripcion.';
         this.loading = false;
       },
-      error: error => { this.error = error?.error?.message || 'No se ha podido crear el formulario.'; this.loading = false; }
+      error: error => {
+        this.error = error?.error?.message || 'El formulario se ha guardado, pero no se ha podido asociar a la inscripcion.';
+        this.loading = false;
+      }
     });
   }
 

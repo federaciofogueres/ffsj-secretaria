@@ -207,6 +207,24 @@
   gap: 0.5rem;
 }
 
+.section-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ffsj-ink);
+  text-align: left;
+}
+
+.section-toggle > span:last-child {
+  color: var(--ffsj-red);
+  font-weight: 800;
+}
+
 .empty-day {
   color: var(--ffsj-muted);
   background: var(--ffsj-soft-gray);

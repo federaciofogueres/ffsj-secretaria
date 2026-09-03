@@ -30,6 +30,8 @@ export class CalendarioComponent implements OnInit {
   selected: ActividadSecretaria | null = null;
   selectedDate: Date | null = null;
   showCreateDialog = false;
+  showActividadGestion = false;
+  showInscripcionesGestion = false;
   confirmDelete = false;
   loading = false;
   error = '';
@@ -116,6 +118,8 @@ export class CalendarioComponent implements OnInit {
     }
     const hydrated = this.actividades.find(item => item.id === actividad.id) || actividad;
     this.selected = hydrated;
+    this.showActividadGestion = false;
+    this.showInscripcionesGestion = false;
     this.error = '';
     this.success = '';
     this.editActividadForm.patchValue({
@@ -154,6 +158,14 @@ export class CalendarioComponent implements OnInit {
 
   cerrarCrearActividad(): void {
     this.showCreateDialog = false;
+  }
+
+  toggleActividadGestion(): void {
+    this.showActividadGestion = !this.showActividadGestion;
+  }
+
+  toggleInscripcionesGestion(): void {
+    this.showInscripcionesGestion = !this.showInscripcionesGestion;
   }
 
   crearActividad(): void {
@@ -337,7 +349,12 @@ export class CalendarioComponent implements OnInit {
     }).subscribe({
       next: response => {
         this.actividades = response.actividades;
-        this.selected = this.actividades.find(actividad => String(actividad.id) === String(createdId)) || this.actividades[0] || null;
+        const created = this.actividades.find(actividad => String(actividad.id) === String(createdId));
+        if (created) {
+          this.select(created);
+        } else {
+          this.selected = null;
+        }
         this.success = 'Actividad creada correctamente.';
         this.actividadForm.reset({ responsable: 'Secretaria' });
         if (this.selectedDate) {

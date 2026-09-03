@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0#ESMERALDA - 2026-09-03
+
+### Mejorado
+
+- La ficha de una actividad nueva se hidrata al recargar el calendario y muestra su detalle completo; los paneles administrativos de actividad e inscripciones se presentan cerrados y son expandibles.
+- Inscripciones abre el editor completo de Formularios en un dialogo contextual. Al guardar una plantilla nueva o editar la seleccionada, conserva todos sus campos y configuracion y la asocia automaticamente a la inscripcion.
+
+### Testing
+
+- Se valida el editor compartido en modo contextual junto con la compilacion y la suite de pruebas Angular.
+
 ## 0.12.0#ESMERALDA - 2026-09-03
 
 ### Mejorado
