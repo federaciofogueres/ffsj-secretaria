@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.0#ESMERALDA - 2026-09-03
+
+### Mejorado
+
+- La bandeja administrativa de Soporte incorpora filtros conservados, orden estable y paginacion de tickets desde servidor.
+- El listado prioriza ticket, asociacion, asunto, estado y actualizacion; sus filas son operables con teclado y no cargan detalles por anticipado.
+- El detalle administrativo sitúa el historial como contenido principal, mantiene el contexto secundario contraido y mejora la respuesta movil.
+
 ## 0.9.6#ESMERALDA - 2026-09-03
 
 ### Corregido
