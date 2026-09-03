@@ -7,7 +7,7 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, RegistroDestinatario, RegistroSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -17,6 +17,7 @@ import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
 type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
+type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
 
 @Component({
   selector: 'app-registro',
@@ -60,6 +61,10 @@ export class RegistroComponent implements OnInit {
   filtroAnio: number | '' = '';
   filtroTexto = '';
   filtroEstado = '';
+  ordenRegistros: OrdenRegistro = 'fecha_desc';
+  paginaActual = 1;
+  tamanoPagina = 20;
+  paginacion: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   autorizacionesAlta: AutorizacionAlta[] = [];
   autorizacionDetalle: AutorizacionAlta | null = null;
   commBandeja: ComunicacionBandeja = 'realizadas';
@@ -212,6 +217,9 @@ export class RegistroComponent implements OnInit {
     });
     const current = new Date().getFullYear();
     years.add(current);
+    if (this.filtroAnio) {
+      years.add(Number(this.filtroAnio));
+    }
     return Array.from(years).sort((a, b) => b - a);
   }
 
@@ -438,13 +446,15 @@ export class RegistroComponent implements OnInit {
   setDocBandeja(bandeja: DocumentacionBandeja): void {
     this.docBandeja = bandeja;
     this.detailMode = null;
-    this.docResultado = this.docRefs[0] || null;
+    this.docResultado = null;
+    this.cargarRegistros(true);
   }
 
   setCommBandeja(bandeja: ComunicacionBandeja): void {
     this.commBandeja = bandeja;
     this.detailMode = null;
-    this.commResultado = this.commRefs[0] || null;
+    this.commResultado = null;
+    this.cargarRegistros(true);
   }
 
   estadoLabel(estado: string): string {
@@ -598,13 +608,45 @@ export class RegistroComponent implements OnInit {
     });
   }
 
-  cargarRegistros(): void {
+  aplicarFiltros(): void {
+    this.cargarRegistros(true);
+  }
+
+  cambiarPagina(delta: number): void {
+    const page = this.paginaActual + delta;
+    if (!this.loadingRegistros && page >= 1 && page <= this.paginacion.totalPages) {
+      this.paginaActual = page;
+      this.cargarRegistros();
+    }
+  }
+
+  cargarRegistros(resetPage = false): void {
     if (!this.permissions.hasPermission('registro:read')) {
       return;
     }
+    if (resetPage) {
+      this.paginaActual = 1;
+    }
     this.loadingRegistros = true;
     this.errorRegistros = '';
-    const filters = this.isAdminMode ? {} : { asociacionId: this.censoService.asociacionId };
+    const filters: {
+      asociacionId?: number;
+      tipo?: Exclude<RegistroMode, null>;
+      origen?: 'asociacion' | 'administracion';
+      anio?: number | '';
+      busqueda?: string;
+      estado?: string;
+      estadosExcluidos?: string;
+      orden: OrdenRegistro;
+      page: number;
+      pageSize: number;
+    } = this.isAdminMode ? { orden: this.ordenRegistros, page: this.paginaActual, pageSize: this.tamanoPagina } : {
+      asociacionId: this.censoService.asociacionId,
+      orden: this.ordenRegistros,
+      page: this.paginaActual,
+      pageSize: this.tamanoPagina
+    };
+    this.aplicarBandejaRegistro(filters);
     if (this.filtroAnio) {
       Object.assign(filters, { anio: this.filtroAnio });
     }
@@ -612,11 +654,27 @@ export class RegistroComponent implements OnInit {
       Object.assign(filters, { busqueda: this.filtroTexto.trim() });
     }
     if (this.filtroEstado) {
+      const estadosExcluidos = filters.estadosExcluidos?.split(',') || [];
+      if ((filters.estado && filters.estado !== this.filtroEstado) || estadosExcluidos.includes(this.filtroEstado)) {
+        this.registros = [];
+        this.paginacion = { page: 1, pageSize: this.tamanoPagina, total: 0, totalPages: 1 };
+        this.loadingRegistros = false;
+        this.cargarAutorizacionesAlta();
+        return;
+      }
       Object.assign(filters, { estado: this.filtroEstado });
     }
     this.secretariaService.getRegistros(filters).subscribe({
       next: response => {
         this.registros = response.registros;
+        this.paginacion = response.paginacion || {
+          page: this.paginaActual,
+          pageSize: this.tamanoPagina,
+          total: response.registros.length,
+          totalPages: 1
+        };
+        this.paginaActual = this.paginacion.page;
+        this.tamanoPagina = this.paginacion.pageSize;
         this.selectInitialRegistro();
         this.loadingRegistros = false;
         this.cargarAutorizacionesAlta();
@@ -698,6 +756,41 @@ export class RegistroComponent implements OnInit {
       next: response => this.autorizacionesAlta = response.autorizaciones,
       error: () => this.autorizacionesAlta = []
     });
+  }
+
+  private aplicarBandejaRegistro(filters: {
+    tipo?: Exclude<RegistroMode, null>;
+    origen?: 'asociacion' | 'administracion';
+    estado?: string;
+    estadosExcluidos?: string;
+  }): void {
+    if (!this.mode) {
+      return;
+    }
+    const origenEntrante = this.actorActual === 'administracion' ? 'asociacion' : 'administracion';
+    filters.tipo = this.mode;
+    if (this.mode === 'documentacion') {
+      if (this.docBandeja === 'presentada') filters.origen = this.actorActual;
+      if (this.docBandeja === 'solicitada') {
+        filters.origen = origenEntrante;
+        filters.estadosExcluidos = 'enviada,archivada';
+      }
+      if (this.docBandeja === 'nuevas') {
+        filters.origen = origenEntrante;
+        filters.estado = 'enviada';
+      }
+      if (this.docBandeja === 'archivadas') filters.estado = 'archivada';
+      return;
+    }
+    if (this.commBandeja === 'realizadas') filters.origen = this.actorActual;
+    if (this.commBandeja === 'recibidas') {
+      filters.origen = origenEntrante;
+      filters.estadosExcluidos = 'enviada';
+    }
+    if (this.commBandeja === 'nuevas') {
+      filters.origen = origenEntrante;
+      filters.estado = 'enviada';
+    }
   }
 
   private prependRegistro(registro: RegistroSecretaria): void {

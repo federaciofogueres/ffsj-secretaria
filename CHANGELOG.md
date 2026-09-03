@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.12.0#ESMERALDA - 2026-09-03
+
+### Mejorado
+
+- Los listados de Documentacion y Comunicaciones de Registro usan paginacion desde servidor, con orden por actualizacion, estado o titulo.
+- Los filtros de bandeja, ano, texto y estado se conservan al ordenar o cambiar de pagina; cada bandeja resuelve sus criterios en API para evitar resultados vacios o inconsistentes.
+- La navegacion de paginas anuncia el total y la pagina actual, y mantiene sus controles deshabilitados durante la carga.
+
 ## 0.11.2#ESMERALDA - 2026-09-03
 
 ### Corregido

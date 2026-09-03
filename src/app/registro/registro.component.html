@@ -66,16 +66,22 @@
         <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
         <div class="year-filter mb-3" *ngIf="mode !== null">
           <label class="form-label mb-0">Filtrar por año</label>
-          <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="cargarRegistros()">
+          <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
             <option [ngValue]="''">Todos</option>
             <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
           </select>
-          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="cargarRegistros()" placeholder="Buscar número, título o texto" />
-          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarRegistros()">
+          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" />
+          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
             <option value="">Todos los estados</option>
             <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
           </select>
-          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cargarRegistros()">Buscar</button>
+          <select class="form-select form-select-sm" [(ngModel)]="ordenRegistros" (ngModelChange)="aplicarFiltros()" aria-label="Ordenar registros">
+            <option value="fecha_desc">Actualizados primero</option>
+            <option value="fecha_asc">Actualizados al final</option>
+            <option value="estado">Estado</option>
+            <option value="titulo">Título</option>
+          </select>
+          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button>
         </div>
 
         <section class="border rounded p-3 mb-3" *ngIf="isAdminMode && mode !== null && permissions.hasPermission('registro:write')">
@@ -166,6 +172,13 @@
           <ng-template #emptyDocs>
             <p class="text-muted mb-0" *ngIf="autorizacionesFirmaVisibles.length === 0">{{ docEmptyMessage }}</p>
           </ng-template>
+          <nav class="registro-pagination" *ngIf="paginacion.total > 0" aria-label="Paginacion de documentacion">
+            <span class="text-muted small">Mostrando {{ docRefs.length }} de {{ paginacion.total }} &middot; Pagina {{ paginaActual }} de {{ paginacion.totalPages }}</span>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loadingRegistros" (click)="cambiarPagina(-1)">Anterior</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === paginacion.totalPages || loadingRegistros" (click)="cambiarPagina(1)">Siguiente</button>
+            </div>
+          </nav>
         </section>
 
         <section class="list-card" *ngIf="mode === 'comunicacion' && !isFormView && !isDetailView">
@@ -223,6 +236,13 @@
           <ng-template #emptyComms>
             <p class="text-muted mb-0">{{ commEmptyMessage }}</p>
           </ng-template>
+          <nav class="registro-pagination" *ngIf="paginacion.total > 0" aria-label="Paginacion de comunicaciones">
+            <span class="text-muted small">Mostrando {{ commRefs.length }} de {{ paginacion.total }} &middot; Pagina {{ paginaActual }} de {{ paginacion.totalPages }}</span>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loadingRegistros" (click)="cambiarPagina(-1)">Anterior</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === paginacion.totalPages || loadingRegistros" (click)="cambiarPagina(1)">Siguiente</button>
+            </div>
+          </nav>
         </section>
 
         <section class="status-card" *ngIf="isDetailView && (mode === 'documentacion' ? docResultado : commResultado) as resultado">
