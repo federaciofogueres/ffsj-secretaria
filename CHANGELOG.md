@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.1#ESMERALDA - 2026-09-03
+
+### Corregido
+
+- El detalle de Solicitudes completa cargo, ejercicio y persona relacionada en cambios de cargo, incluidos los datos heredados de cesiones, y recupera el DNI/NIE original cuando no se modifica.
+- Incidencias permite a administración añadir comentarios consecutivos y adjuntos sin cerrar el hilo; los adjuntos se descargan mediante la petición autenticada.
+
+### Testing
+
+- Se cubre el uso de datos originales y de ejercicio heredado en el detalle de Solicitudes.
+
 ## 0.11.0#ESMERALDA - 2026-09-03
 
 ### Mejorado

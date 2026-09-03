@@ -178,4 +178,31 @@ describe('SolicitudesComponent', () => {
       'Sustituye a: Ana Presidenta'
     ]);
   });
+
+  it('completa los datos heredados de una cesión y el DNI original en el detalle', () => {
+    component.detalle = { ...solicitudes[1], ejercicio: 2026 };
+    const item = {
+      id: 13,
+      solicitudId: 2,
+      registroPendienteId: 8,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: {
+        nombre: 'Irene',
+        apellidos: 'Artiaga Inocencio',
+        tipoCambio: 'cargo',
+        cargoNombres: ['Vocal'],
+        cedeCargoANombre: 'Daniel Perez Brotons'
+      },
+      datosOriginales: { dni: '48570119P' }
+    };
+
+    expect(component.identifierItem(item)).toBe('48570119P');
+    expect(component.cambiosItem(item)).toEqual([
+      'Cargo: Vocal',
+      'Ejercicio: 2026',
+      'Sustituye a: Daniel Perez Brotons'
+    ]);
+    expect(component.diferenciasItem(item)[1].nuevo).toBe('2026');
+  });
 });
