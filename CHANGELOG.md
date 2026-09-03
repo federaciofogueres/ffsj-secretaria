@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.10.1#ESMERALDA - 2026-09-03
+
+### Corregido
+
+- La modificación de estado de un ticket de Soporte está disponible en la cabecera del detalle, junto al estado actual.
+- La bandeja móvil ajusta el ancho de sus contenedores y columnas prioritarias para evitar recortes en el borde derecho y mantener accesible la acción de detalle.
+
 ## 0.10.0#ESMERALDA - 2026-09-03
 
 ### Mejorado
