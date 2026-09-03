@@ -280,7 +280,18 @@ export class SecretariaService {
     );
   }
 
-  getRegistros(filters: { asociacionId?: number; tipo?: string; origen?: 'asociacion' | 'administracion'; anio?: number | string; busqueda?: string; estado?: string } = {}): Observable<{ registros: RegistroSecretaria[] }> {
+  getRegistros(filters: {
+    asociacionId?: number;
+    tipo?: string;
+    origen?: 'asociacion' | 'administracion';
+    anio?: number | string;
+    busqueda?: string;
+    estado?: string;
+    estadosExcluidos?: string;
+    orden?: 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
+    page?: number;
+    pageSize?: number;
+  } = {}): Observable<{ registros: RegistroSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
     if (filters.tipo) params = params.set('tipo', filters.tipo);
@@ -288,7 +299,11 @@ export class SecretariaService {
     if (filters.anio) params = params.set('anio', filters.anio);
     if (filters.busqueda) params = params.set('busqueda', filters.busqueda);
     if (filters.estado) params = params.set('estado', filters.estado);
-    return this.http.get<{ registros: RegistroSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/registros`, {
+    if (filters.estadosExcluidos) params = params.set('estadosExcluidos', filters.estadosExcluidos);
+    if (filters.orden) params = params.set('orden', filters.orden);
+    if (filters.page) params = params.set('page', filters.page);
+    if (filters.pageSize) params = params.set('pageSize', filters.pageSize);
+    return this.http.get<{ registros: RegistroSecretaria[]; paginacion?: PaginacionSecretaria }>(`${this.apiUrl.secretariaBasePath}/registros`, {
       params,
       headers: this.authHeaders()
     });
