@@ -206,10 +206,11 @@
                 </option>
               </select>
               <div class="d-flex gap-2 mt-2 flex-wrap">
-                <input class="form-control" type="text" [(ngModel)]="nuevoFormularioNombre" [ngModelOptions]="{standalone: true}" placeholder="Nombre de nueva plantilla" />
-                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading || !nuevoFormularioNombre.trim()" (click)="crearFormularioDesdeInscripcion()">Crear formulario</button>
+                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading" (click)="abrirFormularioContextual()">
+                  {{ inscripcionAdminForm.value.formularioId ? 'Editar formulario seleccionado' : 'Crear formulario reutilizable' }}
+                </button>
               </div>
-              <p class="text-muted small mb-0 mt-1">Crea una plantilla con los campos actuales y después guarda esta gestión para asociarla.</p>
+              <p class="text-muted small mb-0 mt-1">Abre el editor completo del formulario. Al guardarlo se asociara automaticamente a esta inscripcion.</p>
               <label class="form-label mt-2">Actividad vinculada</label>
               <select class="form-select" formControlName="actividadId">
                 <option value="">Sin actividad vinculada</option>
@@ -546,6 +547,26 @@
           </p>
         </section>
       </div>
+  </div>
+</section>
+
+<div class="formulario-backdrop" *ngIf="showFormularioDialog" (click)="cerrarFormularioContextual()"></div>
+<section class="formulario-dialog" *ngIf="showFormularioDialog" role="dialog" aria-modal="true" aria-labelledby="formularioContextualTitulo" (click)="$event.stopPropagation()">
+  <header class="formulario-dialog-header">
+    <div>
+      <p class="ux-overline mb-1">Inscripcion</p>
+      <h2 id="formularioContextualTitulo" class="h5 mb-0">{{ formularioContextual() ? 'Editar formulario reutilizable' : 'Crear formulario reutilizable' }}</h2>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cerrarFormularioContextual()">Cerrar</button>
+  </header>
+  <div class="formulario-dialog-body">
+    <app-formularios
+      [contextual]="true"
+      [formularioInicial]="formularioContextual()"
+      [camposIniciales]="camposFormularioContextual()"
+      (formularioGuardado)="asociarFormularioGuardado($event)"
+      (cancelado)="cerrarFormularioContextual()"
+    ></app-formularios>
   </div>
 </section>
 

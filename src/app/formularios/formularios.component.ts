@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { CampoInscripcion, FormularioInscripcion } from '../core/models';
@@ -17,6 +17,12 @@ type FieldType = CampoInscripcion['type'];
   styleUrls: ['./formularios.component.scss']
 })
 export class FormulariosComponent implements OnInit {
+  @Input() contextual = false;
+  @Input() formularioInicial: FormularioInscripcion | null = null;
+  @Input() camposIniciales: CampoInscripcion[] = [];
+  @Output() formularioGuardado = new EventEmitter<FormularioInscripcion>();
+  @Output() cancelado = new EventEmitter<void>();
+
   formularios: FormularioInscripcion[] = [];
   selected: FormularioInscripcion | null = null;
   loading = false;
@@ -51,6 +57,14 @@ export class FormulariosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.contextual) {
+      if (this.formularioInicial) {
+        this.select(this.formularioInicial);
+      } else {
+        this.nuevo(this.camposIniciales);
+      }
+      return;
+    }
     this.cargar();
   }
 
@@ -71,12 +85,16 @@ export class FormulariosComponent implements OnInit {
     formulario.campos.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
   }
 
-  nuevo(): void {
+  nuevo(camposIniciales: CampoInscripcion[] = []): void {
     this.selected = null;
     this.success = '';
     this.error = '';
     this.form.reset({ nombre: '', descripcion: '', estado: 'activo' });
     this.campos.clear();
+    if (camposIniciales.length) {
+      camposIniciales.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
+      return;
+    }
     this.addCampo();
   }
 
@@ -136,6 +154,9 @@ export class FormulariosComponent implements OnInit {
         this.select(formulario);
         this.success = 'Formulario guardado correctamente.';
         this.loading = false;
+        if (this.contextual) {
+          this.formularioGuardado.emit(formulario);
+        }
       },
       error: () => {
         this.error = 'No se ha podido guardar el formulario.';
@@ -181,6 +202,10 @@ export class FormulariosComponent implements OnInit {
     campo.patchValue({
       options: value.split('\n').map(item => item.trim()).filter(Boolean)
     });
+  }
+
+  cancelar(): void {
+    this.cancelado.emit();
   }
 
   private cargar(): void {

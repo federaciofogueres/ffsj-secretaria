@@ -8,6 +8,10 @@
   gap: 1rem;
 }
 
+.layout.contextual {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .list,
 .panel {
   border: 1px solid #e6e6e6;
