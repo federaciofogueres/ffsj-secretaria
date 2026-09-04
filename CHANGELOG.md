@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.15.0#ESMERALDA - 2026-09-04
+
+### Mejorado
+
+- La bandeja de Inscripciones de asociaciones muestra disponibilidad y participación, permite filtrar por plazo y pagina u ordena los resultados desde la API.
+
 ## 0.14.1#ESMERALDA - 2026-09-04
 
 ### Corregido

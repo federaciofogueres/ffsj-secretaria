@@ -357,11 +357,12 @@ export class SecretariaService {
     });
   }
 
-  getInscripciones(asociacionId: number, includeInactive = false): Observable<{ inscripciones: InscripcionSecretaria[] }> {
+  getInscripciones(asociacionId: number, includeInactive = false, options: { page?: number; pageSize?: number; orden?: string; disponibilidad?: string } = {}): Observable<{ inscripciones: InscripcionSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams().set('asociacionId', asociacionId);
     if (includeInactive) params = params.set('includeInactive', 'true');
     const ejercicio = this.ejercicioSeleccionado();
     if (ejercicio) params = params.set('ejercicio', ejercicio);
+    Object.entries(options).forEach(([key, value]) => { if (value !== undefined && value !== '') params = params.set(key, String(value)); });
     return this.http.get<{ inscripciones: InscripcionSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones`, {
       params,
       headers: this.authHeaders()
