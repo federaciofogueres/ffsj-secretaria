@@ -9,6 +9,7 @@ import { EjercicioService } from '../core/ejercicio.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { AdjuntoSecretaria, SoporteCategoria, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
 function trimmedRequired(control: AbstractControl): ValidationErrors | null {
   return String(control.value ?? '').trim() ? null : { required: true };
@@ -24,7 +25,7 @@ function trimmedLength(minimum: number, maximum: number) {
   };
 }
 
-@Component({ selector: 'app-soporte', standalone: true, imports: [CommonModule, ReactiveFormsModule, FormsModule], templateUrl: './soporte.component.html', styleUrls: ['./soporte.component.scss'] })
+@Component({ selector: 'app-soporte', standalone: true, imports: [CommonModule, ReactiveFormsModule, FormsModule, AdjuntosSelectorComponent], templateUrl: './soporte.component.html', styleUrls: ['./soporte.component.scss'] })
 export class SoporteComponent implements OnInit {
   categorias: SoporteCategoria[] = [];
   incidencias: SoporteIncidencia[] = [];

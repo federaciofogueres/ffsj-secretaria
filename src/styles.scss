@@ -193,6 +193,16 @@ body {
   color: #fff;
 }
 
+.ux-btn:disabled,
+.ux-btn.disabled,
+.btn:disabled,
+.btn.disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+  pointer-events: none;
+}
+
 .ux-btn-secondary {
   background: #fff;
   color: var(--ffsj-ink);

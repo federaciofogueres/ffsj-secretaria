@@ -5,10 +5,11 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { AdjuntoSecretaria, PaginacionSecretaria, SoporteCategoria, SoporteEstado, SoporteIncidencia } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
 type OrdenSoporte = 'actualizacion_desc' | 'actualizacion_asc' | 'creacion_desc' | 'creacion_asc' | 'estado';
 
-@Component({ selector: 'app-soporte-admin', standalone: true, imports: [CommonModule, FormsModule], templateUrl: './soporte-admin.component.html', styleUrls: ['./soporte.component.scss'] })
+@Component({ selector: 'app-soporte-admin', standalone: true, imports: [CommonModule, FormsModule, AdjuntosSelectorComponent], templateUrl: './soporte-admin.component.html', styleUrls: ['./soporte.component.scss'] })
 export class SoporteAdminComponent implements OnInit {
   categorias: SoporteCategoria[] = []; estados: SoporteEstado[] = []; incidencias: SoporteIncidencia[] = []; detalle: SoporteIncidencia | null = null;
   estado = ''; categoria = ''; orden: OrdenSoporte = 'actualizacion_desc'; paginaActual = 1; tamanoPagina = 20;

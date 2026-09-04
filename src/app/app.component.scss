@@ -468,6 +468,19 @@
   .desktop-nav {
     display: none;
   }
+
+  .menu-button.d-md-none {
+    display: inline-grid !important;
+    place-items: center;
+  }
+
+  .mobile-menu.d-md-none {
+    display: none !important;
+  }
+
+  .mobile-menu.d-md-none.show {
+    display: grid !important;
+  }
 }
 
 @media (min-width: 768px) {
