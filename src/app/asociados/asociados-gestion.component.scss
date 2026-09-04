@@ -229,6 +229,15 @@
   background: #fbfcfe;
 }
 
+.request-table-wrap { overflow-x: auto; border: 1px solid var(--ffsj-line); border-radius: 14px; background: #fff; }
+.request-table { width: 100%; min-width: 720px; border-collapse: collapse; }
+.request-table th, .request-table td { padding: .75rem .85rem; border-bottom: 1px solid var(--ffsj-line); text-align: left; vertical-align: middle; }
+.request-table th { background: var(--ffsj-soft-gray); color: var(--ffsj-muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; }
+.request-table tbody tr:last-child td { border-bottom: 0; }
+.request-table tr.active { background: var(--ffsj-soft-red); }
+.request-link { border: 0; padding: 0; background: transparent; color: var(--ffsj-red); font-weight: 900; text-decoration: underline; text-underline-offset: 3px; }
+.request-link:hover, .request-link:focus-visible { color: #7d1320; }
+
 .request-detail-backdrop {
   position: fixed;
   inset: 0;

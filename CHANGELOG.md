@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.18.0#ESMERALDA - 2026-09-04
+
+### Mejorado
+
+- Solicitudes de asociaciones se presenta en tabla responsive e incorpora la carga de adjuntos desde el detalle.
+- Registro dispone de filtros más compactos y la cabecera se ajusta a escritorios intermedios.
+
+### Corregido
+
+- La creación de Inscripciones muestra el motivo de error devuelto por la API, sin fallo silencioso.
+
 ## 0.17.1#ESMERALDA - 2026-09-04
 
 ### Corregido

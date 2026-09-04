@@ -278,8 +278,8 @@ export class InscripcionesComponent implements OnInit {
         this.success = this.editingInscription ? 'Inscripcion actualizada correctamente.' : 'Inscripcion creada correctamente.';
         this.loading = false;
       },
-      error: () => {
-        this.error = this.editingInscription ? 'No se ha podido actualizar la inscripcion.' : 'No se ha podido crear la inscripcion.';
+      error: error => {
+        this.error = error?.error?.message || (this.editingInscription ? 'No se ha podido actualizar la inscripcion.' : 'No se ha podido crear la inscripcion.');
         this.loading = false;
       }
     });
