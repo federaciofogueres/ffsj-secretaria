@@ -295,33 +295,20 @@
       </div>
 
       <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <div class="item-list">
-            <button
-              *ngFor="let solicitud of solicitudes"
-              type="button"
-              class="request-row"
-              [class.active]="solicitudDetalle?.id === solicitud.id"
-              (click)="verSolicitud(solicitud, $event.currentTarget)"
-            >
-              <div class="d-flex w-100 justify-content-between gap-2">
-                <strong>{{ solicitud.numero }}</strong>
-                <small>{{ (solicitud.fechaRegistro || solicitud.fechaAlta) | date: 'dd/MM/yyyy HH:mm' }}</small>
-              </div>
-              <div class="d-flex justify-content-between gap-2 mt-1">
-                <span>
-                  <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
-                  {{ solicitud.totalRegistros }} cambio(s)
-                </span>
-                <span
-                  class="estado-badge"
-                  [ngClass]="estadoClassSolicitud(solicitud)"
-                  [attr.title]="estadoTooltipSolicitud(solicitud)"
-                >
-                  {{ labelEstadoSolicitud(solicitud) }}
-                </span>
-              </div>
-            </button>
+        <div class="col-12">
+          <div class="request-table-wrap">
+            <table class="request-table">
+              <thead><tr><th>ID de solicitud</th><th>Fecha</th><th>Tipo de solicitud</th><th>Registros implicados</th><th>Estado de solicitud</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let solicitud of solicitudes" [class.active]="solicitudDetalle?.id === solicitud.id">
+                  <td><button type="button" class="request-link" (click)="verSolicitud(solicitud, $event.currentTarget)">{{ solicitud.numero }}</button></td>
+                  <td>{{ (solicitud.fechaRegistro || solicitud.fechaAlta) | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td><span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span></td>
+                  <td>{{ solicitud.totalRegistros || 0 }}</td>
+                  <td><span class="estado-badge" [ngClass]="estadoClassSolicitud(solicitud)" [attr.title]="estadoTooltipSolicitud(solicitud)">{{ labelEstadoSolicitud(solicitud) }}</span></td>
+                </tr>
+              </tbody>
+            </table>
             <div *ngIf="!loading && solicitudes.length === 0" class="text-muted">
               {{ filtroSolicitudes === 'incidencias' ? 'No hay solicitudes con incidencias.' : 'No hay solicitudes registradas.' }}
             </div>
@@ -721,7 +708,14 @@
       </section>
       <section *ngIf="pestanaSolicitud === 'cambios'" id="solicitud-asociacion-panel-cambios" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-cambios"><article class="change-card" *ngFor="let item of solicitudDetalle.items || []"><strong>{{ resumenItem(item) }}</strong><ul class="pending-detail-list" *ngIf="detalleItem(item).length"><li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li></ul></article><p class="text-muted" *ngIf="!(solicitudDetalle.items?.length)">La solicitud no contiene cambios.</p></section>
       <section *ngIf="pestanaSolicitud === 'incidencias'" id="solicitud-asociacion-panel-incidencias" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-incidencias"><app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel></section>
-      <section *ngIf="pestanaSolicitud === 'adjuntos'" id="solicitud-asociacion-panel-adjuntos" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-adjuntos"><div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template></section>
+      <section *ngIf="pestanaSolicitud === 'adjuntos'" id="solicitud-asociacion-panel-adjuntos" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-adjuntos">
+        <div class="d-flex gap-2 align-items-center flex-wrap mb-3" *ngIf="solicitudDetalle.estado === 'registrada' && permissions.hasPermission('solicitudes:write')">
+          <label class="ux-btn ux-btn-secondary ux-btn-sm mb-0" for="solicitudFirmadaDialogInput"><i class="bi bi-paperclip me-1"></i>Adjuntar solicitud firmada</label>
+          <input id="solicitudFirmadaDialogInput" class="visually-hidden" type="file" accept=".pdf,image/*" (change)="seleccionarSolicitudFirmada($event, solicitudDetalle)" />
+          <small class="text-muted">PDF o imagen. El documento se carga de forma autenticada.</small>
+        </div>
+        <div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template>
+      </section>
       <section *ngIf="pestanaSolicitud === 'historial'" id="solicitud-asociacion-panel-historial" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-historial"><ol class="list-group list-group-numbered" *ngIf="solicitudDetalle.eventos?.length; else sinHistorial"><li class="list-group-item" *ngFor="let evento of solicitudDetalle.eventos"><strong>{{ evento.tipo }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li></ol><ng-template #sinHistorial><p class="text-muted">Todavía no hay eventos registrados.</p></ng-template></section>
     </div>
     <footer class="request-detail-footer"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarDetalleSolicitud()">Cerrar</button></footer>

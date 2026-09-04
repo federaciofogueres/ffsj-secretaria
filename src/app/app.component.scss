@@ -68,6 +68,14 @@
   min-width: 0;
 }
 
+@media (max-width: 1220px) and (min-width: 1025px) {
+  .app-header-inner { grid-template-columns: auto minmax(0, 1fr) auto; gap: .55rem; padding-inline: 1rem; }
+  .brand { gap: .45rem; }
+  .brand small { display: none; }
+  .nav-link { padding: .55rem .55rem; font-size: .88rem; gap: .3rem; }
+  .association-selector { max-width: 235px; padding-inline: .55rem; }
+}
+
 .nav-link {
   min-height: 44px;
   display: inline-flex;
