@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.14.1#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- La configuración de Karma ejecuta la suite una sola vez, evitando que `npm test` quede en observación indefinida durante la validación de componentes compartidos.
+
 ## 0.14.0#ESMERALDA - 2026-09-04
 
 ### Mejorado
