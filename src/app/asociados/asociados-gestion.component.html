@@ -264,11 +264,25 @@
           <h5 class="section-title mb-1">Solicitudes pendientes</h5>
           <p class="text-muted mb-0">Solicitudes registradas y todavia no enviadas a secretaria.</p>
         </div>
-        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarSolicitudes()">
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="loading" (click)="cargarSolicitudes()">
           <i class="bi bi-arrow-clockwise me-1"></i>
           Actualizar
         </button>
       </div>
+
+      <form class="request-filters" (ngSubmit)="aplicarFiltrosSolicitudes()">
+        <input class="form-control" name="busquedaSolicitudes" [(ngModel)]="busquedaSolicitudes" placeholder="Buscar por número" aria-label="Buscar solicitudes por número" />
+        <select class="form-select" name="tipoSolicitudFiltro" [(ngModel)]="tipoSolicitudFiltro" aria-label="Filtrar por tipo">
+          <option value="todos">Todos los tipos</option><option value="alta">Altas</option><option value="cambio">Cambios</option><option value="baja">Bajas</option>
+        </select>
+        <select class="form-select" name="estadoSolicitudFiltro" [(ngModel)]="estadoSolicitudFiltro" aria-label="Filtrar por estado">
+          <option value="todos">Todos los estados</option><option value="registrada">Registrada</option><option value="pendiente_firma">Pendiente de firma</option><option value="enviada">Enviada</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option><option value="finalizada">Finalizada</option>
+        </select>
+        <select class="form-select" name="ordenSolicitudes" [(ngModel)]="ordenSolicitudes" aria-label="Ordenar solicitudes">
+          <option value="fecha_desc">Más recientes</option><option value="fecha_asc">Más antiguas</option><option value="estado">Por estado</option>
+        </select>
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="submit" [disabled]="loading">Aplicar</button>
+      </form>
 
       <div class="filter-notice" *ngIf="filtroSolicitudes === 'incidencias'">
         <span>
@@ -284,7 +298,7 @@
         <div class="col-12 col-lg-6">
           <div class="item-list">
             <button
-              *ngFor="let solicitud of solicitudesVisibles"
+              *ngFor="let solicitud of solicitudes"
               type="button"
               class="request-row"
               [class.active]="solicitudDetalle?.id === solicitud.id"
@@ -308,13 +322,19 @@
                 </span>
               </div>
             </button>
-            <div *ngIf="solicitudesVisibles.length === 0" class="text-muted">
+            <div *ngIf="!loading && solicitudes.length === 0" class="text-muted">
               {{ filtroSolicitudes === 'incidencias' ? 'No hay solicitudes con incidencias.' : 'No hay solicitudes registradas.' }}
             </div>
+            <div *ngIf="loading" class="text-muted">Cargando solicitudes...</div>
+          </div>
+          <div class="list-pager" *ngIf="totalSolicitudes > 0">
+            <span>{{ totalSolicitudes }} solicitudes · Página {{ paginaSolicitudes }} de {{ totalPaginasSolicitudes }}</span>
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="paginaSolicitudes === 1 || loading" (click)="cambiarPaginaSolicitudes(-1)">Anterior</button>
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="paginaSolicitudes === totalPaginasSolicitudes || loading" (click)="cambiarPaginaSolicitudes(1)">Siguiente</button>
           </div>
         </div>
 
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-6" *ngIf="false">
           <div class="detail-panel">
             <ng-container *ngIf="solicitudDetalle; else emptyDetail">
               <h6 class="fw-bold mb-1">{{ solicitudDetalle.numero }}</h6>
@@ -674,6 +694,39 @@
     </ng-template>
   </div>
 </section>
+
+<div *ngIf="detalleSolicitudDialogOpen && solicitudDetalle" class="request-detail-backdrop" role="presentation" (click)="cerrarDetalleSolicitud()">
+  <section class="request-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudAsociacionTitle" (click)="$event.stopPropagation()">
+    <header class="request-detail-header">
+      <div>
+        <p class="ux-overline mb-1">Detalle de solicitud</p>
+        <h2 id="solicitudAsociacionTitle" class="h5 mb-1">{{ solicitudDetalle.numero }}</h2>
+        <div class="d-flex gap-2 flex-wrap"><span class="tipo-badge" [ngClass]="tipoClass(solicitudDetalle.tipo)">{{ labelTipo(solicitudDetalle.tipo) }}</span><span class="estado-badge" [ngClass]="estadoClassSolicitud(solicitudDetalle)">{{ labelEstadoSolicitud(solicitudDetalle) }}</span></div>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalleSolicitud()"></button>
+    </header>
+    <div class="request-detail-body">
+      <div class="detail-tabs" role="tablist" aria-label="Secciones de la solicitud">
+        <button *ngFor="let pestana of pestanasSolicitud; let indice = index" class="detail-tab" type="button" role="tab" [id]="'solicitud-asociacion-tab-' + pestana.id" [attr.aria-selected]="pestanaSolicitud === pestana.id" [tabIndex]="pestanaSolicitud === pestana.id ? 0 : -1" [class.active]="pestanaSolicitud === pestana.id" (click)="activarPestanaSolicitud(pestana.id)" (keydown)="navegarPestanasSolicitud($event, indice)">{{ pestana.label }}</button>
+      </div>
+      <section *ngIf="pestanaSolicitud === 'resumen'">
+        <dl class="metadata-grid"><div><dt>Tipo</dt><dd>{{ labelTipo(solicitudDetalle.tipo) }}</dd></div><div><dt>Alta</dt><dd>{{ solicitudDetalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd></div><div><dt>Estado</dt><dd>{{ labelEstadoSolicitud(solicitudDetalle) }}</dd></div><div><dt>Cambios</dt><dd>{{ solicitudDetalle.totalRegistros || solicitudDetalle.items?.length || 0 }}</dd></div></dl>
+        <p class="text-muted mb-3" *ngIf="solicitudDetalle.observaciones">{{ solicitudDetalle.observaciones }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="ux-btn ux-btn-sm" type="button" *ngIf="puedeEnviarSolicitud(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio || !solicitudAdjunta(solicitudDetalle)" (click)="enviarSolicitud(solicitudDetalle)">Enviar solicitud a Secretaría</button>
+          <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="puedeCancelarEnvio(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="cancelarEnvioSolicitud(solicitudDetalle)">Cancelar envío</button>
+          <button class="ux-btn ux-btn-danger ux-btn-sm" type="button" *ngIf="puedeCancelarSolicitud(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="cancelarSolicitud(solicitudDetalle)">Cancelar solicitud</button>
+          <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="imprimirSolicitud(solicitudDetalle)">Imprimir solicitud</button>
+        </div>
+      </section>
+      <section *ngIf="pestanaSolicitud === 'cambios'"><article class="change-card" *ngFor="let item of solicitudDetalle.items || []"><strong>{{ resumenItem(item) }}</strong><ul class="pending-detail-list" *ngIf="detalleItem(item).length"><li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li></ul></article><p class="text-muted" *ngIf="!(solicitudDetalle.items?.length)">La solicitud no contiene cambios.</p></section>
+      <section *ngIf="pestanaSolicitud === 'incidencias'"><app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel></section>
+      <section *ngIf="pestanaSolicitud === 'adjuntos'"><div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template></section>
+      <section *ngIf="pestanaSolicitud === 'historial'"><ol class="list-group list-group-numbered" *ngIf="solicitudDetalle.eventos?.length; else sinHistorial"><li class="list-group-item" *ngFor="let evento of solicitudDetalle.eventos"><strong>{{ evento.tipo }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li></ol><ng-template #sinHistorial><p class="text-muted">Todavía no hay eventos registrados.</p></ng-template></section>
+    </div>
+    <footer class="request-detail-footer"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarDetalleSolicitud()">Cerrar</button></footer>
+  </section>
+</div>
 
 <div *ngIf="sustitucionesDialogOpen" class="sustitucion-backdrop" role="presentation" (click)="cerrarSustitucionesDialog()">
   <section class="sustitucion-dialog" role="dialog" aria-modal="true" aria-labelledby="sustitucionTitle" (click)="$event.stopPropagation()">

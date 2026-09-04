@@ -128,10 +128,25 @@ export class SecretariaService {
     });
   }
 
-  getSolicitudes(asociacionId: number): Observable<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }> {
+  getSolicitudes(asociacionId: number, filters: {
+    page?: number;
+    pageSize?: number;
+    tipo?: string;
+    estado?: string;
+    busqueda?: string;
+    orden?: 'fecha_desc' | 'fecha_asc' | 'estado';
+    soloProblematicas?: boolean;
+  } = {}): Observable<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams().set('asociacionId', asociacionId);
     const ejercicio = this.ejercicioSeleccionado();
     if (ejercicio) params = params.set('ejercicio', ejercicio);
+    if (filters.page) params = params.set('page', filters.page);
+    if (filters.pageSize) params = params.set('pageSize', filters.pageSize);
+    if (filters.tipo) params = params.set('tipo', filters.tipo);
+    if (filters.estado) params = params.set('estado', filters.estado);
+    if (filters.busqueda) params = params.set('busqueda', filters.busqueda);
+    if (filters.orden) params = params.set('orden', filters.orden);
+    if (filters.soloProblematicas) params = params.set('soloProblematicas', 'true');
     return this.http.get<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }>(`${this.apiUrl.secretariaBasePath}/solicitudes`, {
       params,
       headers: this.authHeaders()
