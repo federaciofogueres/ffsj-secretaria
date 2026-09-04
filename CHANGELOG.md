@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.6#ESMERALDA - 2026-09-05
+
+### Corregido
+
+- La ruta literal `/inscripciones/nueva` se identifica correctamente y abre el formulario sin pasar por el listado.
+
 ## 0.18.5#ESMERALDA - 2026-09-05
 
 ### Corregido
