@@ -148,6 +148,14 @@
               </div>
               <label class="form-label mt-2">Descripcion</label>
               <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+              <label class="form-label mt-2">Categoría visual
+                <select class="form-select" formControlName="colorEtiqueta">
+                  <option value="ffsj">FFSJ</option>
+                  <option value="asociacion">Entidad asociada</option>
+                  <option value="ayuntamiento">Ayuntamiento</option>
+                  <option value="otra">Otras entidades</option>
+                </select>
+              </label>
               <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
               <div class="admin-actions mt-3">
                 <button class="ux-btn" type="submit" [disabled]="loading">Guardar cambios</button>

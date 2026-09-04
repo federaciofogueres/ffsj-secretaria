@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.18.1#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- La edición administrativa de actividades permite modificar la categoría visual y conservarla al guardar.
+- La creación administrativa de Inscripciones informa de campos obligatorios y del error funcional devuelto por la API.
+
 ## 0.18.0#ESMERALDA - 2026-09-04
 
 ### Mejorado
