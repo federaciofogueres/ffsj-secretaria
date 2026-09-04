@@ -244,8 +244,11 @@ export class InscripcionesComponent implements OnInit {
   }
 
   crearInscripcion(): void {
+    this.error = '';
+    this.success = '';
     if (this.inscripcionAdminForm.invalid) {
       this.inscripcionAdminForm.markAllAsTouched();
+      this.error = 'Completa los campos obligatorios antes de crear la inscripción.';
       return;
     }
     const tiposPermitidos = [
