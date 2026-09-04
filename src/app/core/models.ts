@@ -391,6 +391,7 @@ export interface ActividadSecretaria {
   fechaInicio: string;
   fechaFin: string;
   descripcion?: string;
+  colorEtiqueta?: 'ffsj' | 'asociacion' | 'ayuntamiento' | 'otra';
   inscripciones?: InscripcionSecretaria[];
 }
 

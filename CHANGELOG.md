@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.0#ESMERALDA - 2026-09-04
+
+### Añadido
+
+- Las actividades de Calendario admiten una categoría visual persistente con paleta FFSJ, asociación, Ayuntamiento y otras entidades.
+
 ## 0.15.1#ESMERALDA - 2026-09-04
 
 ### Corregido

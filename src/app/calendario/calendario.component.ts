@@ -45,7 +45,7 @@ export class CalendarioComponent implements OnInit {
     responsable: ['Secretaria'],
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
-    descripcion: ['']
+    descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
   });
 
@@ -54,7 +54,7 @@ export class CalendarioComponent implements OnInit {
     responsable: [''],
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
-    descripcion: ['']
+    descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
   });
 
@@ -152,6 +152,7 @@ export class CalendarioComponent implements OnInit {
       fechaInicio: formatted,
       fechaFin: formatted,
       descripcion: ''
+      , colorEtiqueta: 'ffsj'
     });
     this.showCreateDialog = true;
   }
