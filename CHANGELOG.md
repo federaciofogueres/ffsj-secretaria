@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.15.1#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- La asociación conserva disponibilidad, orden y página del listado de Inscripciones al abrir un detalle y volver.
+- El listado se recupera automáticamente si un filtro reduce el total de páginas, evitando estados vacíos por una página ya inexistente.
+
 ## 0.15.0#ESMERALDA - 2026-09-04
 
 ### Mejorado
