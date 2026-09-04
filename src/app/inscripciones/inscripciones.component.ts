@@ -220,7 +220,19 @@ export class InscripcionesComponent implements OnInit {
   }
 
   crearNuevaInscripcion(): void {
-    this.router.navigate(['/inscripciones/nueva']);
+    // El listado y el formulario comparten componente: activar el modo de
+    // creación inmediatamente evita que una navegación cancelada deje el
+    // botón sin respuesta visible.
+    this.createMode = true;
+    this.detailMode = true;
+    this.nuevaInscripcion();
+    this.router.navigate(['/inscripciones/nueva']).then(navigated => {
+      if (!navigated) {
+        this.error = 'No se ha podido abrir el formulario de creación.';
+      }
+    }).catch(() => {
+      this.error = 'No se ha podido abrir el formulario de creación.';
+    });
   }
 
   volverAlListado(): void {
