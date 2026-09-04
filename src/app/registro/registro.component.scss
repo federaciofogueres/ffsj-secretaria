@@ -49,6 +49,34 @@
   gap: 1.15rem;
 }
 
+.year-filter {
+  display: grid;
+  grid-template-columns: minmax(110px, .65fr) minmax(220px, 1.6fr) minmax(160px, 1fr) minmax(190px, 1.2fr) auto;
+  align-items: end;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 16px;
+  background: var(--ffsj-soft-gray);
+}
+
+.year-filter .form-label {
+  display: grid;
+  gap: .3rem;
+  color: var(--ffsj-muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+@media (max-width: 980px) {
+  .year-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .year-filter { grid-template-columns: 1fr; }
+  .year-filter .btn { width: 100%; }
+}
+
 .status-card,
 .list-card,
 .form-grid,

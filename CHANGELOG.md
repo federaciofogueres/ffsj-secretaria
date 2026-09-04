@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.14.0#ESMERALDA - 2026-09-04
+
+### Mejorado
+
+- La cabecera conserva acceso a la navegación en escritorio estrecho y tablet mediante un menú compacto, sin solapar la marca ni el contexto de asociación.
+- Soporte reutiliza el selector común de adjuntos para alta y respuestas administrativas o de asociación, con límites, formatos, errores, retirada y estado vacío coherentes.
+- Los filtros de Documentación y Comunicaciones de Registro comparten una disposición agrupada y adaptable a escritorio estrecho, tablet y móvil.
+- Los botones deshabilitados disponen de un tratamiento visual común, incluido cursor y contraste inequívocos.
+
+### Testing
+
+- Se valida la compilación Angular de desarrollo y se documentan las pruebas manuales de cabecera, adjuntos, filtros y estados de interacción.
+
 ## 0.13.0#ESMERALDA - 2026-09-03
 
 ### Mejorado
