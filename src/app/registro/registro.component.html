@@ -65,23 +65,26 @@
         </div>
         <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
         <div class="year-filter mb-3" *ngIf="mode !== null">
-          <label class="form-label mb-0">Filtrar por año</label>
+          <label class="form-label mb-0">Año
           <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
             <option [ngValue]="''">Todos</option>
             <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
-          </select>
-          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" />
+          </select></label>
+          <label class="form-label mb-0">Buscar
+          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" /></label>
+          <label class="form-label mb-0">Estado
           <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
             <option value="">Todos los estados</option>
             <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
-          </select>
+          </select></label>
+          <label class="form-label mb-0">Ordenar
           <select class="form-select form-select-sm" [(ngModel)]="ordenRegistros" (ngModelChange)="aplicarFiltros()" aria-label="Ordenar registros">
             <option value="fecha_desc">Actualizados primero</option>
             <option value="fecha_asc">Actualizados al final</option>
             <option value="estado">Estado</option>
             <option value="titulo">Título</option>
-          </select>
-          <button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button>
+          </select></label>
+          <div class="filter-action"><span class="form-label">Acción</span><button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button></div>
         </div>
 
         <section class="border rounded p-3 mb-3" *ngIf="isAdminMode && mode !== null && permissions.hasPermission('registro:write')">
