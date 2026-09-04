@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.16.1#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- La edición de actividades conserva y muestra la categoría visual persistida; las actividades antiguas usan FFSJ como valor por defecto.
+
 ## 0.16.0#ESMERALDA - 2026-09-04
 
 ### Añadido
