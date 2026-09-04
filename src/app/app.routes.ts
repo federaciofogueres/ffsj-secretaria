@@ -86,14 +86,14 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'inscripciones',
+    path: 'inscripciones/nueva',
     component: InscripcionesComponent,
-    title: 'Inscripciones',
-    canActivate: [AuthGuard, permissionGuard],
+    title: 'Crear inscripcion',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
     data: {
-      permission: 'inscripciones:read',
+      permission: 'inscripciones:write',
       moduleName: 'Inscripciones',
-      moduleDescription: 'Permite apuntar a asociados de la entidad en eventos y actividades ya existentes.'
+      moduleDescription: 'Creacion de una nueva inscripcion.'
     }
   },
   {
@@ -119,14 +119,14 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'inscripciones/nueva',
+    path: 'inscripciones',
     component: InscripcionesComponent,
-    title: 'Crear inscripcion',
-    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    title: 'Inscripciones',
+    canActivate: [AuthGuard, permissionGuard],
     data: {
-      permission: 'inscripciones:write',
+      permission: 'inscripciones:read',
       moduleName: 'Inscripciones',
-      moduleDescription: 'Creacion de una nueva inscripcion.'
+      moduleDescription: 'Permite apuntar a asociados de la entidad en eventos y actividades ya existentes.'
     }
   },
   {

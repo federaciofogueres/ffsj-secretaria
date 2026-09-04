@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.4#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- La ruta específica de creación de Inscripciones se evalúa antes que el listado y ya abre el formulario administrativo correctamente.
+
 ## 0.18.3#ESMERALDA - 2026-09-04
 
 ### Mejorado
