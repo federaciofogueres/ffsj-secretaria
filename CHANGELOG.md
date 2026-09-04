@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.0#ESMERALDA - 2026-09-04
+
+### Mejorado
+
+- La bandeja de Solicitudes de asociaciones incorpora búsqueda, filtros, ordenación y paginación desde servidor.
+- El detalle se abre en un diálogo con pestañas de resumen, cambios, incidencias, adjuntos e historial, sustituyendo el panel lateral.
+- La bandeja evita cargar el detalle de cada solicitud antes de que la asociación lo solicite.
+
 ## 0.16.1#ESMERALDA - 2026-09-04
 
 ### Corregido
