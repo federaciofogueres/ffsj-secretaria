@@ -84,6 +84,10 @@ export class InscripcionesComponent implements OnInit {
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
+    const query = this.route.snapshot.queryParamMap;
+    this.filtroDisponibilidad = query.get('disponibilidad') || '';
+    this.ordenInscripciones = query.get('orden') || 'plazo_asc';
+    this.paginaInscripciones = Math.max(1, Number(query.get('pagina')) || 1);
     this.createMode = routeId === 'nueva';
     this.detailMode = Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
     this.cargarDatos();
@@ -212,7 +216,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   openInscription(inscription: InscripcionSecretaria): void {
-    this.router.navigate(['/inscripciones', inscription.id]);
+    this.router.navigate(['/inscripciones', inscription.id], { queryParams: this.contextoListadoInscripciones() });
   }
 
   crearNuevaInscripcion(): void {
@@ -220,7 +224,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   volverAlListado(): void {
-    this.router.navigate(['/inscripciones']);
+    this.router.navigate(['/inscripciones'], { queryParams: this.contextoListadoInscripciones() });
   }
 
   nuevaInscripcion(): void {
@@ -694,6 +698,11 @@ export class InscripcionesComponent implements OnInit {
         next: inscripcionesResponse => {
           this.inscripciones = inscripcionesResponse.inscripciones;
           this.paginacionInscripciones = inscripcionesResponse.paginacion || { page: 1, pageSize: 20, total: this.inscripciones.length, totalPages: 1 };
+          if (this.paginaInscripciones > this.paginacionInscripciones.totalPages) {
+            this.paginaInscripciones = this.paginacionInscripciones.totalPages;
+            this.cargarFormulariosEInscripciones();
+            return;
+          }
           this.seleccionarInicial();
           this.cargarAsociados();
         },
@@ -1162,6 +1171,12 @@ export class InscripcionesComponent implements OnInit {
   private fechaHoyLocal(): string {
     const today = new Date();
     return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  private contextoListadoInscripciones(): Record<string, string | number> {
+    const context: Record<string, string | number> = { orden: this.ordenInscripciones, pagina: this.paginaInscripciones };
+    if (this.filtroDisponibilidad) context.disponibilidad = this.filtroDisponibilidad;
+    return context;
   }
 
   private toDateInput(value: string | null | undefined): string {
