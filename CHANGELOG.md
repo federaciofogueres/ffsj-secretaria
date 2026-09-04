@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.3#ESMERALDA - 2026-09-04
+
+### Mejorado
+
+- Los filtros de Registro se organizan en una retícula compacta con labels asociados, búsqueda prioritaria y botón integrado.
+
 ## 0.18.2#ESMERALDA - 2026-09-04
 
 ### Corregido
