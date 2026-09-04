@@ -5,7 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
-import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -30,6 +30,8 @@ export class InscripcionesComponent implements OnInit {
   actividades: ActividadSecretaria[] = [];
   formularios: FormularioInscripcion[] = [];
   inscripciones: InscripcionSecretaria[] = [];
+  filtroDisponibilidad = ''; ordenInscripciones = 'plazo_asc'; paginaInscripciones = 1;
+  paginacionInscripciones: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   selectedInscription: InscripcionSecretaria | null = null;
   entradas: InscripcionEntradaSecretaria[] = [];
   selectedEntrada: InscripcionEntradaSecretaria | null = null;
@@ -155,6 +157,11 @@ export class InscripcionesComponent implements OnInit {
       this.form.valid &&
       (!this.requiresParticipants || this.selectedParticipants.size > 0);
   }
+
+  disponibilidadLabel(inscripcion: InscripcionSecretaria): string { return this.isInscripcionDisponible(inscripcion) ? 'Activa' : 'Plazo cerrado'; }
+  motivoNoDisponible(inscripcion: InscripcionSecretaria): string { return this.mensajeDisponibilidadInscripcion(inscripcion) || (inscripcion.inscrito ? 'Tu asociación ya está inscrita.' : 'La inscripción no admite nuevas participaciones.'); }
+  cargarPaginaInscripciones(reset = false): void { if (reset) this.paginaInscripciones = 1; this.cargarFormulariosEInscripciones(); }
+  cambiarPaginaInscripciones(delta: number): void { const page = this.paginaInscripciones + delta; if (page >= 1 && page <= this.paginacionInscripciones.totalPages) { this.paginaInscripciones = page; this.cargarFormulariosEInscripciones(); } }
 
   get associationStep(): 1 | 2 | 3 | 4 | 5 {
     if (this.associationMode === 'summary') return 5;
@@ -683,9 +690,10 @@ export class InscripcionesComponent implements OnInit {
 
   private cargarFormulariosEInscripciones(): void {
     const cargarInscripciones = () => {
-      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode).subscribe({
+      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode, { page: this.paginaInscripciones, pageSize: 20, orden: this.ordenInscripciones, disponibilidad: this.filtroDisponibilidad }).subscribe({
         next: inscripcionesResponse => {
           this.inscripciones = inscripcionesResponse.inscripciones;
+          this.paginacionInscripciones = inscripcionesResponse.paginacion || { page: 1, pageSize: 20, total: this.inscripciones.length, totalPages: 1 };
           this.seleccionarInicial();
           this.cargarAsociados();
         },

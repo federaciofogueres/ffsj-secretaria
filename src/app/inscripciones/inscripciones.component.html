@@ -35,6 +35,10 @@
               Crear inscripcion
             </button>
           </div>
+          <section class="inscription-filters" *ngIf="!isAdminMode" aria-label="Filtros de inscripciones">
+            <label>Disponibilidad<select class="form-select form-select-sm" [(ngModel)]="filtroDisponibilidad" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todas</option><option value="activa">Activas</option><option value="cerrada">Plazo cerrado</option></select></label>
+            <label>Ordenar<select class="form-select form-select-sm" [(ngModel)]="ordenInscripciones" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="plazo_asc">Plazo más próximo</option><option value="plazo_desc">Plazo más lejano</option><option value="titulo_asc">Título A-Z</option></select></label>
+          </section>
           <div class="inscription-list mb-4">
             <div
               *ngFor="let item of inscripciones"
@@ -53,6 +57,7 @@
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
                   <app-estado-badge class="ms-2" *ngIf="isAdminMode" [estado]="item.estado"></app-estado-badge>
                 </div>
+                <div class="inscription-badges" *ngIf="!isAdminMode"><span class="availability-badge" [class.closed]="!isInscripcionDisponible(item)">{{ disponibilidadLabel(item) }}</span><span class="participation-badge" [class.registered]="item.inscrito">{{ item.inscrito ? 'Inscrito' : 'No inscrito' }}</span></div>
               </div>
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
                 <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
@@ -62,6 +67,7 @@
               </div>
             </div>
           </div>
+          <nav class="participant-pagination" *ngIf="paginacionInscripciones.totalPages > 1" aria-label="Paginación de inscripciones"><span class="text-muted small">Página {{ paginacionInscripciones.page }} de {{ paginacionInscripciones.totalPages }}</span><div class="page-actions"><button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="paginacionInscripciones.page === 1" (click)="cambiarPaginaInscripciones(-1)">Anterior</button><button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="paginacionInscripciones.page === paginacionInscripciones.totalPages" (click)="cambiarPaginaInscripciones(1)">Siguiente</button></div></nav>
           <p class="text-muted mb-0" *ngIf="!inscripciones.length && !loading">No hay inscripciones disponibles.</p>
         </section>
       </div>

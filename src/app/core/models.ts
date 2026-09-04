@@ -299,6 +299,7 @@ export interface InscripcionSecretaria {
   fechaLimite: string;
   tiposPermitidos: AsociadoTipo[];
   campos: CampoInscripcion[];
+  inscrito?: boolean;
 }
 
 export interface InscripcionEntradaSecretaria {
