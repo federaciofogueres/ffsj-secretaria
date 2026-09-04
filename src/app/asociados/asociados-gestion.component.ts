@@ -79,6 +79,7 @@ export class AsociadosGestionComponent implements OnInit {
   totalPaginasSolicitudes = 1;
   detalleSolicitudDialogOpen = false;
   pestanaSolicitud: PestanaSolicitudAsociacion = 'resumen';
+  private solicitudTrigger: HTMLElement | null = null;
   readonly pestanasSolicitud: Array<{ id: PestanaSolicitudAsociacion; label: string }> = [
     { id: 'resumen', label: 'Resumen' },
     { id: 'cambios', label: 'Cambios' },
@@ -1024,7 +1025,8 @@ export class AsociadosGestionComponent implements OnInit {
       });
   }
 
-  verSolicitud(solicitud: SolicitudSecretaria): void {
+  verSolicitud(solicitud: SolicitudSecretaria, trigger?: EventTarget | null): void {
+    this.solicitudTrigger = trigger instanceof HTMLElement ? trigger : null;
     this.loading = true;
     this.secretariaService.getSolicitud(solicitud.id).subscribe({
       next: detalle => {
@@ -1372,6 +1374,9 @@ export class AsociadosGestionComponent implements OnInit {
 
   cerrarDetalleSolicitud(): void {
     this.detalleSolicitudDialogOpen = false;
+    const trigger = this.solicitudTrigger;
+    this.solicitudTrigger = null;
+    setTimeout(() => trigger?.focus());
   }
 
   activarPestanaSolicitud(pestana: PestanaSolicitudAsociacion): void {
