@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.2#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- El botón `Crear inscripción` activa inmediatamente el formulario administrativo y notifica si la navegación no puede completarse.
+
 ## 0.18.1#ESMERALDA - 2026-09-04
 
 ### Corregido
