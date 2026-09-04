@@ -127,8 +127,9 @@ export class CalendarioComponent implements OnInit {
       responsable: hydrated.responsable || '',
       fechaInicio: this.toDateInput(hydrated.fechaInicio),
       fechaFin: this.toDateInput(hydrated.fechaFin),
-      descripcion: hydrated.descripcion || ''
-      , visiblePublico: hydrated.visiblePublico !== false
+      descripcion: hydrated.descripcion || '',
+      visiblePublico: hydrated.visiblePublico !== false,
+      colorEtiqueta: hydrated.colorEtiqueta || 'ffsj'
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
   }
