@@ -218,6 +218,97 @@
   font-size: 0.875rem;
 }
 
+.request-filters {
+  display: grid;
+  grid-template-columns: minmax(13rem, 2fr) repeat(3, minmax(10rem, 1fr)) auto;
+  gap: .65rem;
+  margin-bottom: 1rem;
+  padding: .85rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  background: #fbfcfe;
+}
+
+.request-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .56);
+}
+
+.request-detail-dialog {
+  width: min(980px, 100%);
+  max-height: min(88vh, 850px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .35);
+}
+
+.request-detail-header,
+.request-detail-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.request-detail-footer {
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid var(--ffsj-line);
+  border-bottom: 0;
+}
+
+.request-detail-body {
+  overflow: auto;
+  padding: 1rem 1.25rem;
+}
+
+.detail-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: .35rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.detail-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: .65rem .75rem;
+  background: transparent;
+  color: var(--ffsj-muted);
+  font-weight: 800;
+}
+
+.detail-tab.active { color: var(--ffsj-red); border-bottom-color: var(--ffsj-red); }
+
+.metadata-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.metadata-grid div, .change-card, .signed-documents { border: 1px solid var(--ffsj-line); border-radius: 12px; padding: .75rem; }
+.metadata-grid dt { color: var(--ffsj-muted); font-size: .8rem; }
+.metadata-grid dd { margin: .15rem 0 0; font-weight: 800; }
+.change-card { margin-bottom: .65rem; }
+.signed-documents { display: flex; gap: .5rem; flex-wrap: wrap; }
+
+@media (max-width: 900px) {
+  .request-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 576px) {
+  .request-filters, .metadata-grid { grid-template-columns: 1fr; }
+  .request-detail-backdrop { padding: 0; }
+  .request-detail-dialog { width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }
+}
+
 .selected-cargos {
   display: flex;
   flex-wrap: wrap;

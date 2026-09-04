@@ -16,6 +16,7 @@ import { Asociado, AsociadosService } from './asociados.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
+type PestanaSolicitudAsociacion = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
 
 function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | null {
   const value = String(control.value || '').trim();
@@ -68,6 +69,23 @@ export class AsociadosGestionComponent implements OnInit {
   solicitudes: SolicitudSecretaria[] = [];
   solicitudDetalle: SolicitudSecretaria | null = null;
   filtroSolicitudes: 'incidencias' | null = null;
+  busquedaSolicitudes = '';
+  tipoSolicitudFiltro = 'todos';
+  estadoSolicitudFiltro = 'todos';
+  ordenSolicitudes: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
+  paginaSolicitudes = 1;
+  tamanoPaginaSolicitudes = 10;
+  totalSolicitudes = 0;
+  totalPaginasSolicitudes = 1;
+  detalleSolicitudDialogOpen = false;
+  pestanaSolicitud: PestanaSolicitudAsociacion = 'resumen';
+  readonly pestanasSolicitud: Array<{ id: PestanaSolicitudAsociacion; label: string }> = [
+    { id: 'resumen', label: 'Resumen' },
+    { id: 'cambios', label: 'Cambios' },
+    { id: 'incidencias', label: 'Incidencias' },
+    { id: 'adjuntos', label: 'Adjuntos' },
+    { id: 'historial', label: 'Historial' }
+  ];
 
   seleccionBaja = new Set<number>();
   seleccionRegistro = new Set<number>();
@@ -195,14 +213,6 @@ export class AsociadosGestionComponent implements OnInit {
 
   get seleccionRegistroValida(): boolean {
     return this.registrosSeleccionados.length > 0 && this.tipoSeleccionado !== null;
-  }
-
-  get solicitudesVisibles(): SolicitudSecretaria[] {
-    if (this.filtroSolicitudes !== 'incidencias') {
-      return this.solicitudes;
-    }
-
-    return this.solicitudes.filter(solicitud => this.solicitudTieneIncidencias(solicitud));
   }
 
   get cargosFormulario(): CargoResumen[] {
@@ -1019,6 +1029,8 @@ export class AsociadosGestionComponent implements OnInit {
     this.secretariaService.getSolicitud(solicitud.id).subscribe({
       next: detalle => {
         this.solicitudDetalle = detalle;
+        this.pestanaSolicitud = 'resumen';
+        this.detalleSolicitudDialogOpen = true;
         this.loading = false;
       },
       error: () => {
@@ -1044,6 +1056,8 @@ export class AsociadosGestionComponent implements OnInit {
           ? this.solicitudes.map(item => (item.id === detalle.id ? detalle : item))
           : [detalle, ...this.solicitudes];
         this.solicitudDetalle = detalle;
+        this.pestanaSolicitud = 'resumen';
+        this.detalleSolicitudDialogOpen = true;
         this.loading = false;
       },
       error: () => {
@@ -1143,14 +1157,30 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
-  cargarSolicitudes(): void {
-    this.secretariaService.getSolicitudes(this.asociacionId).subscribe({
+  cargarSolicitudes(resetPage = false): void {
+    if (resetPage) this.paginaSolicitudes = 1;
+    this.loading = true;
+    this.secretariaService.getSolicitudes(this.asociacionId, {
+      page: this.paginaSolicitudes,
+      pageSize: this.tamanoPaginaSolicitudes,
+      tipo: this.tipoSolicitudFiltro === 'todos' ? undefined : this.tipoSolicitudFiltro,
+      estado: this.estadoSolicitudFiltro === 'todos' ? undefined : this.estadoSolicitudFiltro,
+      busqueda: this.busquedaSolicitudes.trim() || undefined,
+      orden: this.ordenSolicitudes,
+      soloProblematicas: this.filtroSolicitudes === 'incidencias'
+    }).subscribe({
       next: response => {
         const solicitudesActivas = response.solicitudes.filter(solicitud => solicitud.estado !== 'cancelada');
         this.solicitudes = solicitudesActivas;
-        this.cargarDetalleSolicitudesBloqueantes(solicitudesActivas);
+        this.paginaSolicitudes = response.paginacion?.page ?? this.paginaSolicitudes;
+        this.totalSolicitudes = response.paginacion?.total ?? solicitudesActivas.length;
+        this.totalPaginasSolicitudes = response.paginacion?.totalPages ?? 1;
+        this.loading = false;
       },
-      error: () => this.showError('No se han podido cargar las solicitudes.')
+      error: () => {
+        this.loading = false;
+        this.showError('No se han podido cargar las solicitudes.');
+      }
     });
   }
 
@@ -1326,6 +1356,37 @@ export class AsociadosGestionComponent implements OnInit {
 
   limpiarFiltroSolicitudes(): void {
     this.filtroSolicitudes = null;
+    this.cargarSolicitudes(true);
+  }
+
+  aplicarFiltrosSolicitudes(): void {
+    this.cargarSolicitudes(true);
+  }
+
+  cambiarPaginaSolicitudes(delta: number): void {
+    const page = this.paginaSolicitudes + delta;
+    if (page < 1 || page > this.totalPaginasSolicitudes || this.loading) return;
+    this.paginaSolicitudes = page;
+    this.cargarSolicitudes();
+  }
+
+  cerrarDetalleSolicitud(): void {
+    this.detalleSolicitudDialogOpen = false;
+  }
+
+  activarPestanaSolicitud(pestana: PestanaSolicitudAsociacion): void {
+    this.pestanaSolicitud = pestana;
+  }
+
+  navegarPestanasSolicitud(event: KeyboardEvent, index: number): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const total = this.pestanasSolicitud.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? total - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + total) % total;
+    const pestana = this.pestanasSolicitud[next];
+    this.activarPestanaSolicitud(pestana.id);
+    setTimeout(() => document.getElementById(`solicitud-asociacion-tab-${pestana.id}`)?.focus());
   }
 
   pendientesPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
@@ -1794,30 +1855,6 @@ export class AsociadosGestionComponent implements OnInit {
 
   private cargoExclusivo(cargo: CargoResumen | undefined): boolean {
     return (cargo?.modo_ocupacion ?? cargo?.modoOcupacion) === 'exclusivo';
-  }
-
-  private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
-    const abiertasSinDetalle = solicitudes.filter(
-      solicitud => ['cambio', 'baja'].includes(solicitud.tipo) &&
-        !['finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado) &&
-        !solicitud.items?.length
-    );
-
-    if (!abiertasSinDetalle.length) {
-      return;
-    }
-
-    forkJoin(abiertasSinDetalle.map(solicitud => this.secretariaService.getSolicitud(solicitud.id))).subscribe({
-      next: detalles => {
-        const detallesById = new Map(detalles.map(detalle => [detalle.id, detalle]));
-        this.solicitudes = this.solicitudes.map(solicitud => detallesById.get(solicitud.id) ?? solicitud);
-      },
-      error: () => undefined
-    });
-  }
-
-  private solicitudTieneIncidencias(solicitud: SolicitudSecretaria): boolean {
-    return solicitud.estado === 'con_incidencias';
   }
 
   private isGestionTab(value: string | null): value is GestionTab {
