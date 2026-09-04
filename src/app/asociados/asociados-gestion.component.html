@@ -302,7 +302,7 @@
               type="button"
               class="request-row"
               [class.active]="solicitudDetalle?.id === solicitud.id"
-              (click)="verSolicitud(solicitud)"
+              (click)="verSolicitud(solicitud, $event.currentTarget)"
             >
               <div class="d-flex w-100 justify-content-between gap-2">
                 <strong>{{ solicitud.numero }}</strong>
@@ -696,7 +696,7 @@
 </section>
 
 <div *ngIf="detalleSolicitudDialogOpen && solicitudDetalle" class="request-detail-backdrop" role="presentation" (click)="cerrarDetalleSolicitud()">
-  <section class="request-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudAsociacionTitle" (click)="$event.stopPropagation()">
+  <section class="request-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudAsociacionTitle" (click)="$event.stopPropagation()" (keydown.escape)="cerrarDetalleSolicitud()">
     <header class="request-detail-header">
       <div>
         <p class="ux-overline mb-1">Detalle de solicitud</p>
@@ -707,9 +707,9 @@
     </header>
     <div class="request-detail-body">
       <div class="detail-tabs" role="tablist" aria-label="Secciones de la solicitud">
-        <button *ngFor="let pestana of pestanasSolicitud; let indice = index" class="detail-tab" type="button" role="tab" [id]="'solicitud-asociacion-tab-' + pestana.id" [attr.aria-selected]="pestanaSolicitud === pestana.id" [tabIndex]="pestanaSolicitud === pestana.id ? 0 : -1" [class.active]="pestanaSolicitud === pestana.id" (click)="activarPestanaSolicitud(pestana.id)" (keydown)="navegarPestanasSolicitud($event, indice)">{{ pestana.label }}</button>
+        <button *ngFor="let pestana of pestanasSolicitud; let indice = index" class="detail-tab" type="button" role="tab" [id]="'solicitud-asociacion-tab-' + pestana.id" [attr.aria-controls]="'solicitud-asociacion-panel-' + pestana.id" [attr.aria-selected]="pestanaSolicitud === pestana.id" [tabIndex]="pestanaSolicitud === pestana.id ? 0 : -1" [class.active]="pestanaSolicitud === pestana.id" (click)="activarPestanaSolicitud(pestana.id)" (keydown)="navegarPestanasSolicitud($event, indice)">{{ pestana.label }}</button>
       </div>
-      <section *ngIf="pestanaSolicitud === 'resumen'">
+      <section *ngIf="pestanaSolicitud === 'resumen'" id="solicitud-asociacion-panel-resumen" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-resumen">
         <dl class="metadata-grid"><div><dt>Tipo</dt><dd>{{ labelTipo(solicitudDetalle.tipo) }}</dd></div><div><dt>Alta</dt><dd>{{ solicitudDetalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd></div><div><dt>Estado</dt><dd>{{ labelEstadoSolicitud(solicitudDetalle) }}</dd></div><div><dt>Cambios</dt><dd>{{ solicitudDetalle.totalRegistros || solicitudDetalle.items?.length || 0 }}</dd></div></dl>
         <p class="text-muted mb-3" *ngIf="solicitudDetalle.observaciones">{{ solicitudDetalle.observaciones }}</p>
         <div class="d-flex flex-wrap gap-2">
@@ -719,10 +719,10 @@
           <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="imprimirSolicitud(solicitudDetalle)">Imprimir solicitud</button>
         </div>
       </section>
-      <section *ngIf="pestanaSolicitud === 'cambios'"><article class="change-card" *ngFor="let item of solicitudDetalle.items || []"><strong>{{ resumenItem(item) }}</strong><ul class="pending-detail-list" *ngIf="detalleItem(item).length"><li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li></ul></article><p class="text-muted" *ngIf="!(solicitudDetalle.items?.length)">La solicitud no contiene cambios.</p></section>
-      <section *ngIf="pestanaSolicitud === 'incidencias'"><app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel></section>
-      <section *ngIf="pestanaSolicitud === 'adjuntos'"><div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template></section>
-      <section *ngIf="pestanaSolicitud === 'historial'"><ol class="list-group list-group-numbered" *ngIf="solicitudDetalle.eventos?.length; else sinHistorial"><li class="list-group-item" *ngFor="let evento of solicitudDetalle.eventos"><strong>{{ evento.tipo }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li></ol><ng-template #sinHistorial><p class="text-muted">Todavía no hay eventos registrados.</p></ng-template></section>
+      <section *ngIf="pestanaSolicitud === 'cambios'" id="solicitud-asociacion-panel-cambios" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-cambios"><article class="change-card" *ngFor="let item of solicitudDetalle.items || []"><strong>{{ resumenItem(item) }}</strong><ul class="pending-detail-list" *ngIf="detalleItem(item).length"><li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li></ul></article><p class="text-muted" *ngIf="!(solicitudDetalle.items?.length)">La solicitud no contiene cambios.</p></section>
+      <section *ngIf="pestanaSolicitud === 'incidencias'" id="solicitud-asociacion-panel-incidencias" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-incidencias"><app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel></section>
+      <section *ngIf="pestanaSolicitud === 'adjuntos'" id="solicitud-asociacion-panel-adjuntos" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-adjuntos"><div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template></section>
+      <section *ngIf="pestanaSolicitud === 'historial'" id="solicitud-asociacion-panel-historial" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-historial"><ol class="list-group list-group-numbered" *ngIf="solicitudDetalle.eventos?.length; else sinHistorial"><li class="list-group-item" *ngFor="let evento of solicitudDetalle.eventos"><strong>{{ evento.tipo }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li></ol><ng-template #sinHistorial><p class="text-muted">Todavía no hay eventos registrados.</p></ng-template></section>
     </div>
     <footer class="request-detail-footer"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarDetalleSolicitud()">Cerrar</button></footer>
   </section>

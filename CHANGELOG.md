@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.1#ESMERALDA - 2026-09-04
+
+### Corregido
+
+- El diálogo de detalle de Solicitudes devuelve el foco a la fila de origen, admite cierre con Escape y declara correctamente la relación accesible entre pestañas y paneles.
+
 ## 0.17.0#ESMERALDA - 2026-09-04
 
 ### Mejorado
