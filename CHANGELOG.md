@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.18.5#ESMERALDA - 2026-09-05
+
+### Corregido
+
+- El botón `Crear inscripción` activa el formulario inmediatamente y no depende de que la navegación termine para responder.
+
 ## 0.18.4#ESMERALDA - 2026-09-04
 
 ### Corregido

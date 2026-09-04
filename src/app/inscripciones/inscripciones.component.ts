@@ -220,9 +220,13 @@ export class InscripcionesComponent implements OnInit {
   }
 
   crearNuevaInscripcion(): void {
-    this.router.navigate(['/inscripciones/nueva']).catch(() => {
-      this.error = 'No se ha podido abrir el formulario de creación.';
-    });
+    // El botón sólo se muestra a administración autorizada. El formulario se
+    // activa localmente antes de navegar, de forma que un guard asíncrono o
+    // una navegación cancelada no pueda dejar la acción sin respuesta.
+    this.createMode = true;
+    this.detailMode = true;
+    this.nuevaInscripcion();
+    this.router.navigate(['/inscripciones/nueva']).catch(() => undefined);
   }
 
   volverAlListado(): void {
