@@ -88,8 +88,8 @@ export class InscripcionesComponent implements OnInit {
     this.filtroDisponibilidad = query.get('disponibilidad') || '';
     this.ordenInscripciones = query.get('orden') || 'plazo_asc';
     this.paginaInscripciones = Math.max(1, Number(query.get('pagina')) || 1);
-    this.createMode = routeId === 'nueva';
-    this.detailMode = Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
+    this.createMode = this.isCreateRoute();
+    this.detailMode = this.createMode || Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
     this.cargarDatos();
   }
 
@@ -741,8 +741,8 @@ export class InscripcionesComponent implements OnInit {
 
   private seleccionarInicial(): void {
     const requestedId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('inscripcionId');
-    this.createMode = requestedId === 'nueva';
-    this.detailMode = Boolean(requestedId);
+    this.createMode = this.isCreateRoute();
+    this.detailMode = this.createMode || Boolean(requestedId);
     if (this.createMode) {
       this.nuevaInscripcion();
       return;
@@ -761,6 +761,10 @@ export class InscripcionesComponent implements OnInit {
     if (this.isAdminMode && this.inscripciones[0]) {
       this.selectedInscription = null;
     }
+  }
+
+  private isCreateRoute(): boolean {
+    return this.route.routeConfig?.path === 'inscripciones/nueva';
   }
 
   private cargarAsociados(): void {
