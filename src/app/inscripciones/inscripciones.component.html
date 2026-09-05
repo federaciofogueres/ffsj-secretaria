@@ -35,9 +35,12 @@
               Crear inscripcion
             </button>
           </div>
-          <section class="inscription-filters" *ngIf="!isAdminMode" aria-label="Filtros de inscripciones">
+          <section class="inscription-filters" aria-label="Filtros de inscripciones">
+            <label class="filter-search">Buscar inscripción<input class="form-control form-control-sm" type="search" [(ngModel)]="busquedaInscripciones" (keyup.enter)="cargarPaginaInscripciones(true)" placeholder="Título o actividad" /></label>
+            <label *ngIf="isAdminMode">Estado<select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todos</option><option value="borrador">Borrador</option><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option></select></label>
             <label>Disponibilidad<select class="form-select form-select-sm" [(ngModel)]="filtroDisponibilidad" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todas</option><option value="activa">Activas</option><option value="cerrada">Plazo cerrado</option></select></label>
             <label>Ordenar<select class="form-select form-select-sm" [(ngModel)]="ordenInscripciones" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="plazo_asc">Plazo más próximo</option><option value="plazo_desc">Plazo más lejano</option><option value="titulo_asc">Título A-Z</option></select></label>
+            <div class="filter-action"><button class="ux-btn ux-btn-sm" type="button" (click)="cargarPaginaInscripciones(true)">Buscar</button></div>
           </section>
           <div class="inscription-list mb-4">
             <div

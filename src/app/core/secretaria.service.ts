@@ -372,7 +372,7 @@ export class SecretariaService {
     });
   }
 
-  getInscripciones(asociacionId: number, includeInactive = false, options: { page?: number; pageSize?: number; orden?: string; disponibilidad?: string } = {}): Observable<{ inscripciones: InscripcionSecretaria[]; paginacion?: PaginacionSecretaria }> {
+  getInscripciones(asociacionId: number, includeInactive = false, options: { page?: number; pageSize?: number; orden?: string; disponibilidad?: string; estado?: string; busqueda?: string } = {}): Observable<{ inscripciones: InscripcionSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams().set('asociacionId', asociacionId);
     if (includeInactive) params = params.set('includeInactive', 'true');
     const ejercicio = this.ejercicioSeleccionado();

@@ -122,7 +122,7 @@ export class AsociadosGestionComponent implements OnInit {
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
     cargoId: [null as number | null],
-    dni: ['', [Validators.required, Validators.pattern(/^(?:\d{8}|[XYZ]\d{7})[A-Za-z]$/)]],
+    dni: ['', [Validators.required, Validators.pattern(/^(?:(?:\d{8}|[XYZ]\d{7})[A-Za-z]|(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{5,20})$/)]],
     sip: ['', [Validators.maxLength(30)]],
     nacimiento: ['', [Validators.required, fechaNacimientoValidator]],
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
@@ -1882,7 +1882,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   private mensajeErrorFormulario(): string {
     const errors: Array<[string, string]> = [
-      ['dni', 'Indica un DNI o NIE válido (por ejemplo, 12345678Z o X1234567L).'],
+      ['dni', 'Indica un DNI, NIE o pasaporte válido.'],
       ['nombre', 'El nombre es obligatorio y no puede superar 100 caracteres.'],
       ['apellidos', 'Los apellidos son obligatorios y no pueden superar 150 caracteres.'],
       ['cp', 'El código postal debe tener cinco cifras.'],

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.0#ESMERALDA - 2026-09-05
+
+### Mejorado
+
+- La bandeja administrativa de Inscripciones incorpora búsqueda, filtros por estado y disponibilidad, paginación y ordenación desde API.
+- El listado conserva búsqueda, filtros, orden y página al abrir un detalle y volver.
+- El alta de asociados admite DNI, NIE o pasaporte alfanumérico y actualiza sus etiquetas y mensajes.
+
 ## 0.18.6#ESMERALDA - 2026-09-05
 
 ### Corregido
