@@ -85,6 +85,10 @@ export class SecretariaService {
     return this.http.post<{ ok: boolean }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias/${id}/leido`, {}, { headers: this.authHeaders() });
   }
 
+  marcarSoporteNoLeido(id: number): Observable<{ ok: boolean }> {
+    return this.http.post<{ ok: boolean }>(`${this.apiUrl.secretariaBasePath}/soporte/incidencias/${id}/no-leido`, {}, { headers: this.authHeaders() });
+  }
+
   getSoporteNovedades(): Observable<{ incidenciasConNovedades: number; mensajesSinLeer: number }> {
     return this.http.get<{ incidenciasConNovedades: number; mensajesSinLeer: number }>(`${this.apiUrl.secretariaBasePath}/soporte/novedades`, { headers: this.authHeaders() });
   }
@@ -346,6 +350,10 @@ export class SecretariaService {
     return this.http.get<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}`, {
       headers: this.authHeaders()
     });
+  }
+
+  marcarRegistroNoLeido(id: number): Observable<RegistroSecretaria> {
+    return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros/${id}/no-leido`, {}, { headers: this.authHeaders() });
   }
 
   actualizarEstadoRegistro(id: number, estado: RegistroSecretaria['estado']): Observable<RegistroSecretaria> {

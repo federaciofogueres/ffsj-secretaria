@@ -423,6 +423,21 @@ export class RegistroComponent implements OnInit {
     return mode === 'documentacion' ? ref.id === this.docResultado?.id : ref.id === this.commResultado?.id;
   }
 
+  marcarRegistroNoLeido(resultado: RegistroSecretaria): void {
+    if (this.updatingEstado) return;
+    this.updatingEstado = true;
+    this.secretariaService.marcarRegistroNoLeido(resultado.id).subscribe({
+      next: registro => {
+        this.prependRegistro(registro);
+        if (this.mode === 'documentacion') this.docResultado = registro;
+        if (this.mode === 'comunicacion') this.commResultado = registro;
+        this.updatingEstado = false;
+        this.cargarRegistros();
+      },
+      error: response => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido marcar el registro como no leido.'; }
+    });
+  }
+
   enableDocEdit(): void {
     this.formMode = 'documentacion';
     this.detailMode = null;

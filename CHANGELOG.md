@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.22.0#ESMERALDA - 2026-09-05
+
+### Añadido
+
+- Soporte permite recuperar un ticket como pendiente mediante la acción persistente **Marcar como no leída**.
+- Registro permite volver a marcar documentación y comunicaciones como no leídas sin alterar su estado funcional.
+
 ## 0.21.1#ESMERALDA - 2026-09-05
 
 ### Corregido
