@@ -191,7 +191,7 @@ export class InscripcionesComponent implements OnInit {
     this.error = '';
     const group: Record<string, FormControl> = {};
     inscription.campos.forEach(field => {
-      group[field.key] = this.fb.control('', field.required ? Validators.required : undefined);
+      group[field.key] = this.fb.control('', this.isRequiredField(field) ? Validators.required : undefined);
     });
     this.form = this.fb.group(group);
     this.cargarAdjuntos(inscription.id);
@@ -215,6 +215,23 @@ export class InscripcionesComponent implements OnInit {
         infantiles: inscription.tiposPermitidos.includes('infantil')
       });
     }
+  }
+
+  isRequiredField(field: CampoInscripcion): boolean {
+    return Boolean(field.required);
+  }
+
+  fieldInputId(field: CampoInscripcion): string {
+    return `inscripcion-campo-${String(field.key).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  }
+
+  fieldErrorId(field: CampoInscripcion): string {
+    return `${this.fieldInputId(field)}-error`;
+  }
+
+  isFieldInvalid(field: CampoInscripcion): boolean {
+    const control = this.form.get(field.key);
+    return Boolean(control?.touched && control.invalid);
   }
 
   openInscription(inscription: InscripcionSecretaria): void {

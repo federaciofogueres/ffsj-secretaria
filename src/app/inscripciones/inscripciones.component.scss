@@ -252,6 +252,12 @@
   grid-column: 1 / -1;
 }
 
+.required-indicator {
+  color: var(--ffsj-red);
+  font-weight: 900;
+  margin-left: 0.18rem;
+}
+
 .participant-toolbar {
   display: grid;
   grid-template-columns: minmax(220px, auto) 1fr;
