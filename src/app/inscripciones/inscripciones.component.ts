@@ -30,7 +30,7 @@ export class InscripcionesComponent implements OnInit {
   actividades: ActividadSecretaria[] = [];
   formularios: FormularioInscripcion[] = [];
   inscripciones: InscripcionSecretaria[] = [];
-  filtroDisponibilidad = ''; ordenInscripciones = 'plazo_asc'; paginaInscripciones = 1;
+  filtroDisponibilidad = ''; filtroEstado = ''; busquedaInscripciones = ''; ordenInscripciones = 'plazo_asc'; paginaInscripciones = 1;
   paginacionInscripciones: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   selectedInscription: InscripcionSecretaria | null = null;
   entradas: InscripcionEntradaSecretaria[] = [];
@@ -86,6 +86,8 @@ export class InscripcionesComponent implements OnInit {
     const routeId = this.route.snapshot.paramMap.get('id');
     const query = this.route.snapshot.queryParamMap;
     this.filtroDisponibilidad = query.get('disponibilidad') || '';
+    this.filtroEstado = query.get('estado') || '';
+    this.busquedaInscripciones = query.get('busqueda') || '';
     this.ordenInscripciones = query.get('orden') || 'plazo_asc';
     this.paginaInscripciones = Math.max(1, Number(query.get('pagina')) || 1);
     this.createMode = this.isCreateRoute();
@@ -703,7 +705,7 @@ export class InscripcionesComponent implements OnInit {
 
   private cargarFormulariosEInscripciones(): void {
     const cargarInscripciones = () => {
-      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode, { page: this.paginaInscripciones, pageSize: 20, orden: this.ordenInscripciones, disponibilidad: this.filtroDisponibilidad }).subscribe({
+      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode, { page: this.paginaInscripciones, pageSize: 20, orden: this.ordenInscripciones, disponibilidad: this.filtroDisponibilidad, estado: this.filtroEstado, busqueda: this.busquedaInscripciones }).subscribe({
         next: inscripcionesResponse => {
           this.inscripciones = inscripcionesResponse.inscripciones;
           this.paginacionInscripciones = inscripcionesResponse.paginacion || { page: 1, pageSize: 20, total: this.inscripciones.length, totalPages: 1 };
@@ -1189,6 +1191,8 @@ export class InscripcionesComponent implements OnInit {
   private contextoListadoInscripciones(): Record<string, string | number> {
     const context: Record<string, string | number> = { orden: this.ordenInscripciones, pagina: this.paginaInscripciones };
     if (this.filtroDisponibilidad) context.disponibilidad = this.filtroDisponibilidad;
+    if (this.filtroEstado) context.estado = this.filtroEstado;
+    if (this.busquedaInscripciones) context.busqueda = this.busquedaInscripciones;
     return context;
   }
 

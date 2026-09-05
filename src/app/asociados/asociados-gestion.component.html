@@ -478,9 +478,9 @@
           </div>
           <div class="row g-3">
             <div class="col-12 col-md-4">
-              <label class="form-label">DNI/NIE</label>
-              <input class="form-control" [class.is-invalid]="controlInvalido('dni')" formControlName="dni" placeholder="Documento" (blur)="comprobarAltaExistentePorDocumento()" />
-              <div class="invalid-feedback">Indica un DNI o NIE válido.</div>
+              <label class="form-label">DNI/NIE/Pasaporte</label>
+              <input class="form-control" [class.is-invalid]="controlInvalido('dni')" formControlName="dni" placeholder="Documento de identidad" (blur)="comprobarAltaExistentePorDocumento()" />
+              <div class="invalid-feedback">Indica un DNI, NIE o pasaporte válido.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">SIP</label>
