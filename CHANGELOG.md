@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.21.0#ESMERALDA - 2026-09-05
+
+### Añadido
+
+- Sistema único de traducciones con castellano, valenciano e inglés, preferencia persistente y fallback en castellano.
+- Selector de idioma accesible dentro del menú de identidad.
+- Traducción de navegación, acciones de contexto y acceso de asociaciones.
+- Componente compartido para normalizar el selector visual de adjuntos.
+
 ## 0.20.0#ESMERALDA - 2026-09-05
 
 ### Añadido
