@@ -560,6 +560,28 @@ export class SecretariaService {
     });
   }
 
+  crearPropuestaActividad(payload: unknown): Observable<ActividadSecretaria> {
+    return this.http.post<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades/propuestas`, payload, { headers: this.authHeaders() });
+  }
+
+  getMisPropuestasActividad(estado?: string): Observable<{ actividades: ActividadSecretaria[] }> {
+    let params = new HttpParams(); if (estado) params = params.set('estado', estado);
+    return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades/propuestas/mias`, { params, headers: this.authHeaders() });
+  }
+
+  getPropuestasActividadAdmin(estado?: string): Observable<{ actividades: ActividadSecretaria[] }> {
+    let params = new HttpParams(); if (estado) params = params.set('estado', estado);
+    return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/admin/actividades/propuestas`, { params, headers: this.authHeaders() });
+  }
+
+  resolverPropuestaActividad(id: string, decision: 'publicada' | 'rechazada', detalle = ''): Observable<ActividadSecretaria> {
+    return this.http.post<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/admin/actividades/propuestas/${id}/resolver`, { decision, detalle }, { headers: this.authHeaders() });
+  }
+
+  abrirIncidenciaPropuestaActividad(id: string, mensaje: string): Observable<ActividadSecretaria> {
+    return this.http.post<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/admin/actividades/propuestas/${id}/incidencia`, { mensaje }, { headers: this.authHeaders() });
+  }
+
   actualizarActividad(id: string, payload: unknown): Observable<ActividadSecretaria> {
     return this.http.put<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades/${id}`, payload, {
       headers: this.authHeaders()

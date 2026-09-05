@@ -39,6 +39,9 @@ export class CalendarioComponent implements OnInit {
   filtroEstado = '';
   filtroVisibilidad = '';
   incluirArchivadas = false;
+  propuestas: ActividadSecretaria[] = [];
+  showPropuestas = false;
+  imagenActividadUrl = '';
 
   actividadForm = this.fb.group({
     titulo: ['', Validators.required],
@@ -132,6 +135,7 @@ export class CalendarioComponent implements OnInit {
       colorEtiqueta: hydrated.colorEtiqueta || 'ffsj'
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
+    this.cargarImagenActividad(hydrated.id);
   }
 
   selectDay(day: CalendarDay): void {
@@ -178,14 +182,73 @@ export class CalendarioComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.success = '';
-    this.secretariaService.crearActividad(this.actividadForm.value).subscribe({
+    const request = this.isAdminMode
+      ? this.secretariaService.crearActividad(this.actividadForm.value)
+      : this.secretariaService.crearPropuestaActividad(this.actividadForm.value);
+    request.subscribe({
       next: actividad => {
         this.showCreateDialog = false;
-        this.recargarTrasCrear(actividad.id);
+        if (this.isAdminMode) {
+          this.recargarTrasCrear(actividad.id);
+        } else {
+          this.propuestas = [actividad, ...this.propuestas];
+          this.loading = false;
+          this.success = 'Propuesta enviada a Administracion para su revision.';
+        }
       },
       error: () => {
         this.error = 'No se ha podido crear la actividad.';
         this.loading = false;
+      }
+    });
+  }
+
+  togglePropuestas(): void {
+    this.showPropuestas = !this.showPropuestas;
+    if (!this.showPropuestas) return;
+    const request = this.isAdminMode ? this.secretariaService.getPropuestasActividadAdmin() : this.secretariaService.getMisPropuestasActividad();
+    request.subscribe({ next: response => this.propuestas = response.actividades, error: () => this.error = 'No se han podido cargar las propuestas.' });
+  }
+
+  resolverPropuesta(propuesta: ActividadSecretaria, decision: 'publicada' | 'rechazada'): void {
+    const detalle = decision === 'rechazada' ? window.prompt('Indica el motivo del rechazo:') || '' : '';
+    if (decision === 'rechazada' && !detalle) return;
+    this.loading = true;
+    this.secretariaService.resolverPropuestaActividad(propuesta.id, decision, detalle).subscribe({
+      next: () => { this.loading = false; this.success = decision === 'publicada' ? 'Propuesta publicada.' : 'Propuesta rechazada.'; this.showPropuestas = false; this.cargar(); },
+      error: () => { this.loading = false; this.error = 'No se ha podido resolver la propuesta.'; }
+    });
+  }
+
+  abrirIncidenciaPropuesta(propuesta: ActividadSecretaria): void {
+    const mensaje = window.prompt('Indica la informacion que debe completar la asociacion:') || '';
+    if (!mensaje) return;
+    this.secretariaService.abrirIncidenciaPropuestaActividad(propuesta.id, mensaje).subscribe({
+      next: () => { this.success = 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; },
+      error: () => this.error = 'No se ha podido abrir la incidencia.'
+    });
+  }
+
+  subirImagenActividad(event: Event): void {
+    if (!this.selected) return;
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { this.error = 'Selecciona una imagen valida.'; return; }
+    this.loading = true;
+    this.secretariaService.subirAdjunto('actividad_imagen', this.selected.id, file).subscribe({
+      next: () => { this.loading = false; this.success = 'Imagen de actividad actualizada.'; this.cargarImagenActividad(this.selected!.id); },
+      error: () => { this.loading = false; this.error = 'No se ha podido subir la imagen.'; }
+    });
+  }
+
+  private cargarImagenActividad(id: string): void {
+    if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl);
+    this.imagenActividadUrl = '';
+    this.secretariaService.getAdjuntos('actividad_imagen', id).subscribe({
+      next: response => {
+        const image = response.adjuntos[0];
+        if (!image) return;
+        this.secretariaService.descargarAdjunto(image.id).subscribe({ next: blob => this.imagenActividadUrl = URL.createObjectURL(blob) });
       }
     });
   }
