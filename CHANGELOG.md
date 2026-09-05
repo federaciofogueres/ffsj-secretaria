@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.21.1#ESMERALDA - 2026-09-05
+
+### Corregido
+
+- El acceso público de asociaciones ya no muestra un enlace directo al login administrativo.
+- El ejemplo de CIF del acceso público es ficticio y los textos se resuelven mediante i18n.
+
 ## 0.21.0#ESMERALDA - 2026-09-05
 
 ### Añadido
