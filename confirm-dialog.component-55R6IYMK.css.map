@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;5e49d7df7a1a30307d538b5d708d03c108cfe8248be3d283ccb6defb44d9a769;/home/runner/work/ffsj-secretaria/ffsj-secretaria/src/app/shared/confirm-dialog.component.ts"],
+  "sourcesContent": ["\n    .confirm-backdrop { position: fixed; inset: 0; z-index: 1050; background: rgba(24, 33, 47, .48); }\n    .confirm-dialog { position: fixed; z-index: 1051; inset: 50% auto auto 50%; width: min(440px, calc(100vw - 2rem)); transform: translate(-50%, -50%); background: #fff; border-radius: 16px; padding: 1.5rem; box-shadow: 0 20px 55px rgba(16, 24, 40, .25); }\n    .confirm-dialog h2 { margin: 0 0 .75rem; font-size: 1.2rem; color: #18212f; }\n    .confirm-dialog p { margin: 0; color: #475467; }\n    .confirm-actions { display: flex; justify-content: flex-end; gap: .75rem; flex-wrap: wrap; margin-top: 1.5rem; }\n  "],
+  "mappings": ";AACI,CAAC;AAAmB,YAAU;AAAO,SAAO;AAAG,WAAS;AAAM,cAAY,KAAK,EAAE,EAAE,EAAE,EAAE,EAAE,EAAE;AAAM;AACjG,CAAC;AAAiB,YAAU;AAAO,WAAS;AAAM,SAAO,IAAI,KAAK,KAAK;AAAK,SAAO,IAAI,KAAK,EAAE,KAAK,MAAM,EAAE;AAAQ,aAAW,UAAU,IAAI,EAAE;AAAO,cAAY;AAAM,iBAAe;AAAM,WAAS;AAAQ,cAAY,EAAE,KAAK,KAAK,KAAK,EAAE,EAAE,EAAE,EAAE,EAAE,EAAE;AAAM;AAC5P,CADC,eACe;AAAK,UAAQ,EAAE,EAAE;AAAQ,aAAW;AAAQ,SAAO;AAAS;AAC5E,CAFC,eAEe;AAAI,UAAQ;AAAG,SAAO;AAAS;AAC/C,CAAC;AAAkB,WAAS;AAAM,mBAAiB;AAAU,OAAK;AAAQ,aAAW;AAAM,cAAY;AAAQ;",
+  "names": []
+}

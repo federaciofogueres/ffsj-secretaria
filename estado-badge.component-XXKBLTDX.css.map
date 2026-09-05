@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["angular:styles/component:css;1f5e32d0faf2d12ea6f9968c328f48a5aaa8734f6e104d0be80c7d50ea6c8470;/home/runner/work/ffsj-secretaria/ffsj-secretaria/src/app/shared/estado-badge.component.ts"],
+  "sourcesContent": ["\n    .estado-badge { display: inline-flex; align-items: center; gap: .35rem; border-radius: 999px; padding: .2rem .55rem; font-size: .78rem; font-weight: 700; line-height: 1.2; white-space: nowrap; background: #f2f4f7; color: #344054; }\n    .estado-activa, .estado-activo, .estado-abierta, .estado-validada { background: #dcfae6; color: #146c43; }\n    .estado-cerrada, .estado-archivada, .estado-cancelada, .estado-rechazada { background: #fef3f2; color: #b42318; }\n    .estado-recibida, .estado-en_revision, .estado-en_proceso { background: #eff8ff; color: #175cd3; }\n    .estado-con_incidencias, .estado-pendiente { background: #fff7ed; color: #9a3412; }\n  "],
+  "mappings": ";AACI,CAAC;AAAe,WAAS;AAAa,eAAa;AAAQ,OAAK;AAAQ,iBAAe;AAAO,WAAS,MAAM;AAAQ,aAAW;AAAQ,eAAa;AAAK,eAAa;AAAK,eAAa;AAAQ,cAAY;AAAS,SAAO;AAAS;AACtO,CAAC;AAAe,CAAC;AAAe,CAAC;AAAgB,CAAC;AAAkB,cAAY;AAAS,SAAO;AAAS;AACzG,CAAC;AAAgB,CAAC;AAAkB,CAAC;AAAkB,CAAC;AAAmB,cAAY;AAAS,SAAO;AAAS;AAChH,CAAC;AAAiB,CAAC;AAAoB,CAAC;AAAoB,cAAY;AAAS,SAAO;AAAS;AACjG,CAAC;AAAwB,CAAC;AAAmB,cAAY;AAAS,SAAO;AAAS;",
+  "names": []
+}
