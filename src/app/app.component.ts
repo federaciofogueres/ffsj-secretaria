@@ -10,6 +10,8 @@ import { EjercicioService } from './core/ejercicio.service';
 import { DashboardAdminResumen, DashboardAsociacionResumen, EjercicioSecretaria } from './core/models';
 import { DashboardSummaryService } from './core/dashboard-summary.service';
 import { SecretariaService } from './core/secretaria.service';
+import { AppLanguage, I18nService } from './core/i18n.service';
+import { TranslatePipe } from './shared/translate.pipe';
 
 interface PendingTask {
   title: string;
@@ -22,7 +24,7 @@ interface PendingTask {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, TranslatePipe],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -30,16 +32,16 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly title = 'ffsj-secretaria';
 
   readonly navLinks = [
-    { path: '/', label: 'Inicio', icon: 'bi-house-fill' },
-    { path: '/asociados', label: 'Asociados', icon: 'bi-people-fill', permission: 'asociados:read', associationOnly: true },
-    { path: '/asociacion', label: 'Datos', icon: 'bi-building-fill', permission: 'asociacion:read', associationOnly: true },
-    { path: '/calendario', label: 'Calendario', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
-    { path: '/inscripciones', label: 'Inscripciones', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
-    { path: '/formularios', label: 'Formularios', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
-    { path: '/ejercicios', label: 'Ejercicios', icon: 'bi-calendar2-range-fill', permission: 'admin:permissions', adminOnly: true },
-    { path: '/registro', label: 'Registro', icon: 'bi-inbox-fill', permission: 'registro:read' },
-    { path: '/solicitudes', label: 'Solicitudes', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
-    { path: '/admin', label: 'Permisos', icon: 'bi-shield-lock-fill', permission: 'admin:permissions', adminOnly: true }
+    { path: '/', label: 'nav.home', icon: 'bi-house-fill' },
+    { path: '/asociados', label: 'nav.members', icon: 'bi-people-fill', permission: 'asociados:read', associationOnly: true },
+    { path: '/asociacion', label: 'nav.data', icon: 'bi-building-fill', permission: 'asociacion:read', associationOnly: true },
+    { path: '/calendario', label: 'nav.calendar', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
+    { path: '/inscripciones', label: 'nav.registrations', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
+    { path: '/formularios', label: 'nav.forms', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
+    { path: '/ejercicios', label: 'nav.exercises', icon: 'bi-calendar2-range-fill', permission: 'admin:permissions', adminOnly: true },
+    { path: '/registro', label: 'nav.record', icon: 'bi-inbox-fill', permission: 'registro:read' },
+    { path: '/solicitudes', label: 'nav.requests', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
+    { path: '/admin', label: 'nav.permissions', icon: 'bi-shield-lock-fill', permission: 'admin:permissions', adminOnly: true }
   ];
 
   menuOpen = false;
@@ -88,7 +90,8 @@ export class AppComponent implements OnInit, OnDestroy {
     readonly ejerciciosService: EjercicioService,
     private readonly router: Router,
     private readonly secretariaService: SecretariaService,
-    private readonly dashboardSummary: DashboardSummaryService
+    private readonly dashboardSummary: DashboardSummaryService,
+    readonly i18n: I18nService
   ) {}
 
   ngOnInit(): void {
@@ -159,6 +162,10 @@ export class AppComponent implements OnInit, OnDestroy {
 
   logout(): void {
     this.auth.logout();
+  }
+
+  setLanguage(language: string): void {
+    if (language === 'es' || language === 'va' || language === 'en') this.i18n.setLanguage(language as AppLanguage);
   }
 
   onEjercicioChange(ejercicioId: number | string | null): void {

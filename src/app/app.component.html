@@ -19,7 +19,7 @@
           [routerLinkActiveOptions]="{ exact: link.path === '/' }"
         >
           <i class="bi" [ngClass]="link.icon"></i>
-          <span>{{ link.label }}</span>
+          <span>{{ link.label | t }}</span>
         </a>
       </nav>
 
@@ -109,17 +109,24 @@
               <p class="mb-0 ux-muted">No hay ejercicios disponibles.</p>
             </ng-template>
             <div class="association-menu-actions">
+              <label class="association-menu-action mb-0" for="language-selector">
+                <i class="bi bi-translate"></i>
+                <span>{{ 'language.label' | t }}</span>
+                <select id="language-selector" class="form-select form-select-sm ms-auto w-auto" [ngModel]="i18n.language" (ngModelChange)="setLanguage($event)">
+                  <option value="es">{{ 'language.spanish' | t }}</option><option value="va">{{ 'language.valencian' | t }}</option><option value="en">{{ 'language.english' | t }}</option>
+                </select>
+              </label>
               <a
                 class="association-menu-action"
                 [routerLink]="isAdmin ? '/admin/soporte' : '/soporte'"
               >
                 <i class="bi bi-headset"></i>
-                <span>{{ isAdmin ? 'Soporte administrativo' : 'Soporte' }}</span>
+                <span>{{ isAdmin ? ('common.adminSupport' | t) : ('common.support' | t) }}</span>
                 <i class="bi bi-chevron-right action-chevron"></i>
               </a>
               <button class="association-menu-action association-logout" type="button" (click)="logout()">
                 <i class="bi bi-box-arrow-right"></i>
-                <span>Salir</span>
+                <span>{{ 'common.logout' | t }}</span>
               </button>
             </div>
           </section>
@@ -168,7 +175,7 @@
       >
         <span class="d-flex align-items-center gap-2">
           <i class="bi" [ngClass]="link.icon"></i>
-          {{ link.label }}
+          {{ link.label | t }}
         </span>
         <i class="bi bi-chevron-right"></i>
       </a>

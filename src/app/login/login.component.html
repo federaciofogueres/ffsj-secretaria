@@ -1,37 +1,37 @@
 <section class="login-page">
   <div class="login-intro ux-help-panel">
     <img src="assets/img/logo-intranet.png" alt="FFSJ" />
-    <p class="ux-overline mb-2">Acceso asociaciones</p>
-    <h1>Secretaria FFSJ</h1>
-    <p class="lead">Acceso para fogueres y barraques.</p>
+    <p class="ux-overline mb-2">{{ 'login.accessAssociations' | t }}</p>
+    <h1>{{ 'login.title' | t }}</h1>
+    <p class="lead">{{ 'login.subtitle' | t }}</p>
     <p class="ux-muted mb-0">
-      Entra con el CIF de tu asociacion y la contrasena facilitada por Secretaria.
+      {{ 'login.help' | t }}
     </p>
   </div>
 
   <form class="login-form ux-card" (ngSubmit)="login()" novalidate>
     <div>
-      <p class="ux-overline mb-2">Identificacion</p>
-      <h2>Entrar como asociacion</h2>
-      <p class="ux-muted mb-0">Usa las credenciales de la entidad, no las de una persona concreta.</p>
+      <p class="ux-overline mb-2">{{ 'login.identification' | t }}</p>
+      <h2>{{ 'login.enterAssociation' | t }}</h2>
+      <p class="ux-muted mb-0">{{ 'login.credentialsHelp' | t }}</p>
     </div>
 
     <div class="alert alert-danger mb-0" *ngIf="error">{{ error }}</div>
 
     <div class="ux-field">
-      <label for="cif">CIF de la asociacion</label>
+      <label for="cif">{{ 'login.cif' | t }}</label>
       <input
         id="cif"
         class="form-control"
         type="text"
         autocomplete="username"
-        placeholder="Ej. G03628971"
+        [placeholder]="'login.cifPlaceholder' | t"
         [formControl]="cif"
       />
     </div>
 
     <div class="ux-field">
-      <label for="password">Contrasena</label>
+      <label for="password">{{ 'login.password' | t }}</label>
       <input
         id="password"
         class="form-control"
@@ -43,12 +43,12 @@
 
     <button class="ux-btn w-100" type="button" [disabled]="loading" (click)="login()">
       <i class="bi" [ngClass]="loading ? 'bi-hourglass-split' : 'bi-box-arrow-in-right'"></i>
-      {{ loading ? 'Entrando...' : 'Entrar como asociacion' }}
+      {{ loading ? ('login.entering' | t) : ('login.enterAssociation' | t) }}
     </button>
 
     <div class="login-secondary">
-      <button class="link-button" type="button">No recuerdo la contrasena</button>
-      <a routerLink="/admin">Soy personal de administracion</a>
+      <button class="link-button" type="button">{{ 'login.forgot' | t }}</button>
+      <a routerLink="/admin">{{ 'login.adminAccess' | t }}</a>
     </div>
   </form>
 </section>

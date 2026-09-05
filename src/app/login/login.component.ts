@@ -5,11 +5,13 @@ import { Router } from '@angular/router';
 import { RouterLink } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged } from 'rxjs';
+import { I18nService } from '../core/i18n.service';
+import { TranslatePipe } from '../shared/translate.pipe';
 
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslatePipe],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -24,7 +26,8 @@ export class LoginComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
-    private readonly zone: NgZone
+    private readonly zone: NgZone,
+    readonly i18n: I18nService
   ) {}
 
   ngOnInit(): void {
@@ -51,7 +54,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     this.password.markAsTouched();
 
     if (this.cif.invalid || this.password.invalid || this.loading) {
-      this.error = 'Introduce el CIF de la asociacion y la contrasena.';
+      this.error = this.i18n.t('login.required');
       return;
     }
 
@@ -64,7 +67,7 @@ export class LoginComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.error = 'No hemos podido iniciar sesion. Revisa el CIF y la contrasena.';
+    this.error = this.i18n.t('login.failed');
   }
 
   private goHome(): void {
