@@ -2,7 +2,6 @@ import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { RouterLink } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged } from 'rxjs';
 import { I18nService } from '../core/i18n.service';
@@ -11,7 +10,7 @@ import { TranslatePipe } from '../shared/translate.pipe';
 @Component({
   selector: 'app-login',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, TranslatePipe],
+  imports: [CommonModule, ReactiveFormsModule, TranslatePipe],
   templateUrl: './login.component.html',
   styleUrls: ['./login.component.scss']
 })
@@ -27,7 +26,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly auth: AuthService,
     private readonly zone: NgZone,
-    readonly i18n: I18nService
+    readonly i18n: I18nService = { t: (key: string) => key } as I18nService
   ) {}
 
   ngOnInit(): void {
