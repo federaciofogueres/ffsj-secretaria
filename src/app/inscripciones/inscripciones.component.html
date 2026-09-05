@@ -399,36 +399,37 @@
               <h3 class="section-title">Formulario</h3>
               <div class="field-grid">
                 <ng-container *ngFor="let field of inscription.campos">
-                  <div class="field" [class.full]="field.type === 'textarea'">
-                    <label class="form-label">
-                      {{ field.label }}
-                      <span *ngIf="field.required" class="text-rojo">*</span>
-                    </label>
-                    <ng-container [ngSwitch]="field.type">
-                      <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [formControlName]="field.key"></textarea>
-                      <select *ngSwitchCase="'select'" class="form-select" [formControlName]="field.key">
+                    <div class="field" [class.full]="field.type === 'textarea'">
+                      <label class="form-label" [for]="fieldInputId(field)">
+                        {{ field.label }}
+                        <span *ngIf="isRequiredField(field)" class="required-indicator" aria-hidden="true">*</span>
+                        <span *ngIf="isRequiredField(field)" class="visually-hidden"> (obligatorio)</span>
+                      </label>
+                      <ng-container [ngSwitch]="field.type">
+                        <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key"></textarea>
+                        <select *ngSwitchCase="'select'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona una opcion</option>
                         <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado_adulto'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado_adulto'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado adulto</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado_infantil'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado_infantil'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado infantil</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'responsable'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'responsable'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona responsable</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <input *ngSwitchDefault class="form-control" [attr.type]="field.type" [formControlName]="field.key" />
-                    </ng-container>
-                    <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
+                        <input *ngSwitchDefault class="form-control" [id]="fieldInputId(field)" [attr.type]="field.type" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
+                      </ng-container>
+                      <div class="invalid-field" [id]="fieldErrorId(field)" role="alert" *ngIf="isFieldInvalid(field)">
                       Este campo es obligatorio.
                     </div>
                   </div>
