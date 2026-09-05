@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.19.1#ESMERALDA - 2026-09-05
+
+### Corregido
+
+- Los campos obligatorios de los formularios dinámicos de Inscripción se identifican de forma visible y accesible antes del envío.
+- La misma regla configura el validador reactivo, el atributo `required`, la semántica ARIA y el mensaje de error para todos los tipos de campo soportados.
+- Los labels quedan asociados a sus controles y el feedback de validación se anuncia correctamente a tecnologías de asistencia.
+
 ## 0.19.0#ESMERALDA - 2026-09-05
 
 ### Mejorado
