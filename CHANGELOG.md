@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.20.0#ESMERALDA - 2026-09-05
+
+### Añadido
+
+- Las asociaciones pueden proponer actividades para el calendario sin publicarlas directamente.
+- Calendario incorpora bandejas de propuestas propias y de revisión administrativa con publicación, rechazo o solicitud de información.
+- Las propuestas mantienen su estado, asociación autora y trazabilidad de decisiones.
+
 ## 0.19.1#ESMERALDA - 2026-09-05
 
 ### Corregido

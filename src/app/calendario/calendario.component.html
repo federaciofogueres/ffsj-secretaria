@@ -4,7 +4,7 @@
       <div>
         <p class="ux-overline mb-2">Calendario</p>
         <h1 class="ux-page-title">Actividades</h1>
-        <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades y accede a las inscripciones vinculadas.' }}</p>
+        <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades, inscripciones vinculadas y propone nuevos eventos.' }}</p>
       </div>
       <div class="calendar-actions">
         <button
@@ -15,6 +15,8 @@
         >
           Añadir actividad
         </button>
+        <button class="ux-btn" type="button" *ngIf="!isAdminMode && permissions.hasPermission('inscripciones:write')" (click)="abrirCrearActividad()">Proponer actividad</button>
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="togglePropuestas()">{{ showPropuestas ? 'Ocultar propuestas' : (isAdminMode ? 'Propuestas pendientes' : 'Mis propuestas') }}</button>
         <button class="ux-btn ux-btn-secondary" type="button" (click)="previousMonth()">Anterior</button>
         <button class="ux-btn ux-btn-secondary" type="button" (click)="nextMonth()">Siguiente</button>
       </div>
@@ -29,6 +31,23 @@
       <label *ngIf="isAdminMode">Visibilidad<select class="form-select" [(ngModel)]="filtroVisibilidad" (ngModelChange)="aplicarFiltros()"><option value="">Todas</option><option value="publica">Públicas</option><option value="privada">Internas</option></select></label>
       <label class="form-check" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" [(ngModel)]="incluirArchivadas" (ngModelChange)="aplicarFiltros()" /> Mostrar archivadas</label>
     </div>
+
+    <section class="border rounded p-3 mt-3" *ngIf="showPropuestas">
+      <h2 class="h5">{{ isAdminMode ? 'Propuestas de asociaciones' : 'Mis propuestas de actividad' }}</h2>
+      <p class="text-muted" *ngIf="!propuestas.length">No hay propuestas para mostrar.</p>
+      <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestas">
+        <div class="d-flex justify-content-between gap-2"><strong>{{ propuesta.titulo }}</strong><app-estado-badge [estado]="propuesta.estadoPropuesta || 'pendiente_revision'"></app-estado-badge></div>
+        <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y' }} <span *ngIf="isAdminMode">· {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
+        <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
+        <p class="text-danger mb-1" *ngIf="propuesta.motivoRechazo">{{ propuesta.motivoRechazo }}</p>
+        <div class="d-flex gap-2 mt-2" *ngIf="isAdminMode && (propuesta.estadoPropuesta === 'pendiente_revision' || propuesta.estadoPropuesta === 'con_incidencias')">
+          <button class="btn btn-success btn-sm" type="button" (click)="resolverPropuesta(propuesta, 'publicada')">Publicar</button>
+          <button class="btn btn-outline-warning btn-sm" type="button" (click)="abrirIncidenciaPropuesta(propuesta)">Pedir informacion</button>
+          <button class="btn btn-outline-danger btn-sm" type="button" (click)="resolverPropuesta(propuesta, 'rechazada')">Rechazar</button>
+        </div>
+        <ul class="small mt-2 mb-0" *ngIf="propuesta.eventos?.length"><li *ngFor="let evento of propuesta.eventos">{{ evento.createdAt | date:'dd/MM/y HH:mm' }} — {{ evento.detalle }}</li></ul>
+      </article>
+    </section>
 
     <div class="calendar-layout mt-4">
       <div class="calendar">
@@ -110,6 +129,7 @@
             {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
           </p>
           <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
+          <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
           <div class="linked" *ngIf="selected.inscripciones?.length">
             <h3 class="h6">Inscripcion asociada</h3>
             <a
@@ -157,6 +177,7 @@
                 </select>
               </label>
               <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
+              <label class="form-label mt-2">Imagen del evento<input class="form-control" type="file" accept="image/*" (change)="subirImagenActividad($event)" /></label>
               <div class="admin-actions mt-3">
                 <button class="ux-btn" type="submit" [disabled]="loading">Guardar cambios</button>
                 <button
@@ -286,9 +307,9 @@
     <label class="form-label mt-2">Descripcion</label>
     <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
     <label class="form-label mt-2">Categoría visual<select class="form-select" formControlName="colorEtiqueta"><option value="ffsj">FFSJ</option><option value="asociacion">Entidad asociada</option><option value="ayuntamiento">Ayuntamiento</option><option value="otra">Otras entidades</option></select></label>
-    <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
+    <label class="form-check mt-2" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
     <div class="d-flex gap-2 mt-3">
-      <button class="ux-btn" type="submit" [disabled]="loading">Crear actividad</button>
+      <button class="ux-btn" type="submit" [disabled]="loading">{{ isAdminMode ? 'Crear actividad' : 'Enviar propuesta' }}</button>
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>
     </div>
   </form>

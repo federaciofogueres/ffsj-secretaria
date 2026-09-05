@@ -393,6 +393,14 @@ export interface ActividadSecretaria {
   descripcion?: string;
   colorEtiqueta?: 'ffsj' | 'asociacion' | 'ayuntamiento' | 'otra';
   inscripciones?: InscripcionSecretaria[];
+  origen?: 'administracion' | 'asociacion';
+  estadoPropuesta?: 'pendiente_revision' | 'con_incidencias' | 'publicada' | 'rechazada';
+  asociacionId?: number | null;
+  asociacionNombre?: string | null;
+  creadoPor?: string | null;
+  motivoRechazo?: string | null;
+  resueltoAt?: string | null;
+  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
 }
 
 export interface CargoResumen {
