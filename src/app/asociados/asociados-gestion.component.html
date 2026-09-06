@@ -12,6 +12,14 @@
       </a>
     </header>
 
+    <div class="alert alert-warning d-flex align-items-start gap-2" *ngIf="accionesBloqueadasPorEjercicio">
+      <i class="bi bi-lock-fill mt-1"></i>
+      <div>
+        <strong>Ejercicio solo consulta.</strong>
+        <span class="d-block">{{ mensajeEjercicioNoActivo }}</span>
+      </div>
+    </div>
+
     <div class="workflow-tabs">
       <button class="workflow-tab" [class.active]="activeTab === 'altas'" (click)="setTab('altas')">Altas</button>
       <button class="workflow-tab" [class.active]="activeTab === 'modificaciones'" (click)="setTab('modificaciones')">
@@ -21,7 +29,35 @@
       <button class="workflow-tab" [class.active]="activeTab === 'solicitudes'" (click)="setTab('solicitudes')">
         Solicitudes pendientes
       </button>
+      <button class="workflow-tab" [class.active]="activeTab === 'cupos'" (click)="setTab('cupos')">
+        Cupos y cargos
+      </button>
     </div>
+
+    <section class="mt-4" *ngIf="activeTab === 'cupos'">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h2 class="h5 mb-1">Cupos del ejercicio</h2>
+          <p class="text-muted mb-0">Incluye titulares validados y reservas de solicitudes todavía pendientes.</p>
+        </div>
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarCupos()">Actualizar</button>
+      </div>
+      <div class="alert alert-danger" *ngIf="errorCupos">{{ errorCupos }}</div>
+      <div class="table-responsive" *ngIf="cuposCargos.length">
+        <table class="table align-middle">
+          <thead><tr><th>Cargo</th><th>Regla</th><th class="text-center">Ocupados</th><th class="text-center">Reservados</th><th class="text-center">Disponibles</th><th>Estado</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let cupo of cuposCargos" [class.table-warning]="cupo.conflictos.length">
+              <td><strong>{{ cupo.nombre }}</strong><small class="d-block text-muted">{{ cupo.esInfantil ? 'Infantil' : 'Adulto' }}</small></td>
+              <td>{{ cupo.obligatorio ? 'Obligatorio' : 'Opcional' }} · {{ cupo.modoOcupacion === 'exclusivo' ? 'Exclusivo' : (cupo.maximo ? 'Máximo ' + cupo.maximo : 'Sin límite') }}</td>
+              <td class="text-center">{{ cupo.ocupados }}</td><td class="text-center">{{ cupo.reservados }}</td>
+              <td class="text-center">{{ cupo.plazasDisponibles === null ? '—' : cupo.plazasDisponibles }}</td>
+              <td><span class="badge text-bg-warning" *ngFor="let conflicto of cupo.conflictos">{{ labelConflictoCupo(conflicto) }}</span><span *ngIf="!cupo.conflictos.length" class="text-success">Correcto</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
 
     <ng-container *ngIf="activeTab === 'altas'">
       <ng-container *ngIf="estaViendoPendientes('alta'); else altaFormView">
@@ -215,7 +251,7 @@
         </div>
 
         <div class="actions mt-3">
-          <button class="ux-btn" type="button" [disabled]="seleccionBaja.size === 0 || loading || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
+          <button class="ux-btn" type="button" [disabled]="seleccionBaja.size === 0 || loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')" (click)="guardarBajasPendientes()">
             Preparar bajas
           </button>
         </div>
@@ -228,11 +264,25 @@
           <h5 class="section-title mb-1">Solicitudes pendientes</h5>
           <p class="text-muted mb-0">Solicitudes registradas y todavia no enviadas a secretaria.</p>
         </div>
-        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" (click)="cargarSolicitudes()">
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="loading" (click)="cargarSolicitudes()">
           <i class="bi bi-arrow-clockwise me-1"></i>
           Actualizar
         </button>
       </div>
+
+      <form class="request-filters" (ngSubmit)="aplicarFiltrosSolicitudes()">
+        <input class="form-control" name="busquedaSolicitudes" [(ngModel)]="busquedaSolicitudes" placeholder="Buscar por número" aria-label="Buscar solicitudes por número" />
+        <select class="form-select" name="tipoSolicitudFiltro" [(ngModel)]="tipoSolicitudFiltro" aria-label="Filtrar por tipo">
+          <option value="todos">Todos los tipos</option><option value="alta">Altas</option><option value="cambio">Cambios</option><option value="baja">Bajas</option>
+        </select>
+        <select class="form-select" name="estadoSolicitudFiltro" [(ngModel)]="estadoSolicitudFiltro" aria-label="Filtrar por estado">
+          <option value="todos">Todos los estados</option><option value="registrada">Registrada</option><option value="pendiente_firma">Pendiente de firma</option><option value="enviada">Enviada</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option><option value="finalizada">Finalizada</option>
+        </select>
+        <select class="form-select" name="ordenSolicitudes" [(ngModel)]="ordenSolicitudes" aria-label="Ordenar solicitudes">
+          <option value="fecha_desc">Más recientes</option><option value="fecha_asc">Más antiguas</option><option value="estado">Por estado</option>
+        </select>
+        <button class="ux-btn ux-btn-secondary ux-btn-sm" type="submit" [disabled]="loading">Aplicar</button>
+      </form>
 
       <div class="filter-notice" *ngIf="filtroSolicitudes === 'incidencias'">
         <span>
@@ -245,56 +295,70 @@
       </div>
 
       <div class="row g-3">
-        <div class="col-12 col-lg-6">
-          <div class="item-list">
-            <button
-              *ngFor="let solicitud of solicitudesVisibles"
-              type="button"
-              class="request-row"
-              [class.active]="solicitudDetalle?.id === solicitud.id"
-              (click)="verSolicitud(solicitud)"
-            >
-              <div class="d-flex w-100 justify-content-between gap-2">
-                <strong>{{ solicitud.numero }}</strong>
-                <small>{{ (solicitud.fechaRegistro || solicitud.fechaAlta) | date: 'dd/MM/yyyy HH:mm' }}</small>
-              </div>
-              <div class="d-flex justify-content-between gap-2 mt-1">
-                <span>
-                  <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
-                  {{ solicitud.totalRegistros }} cambio(s)
-                </span>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
-              </div>
-            </button>
-            <div *ngIf="solicitudesVisibles.length === 0" class="text-muted">
+        <div class="col-12">
+          <div class="request-table-wrap">
+            <table class="request-table">
+              <thead><tr><th>ID de solicitud</th><th>Fecha</th><th>Tipo de solicitud</th><th>Registros implicados</th><th>Estado de solicitud</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let solicitud of solicitudes" [class.active]="solicitudDetalle?.id === solicitud.id">
+                  <td><button type="button" class="request-link" (click)="verSolicitud(solicitud, $event.currentTarget)">{{ solicitud.numero }}</button></td>
+                  <td>{{ (solicitud.fechaRegistro || solicitud.fechaAlta) | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td><span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span></td>
+                  <td>{{ solicitud.totalRegistros || 0 }}</td>
+                  <td><span class="estado-badge" [ngClass]="estadoClassSolicitud(solicitud)" [attr.title]="estadoTooltipSolicitud(solicitud)">{{ labelEstadoSolicitud(solicitud) }}</span></td>
+                </tr>
+              </tbody>
+            </table>
+            <div *ngIf="!loading && solicitudes.length === 0" class="text-muted">
               {{ filtroSolicitudes === 'incidencias' ? 'No hay solicitudes con incidencias.' : 'No hay solicitudes registradas.' }}
             </div>
+            <div *ngIf="loading" class="text-muted">Cargando solicitudes...</div>
+          </div>
+          <div class="list-pager" *ngIf="totalSolicitudes > 0">
+            <span>{{ totalSolicitudes }} solicitudes · Página {{ paginaSolicitudes }} de {{ totalPaginasSolicitudes }}</span>
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="paginaSolicitudes === 1 || loading" (click)="cambiarPaginaSolicitudes(-1)">Anterior</button>
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="paginaSolicitudes === totalPaginasSolicitudes || loading" (click)="cambiarPaginaSolicitudes(1)">Siguiente</button>
           </div>
         </div>
 
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-6" *ngIf="false">
           <div class="detail-panel">
             <ng-container *ngIf="solicitudDetalle; else emptyDetail">
               <h6 class="fw-bold mb-1">{{ solicitudDetalle.numero }}</h6>
               <div class="d-flex flex-wrap gap-2 mb-3">
                 <span class="tipo-badge" [ngClass]="tipoClass(solicitudDetalle.tipo)">{{ labelTipo(solicitudDetalle.tipo) }}</span>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitudDetalle.estado)">{{ labelEstado(solicitudDetalle.estado) }}</span>
+                <span
+                  class="estado-badge"
+                  [ngClass]="estadoClassSolicitud(solicitudDetalle)"
+                  [attr.title]="estadoTooltipSolicitud(solicitudDetalle)"
+                >
+                  {{ labelEstadoSolicitud(solicitudDetalle) }}
+                </span>
               </div>
               <div class="d-flex flex-wrap gap-2 mb-3">
                 <button
                   class="ux-btn ux-btn-sm"
                   type="button"
                   *ngIf="puedeEnviarSolicitud(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio || !solicitudAdjunta(solicitudDetalle)"
                   (click)="enviarSolicitud(solicitudDetalle)"
                 >
                   Enviar solicitud a Secretaria
                 </button>
                 <button
+                  class="ux-btn ux-btn-sm"
+                  type="button"
+                  *ngIf="puedeReenviarAutorizacion(solicitudDetalle)"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
+                  (click)="reenviarAutorizacion(solicitudDetalle)"
+                >
+                  Enviar autorizacion
+                </button>
+                <button
                   class="ux-btn ux-btn-secondary ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarEnvio(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="cancelarEnvioSolicitud(solicitudDetalle)"
                 >
                   Cancelar envio
@@ -303,7 +367,7 @@
                   class="ux-btn ux-btn-danger ux-btn-sm"
                   type="button"
                   *ngIf="puedeCancelarSolicitud(solicitudDetalle)"
-                  [disabled]="loading"
+                  [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="cancelarSolicitud(solicitudDetalle)"
                 >
                   Cancelar esta solicitud antes de enviarla
@@ -318,6 +382,35 @@
                   Imprimir solicitud
                 </button>
               </div>
+              <section class="alert mb-3" [ngClass]="solicitudAdjunta(solicitudDetalle) ? 'alert-success' : 'alert-warning'" *ngIf="solicitudDetalle.estado === 'registrada'">
+                <div class="d-flex align-items-center gap-2 fw-bold">
+                  <i class="bi" [ngClass]="solicitudAdjunta(solicitudDetalle) ? 'bi-check-circle-fill' : 'bi-exclamation-circle'"></i>
+                  <span>
+                    {{ solicitudAdjunta(solicitudDetalle)
+                      ? 'Solicitud firmada adjunta correctamente'
+                      : 'Adjunta la solicitud firmada para poder enviarla a Secretaria' }}
+                  </span>
+                </div>
+                <div class="d-flex flex-wrap gap-2 mt-2">
+                  <label class="ux-btn ux-btn-light ux-btn-sm mb-0" for="solicitudFirmadaInput">
+                    Adjuntar solicitud
+                  </label>
+                  <input
+                    id="solicitudFirmadaInput"
+                    class="visually-hidden"
+                    type="file"
+                    accept=".pdf,image/*"
+                    (change)="seleccionarSolicitudFirmada($event, solicitudDetalle)"
+                  />
+                </div>
+                <ul class="list-unstyled mb-0 mt-2" *ngIf="solicitudAdjuntos(solicitudDetalle).length">
+                  <li *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)">
+                    <button class="btn btn-link p-0 fw-bold text-start" type="button" (click)="descargarAdjuntoSolicitud(adjunto)">
+                      <i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}
+                    </button>
+                  </li>
+                </ul>
+              </section>
               <ul class="pending-list">
                 <li *ngFor="let item of solicitudDetalle.items || []">
                   <i class="bi bi-file-earmark-text me-1"></i>
@@ -327,6 +420,27 @@
                   </ul>
                 </li>
               </ul>
+              <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(solicitudDetalle).length > 0">
+                <h6 class="fw-bold mb-2">Autorizaciones de alta</h6>
+                <article class="authorization-item" *ngFor="let autorizacion of autorizacionesAltaRegistradas(solicitudDetalle)">
+                  <div>
+                    <strong>{{ autorizacion.asociadoNombre }}</strong>
+                    <small>
+                      {{ autorizacion.asociacionAnteriorNombre || ('Asociacion ' + autorizacion.asociacionAnteriorId) }}
+                      autoriza el alta en Asociacion {{ autorizacion.asociacionNuevaId }}
+                    </small>
+                    <small *ngIf="firmaAutorizacion(autorizacion)">
+                      Firmada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}
+                      <ng-container *ngIf="firmaAutorizacion(autorizacion)?.fecha">
+                        el {{ firmaAutorizacion(autorizacion)?.fecha | date: 'dd/MM/yyyy HH:mm' }}
+                      </ng-container>
+                    </small>
+                  </div>
+                  <span class="estado-badge" [ngClass]="estadoAutorizacionClass(autorizacion.estado)">
+                    {{ labelEstadoAutorizacion(autorizacion.estado) }}
+                  </span>
+                </article>
+              </section>
               <app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel>
             </ng-container>
             <ng-template #emptyDetail>
@@ -363,25 +477,32 @@
             </div>
           </div>
           <div class="row g-3">
-            <div class="col-12 col-md-6">
-              <label class="form-label">Nombre</label>
-              <input class="form-control" formControlName="nombre" />
-            </div>
-            <div class="col-12 col-md-6">
-              <label class="form-label">Apellidos</label>
-              <input class="form-control" formControlName="apellidos" />
-            </div>
             <div class="col-12 col-md-4">
-              <label class="form-label">Fecha de nacimiento</label>
-              <input type="date" class="form-control" formControlName="nacimiento" />
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">DNI/NIE</label>
-              <input class="form-control" formControlName="dni" placeholder="Documento" />
+              <label class="form-label">DNI/NIE/Pasaporte</label>
+              <input class="form-control" [class.is-invalid]="controlInvalido('dni')" formControlName="dni" placeholder="Documento de identidad" (blur)="comprobarAltaExistentePorDocumento()" />
+              <div class="invalid-feedback">Indica un DNI, NIE o pasaporte válido.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">SIP</label>
-              <input class="form-control" formControlName="sip" />
+              <input class="form-control" formControlName="sip" (blur)="comprobarAltaExistentePorDocumento()" />
+            </div>
+            <div class="col-12 col-md-4 d-flex align-items-end" *ngIf="comprobandoDocumentoAlta">
+              <span class="text-muted small">Comprobando si ya existe...</span>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Nombre</label>
+              <input class="form-control" [class.is-invalid]="controlInvalido('nombre')" formControlName="nombre" />
+              <div class="invalid-feedback">El nombre es obligatorio.</div>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label">Apellidos</label>
+              <input class="form-control" [class.is-invalid]="controlInvalido('apellidos')" formControlName="apellidos" />
+              <div class="invalid-feedback">Los apellidos son obligatorios.</div>
+            </div>
+            <div class="col-12 col-md-4">
+              <label class="form-label">Fecha de nacimiento</label>
+              <input type="date" class="form-control" [class.is-invalid]="controlInvalido('nacimiento')" formControlName="nacimiento" />
+              <div class="invalid-feedback">La fecha de nacimiento debe ser válida y no puede ser futura.</div>
             </div>
           </div>
         </section>
@@ -401,7 +522,8 @@
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Codigo Postal</label>
-              <input class="form-control" formControlName="cp" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('cp')" formControlName="cp" />
+              <div class="invalid-feedback">El código postal debe tener cinco cifras.</div>
             </div>
             <div class="col-12 col-md-4">
               <label class="form-label">Localidad</label>
@@ -413,11 +535,13 @@
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Telefono</label>
-              <input class="form-control" formControlName="telefono" />
+              <input class="form-control" [class.is-invalid]="controlInvalido('telefono')" formControlName="telefono" />
+              <div class="invalid-feedback">Revisa el formato del teléfono.</div>
             </div>
             <div class="col-12 col-md-6">
               <label class="form-label">Email</label>
-              <input type="email" class="form-control" formControlName="email" />
+              <input type="email" class="form-control" [class.is-invalid]="controlInvalido('email')" formControlName="email" />
+              <div class="invalid-feedback">Indica un correo electrónico válido.</div>
             </div>
           </div>
         </section>
@@ -462,7 +586,7 @@
         </section>
 
         <div class="actions mt-3 d-flex gap-2">
-          <button class="ux-btn" type="submit" [disabled]="loading || !permissions.hasPermission('solicitudes:write')">
+          <button class="ux-btn" type="submit" [disabled]="loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')">
             {{ modo === 'alta' ? 'Preparar alta' : 'Preparar cambio' }}
           </button>
           <button
@@ -511,7 +635,7 @@
             <tbody>
               <tr *ngFor="let item of pendientesPorTipo(tipo)" [class.table-danger]="seleccionRegistro.has(item.id)">
                 <td>
-                  <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" (change)="toggleRegistro(item)" />
+                  <input type="checkbox" [checked]="seleccionRegistro.has(item.id)" [disabled]="accionesBloqueadasPorEjercicio" (change)="toggleRegistro(item)" />
                 </td>
                 <td>{{ resumenItem(item) }}</td>
                 <td>
@@ -526,7 +650,7 @@
                   <button
                     class="ux-btn ux-btn-danger ux-btn-sm"
                     type="button"
-                    [disabled]="loading || !permissions.hasPermission('solicitudes:write')"
+                    [disabled]="loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')"
                     (click)="descartarRegistro(item)"
                   >
                     Descartar
@@ -544,7 +668,7 @@
           <button
             class="ux-btn"
             type="button"
-            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || !permissions.hasPermission('solicitudes:write')"
+            [disabled]="seleccionadosPorTipo(tipo).length === 0 || loading || accionesBloqueadasPorEjercicio || !permissions.hasPermission('solicitudes:write')"
             (click)="crearSolicitudSeleccionada(tipo)"
           >
             Generar solicitud con seleccionados
@@ -558,13 +682,53 @@
   </div>
 </section>
 
+<div *ngIf="detalleSolicitudDialogOpen && solicitudDetalle" class="request-detail-backdrop" role="presentation" (click)="cerrarDetalleSolicitud()">
+  <section class="request-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudAsociacionTitle" (click)="$event.stopPropagation()" (keydown.escape)="cerrarDetalleSolicitud()">
+    <header class="request-detail-header">
+      <div>
+        <p class="ux-overline mb-1">Detalle de solicitud</p>
+        <h2 id="solicitudAsociacionTitle" class="h5 mb-1">{{ solicitudDetalle.numero }}</h2>
+        <div class="d-flex gap-2 flex-wrap"><span class="tipo-badge" [ngClass]="tipoClass(solicitudDetalle.tipo)">{{ labelTipo(solicitudDetalle.tipo) }}</span><span class="estado-badge" [ngClass]="estadoClassSolicitud(solicitudDetalle)">{{ labelEstadoSolicitud(solicitudDetalle) }}</span></div>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalleSolicitud()"></button>
+    </header>
+    <div class="request-detail-body">
+      <div class="detail-tabs" role="tablist" aria-label="Secciones de la solicitud">
+        <button *ngFor="let pestana of pestanasSolicitud; let indice = index" class="detail-tab" type="button" role="tab" [id]="'solicitud-asociacion-tab-' + pestana.id" [attr.aria-controls]="'solicitud-asociacion-panel-' + pestana.id" [attr.aria-selected]="pestanaSolicitud === pestana.id" [tabIndex]="pestanaSolicitud === pestana.id ? 0 : -1" [class.active]="pestanaSolicitud === pestana.id" (click)="activarPestanaSolicitud(pestana.id)" (keydown)="navegarPestanasSolicitud($event, indice)">{{ pestana.label }}</button>
+      </div>
+      <section *ngIf="pestanaSolicitud === 'resumen'" id="solicitud-asociacion-panel-resumen" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-resumen">
+        <dl class="metadata-grid"><div><dt>Tipo</dt><dd>{{ labelTipo(solicitudDetalle.tipo) }}</dd></div><div><dt>Alta</dt><dd>{{ solicitudDetalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd></div><div><dt>Estado</dt><dd>{{ labelEstadoSolicitud(solicitudDetalle) }}</dd></div><div><dt>Cambios</dt><dd>{{ solicitudDetalle.totalRegistros || solicitudDetalle.items?.length || 0 }}</dd></div></dl>
+        <p class="text-muted mb-3" *ngIf="solicitudDetalle.observaciones">{{ solicitudDetalle.observaciones }}</p>
+        <div class="d-flex flex-wrap gap-2">
+          <button class="ux-btn ux-btn-sm" type="button" *ngIf="puedeEnviarSolicitud(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio || !solicitudAdjunta(solicitudDetalle)" (click)="enviarSolicitud(solicitudDetalle)">Enviar solicitud a Secretaría</button>
+          <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="puedeCancelarEnvio(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="cancelarEnvioSolicitud(solicitudDetalle)">Cancelar envío</button>
+          <button class="ux-btn ux-btn-danger ux-btn-sm" type="button" *ngIf="puedeCancelarSolicitud(solicitudDetalle)" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="cancelarSolicitud(solicitudDetalle)">Cancelar solicitud</button>
+          <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="imprimirSolicitud(solicitudDetalle)">Imprimir solicitud</button>
+        </div>
+      </section>
+      <section *ngIf="pestanaSolicitud === 'cambios'" id="solicitud-asociacion-panel-cambios" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-cambios"><article class="change-card" *ngFor="let item of solicitudDetalle.items || []"><strong>{{ resumenItem(item) }}</strong><ul class="pending-detail-list" *ngIf="detalleItem(item).length"><li *ngFor="let detalle of detalleItem(item)">{{ detalle }}</li></ul></article><p class="text-muted" *ngIf="!(solicitudDetalle.items?.length)">La solicitud no contiene cambios.</p></section>
+      <section *ngIf="pestanaSolicitud === 'incidencias'" id="solicitud-asociacion-panel-incidencias" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-incidencias"><app-incidencias-panel scope="solicitud" [scopeId]="solicitudDetalle.id"></app-incidencias-panel></section>
+      <section *ngIf="pestanaSolicitud === 'adjuntos'" id="solicitud-asociacion-panel-adjuntos" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-adjuntos">
+        <div class="d-flex gap-2 align-items-center flex-wrap mb-3" *ngIf="solicitudDetalle.estado === 'registrada' && permissions.hasPermission('solicitudes:write')">
+          <label class="ux-btn ux-btn-secondary ux-btn-sm mb-0" for="solicitudFirmadaDialogInput"><i class="bi bi-paperclip me-1"></i>Adjuntar solicitud firmada</label>
+          <input id="solicitudFirmadaDialogInput" class="visually-hidden" type="file" accept=".pdf,image/*" (change)="seleccionarSolicitudFirmada($event, solicitudDetalle)" />
+          <small class="text-muted">PDF o imagen. El documento se carga de forma autenticada.</small>
+        </div>
+        <div class="signed-documents" *ngIf="solicitudAdjuntos(solicitudDetalle).length; else noAdjuntos"><button class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of solicitudAdjuntos(solicitudDetalle)" type="button" (click)="descargarAdjuntoSolicitud(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button></div><ng-template #noAdjuntos><p class="text-muted">No hay adjuntos en esta solicitud.</p></ng-template>
+      </section>
+      <section *ngIf="pestanaSolicitud === 'historial'" id="solicitud-asociacion-panel-historial" role="tabpanel" aria-labelledby="solicitud-asociacion-tab-historial"><ol class="list-group list-group-numbered" *ngIf="solicitudDetalle.eventos?.length; else sinHistorial"><li class="list-group-item" *ngFor="let evento of solicitudDetalle.eventos"><strong>{{ evento.tipo }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li></ol><ng-template #sinHistorial><p class="text-muted">Todavía no hay eventos registrados.</p></ng-template></section>
+    </div>
+    <footer class="request-detail-footer"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarDetalleSolicitud()">Cerrar</button></footer>
+  </section>
+</div>
+
 <div *ngIf="sustitucionesDialogOpen" class="sustitucion-backdrop" role="presentation" (click)="cerrarSustitucionesDialog()">
   <section class="sustitucion-dialog" role="dialog" aria-modal="true" aria-labelledby="sustitucionTitle" (click)="$event.stopPropagation()">
     <header class="sustitucion-header">
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Cargos obligatorios</p>
         <h2 id="sustitucionTitle" class="h5 mb-1 text-rojo">Selecciona sustitutos</h2>
-        <p class="text-muted mb-0">El tramite afecta a cargos obligatorios. Indica quien debe ocupar cada cargo antes de enviar la solicitud.</p>
+        <p class="text-muted mb-0">El tramite afecta a cargos obligatorios. Indica quien debe ocupar cada cargo. Despues adjuntaras la solicitud firmada antes de enviarla.</p>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarSustitucionesDialog()"></button>
     </header>
@@ -586,8 +750,8 @@
 
     <footer class="sustitucion-footer">
       <button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarSustitucionesDialog()">Cancelar</button>
-      <button class="ux-btn" type="button" [disabled]="loading" (click)="confirmarSolicitudConSustituciones()">
-        Crear y enviar solicitud
+      <button class="ux-btn" type="button" [disabled]="loading || accionesBloqueadasPorEjercicio" (click)="confirmarSolicitudConSustituciones()">
+        Crear solicitud
       </button>
     </footer>
   </section>

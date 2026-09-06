@@ -20,6 +20,8 @@ export interface Asociado {
   codigoPostal?: string;
   codigo_postal?: string;
   cp?: string;
+  localidad?: string;
+  provincia?: string;
 }
 
 export interface HistoricoAsociado {
@@ -78,7 +80,33 @@ export interface AuthContext {
   usuario: string;
   nombre: string;
   asociacionNombre: string;
+  asociacionTipo?: string;
+  ejercicioActivo?: EjercicioSecretaria | null;
+  ejercicios?: EjercicioSecretaria[];
   permisos: string[];
+}
+
+export interface EjercicioSecretaria {
+  id: number;
+  ejercicio: number;
+  fechaInicio: string;
+  fechaFin: string;
+  activo: boolean;
+  estadoAsociacion?: 'SIN_INICIAR' | 'INICIADO';
+  iniciado?: boolean;
+  iniciadoAt?: string | null;
+}
+
+export interface EjercicioInicioResultado {
+  ejercicio: EjercicioSecretaria;
+  ejercicioAnterior: EjercicioSecretaria | null;
+  censoEjercicioId: number;
+  censoEjercicioAnteriorId: number;
+  totalPreviosActivos: number;
+  creados: number;
+  yaExistian: number;
+  omitidos: number;
+  yaIniciado?: boolean;
 }
 
 export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
@@ -86,6 +114,8 @@ export type SolicitudTipo = 'alta' | 'cambio' | 'baja';
 export interface RegistroPendiente {
   id: number;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   tipo: SolicitudTipo;
   asociadoId?: number | null;
   estado: 'pendiente' | 'incluido_en_solicitud' | 'descartado';
@@ -106,26 +136,86 @@ export interface SolicitudItemSecretaria {
   estado: string;
 }
 
+export interface SolicitudEventoSecretaria {
+  id: number;
+  tipo: string;
+  actor?: string | null;
+  estadoAnterior?: string | null;
+  estadoNuevo?: string | null;
+  detalle?: Record<string, any> | null;
+  createdAt: string;
+}
+
+export interface CargoCupoSecretaria {
+  id: number;
+  nombre: string;
+  esInfantil: boolean;
+  obligatorio: boolean;
+  modoOcupacion: 'multiple' | 'exclusivo';
+  maximo: number;
+  ocupados: number;
+  reservados: number;
+  plazasDisponibles: number | null;
+  conflictos: string[];
+}
+
 export interface SolicitudSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   tipo: SolicitudTipo;
   estado: string;
   totalRegistros: number;
+  autorizacionesPendientes?: number;
+  autorizacionesPendientesNombres?: string;
   fechaAlta: string;
   fechaRegistro?: string;
   fechaEntrada?: string | null;
   fechaValidacion?: string | null;
   observaciones?: string | null;
   items?: SolicitudItemSecretaria[];
+  eventos?: SolicitudEventoSecretaria[];
+  autorizacionesAlta?: AutorizacionAlta[];
+  adjuntos?: AdjuntoSecretaria[];
+}
+
+export interface PaginacionSecretaria {
+  page: number;
+  pageSize: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface AutorizacionAlta {
+  id: number;
+  solicitudId: number;
+  solicitudNumero: string;
+  solicitudItemId?: number | null;
+  asociadoId: number;
+  asociadoNombre: string;
+  asociacionNuevaId: number;
+  asociacionAnteriorId: number;
+  asociacionAnteriorNombre?: string | null;
+  estado: 'pendiente_firma' | 'firmada' | 'rechazada' | 'cancelada' | 'archivada';
+  documento?: Record<string, any> | null;
+  fechaCreacion: string;
+  fechaFirma?: string | null;
+  fechaEnvioSecretaria?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface DashboardAsociacionResumen {
   solicitudesConIncidencia: number;
   inscripcionesAbiertas: number;
   comunicacionesNuevas: number;
+  autorizacionesAltaPendientes?: number;
+  soporteTareas?: SoporteTarea[];
 }
+
+export interface SoporteTarea { ticketId: number; asunto: string; requiereRespuesta: boolean; }
 
 export interface DashboardAdminResumen {
   solicitudesPendientes: number;
@@ -134,21 +224,57 @@ export interface DashboardAdminResumen {
   documentacionRecibida: number;
 }
 
+export interface SoporteCategoria { codigo: string; nombre: string; }
+export type SoporteEstado = 'ABIERTA' | 'EN_PROCESO' | 'ESPERANDO_RESPUESTA_USUARIO' | 'RESUELTA' | 'CERRADA';
+export interface SoporteEvento {
+  id: number; tipo: 'CREADA' | 'ESTADO' | 'MENSAJE'; actor: 'USUARIO' | 'ADMINISTRACION'; actorNombre?: string | null;
+  estadoAnterior?: SoporteEstado | null; estadoNuevo?: SoporteEstado | null; mensaje?: string | null; createdAt: string; adjuntos?: AdjuntoSecretaria[];
+}
+export interface SoporteIncidencia {
+  id: number; categoria: string; categoriaNombre: string; asunto: string; descripcion: string; estado: SoporteEstado;
+  creador?: string | null; asociacionId?: number | null; asociacion?: string | null; tipoAsociacion?: string | null;
+  ejercicio?: number | null; ruta?: string | null; userAgent?: string | null; createdAt: string; updatedAt?: string; resolvedAt?: string | null;
+  eventos?: SoporteEvento[]; tieneNovedades?: boolean;
+}
+
 export interface RegistroSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicio?: number | null;
   tipo: 'documentacion' | 'comunicacion';
   origen: 'asociacion' | 'administracion';
   titulo: string;
   mensaje?: string;
   responsable?: string | null;
-  estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada';
+  departamentoId?: number | null;
+  departamentoNombre?: string | null;
+  destinatarioId?: number | null;
+  destinatarioNombre?: string | null;
+  estado: 'enviada' | 'recibido' | 'leido' | 'validado' | 'incidencia' | 'rechazado' | 'finalizada' | 'archivada';
   fechaEntrada: string;
   fechaCreacion?: string;
   fechaActualizacion?: string;
   adjuntos: AdjuntoSecretaria[];
   mensajes?: RegistroMensajeSecretaria[];
+  eventos?: RegistroEventoSecretaria[];
+}
+
+export interface RegistroDestinatario {
+  id: number;
+  nombre: string;
+  email?: string | null;
+  departamentoId: number;
+  departamentoCodigo: string;
+  departamentoNombre: string;
+}
+
+export interface RegistroEventoSecretaria {
+  id: number;
+  tipo: 'CREADO' | 'ESTADO' | 'MENSAJE' | 'LEIDO' | 'FINALIZADO' | 'ARCHIVADO';
+  actor: 'asociacion' | 'administracion' | 'sistema';
+  detalle?: string | null;
+  createdAt: string;
 }
 
 export interface RegistroMensajeSecretaria {
@@ -163,6 +289,8 @@ export interface RegistroMensajeSecretaria {
 export interface InscripcionSecretaria {
   id: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   formularioId: string | null;
   actividadId?: string | null;
   titulo: string;
@@ -171,18 +299,22 @@ export interface InscripcionSecretaria {
   fechaLimite: string;
   tiposPermitidos: AsociadoTipo[];
   campos: CampoInscripcion[];
+  inscrito?: boolean;
 }
 
 export interface InscripcionEntradaSecretaria {
   id: number;
   numero: string;
   asociacionId: number;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   asociacionNombre?: string;
   formularioId: string;
-  estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada';
+  estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada' | 'retirada_solicitada' | 'retirada';
   fechaEntrada: string;
   participantes: string[];
   datos: Record<string, unknown>;
+  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
 }
 
 export interface CampoInscripcion {
@@ -219,7 +351,7 @@ export interface Incidencia {
 export interface IncidenciaEvento {
   id: number;
   incidenciaId: number;
-  tipo: 'creada' | 'respuesta_asociacion' | 'devuelta_admin' | 'subsanada' | 'cerrada';
+  tipo: 'creada' | 'respuesta_asociacion' | 'comentario_administracion' | 'devuelta_admin' | 'subsanada' | 'cerrada';
   actor: 'administracion' | 'asociacion' | 'sistema';
   mensaje: string;
   createdAt: string;
@@ -228,7 +360,7 @@ export interface IncidenciaEvento {
 
 export interface AdjuntoSecretaria {
   id: number;
-  scope: 'solicitud' | 'registro' | 'inscripcion' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'inscripcion_entrada' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
   scopeId: string;
   fileName: string;
   originalName: string;
@@ -250,26 +382,41 @@ export interface JustificanteSecretaria {
 
 export interface ActividadSecretaria {
   id: string;
+  ejercicioId?: number | null;
+  ejercicio?: number | null;
   titulo: string;
   estado: string;
+  visiblePublico: boolean;
   responsable: string;
   fechaInicio: string;
   fechaFin: string;
   descripcion?: string;
+  colorEtiqueta?: 'ffsj' | 'asociacion' | 'ayuntamiento' | 'otra';
   inscripciones?: InscripcionSecretaria[];
+  origen?: 'administracion' | 'asociacion';
+  estadoPropuesta?: 'pendiente_revision' | 'con_incidencias' | 'publicada' | 'rechazada';
+  asociacionId?: number | null;
+  asociacionNombre?: string | null;
+  creadoPor?: string | null;
+  motivoRechazo?: string | null;
+  resueltoAt?: string | null;
+  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
 }
 
 export interface CargoResumen {
   id: number;
   nombre: string;
-  requerido: number;
-  maximo: number;
+  requerido?: number;
+  obligatorio?: boolean | number;
+  modo_ocupacion?: 'multiple' | 'exclusivo';
+  modoOcupacion?: 'multiple' | 'exclusivo';
+  maximo?: number;
   activo: boolean;
   active?: boolean | number;
   es_infantil?: boolean | number;
   esInfantil?: boolean | number;
-  validados: number;
-  solicitados: number;
+  validados?: number;
+  solicitados?: number;
 }
 
 export interface PermisoSecretaria {

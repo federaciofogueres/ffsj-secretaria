@@ -1,19 +1,35 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
-import { CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, CargoCupoSecretaria, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
 
-type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes';
+type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
+type PestanaSolicitudAsociacion = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
+
+function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | null {
+  const value = String(control.value || '').trim();
+  if (!value) return null;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= fechaHoyLocal()
+    ? null : { fechaNacimientoInvalida: true };
+}
+
+function fechaHoyLocal(): string {
+  const today = new Date();
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+}
 type ListadoContexto = 'modificaciones' | 'bajas';
 
 interface SustitucionCargoRequerido {
@@ -46,11 +62,31 @@ export class AsociadosGestionComponent implements OnInit {
   adultos: Asociado[] = [];
   infantiles: Asociado[] = [];
   cargos: CargoResumen[] = [];
+  cuposCargos: CargoCupoSecretaria[] = [];
+  errorCupos = '';
 
   registroPendiente: RegistroPendiente[] = [];
   solicitudes: SolicitudSecretaria[] = [];
   solicitudDetalle: SolicitudSecretaria | null = null;
   filtroSolicitudes: 'incidencias' | null = null;
+  busquedaSolicitudes = '';
+  tipoSolicitudFiltro = 'todos';
+  estadoSolicitudFiltro = 'todos';
+  ordenSolicitudes: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
+  paginaSolicitudes = 1;
+  tamanoPaginaSolicitudes = 10;
+  totalSolicitudes = 0;
+  totalPaginasSolicitudes = 1;
+  detalleSolicitudDialogOpen = false;
+  pestanaSolicitud: PestanaSolicitudAsociacion = 'resumen';
+  private solicitudTrigger: HTMLElement | null = null;
+  readonly pestanasSolicitud: Array<{ id: PestanaSolicitudAsociacion; label: string }> = [
+    { id: 'resumen', label: 'Resumen' },
+    { id: 'cambios', label: 'Cambios' },
+    { id: 'incidencias', label: 'Incidencias' },
+    { id: 'adjuntos', label: 'Adjuntos' },
+    { id: 'historial', label: 'Historial' }
+  ];
 
   seleccionBaja = new Set<number>();
   seleccionRegistro = new Set<number>();
@@ -63,6 +99,11 @@ export class AsociadosGestionComponent implements OnInit {
   sustitucionOrigen: 'baja' | 'modificacion' = 'baja';
   modificacionPendienteConSustitucion: ModificacionPendienteConSustitucion | null = null;
   cargosSeleccionadosIds = new Set<number>();
+  comprobandoDocumentoAlta = false;
+  altaExistenteAsociado: Asociado | null = null;
+  altaAsociacionesAnteriores: Array<{ id: number; nombre?: string | null }> = [];
+  solicitudFirmadaFiles: Record<number, File | null> = {};
+  private ultimoDocumentoAltaConsultado = '';
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
@@ -81,16 +122,16 @@ export class AsociadosGestionComponent implements OnInit {
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
     cargoId: [null as number | null],
-    dni: ['', Validators.required],
-    sip: [''],
-    nacimiento: [''],
-    nombre: ['', Validators.required],
-    apellidos: ['', Validators.required],
-    direccion: [''],
-    cp: [''],
-    localidad: [''],
-    provincia: [''],
-    telefono: [''],
+    dni: ['', [Validators.required, Validators.pattern(/^(?:(?:\d{8}|[XYZ]\d{7})[A-Za-z]|(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{5,20})$/)]],
+    sip: ['', [Validators.maxLength(30)]],
+    nacimiento: ['', [Validators.required, fechaNacimientoValidator]],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
+    apellidos: ['', [Validators.required, Validators.maxLength(150)]],
+    direccion: ['', Validators.maxLength(200)],
+    cp: ['', Validators.pattern(/^\d{5}$/)],
+    localidad: ['', Validators.maxLength(100)],
+    provincia: ['', Validators.maxLength(100)],
+    telefono: ['', Validators.pattern(/^[+0-9][0-9\s-]{7,19}$/)],
     email: ['', [Validators.email]]
   });
 
@@ -101,7 +142,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly secretariaService: SecretariaService,
     private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
@@ -120,10 +162,45 @@ export class AsociadosGestionComponent implements OnInit {
     });
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
+    this.cargarCupos();
   }
 
   get asociacionId(): number {
     return this.censoService.asociacionId;
+  }
+
+  cargarCupos(): void {
+    const ejercicio = Number(this.ejercicioService.selectedSnapshot?.ejercicio || new Date().getFullYear());
+    if (!this.asociacionId || !ejercicio) return;
+    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio).subscribe({
+      next: response => {
+        this.cuposCargos = response.cargos;
+        this.errorCupos = '';
+      },
+      error: error => {
+        this.cuposCargos = [];
+        this.errorCupos = error?.error?.message || 'No se ha podido cargar el resumen de cupos.';
+      }
+    });
+  }
+
+  labelConflictoCupo(conflicto: string): string {
+    return conflicto === 'obligatorio_sin_cubrir' ? 'Obligatorio sin cubrir' : conflicto === 'cupo_superado' ? 'Cupo superado' : conflicto;
+  }
+
+  get ejercicioActivoSeleccionado(): boolean {
+    return this.ejercicioService.isSelectedActive;
+  }
+
+  get accionesBloqueadasPorEjercicio(): boolean {
+    return !this.ejercicioActivoSeleccionado;
+  }
+
+  get mensajeEjercicioNoActivo(): string {
+    const ejercicio = this.ejercicioService.selectedSnapshot?.ejercicio;
+    return ejercicio
+      ? `El ejercicio ${ejercicio} es solo de consulta. Selecciona el ejercicio activo para tramitar.`
+      : 'Selecciona el ejercicio activo para tramitar.';
   }
 
   get registrosSeleccionados(): RegistroPendiente[] {
@@ -137,14 +214,6 @@ export class AsociadosGestionComponent implements OnInit {
 
   get seleccionRegistroValida(): boolean {
     return this.registrosSeleccionados.length > 0 && this.tipoSeleccionado !== null;
-  }
-
-  get solicitudesVisibles(): SolicitudSecretaria[] {
-    if (this.filtroSolicitudes !== 'incidencias') {
-      return this.solicitudes;
-    }
-
-    return this.solicitudes.filter(solicitud => this.solicitudTieneIncidencias(solicitud));
   }
 
   get cargosFormulario(): CargoResumen[] {
@@ -232,13 +301,52 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  comprobarAltaExistentePorDocumento(): void {
+    if (this.modoFormulario !== 'alta') {
+      return;
+    }
+
+    const documento = this.getDocumentoAlta();
+    if (!documento || documento === this.ultimoDocumentoAltaConsultado) {
+      return;
+    }
+
+    this.ultimoDocumentoAltaConsultado = documento;
+    this.comprobandoDocumentoAlta = true;
+    this.censoService.getAsociadoByDocumento(documento).subscribe({
+      next: asociado => {
+        if (asociado) {
+          this.comprobarHistoricoAsociadoParaAlta(asociado);
+          return;
+        }
+        this.comprobandoDocumentoAlta = false;
+      },
+      error: (error: any) => {
+        this.comprobandoDocumentoAlta = false;
+        if (Number(error?.status) !== 404) {
+          this.showError('No se ha podido comprobar si la persona existe en el censo.');
+        }
+      }
+    });
+  }
+
   guardarRegistroAltaOCambio(): void {
     if (!this.permissions.hasPermission('solicitudes:write')) {
       this.showError('No tienes permiso para crear registros pendientes.');
       return;
     }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     if (this.altaForm.invalid) {
       this.altaForm.markAllAsTouched();
+      this.showError(this.mensajeErrorFormulario());
+      return;
+    }
+    if (!this.fechaNacimientoValida()) {
+      this.altaForm.get('nacimiento')?.markAsTouched();
+      this.showError('La fecha de nacimiento debe ser una fecha real y no puede ser futura.');
       return;
     }
     if (this.cargosSeleccionadosIds.size === 0) {
@@ -263,6 +371,11 @@ export class AsociadosGestionComponent implements OnInit {
 
     if (this.tieneDuplicadoPendiente(tipo, this.asociadoEnEdicion?.id ?? null, datos)) {
       this.showError('Ya existe un cambio preparado para este tramite.');
+      return;
+    }
+
+    if (tipo === 'alta' && this.altaExistenteAsociado && this.altaAsociacionesAnteriores.length > 0) {
+      this.confirmarAltaConAutorizacionAnterior(datos, { ...this.altaExistenteAsociado });
       return;
     }
 
@@ -310,6 +423,66 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     this.confirmarCesionCargoObligatorio(tipo, datos, datosOriginales, conflictos);
+  }
+
+  private crearAltaConAutorizacionAnterior(datos: Record<string, any>, datosOriginales: Record<string, any> | null): void {
+    if (!this.altaExistenteAsociado || !this.altaAsociacionesAnteriores.length) {
+      this.crearRegistroAltaOCambioConConflictos('alta', datos, datosOriginales, this.cargosSeleccionados.map(cargo => Number(cargo.id)));
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService.crearAltaConAutorizacion({
+      asociacionId: this.asociacionId,
+      asociadoId: this.altaExistenteAsociado.id,
+      datos: {
+        ...datos,
+        asociadoExistenteId: this.altaExistenteAsociado.id,
+        requiereAutorizacionAsociacionAnterior: true
+      },
+      datosOriginales,
+      asociacionesAnteriores: this.altaAsociacionesAnteriores
+    }).subscribe({
+      next: solicitud => {
+        this.solicitudes.unshift(solicitud);
+        this.solicitudDetalle = solicitud;
+        this.resetFormulario();
+        this.activeTab = 'solicitudes';
+        this.mostrarFormMod = false;
+        this.loading = false;
+        this.dialog.openDialogAlert({
+          title: 'Alta registrada',
+          content: 'Se ha creado el alta y queda pendiente de firma por la asociacion anterior.',
+          innerHtml: `
+            <p>Se ha creado la solicitud <strong>${solicitud.numero}</strong>.</p>
+            <p>Queda pendiente de autorizacion por la asociacion anterior. Cuando se firme, se enviara automaticamente a Secretaria.</p>
+          `,
+          buttonsAlert: [AlertButtonType.Entendido]
+        });
+      },
+      error: error => {
+        this.loading = false;
+        if (!this.gestionarErrorAltaDuplicada(error)) {
+          this.showError('No se ha podido crear el alta con autorizacion previa.');
+        }
+      }
+    });
+  }
+
+  private confirmarAltaConAutorizacionAnterior(datos: Record<string, any>, datosOriginales: Record<string, any> | null): void {
+    const ref = this.dialog.openDialogAlert({
+      title: 'Autorizacion necesaria',
+      content: 'Para validar el alta de esta persona sera necesaria la autorizacion de la asociacion a la que pertenecio anteriormente.',
+      innerHtml: '<p>Para validar el alta de esta persona sera necesaria la autorizacion de la asociacion a la que pertenecio anteriormente.</p>',
+      buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result !== AlertButtonType.Aceptar) {
+        return;
+      }
+      this.crearAltaConAutorizacionAnterior(datos, datosOriginales);
+    });
   }
 
   private confirmarCesionCargoObligatorio(
@@ -417,8 +590,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: `Solicitud conjunta: ${tipo} y cesion de cargo obligatorio`
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -430,15 +602,17 @@ export class AsociadosGestionComponent implements OnInit {
           this.activeTab = 'solicitudes';
           this.loading = false;
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la cesion de cargo indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
-        error: () => {
+        error: error => {
           this.loading = false;
-          this.showError('No se ha podido crear y enviar la solicitud con cesion de cargo.');
+          if (!this.gestionarErrorAltaDuplicada(error)) {
+            this.showError('No se ha podido crear la solicitud con cesion de cargo.');
+          }
         }
       });
   }
@@ -475,6 +649,79 @@ export class AsociadosGestionComponent implements OnInit {
       });
   }
 
+  private getDocumentoAlta(): string {
+    return String(this.altaForm.value.dni || this.altaForm.value.sip || '')
+      .trim()
+      .replace(/\s+/g, '')
+      .toUpperCase();
+  }
+
+  private comprobarHistoricoAsociadoParaAlta(asociado: Asociado): void {
+    this.censoService.getHistoricoByAsociado(asociado.id).subscribe({
+      next: historico => {
+        this.comprobandoDocumentoAlta = false;
+        const estaActivoEnEstaAsociacion = historico.some(item =>
+          Number(item.idAsociacion) === Number(this.asociacionId) &&
+          (item.active === true || item.active === 1 || String(item.active) === '1')
+        );
+        if (estaActivoEnEstaAsociacion) {
+          this.altaExistenteAsociado = null;
+          this.altaAsociacionesAnteriores = [];
+          this.limpiarDocumentoAltaDuplicado();
+          this.showError('Esta persona ya esta dada de alta en esta asociacion. No se puede crear un alta duplicada.');
+          return;
+        }
+        this.cargarAsociadoExistenteEnAlta(asociado, historico);
+      },
+      error: () => {
+        this.comprobandoDocumentoAlta = false;
+        this.showError('No se ha podido consultar el historico de asociaciones de esta persona.');
+      }
+    });
+  }
+
+  private cargarAsociadoExistenteEnAlta(asociado: Asociado, historico: HistoricoAsociado[]): void {
+    this.altaExistenteAsociado = asociado;
+    this.altaAsociacionesAnteriores = [];
+    const tipo = asociado.tipo === 'infantil' ? 'Hoguera infantil' : 'Hoguera adulta';
+    this.altaForm.patchValue({
+      tipo,
+      dni: asociado.dni ?? this.altaForm.value.dni ?? '',
+      sip: asociado.sip ?? this.altaForm.value.sip ?? '',
+      nacimiento: asociado.fechaNacimiento ?? '',
+      nombre: asociado.nombre,
+      apellidos: asociado.apellidos,
+      direccion: asociado.direccion ?? '',
+      cp: asociado.codigoPostal ?? asociado.codigo_postal ?? asociado.cp ?? '',
+      localidad: asociado.localidad ?? '',
+      provincia: asociado.provincia ?? '',
+      telefono: asociado.telefono ?? '',
+      email: asociado.email ?? ''
+    });
+    this.actualizarCargoPorTipo();
+
+    this.dialog.openDialogAlert({
+      title: 'Persona encontrada',
+      content: 'Esta persona ya esta dada de alta en el sistema, vamos a incorporar sus datos al formulario',
+      innerHtml: '<p>Esta persona ya esta dada de alta en el sistema, vamos a incorporar sus datos al formulario.</p>',
+      buttonsAlert: [AlertButtonType.Entendido]
+    });
+
+    const anteriores = new Map<number, { id: number; nombre?: string | null }>();
+    historico
+      .filter(item => Number(item.idAsociacion) > 0 && Number(item.idAsociacion) !== Number(this.asociacionId))
+      .forEach(item => anteriores.set(Number(item.idAsociacion), {
+        id: Number(item.idAsociacion),
+        nombre: item.nombreAsociacion || null
+      }));
+    this.altaAsociacionesAnteriores = [...anteriores.values()];
+  }
+
+  private limpiarDocumentoAltaDuplicado(): void {
+    this.altaForm.patchValue({ dni: '', sip: '' });
+    this.ultimoDocumentoAltaConsultado = '';
+  }
+
   toggleSeleccionBaja(asociado: Asociado): void {
     if (this.asociadoBloqueado(asociado)) {
       return;
@@ -490,6 +737,10 @@ export class AsociadosGestionComponent implements OnInit {
   guardarBajasPendientes(): void {
     if (!this.permissions.hasPermission('solicitudes:write')) {
       this.showError('No tienes permiso para crear registros pendientes.');
+      return;
+    }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
       return;
     }
     if (this.seleccionBaja.size === 0) return;
@@ -537,6 +788,10 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   confirmarSolicitudConSustituciones(): void {
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     if (!this.sustitucionesCargo.every(item => item.sustitutoId)) {
       this.showError('Selecciona sustituto para todos los cargos obligatorios.');
       return;
@@ -622,8 +877,7 @@ export class AsociadosGestionComponent implements OnInit {
             registroPendienteIds: items.map(item => item.id),
             observaciones: observacionesSolicitud
           })
-        ),
-        switchMap(solicitud => this.secretariaService.enviarSolicitud(solicitud.id))
+        )
       )
       .subscribe({
         next: solicitud => {
@@ -637,15 +891,15 @@ export class AsociadosGestionComponent implements OnInit {
           this.loading = false;
           this.cerrarSustitucionesDialog();
           this.dialog.openDialogAlert({
-            title: 'Solicitud enviada',
-            content: `Se ha creado y enviado la solicitud ${solicitud.numero}.`,
-            innerHtml: `<p>Se ha creado y enviado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p>`,
+            title: 'Solicitud creada',
+            content: `Se ha creado la solicitud ${solicitud.numero}. Adjunta la solicitud firmada para enviarla a Secretaria.`,
+            innerHtml: `<p>Se ha creado la solicitud <strong>${solicitud.numero}</strong> con la sustitucion indicada.</p><p>Adjunta la solicitud firmada desde el detalle antes de enviarla a Secretaria.</p>`,
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
         error: () => {
           this.loading = false;
-          this.showError('No se ha podido crear y enviar la solicitud con sustitucion.');
+          this.showError('No se ha podido crear la solicitud con sustitucion.');
         }
       });
   }
@@ -725,6 +979,10 @@ export class AsociadosGestionComponent implements OnInit {
       this.showError('No tienes permiso para crear solicitudes.');
       return;
     }
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
     const ids = this.registroPendiente
       .filter(item => item.tipo === tipo && this.seleccionRegistro.has(item.id))
       .map(item => item.id);
@@ -758,18 +1016,23 @@ export class AsociadosGestionComponent implements OnInit {
             buttonsAlert: [AlertButtonType.Entendido]
           });
         },
-        error: () => {
+        error: error => {
           this.loading = false;
-          this.showError('No se ha podido crear la solicitud.');
+          if (!this.gestionarErrorAltaDuplicada(error)) {
+            this.showError('No se ha podido crear la solicitud.');
+          }
         }
       });
   }
 
-  verSolicitud(solicitud: SolicitudSecretaria): void {
+  verSolicitud(solicitud: SolicitudSecretaria, trigger?: EventTarget | null): void {
+    this.solicitudTrigger = trigger instanceof HTMLElement ? trigger : null;
     this.loading = true;
     this.secretariaService.getSolicitud(solicitud.id).subscribe({
       next: detalle => {
         this.solicitudDetalle = detalle;
+        this.pestanaSolicitud = 'resumen';
+        this.detalleSolicitudDialogOpen = true;
         this.loading = false;
       },
       error: () => {
@@ -779,7 +1042,42 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
+  private verSolicitudPorId(solicitudId: number): void {
+    const solicitud = this.solicitudes.find(item => Number(item.id) === Number(solicitudId));
+    this.activeTab = 'solicitudes';
+    this.pendingViewTipo = null;
+    if (solicitud) {
+      this.verSolicitud(solicitud);
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService.getSolicitud(solicitudId).subscribe({
+      next: detalle => {
+        this.solicitudes = this.solicitudes.some(item => item.id === detalle.id)
+          ? this.solicitudes.map(item => (item.id === detalle.id ? detalle : item))
+          : [detalle, ...this.solicitudes];
+        this.solicitudDetalle = detalle;
+        this.pestanaSolicitud = 'resumen';
+        this.detalleSolicitudDialogOpen = true;
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        this.showError('No se ha podido cargar la solicitud existente.');
+      }
+    });
+  }
+
   enviarSolicitud(solicitud: SolicitudSecretaria): void {
+    if (this.accionesBloqueadasPorEjercicio) {
+      this.showError(this.mensajeEjercicioNoActivo);
+      return;
+    }
+    if (!this.solicitudAdjunta(solicitud)) {
+      this.showError('Debes adjuntar la solicitud firmada antes de enviarla a Secretaria.');
+      return;
+    }
     this.cambiarEstadoSolicitud(
       solicitud,
       () => this.secretariaService.enviarSolicitud(solicitud.id),
@@ -792,6 +1090,14 @@ export class AsociadosGestionComponent implements OnInit {
       solicitud,
       () => this.secretariaService.cancelarEnvioSolicitud(solicitud.id),
       'No se ha podido cancelar el envio.'
+    );
+  }
+
+  reenviarAutorizacion(solicitud: SolicitudSecretaria): void {
+    this.cambiarEstadoSolicitud(
+      solicitud,
+      () => this.secretariaService.reenviarAutorizacionesAlta(solicitud.id),
+      'No se ha podido reenviar la autorizacion.'
     );
   }
 
@@ -834,6 +1140,15 @@ export class AsociadosGestionComponent implements OnInit {
     window.setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = fileName;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   cargarRegistroPendiente(): void {
     this.secretariaService.getRegistroPendiente(this.asociacionId).subscribe({
       next: response => {
@@ -844,19 +1159,101 @@ export class AsociadosGestionComponent implements OnInit {
     });
   }
 
-  cargarSolicitudes(): void {
-    this.secretariaService.getSolicitudes(this.asociacionId).subscribe({
+  cargarSolicitudes(resetPage = false): void {
+    if (resetPage) this.paginaSolicitudes = 1;
+    this.loading = true;
+    this.secretariaService.getSolicitudes(this.asociacionId, {
+      page: this.paginaSolicitudes,
+      pageSize: this.tamanoPaginaSolicitudes,
+      tipo: this.tipoSolicitudFiltro === 'todos' ? undefined : this.tipoSolicitudFiltro,
+      estado: this.estadoSolicitudFiltro === 'todos' ? undefined : this.estadoSolicitudFiltro,
+      busqueda: this.busquedaSolicitudes.trim() || undefined,
+      orden: this.ordenSolicitudes,
+      soloProblematicas: this.filtroSolicitudes === 'incidencias'
+    }).subscribe({
       next: response => {
         const solicitudesActivas = response.solicitudes.filter(solicitud => solicitud.estado !== 'cancelada');
         this.solicitudes = solicitudesActivas;
-        this.cargarDetalleSolicitudesBloqueantes(solicitudesActivas);
+        this.paginaSolicitudes = response.paginacion?.page ?? this.paginaSolicitudes;
+        this.totalSolicitudes = response.paginacion?.total ?? solicitudesActivas.length;
+        this.totalPaginasSolicitudes = response.paginacion?.totalPages ?? 1;
+        this.loading = false;
       },
-      error: () => this.showError('No se han podido cargar las solicitudes.')
+      error: () => {
+        this.loading = false;
+        this.showError('No se han podido cargar las solicitudes.');
+      }
     });
   }
 
   puedeEnviarSolicitud(solicitud: SolicitudSecretaria): boolean {
-    return solicitud.estado === 'registrada' && this.permissions.hasPermission('solicitudes:send');
+    return solicitud.estado === 'registrada'
+      && this.autorizacionesPendientesNombres(solicitud).length === 0
+      && this.permissions.hasPermission('solicitudes:send');
+  }
+
+  solicitudAdjunta(solicitud: SolicitudSecretaria): boolean {
+    return this.solicitudAdjuntos(solicitud).length > 0;
+  }
+
+  solicitudAdjuntos(solicitud: SolicitudSecretaria): AdjuntoSecretaria[] {
+    return solicitud.adjuntos || [];
+  }
+
+  seleccionarSolicitudFirmada(event: Event, solicitud: SolicitudSecretaria): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] || null;
+    this.solicitudFirmadaFiles[solicitud.id] = file;
+    input.value = '';
+
+    if (file) {
+      this.adjuntarSolicitudFirmada(solicitud);
+    }
+  }
+
+  adjuntarSolicitudFirmada(solicitud: SolicitudSecretaria): void {
+    const file = this.solicitudFirmadaFiles[solicitud.id];
+    if (!file) {
+      this.showError('Selecciona el documento firmado antes de adjuntarlo.');
+      return;
+    }
+
+    this.loading = true;
+    this.secretariaService.subirAdjunto('solicitud', solicitud.id, file).subscribe({
+      next: adjunto => {
+        this.loading = false;
+        this.solicitudFirmadaFiles[solicitud.id] = null;
+        const updated = {
+          ...solicitud,
+          adjuntos: [adjunto, ...this.solicitudAdjuntos(solicitud)]
+        };
+        this.solicitudDetalle = updated;
+        this.solicitudes = this.solicitudes.map(item => item.id === updated.id ? updated : item);
+        this.dialog.openDialogAlert({
+          title: 'Solicitud adjunta',
+          content: 'La solicitud firmada se ha adjuntado correctamente.',
+          innerHtml: '<p>La solicitud firmada se ha adjuntado correctamente.</p>',
+          buttonsAlert: [AlertButtonType.Entendido]
+        });
+      },
+      error: error => {
+        this.loading = false;
+        this.solicitudFirmadaFiles[solicitud.id] = null;
+        this.showError(error?.error?.message || 'No se ha podido adjuntar la solicitud firmada.');
+      }
+    });
+  }
+
+  descargarAdjuntoSolicitud(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => this.downloadBlob(blob, adjunto.originalName || `adjunto-${adjunto.id}`),
+      error: () => this.showError('No se ha podido descargar la solicitud firmada.')
+    });
+  }
+
+  puedeReenviarAutorizacion(solicitud: SolicitudSecretaria): boolean {
+    return solicitud.estado === 'autorizacion_rechazada'
+      && this.permissions.hasPermission('solicitudes:send');
   }
 
   puedeCancelarEnvio(solicitud: SolicitudSecretaria): boolean {
@@ -878,6 +1275,8 @@ export class AsociadosGestionComponent implements OnInit {
   labelEstado(estado: string): string {
     const labels: Record<string, string> = {
       registrada: 'Registrada',
+      autorizacion_rechazada: 'Autorizacion rechazada',
+      pendiente_firma: 'Pendiente de firma',
       enviada: 'Enviada',
       en_revision: 'En revision',
       con_incidencias: 'Con incidencias',
@@ -890,11 +1289,109 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   estadoClass(estado: string): string {
+    if (estado === 'autorizacion_rechazada') {
+      return 'estado-rechazada';
+    }
     return `estado-${estado.replace('_', '-')}`;
+  }
+
+  autorizacionesAltaRegistradas(solicitud: SolicitudSecretaria): AutorizacionAlta[] {
+    return solicitud.autorizacionesAlta || [];
+  }
+
+  labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
+    const labels: Record<AutorizacionAlta['estado'], string> = {
+      pendiente_firma: 'Pendiente de firma',
+      firmada: 'Autorizada',
+      archivada: 'Autorizada',
+      rechazada: 'Rechazada',
+      cancelada: 'Cancelada'
+    };
+    return labels[estado] || estado;
+  }
+
+  estadoAutorizacionClass(estado: AutorizacionAlta['estado']): string {
+    return estado === 'firmada' || estado === 'archivada'
+      ? 'estado-validada'
+      : this.estadoClass(estado);
+  }
+
+  firmaAutorizacion(autorizacion: AutorizacionAlta): { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | null {
+    return (autorizacion.documento?.['firma'] as { firmante?: string | null; observaciones?: string | null; fecha?: string | null } | undefined) || null;
+  }
+
+  labelEstadoSolicitud(solicitud: SolicitudSecretaria): string {
+    return this.labelEstado(this.estadoVisibleSolicitud(solicitud));
+  }
+
+  estadoClassSolicitud(solicitud: SolicitudSecretaria): string {
+    return this.estadoClass(this.estadoVisibleSolicitud(solicitud));
+  }
+
+  estadoTooltipSolicitud(solicitud: SolicitudSecretaria): string | null {
+    const nombres = this.autorizacionesPendientesNombres(solicitud);
+    return nombres.length ? `Pendiente de firma por ${nombres.join(', ')}` : null;
+  }
+
+  private estadoVisibleSolicitud(solicitud: SolicitudSecretaria): string {
+    return ['finalizada', 'rechazada', 'cancelada', 'validada', 'autorizacion_rechazada'].includes(solicitud.estado)
+      ? solicitud.estado
+      : this.autorizacionesPendientesNombres(solicitud).length > 0 ? 'pendiente_firma' : solicitud.estado;
+  }
+
+  private autorizacionesPendientesNombres(solicitud: SolicitudSecretaria): string[] {
+    const detalle = solicitud.autorizacionesAlta
+      ?.filter(item => item.estado === 'pendiente_firma')
+      .map(item => item.asociacionAnteriorNombre || `Asociacion ${item.asociacionAnteriorId}`)
+      .filter(Boolean) || [];
+    if (detalle.length) {
+      return [...new Set(detalle)];
+    }
+    const resumen = String(solicitud.autorizacionesPendientesNombres || '')
+      .split(',')
+      .map(item => item.trim())
+      .filter(Boolean);
+    return solicitud.autorizacionesPendientes && solicitud.autorizacionesPendientes > 0
+      ? resumen.length ? resumen : ['asociacion anterior']
+      : [];
   }
 
   limpiarFiltroSolicitudes(): void {
     this.filtroSolicitudes = null;
+    this.cargarSolicitudes(true);
+  }
+
+  aplicarFiltrosSolicitudes(): void {
+    this.cargarSolicitudes(true);
+  }
+
+  cambiarPaginaSolicitudes(delta: number): void {
+    const page = this.paginaSolicitudes + delta;
+    if (page < 1 || page > this.totalPaginasSolicitudes || this.loading) return;
+    this.paginaSolicitudes = page;
+    this.cargarSolicitudes();
+  }
+
+  cerrarDetalleSolicitud(): void {
+    this.detalleSolicitudDialogOpen = false;
+    const trigger = this.solicitudTrigger;
+    this.solicitudTrigger = null;
+    setTimeout(() => trigger?.focus());
+  }
+
+  activarPestanaSolicitud(pestana: PestanaSolicitudAsociacion): void {
+    this.pestanaSolicitud = pestana;
+  }
+
+  navegarPestanasSolicitud(event: KeyboardEvent, index: number): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const total = this.pestanasSolicitud.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? total - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + total) % total;
+    const pestana = this.pestanasSolicitud[next];
+    this.activarPestanaSolicitud(pestana.id);
+    setTimeout(() => document.getElementById(`solicitud-asociacion-tab-${pestana.id}`)?.focus());
   }
 
   pendientesPorTipo(tipo: SolicitudTipo): RegistroPendiente[] {
@@ -1040,6 +1537,10 @@ export class AsociadosGestionComponent implements OnInit {
       telefono: '',
       email: ''
     });
+    this.ultimoDocumentoAltaConsultado = '';
+    this.comprobandoDocumentoAlta = false;
+    this.altaExistenteAsociado = null;
+    this.altaAsociacionesAnteriores = [];
     this.cargosSeleccionadosIds = new Set([this.getDefaultCargoId('Hoguera adulta')].filter(Boolean));
   }
 
@@ -1139,11 +1640,38 @@ export class AsociadosGestionComponent implements OnInit {
         this.solicitudes = this.solicitudes.map(item => (item.id === updated.id ? updated : item));
         this.solicitudDetalle = updated;
       },
-      error: () => {
+      error: (error: HttpErrorResponse) => {
         this.loading = false;
-        this.showError(errorMessage);
+        this.showError(error?.error?.message || errorMessage);
       }
     });
+  }
+
+  private gestionarErrorAltaDuplicada(error: unknown): boolean {
+    const response = error as HttpErrorResponse;
+    const details = response?.error?.details;
+    if (response?.status !== 409 || details?.code !== 'SOLICITUD_ALTA_DUPLICADA' || !details?.solicitudId) {
+      return false;
+    }
+
+    const verSolicitudButton = 'Ver solicitud' as AlertButtonType;
+    const ref = this.dialog.openDialogAlert({
+      title: 'Solicitud existente',
+      content: 'Ya existe una solicitud para esta persona, finalicela antes de crear otra',
+      innerHtml: `
+        <p>Ya existe una solicitud para esta persona, finalicela antes de crear otra.</p>
+        <p>Solicitud existente: <strong>${details.solicitudNumero || details.solicitudId}</strong></p>
+      `,
+      buttonsAlert: [AlertButtonType.Cancelar, verSolicitudButton]
+    });
+
+    ref.afterClosed().subscribe((result: AlertButtonType) => {
+      if (result === verSolicitudButton) {
+        this.verSolicitudPorId(Number(details.solicitudId));
+      }
+    });
+
+    return true;
   }
 
   private tieneDuplicadoPendiente(
@@ -1174,7 +1702,7 @@ export class AsociadosGestionComponent implements OnInit {
     }
 
     return this.solicitudes.some(solicitud => {
-      if (solicitud.tipo !== tipo || ['finalizada', 'cancelada'].includes(solicitud.estado)) {
+      if (solicitud.tipo !== tipo || ['validada', 'finalizada', 'rechazada', 'cancelada'].includes(solicitud.estado)) {
         return false;
       }
 
@@ -1226,12 +1754,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   private esCargoRequerido(historico: HistoricoAsociado): boolean {
     const cargo = this.cargos.find(item => Number(item.id) === Number(historico.idCargo));
-    if (Number((cargo as any)?.requerido || 0) > 0) {
-      return true;
-    }
-
-    const nombre = this.normalizeText(cargo?.nombre || historico.cargo);
-    return nombre.includes('presid') || nombre.includes('secretar');
+    return Number(cargo?.obligatorio ?? cargo?.requerido ?? 0) === 1;
   }
 
   private precargarCargoActual(asociado: Asociado): void {
@@ -1336,36 +1859,11 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private cargoExclusivo(cargo: CargoResumen | undefined): boolean {
-    const nombre = this.normalizeText(cargo?.nombre || '');
-    return nombre.includes('presid') || nombre.includes('secretar');
-  }
-
-  private cargarDetalleSolicitudesBloqueantes(solicitudes: SolicitudSecretaria[]): void {
-    const abiertasSinDetalle = solicitudes.filter(
-      solicitud => ['cambio', 'baja'].includes(solicitud.tipo) &&
-        !['finalizada', 'cancelada'].includes(solicitud.estado) &&
-        !solicitud.items?.length
-    );
-
-    if (!abiertasSinDetalle.length) {
-      return;
-    }
-
-    forkJoin(abiertasSinDetalle.map(solicitud => this.secretariaService.getSolicitud(solicitud.id))).subscribe({
-      next: detalles => {
-        const detallesById = new Map(detalles.map(detalle => [detalle.id, detalle]));
-        this.solicitudes = this.solicitudes.map(solicitud => detallesById.get(solicitud.id) ?? solicitud);
-      },
-      error: () => undefined
-    });
-  }
-
-  private solicitudTieneIncidencias(solicitud: SolicitudSecretaria): boolean {
-    return solicitud.estado === 'con_incidencias';
+    return (cargo?.modo_ocupacion ?? cargo?.modoOcupacion) === 'exclusivo';
   }
 
   private isGestionTab(value: string | null): value is GestionTab {
-    return value === 'altas' || value === 'modificaciones' || value === 'bajas' || value === 'solicitudes';
+    return value === 'altas' || value === 'modificaciones' || value === 'bajas' || value === 'solicitudes' || value === 'cupos';
   }
 
   private showError(message: string): void {
@@ -1375,6 +1873,34 @@ export class AsociadosGestionComponent implements OnInit {
       innerHtml: `<p>${message}</p>`,
       buttonsAlert: [AlertButtonType.Entendido]
     });
+  }
+
+  controlInvalido(nombre: string): boolean {
+    const control = this.altaForm.get(nombre);
+    return !!control && control.invalid && (control.touched || control.dirty);
+  }
+
+  private mensajeErrorFormulario(): string {
+    const errors: Array<[string, string]> = [
+      ['dni', 'Indica un DNI, NIE o pasaporte válido.'],
+      ['nombre', 'El nombre es obligatorio y no puede superar 100 caracteres.'],
+      ['apellidos', 'Los apellidos son obligatorios y no pueden superar 150 caracteres.'],
+      ['cp', 'El código postal debe tener cinco cifras.'],
+      ['telefono', 'El teléfono debe contener entre 8 y 20 caracteres válidos.'],
+      ['email', 'Indica una dirección de correo electrónico válida.'],
+      ['sip', 'El SIP no puede superar 30 caracteres.'],
+      ['nacimiento', 'La fecha de nacimiento es obligatoria, debe ser real y no puede ser futura.']
+    ];
+    return errors.find(([name]) => this.altaForm.get(name)?.invalid)?.[1]
+      || 'Revisa los datos obligatorios del formulario.';
+  }
+
+  private fechaNacimientoValida(): boolean {
+    const value = String(this.altaForm.value.nacimiento || '').trim();
+    if (!value) return true;
+    const date = new Date(`${value}T00:00:00Z`);
+    const today = fechaHoyLocal();
+    return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= today;
   }
 
   private normalizeText(value: unknown): string {

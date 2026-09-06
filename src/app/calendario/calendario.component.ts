@@ -2,11 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 
 interface CalendarDay {
   date: Date;
@@ -17,7 +20,7 @@ interface CalendarDay {
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })
@@ -28,16 +31,33 @@ export class CalendarioComponent implements OnInit {
   selected: ActividadSecretaria | null = null;
   selectedDate: Date | null = null;
   showCreateDialog = false;
+  showActividadGestion = false;
+  showInscripcionesGestion = false;
+  confirmDelete = false;
   loading = false;
   error = '';
   success = '';
+  filtroEstado = '';
+  filtroVisibilidad = '';
+  incluirArchivadas = false;
+  propuestas: ActividadSecretaria[] = [];
+  showPropuestas = false;
+  imagenActividadUrl = '';
+  imagenActividadId: number | null = null;
+  imagenSeleccionada: File | null = null;
+  propuestaAccion: { id: string; tipo: 'rechazo' | 'incidencia' } | null = null;
+  propuestaMensaje = '';
+  propuestaDetalle: ActividadSecretaria | null = null;
+  respuestaPropuesta = '';
+  readonly maxImagenBytes = 10 * 1024 * 1024;
 
   actividadForm = this.fb.group({
     titulo: ['', Validators.required],
     responsable: ['Secretaria'],
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
-    descripcion: ['']
+    descripcion: [''], colorEtiqueta: ['ffsj']
+    , visiblePublico: [true]
   });
 
   editActividadForm = this.fb.group({
@@ -45,7 +65,8 @@ export class CalendarioComponent implements OnInit {
     responsable: [''],
     fechaInicio: ['', Validators.required],
     fechaFin: [''],
-    descripcion: ['']
+    descripcion: [''], colorEtiqueta: ['ffsj']
+    , visiblePublico: [true]
   });
 
   linkInscripcionForm = this.fb.group({
@@ -108,6 +129,8 @@ export class CalendarioComponent implements OnInit {
     }
     const hydrated = this.actividades.find(item => item.id === actividad.id) || actividad;
     this.selected = hydrated;
+    this.showActividadGestion = false;
+    this.showInscripcionesGestion = false;
     this.error = '';
     this.success = '';
     this.editActividadForm.patchValue({
@@ -115,9 +138,12 @@ export class CalendarioComponent implements OnInit {
       responsable: hydrated.responsable || '',
       fechaInicio: this.toDateInput(hydrated.fechaInicio),
       fechaFin: this.toDateInput(hydrated.fechaFin),
-      descripcion: hydrated.descripcion || ''
+      descripcion: hydrated.descripcion || '',
+      visiblePublico: hydrated.visiblePublico !== false,
+      colorEtiqueta: hydrated.colorEtiqueta || 'ffsj'
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
+    this.cargarImagenActividad(hydrated.id);
   }
 
   selectDay(day: CalendarDay): void {
@@ -133,18 +159,30 @@ export class CalendarioComponent implements OnInit {
     const target = date || new Date();
     this.selectedDate = target;
     const formatted = this.formatDate(target);
+    const responsable = this.isAdminMode ? 'Secretaria' : (this.permissions.contextSnapshot?.asociacionNombre || '');
     this.actividadForm.reset({
       titulo: '',
-      responsable: 'Secretaria',
+      responsable,
       fechaInicio: formatted,
       fechaFin: formatted,
       descripcion: ''
+      , colorEtiqueta: 'ffsj'
     });
+    if (this.isAdminMode) this.actividadForm.controls.responsable.enable({ emitEvent: false });
+    else this.actividadForm.controls.responsable.disable({ emitEvent: false });
     this.showCreateDialog = true;
   }
 
   cerrarCrearActividad(): void {
     this.showCreateDialog = false;
+  }
+
+  toggleActividadGestion(): void {
+    this.showActividadGestion = !this.showActividadGestion;
+  }
+
+  toggleInscripcionesGestion(): void {
+    this.showInscripcionesGestion = !this.showInscripcionesGestion;
   }
 
   crearActividad(): void {
@@ -155,15 +193,136 @@ export class CalendarioComponent implements OnInit {
     this.loading = true;
     this.error = '';
     this.success = '';
-    this.secretariaService.crearActividad(this.actividadForm.value).subscribe({
+    const request = this.isAdminMode
+      ? this.secretariaService.crearActividad(this.actividadForm.value)
+      : this.secretariaService.crearPropuestaActividad(this.actividadForm.value);
+    request.pipe(switchMap(actividad => this.imagenSeleccionada
+      ? this.secretariaService.subirAdjunto('actividad_imagen', actividad.id, this.imagenSeleccionada).pipe(switchMap(() => of(actividad)))
+      : of(actividad)
+    )).subscribe({
       next: actividad => {
         this.showCreateDialog = false;
-        this.recargarTrasCrear(actividad.id);
+        if (this.isAdminMode) {
+          this.recargarTrasCrear(actividad.id);
+        } else {
+          this.propuestas = [actividad, ...this.propuestas.filter(item => item.id !== actividad.id)];
+          this.loading = false;
+          this.success = 'Propuesta enviada a Administracion para su revision.';
+        }
       },
-      error: () => {
-        this.error = 'No se ha podido crear la actividad.';
+      error: response => {
+        this.error = response.error?.message || 'No se ha podido crear la actividad.';
         this.loading = false;
       }
+    });
+  }
+
+  togglePropuestas(): void {
+    this.showPropuestas = !this.showPropuestas;
+    if (!this.showPropuestas) return;
+    const request = this.isAdminMode ? this.secretariaService.getPropuestasActividadAdmin() : this.secretariaService.getMisPropuestasActividad();
+    request.subscribe({ next: response => this.propuestas = response.actividades, error: () => this.error = 'No se han podido cargar las propuestas.' });
+  }
+
+  resolverPropuesta(propuesta: ActividadSecretaria, decision: 'publicada' | 'rechazada'): void {
+    if (decision === 'rechazada') { this.propuestaAccion = { id: propuesta.id, tipo: 'rechazo' }; this.propuestaMensaje = ''; return; }
+    this.loading = true;
+    this.secretariaService.resolverPropuestaActividad(propuesta.id, decision).subscribe({
+      next: () => { this.loading = false; this.success = decision === 'publicada' ? 'Propuesta publicada.' : 'Propuesta rechazada.'; this.showPropuestas = false; this.cargar(); },
+      error: () => { this.loading = false; this.error = 'No se ha podido resolver la propuesta.'; }
+    });
+  }
+
+  abrirIncidenciaPropuesta(propuesta: ActividadSecretaria): void {
+    this.propuestaAccion = { id: propuesta.id, tipo: 'incidencia' }; this.propuestaMensaje = '';
+  }
+
+  abrirDetallePropuesta(propuesta: ActividadSecretaria): void {
+    this.error = '';
+    this.respuestaPropuesta = '';
+    if (this.isAdminMode) {
+      this.propuestaDetalle = propuesta;
+      return;
+    }
+    this.loading = true;
+    this.secretariaService.getMiPropuestaActividad(propuesta.id).subscribe({
+      next: detalle => { this.propuestaDetalle = detalle; this.loading = false; },
+      error: response => { this.error = response.error?.message || 'No se ha podido abrir el detalle de la propuesta.'; this.loading = false; }
+    });
+  }
+
+  cerrarDetallePropuesta(): void {
+    this.propuestaDetalle = null;
+    this.respuestaPropuesta = '';
+  }
+
+  responderPropuesta(): void {
+    if (!this.propuestaDetalle) return;
+    const mensaje = this.respuestaPropuesta.trim();
+    if (!mensaje) return;
+    this.loading = true;
+    this.secretariaService.responderPropuestaActividad(this.propuestaDetalle.id, mensaje).subscribe({
+      next: propuesta => {
+        this.propuestaDetalle = propuesta;
+        this.propuestas = this.propuestas.map(item => item.id === propuesta.id ? propuesta : item);
+        this.respuestaPropuesta = '';
+        this.success = 'Respuesta enviada a Administración. La propuesta vuelve a estar pendiente de revisión.';
+        this.loading = false;
+      },
+      error: response => { this.error = response.error?.message || 'No se ha podido enviar la respuesta.'; this.loading = false; }
+    });
+  }
+
+  confirmarAccionPropuesta(): void {
+    const action = this.propuestaAccion;
+    const mensaje = this.propuestaMensaje.trim();
+    if (!action || !mensaje) return;
+    this.loading = true;
+    const request = action.tipo === 'rechazo' ? this.secretariaService.resolverPropuestaActividad(action.id, 'rechazada', mensaje) : this.secretariaService.abrirIncidenciaPropuestaActividad(action.id, mensaje);
+    request.subscribe({
+      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; this.propuestaAccion = null; this.cargar(); },
+      error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido tramitar la propuesta.'; },
+      complete: () => this.loading = false
+    });
+  }
+
+  seleccionarImagenActividad(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] || null;
+    this.imagenSeleccionada = null;
+    if (file && this.esImagenValida(file)) this.imagenSeleccionada = file;
+  }
+
+  subirImagenActividad(event: Event): void {
+    if (!this.selected) return;
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (!this.esImagenValida(file)) return;
+    this.loading = true;
+    this.secretariaService.subirAdjunto('actividad_imagen', this.selected.id, file).subscribe({
+      next: () => { this.loading = false; this.success = 'Imagen de actividad actualizada.'; this.cargarImagenActividad(this.selected!.id); },
+      error: () => { this.loading = false; this.error = 'No se ha podido subir la imagen.'; }
+    });
+  }
+
+  private cargarImagenActividad(id: string): void {
+    if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl);
+    this.imagenActividadUrl = '';
+    this.secretariaService.getAdjuntos('actividad_imagen', id).subscribe({
+      next: response => {
+        const image = response.adjuntos[0];
+        if (!image) return;
+        this.imagenActividadId = image.id;
+        this.secretariaService.descargarAdjunto(image.id).subscribe({ next: blob => this.imagenActividadUrl = URL.createObjectURL(blob) });
+      }
+    });
+  }
+
+  borrarImagenActividad(): void {
+    if (!this.imagenActividadId || this.loading) return;
+    this.loading = true;
+    this.secretariaService.borrarAdjunto(this.imagenActividadId).subscribe({
+      next: () => { this.imagenActividadId = null; if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl); this.imagenActividadUrl = ''; this.success = 'Imagen eliminada correctamente.'; this.loading = false; },
+      error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido eliminar la imagen.'; }
     });
   }
 
@@ -223,8 +382,12 @@ export class CalendarioComponent implements OnInit {
 
   borrarActividad(): void {
     if (!this.selected) return;
-    const confirmed = window.confirm('Esta accion borrara definitivamente la actividad. No se puede deshacer.');
-    if (!confirmed) return;
+    this.confirmDelete = true;
+  }
+
+  confirmarBorradoActividad(): void {
+    if (!this.selected) return;
+    this.confirmDelete = false;
     const deletedId = this.selected.id;
     this.loading = true;
     this.error = '';
@@ -312,11 +475,24 @@ export class CalendarioComponent implements OnInit {
     return 'Activa';
   }
 
+  aplicarFiltros(): void {
+    this.cargar();
+  }
+
   private recargarTrasCrear(createdId: string): void {
-    this.secretariaService.getActividades(this.isAdminMode).subscribe({
+    this.secretariaService.getActividades(this.isAdminMode, {
+      includeArchived: this.isAdminMode && this.incluirArchivadas,
+      estado: this.filtroEstado || undefined,
+      visibilidad: this.filtroVisibilidad || undefined
+    }).subscribe({
       next: response => {
         this.actividades = response.actividades;
-        this.selected = this.actividades.find(actividad => actividad.id === createdId) || this.actividades[0] || null;
+        const created = this.actividades.find(actividad => String(actividad.id) === String(createdId));
+        if (created) {
+          this.select(created);
+        } else {
+          this.selected = null;
+        }
         this.success = 'Actividad creada correctamente.';
         this.actividadForm.reset({ responsable: 'Secretaria' });
         if (this.selectedDate) {
@@ -346,6 +522,12 @@ export class CalendarioComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private esImagenValida(file: File): boolean {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) { this.error = 'Selecciona una imagen JPG, PNG, WEBP o GIF.'; return false; }
+    if (file.size > this.maxImagenBytes) { this.error = 'La imagen supera el tamaño máximo de 10 MB.'; return false; }
+    return true;
   }
 
   private cargarInscripciones(): void {

@@ -5,9 +5,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { CensoService } from '../core/censo.service';
-import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { FormulariosComponent } from '../formularios/formularios.component';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -17,7 +22,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
@@ -25,6 +30,8 @@ export class InscripcionesComponent implements OnInit {
   actividades: ActividadSecretaria[] = [];
   formularios: FormularioInscripcion[] = [];
   inscripciones: InscripcionSecretaria[] = [];
+  filtroDisponibilidad = ''; filtroEstado = ''; busquedaInscripciones = ''; ordenInscripciones = 'plazo_asc'; paginaInscripciones = 1;
+  paginacionInscripciones: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   selectedInscription: InscripcionSecretaria | null = null;
   entradas: InscripcionEntradaSecretaria[] = [];
   selectedEntrada: InscripcionEntradaSecretaria | null = null;
@@ -32,6 +39,7 @@ export class InscripcionesComponent implements OnInit {
   entradaAsociados: Record<number, Asociado[]> = {};
   asociados: Asociado[] = [];
   adjuntos: AdjuntoSecretaria[] = [];
+  adjuntosEntrada: AdjuntoSecretaria[] = [];
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   loading = false;
@@ -40,6 +48,9 @@ export class InscripcionesComponent implements OnInit {
   editingInscription = false;
   detailMode = false;
   createMode = false;
+  confirmDelete = false;
+  confirmDeleteEntry = false;
+  showFormularioDialog = false;
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -67,18 +78,36 @@ export class InscripcionesComponent implements OnInit {
     private readonly adminAccess: AdminAccessService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
     const routeId = this.route.snapshot.paramMap.get('id');
-    this.createMode = routeId === 'nueva';
-    this.detailMode = Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
+    const query = this.route.snapshot.queryParamMap;
+    this.filtroDisponibilidad = query.get('disponibilidad') || '';
+    this.filtroEstado = query.get('estado') || '';
+    this.busquedaInscripciones = query.get('busqueda') || '';
+    this.ordenInscripciones = query.get('orden') || 'plazo_asc';
+    this.paginaInscripciones = Math.max(1, Number(query.get('pagina')) || 1);
+    this.createMode = this.isCreateRoute();
+    this.detailMode = this.createMode || Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
     this.cargarDatos();
   }
 
   get isAdminMode(): boolean {
     return this.adminAccess.isAdmin();
+  }
+
+  get accionesAsociacionBloqueadasPorEjercicio(): boolean {
+    return !this.isAdminMode && !this.ejercicioService.isSelectedActive;
+  }
+
+  get mensajeEjercicioNoActivo(): string {
+    const selected = this.ejercicioService.selectedSnapshot;
+    return selected
+      ? `Estas consultando el ejercicio ${selected.ejercicio}. Para presentar o modificar inscripciones debes seleccionar el ejercicio activo.`
+      : 'Para presentar o modificar inscripciones debes seleccionar el ejercicio activo.';
   }
 
   get availableParticipants(): Asociado[] {
@@ -130,9 +159,15 @@ export class InscripcionesComponent implements OnInit {
     return !this.isAdminMode &&
       this.permissions.hasPermission('inscripciones:write') &&
       this.associationMode === 'edit' &&
+      Boolean(this.selectedInscription && this.isInscripcionDisponible(this.selectedInscription)) &&
       this.form.valid &&
       (!this.requiresParticipants || this.selectedParticipants.size > 0);
   }
+
+  disponibilidadLabel(inscripcion: InscripcionSecretaria): string { return this.isInscripcionDisponible(inscripcion) ? 'Activa' : 'Plazo cerrado'; }
+  motivoNoDisponible(inscripcion: InscripcionSecretaria): string { return this.mensajeDisponibilidadInscripcion(inscripcion) || (inscripcion.inscrito ? 'Tu asociación ya está inscrita.' : 'La inscripción no admite nuevas participaciones.'); }
+  cargarPaginaInscripciones(reset = false): void { if (reset) this.paginaInscripciones = 1; this.cargarFormulariosEInscripciones(); }
+  cambiarPaginaInscripciones(delta: number): void { const page = this.paginaInscripciones + delta; if (page >= 1 && page <= this.paginacionInscripciones.totalPages) { this.paginaInscripciones = page; this.cargarFormulariosEInscripciones(); } }
 
   get associationStep(): 1 | 2 | 3 | 4 | 5 {
     if (this.associationMode === 'summary') return 5;
@@ -150,12 +185,13 @@ export class InscripcionesComponent implements OnInit {
     this.selectedInscription = inscription;
     this.selectedParticipants.clear();
     this.miEntrada = null;
+    this.adjuntosEntrada = [];
     this.associationMode = this.isAdminMode ? 'edit' : 'edit';
     this.success = '';
     this.error = '';
     const group: Record<string, FormControl> = {};
     inscription.campos.forEach(field => {
-      group[field.key] = this.fb.control('', field.required ? Validators.required : undefined);
+      group[field.key] = this.fb.control('', this.isRequiredField(field) ? Validators.required : undefined);
     });
     this.form = this.fb.group(group);
     this.cargarAdjuntos(inscription.id);
@@ -181,16 +217,39 @@ export class InscripcionesComponent implements OnInit {
     }
   }
 
+  isRequiredField(field: CampoInscripcion): boolean {
+    return Boolean(field.required);
+  }
+
+  fieldInputId(field: CampoInscripcion): string {
+    return `inscripcion-campo-${String(field.key).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+  }
+
+  fieldErrorId(field: CampoInscripcion): string {
+    return `${this.fieldInputId(field)}-error`;
+  }
+
+  isFieldInvalid(field: CampoInscripcion): boolean {
+    const control = this.form.get(field.key);
+    return Boolean(control?.touched && control.invalid);
+  }
+
   openInscription(inscription: InscripcionSecretaria): void {
-    this.router.navigate(['/inscripciones', inscription.id]);
+    this.router.navigate(['/inscripciones', inscription.id], { queryParams: this.contextoListadoInscripciones() });
   }
 
   crearNuevaInscripcion(): void {
-    this.router.navigate(['/inscripciones/nueva']);
+    // El botón sólo se muestra a administración autorizada. El formulario se
+    // activa localmente antes de navegar, de forma que un guard asíncrono o
+    // una navegación cancelada no pueda dejar la acción sin respuesta.
+    this.createMode = true;
+    this.detailMode = true;
+    this.nuevaInscripcion();
+    this.router.navigate(['/inscripciones/nueva']).catch(() => undefined);
   }
 
   volverAlListado(): void {
-    this.router.navigate(['/inscripciones']);
+    this.router.navigate(['/inscripciones'], { queryParams: this.contextoListadoInscripciones() });
   }
 
   nuevaInscripcion(): void {
@@ -210,8 +269,11 @@ export class InscripcionesComponent implements OnInit {
   }
 
   crearInscripcion(): void {
+    this.error = '';
+    this.success = '';
     if (this.inscripcionAdminForm.invalid) {
       this.inscripcionAdminForm.markAllAsTouched();
+      this.error = 'Completa los campos obligatorios antes de crear la inscripción.';
       return;
     }
     const tiposPermitidos = [
@@ -244,8 +306,8 @@ export class InscripcionesComponent implements OnInit {
         this.success = this.editingInscription ? 'Inscripcion actualizada correctamente.' : 'Inscripcion creada correctamente.';
         this.loading = false;
       },
-      error: () => {
-        this.error = this.editingInscription ? 'No se ha podido actualizar la inscripcion.' : 'No se ha podido crear la inscripcion.';
+      error: error => {
+        this.error = error?.error?.message || (this.editingInscription ? 'No se ha podido actualizar la inscripcion.' : 'No se ha podido crear la inscripcion.');
         this.loading = false;
       }
     });
@@ -280,9 +342,12 @@ export class InscripcionesComponent implements OnInit {
     if (!this.selectedInscription || !this.isAdminMode) {
       return;
     }
-    if (!window.confirm('Esta accion borrara definitivamente la inscripcion. No se puede deshacer.')) {
-      return;
-    }
+    this.confirmDelete = true;
+  }
+
+  confirmarBorradoInscripcion(): void {
+    if (!this.selectedInscription || !this.isAdminMode) return;
+    this.confirmDelete = false;
     this.loading = true;
     this.error = '';
     this.success = '';
@@ -362,8 +427,43 @@ export class InscripcionesComponent implements OnInit {
     participants.forEach(person => this.selectedParticipants.add(String(person.id)));
   }
 
-  documentUrl(adjunto: AdjuntoSecretaria): string {
-    return this.secretariaService.adjuntoDownloadUrl(adjunto.id);
+  abrirDocumento(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        if (adjunto.mimeType === 'application/pdf' || (adjunto.mimeType || '').startsWith('image/')) {
+          window.open(url, '_blank', 'noopener');
+          window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+          return;
+        }
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.originalName || adjunto.fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error = 'No se ha podido abrir el documento adjunto.'
+    });
+  }
+
+  cambiarEstadoEntrada(entrada: InscripcionEntradaSecretaria, estado: InscripcionEntradaSecretaria['estado']): void {
+    if (!this.isAdminMode || entrada.estado === estado) return;
+    this.loading = true;
+    this.secretariaService.actualizarEstadoInscripcionEntrada(entrada.id, estado).subscribe({
+      next: updated => {
+        this.entradas = this.entradas.map(item => item.id === updated.id ? { ...item, ...updated } : item);
+        this.selectedEntrada = this.selectedEntrada?.id === updated.id ? { ...this.selectedEntrada, ...updated } : this.selectedEntrada;
+        this.loading = false;
+      },
+      error: response => { this.error = response?.error?.message || 'No se ha podido actualizar el estado.'; this.loading = false; }
+    });
+  }
+
+  descargarJustificanteEntrada(entrada: InscripcionEntradaSecretaria): void {
+    this.secretariaService.descargarJustificantePdf('inscripcion', entrada.id).subscribe({
+      next: ({ blob, justificante }) => { const url = URL.createObjectURL(blob); const anchor = document.createElement('a'); anchor.href = url; anchor.download = justificante.fileName || `${entrada.numero}.pdf`; anchor.click(); URL.revokeObjectURL(url); },
+      error: () => this.error = 'No se ha podido generar el justificante de inscripción.'
+    });
   }
 
   setAdminTab(tab: AdminTab): void {
@@ -407,6 +507,30 @@ export class InscripcionesComponent implements OnInit {
 
   verEntrada(entrada: InscripcionEntradaSecretaria): void {
     this.selectedEntrada = entrada;
+    this.cargarAdjuntosEntrada(entrada.id);
+  }
+
+  onAdjuntosEntradaChange(event: Event, entrada: InscripcionEntradaSecretaria): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    this.loading = true;
+    this.error = '';
+    let pendientes = files.length;
+    const finalizar = () => {
+      pendientes -= 1;
+      if (pendientes) return;
+      input.value = '';
+      this.loading = false;
+      this.cargarAdjuntosEntrada(entrada.id);
+    };
+    files.forEach(file => this.secretariaService.subirAdjunto('inscripcion_entrada', entrada.id, file).subscribe({
+      next: () => finalizar(),
+      error: () => {
+        this.error = 'No se ha podido adjuntar uno de los documentos de la inscripción.';
+        finalizar();
+      }
+    }));
   }
 
   imprimirEntrada(entrada: InscripcionEntradaSecretaria): void {
@@ -467,6 +591,15 @@ export class InscripcionesComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedInscription) return;
+    if (this.accionesAsociacionBloqueadasPorEjercicio) {
+      this.error = this.mensajeEjercicioNoActivo;
+      return;
+    }
+    const disponibilidad = this.mensajeDisponibilidadInscripcion(this.selectedInscription);
+    if (disponibilidad) {
+      this.error = disponibilidad;
+      return;
+    }
     if (!this.canSubmit) {
       this.form.markAllAsTouched();
       return;
@@ -482,20 +615,91 @@ export class InscripcionesComponent implements OnInit {
         this.associationMode = 'summary';
         this.success = 'Inscripcion enviada correctamente.';
       },
-      error: () => {
-        this.error = 'No se ha podido enviar la inscripcion.';
+      error: error => {
+        this.error = error?.error?.message || 'No se ha podido enviar la inscripción.';
       }
     });
   }
 
   modificarMiInscripcion(): void {
-    if (!this.selectedInscription || !this.isWithinDeadline(this.selectedInscription)) {
-      this.error = 'El plazo de inscripcion esta cerrado.';
+    if (this.accionesAsociacionBloqueadasPorEjercicio) {
+      this.error = this.mensajeEjercicioNoActivo;
+      return;
+    }
+    if (!this.puedeModificarMiEntrada()) {
+      this.error = this.miEntrada?.estado === 'validada' ? 'La inscripción está validada y no se puede modificar.' : 'El plazo de inscripcion esta cerrado.';
       return;
     }
     this.associationMode = 'edit';
     this.success = '';
     this.error = '';
+  }
+
+  puedeModificarMiEntrada(): boolean {
+    return Boolean(this.miEntrada && this.selectedInscription && this.miEntrada.estado !== 'validada' && this.miEntrada.estado !== 'retirada_solicitada' && this.miEntrada.estado !== 'retirada' && this.isWithinDeadline(this.selectedInscription));
+  }
+
+  solicitarBorradoMiEntrada(): void {
+    if (!this.puedeModificarMiEntrada() || this.loading) return;
+    this.confirmDeleteEntry = true;
+  }
+
+  confirmarBorradoMiEntrada(): void {
+    if (!this.miEntrada || !this.puedeModificarMiEntrada()) return;
+    this.confirmDeleteEntry = false;
+    this.loading = true;
+    this.secretariaService.borrarMiEntradaInscripcion(this.miEntrada.id).subscribe({
+      next: () => {
+        this.miEntrada = null;
+        this.adjuntosEntrada = [];
+        this.associationMode = 'edit';
+        this.success = 'Inscripción eliminada.';
+        this.loading = false;
+      },
+      error: error => { this.error = error?.error?.message || 'No se ha podido borrar la inscripción.'; this.loading = false; }
+    });
+  }
+
+  abrirFormularioContextual(): void {
+    if (!this.isAdminMode || !this.selectedInscription || this.loading) return;
+    this.error = '';
+    this.success = '';
+    this.showFormularioDialog = true;
+  }
+
+  cerrarFormularioContextual(): void {
+    if (!this.loading) {
+      this.showFormularioDialog = false;
+    }
+  }
+
+  formularioContextual(): FormularioInscripcion | null {
+    return this.formularios.find(item => item.id === this.inscripcionAdminForm.value.formularioId) || null;
+  }
+
+  camposFormularioContextual(): CampoInscripcion[] {
+    return this.formularioContextual() ? [] : this.selectedInscription?.campos || [];
+  }
+
+  asociarFormularioGuardado(formulario: FormularioInscripcion): void {
+    if (!this.isAdminMode || !this.selectedInscription || this.loading) return;
+    this.loading = true;
+    this.error = '';
+    this.formularios = [formulario, ...this.formularios.filter(item => item.id !== formulario.id)];
+    this.inscripcionAdminForm.patchValue({ formularioId: formulario.id });
+    this.showFormularioDialog = false;
+    this.secretariaService.actualizarInscripcion(this.selectedInscription.id, this.buildAdminPayload(this.selectedInscription.estado || 'abierta')).subscribe({
+      next: inscripcion => {
+        this.inscripciones = [inscripcion, ...this.inscripciones.filter(item => item.id !== inscripcion.id)];
+        this.selectInscription(inscripcion);
+        this.success = 'Formulario guardado y asociado a la inscripcion.';
+        this.loading = false;
+      },
+      error: error => {
+        this.error = error?.error?.message || 'El formulario se ha guardado, pero no se ha podido asociar a la inscripcion.';
+        this.loading = false;
+      }
+    });
   }
 
   cerrarResumen(): void {
@@ -518,9 +722,15 @@ export class InscripcionesComponent implements OnInit {
 
   private cargarFormulariosEInscripciones(): void {
     const cargarInscripciones = () => {
-      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode).subscribe({
+      this.secretariaService.getInscripciones(this.censoService.asociacionId, this.isAdminMode, { page: this.paginaInscripciones, pageSize: 20, orden: this.ordenInscripciones, disponibilidad: this.filtroDisponibilidad, estado: this.filtroEstado, busqueda: this.busquedaInscripciones }).subscribe({
         next: inscripcionesResponse => {
           this.inscripciones = inscripcionesResponse.inscripciones;
+          this.paginacionInscripciones = inscripcionesResponse.paginacion || { page: 1, pageSize: 20, total: this.inscripciones.length, totalPages: 1 };
+          if (this.paginaInscripciones > this.paginacionInscripciones.totalPages) {
+            this.paginaInscripciones = this.paginacionInscripciones.totalPages;
+            this.cargarFormulariosEInscripciones();
+            return;
+          }
           this.seleccionarInicial();
           this.cargarAsociados();
         },
@@ -550,8 +760,8 @@ export class InscripcionesComponent implements OnInit {
 
   private seleccionarInicial(): void {
     const requestedId = this.route.snapshot.paramMap.get('id') || this.route.snapshot.queryParamMap.get('inscripcionId');
-    this.createMode = requestedId === 'nueva';
-    this.detailMode = Boolean(requestedId);
+    this.createMode = this.isCreateRoute();
+    this.detailMode = this.createMode || Boolean(requestedId);
     if (this.createMode) {
       this.nuevaInscripcion();
       return;
@@ -572,12 +782,19 @@ export class InscripcionesComponent implements OnInit {
     }
   }
 
+  private isCreateRoute(): boolean {
+    return this.route.routeConfig?.path === 'inscripciones/nueva';
+  }
+
   private cargarAsociados(): void {
     if (this.isAdminMode) {
       this.loading = false;
       return;
     }
-    this.censoService.getAsociadosByAsociacion(this.censoService.asociacionId).subscribe({
+    this.censoService.getAsociadosByAsociacion(
+      this.censoService.asociacionId,
+      this.ejercicioService.selectedEjercicio ?? undefined
+    ).subscribe({
       next: asociados => {
         this.asociados = asociados;
         this.loading = false;
@@ -601,10 +818,19 @@ export class InscripcionesComponent implements OnInit {
     });
   }
 
+  private cargarAdjuntosEntrada(entradaId: number): void {
+    this.adjuntosEntrada = [];
+    this.secretariaService.getAdjuntos('inscripcion_entrada', entradaId).subscribe({
+      next: response => this.adjuntosEntrada = response.adjuntos,
+      error: () => this.adjuntosEntrada = []
+    });
+  }
+
   private cargarMiEntrada(inscription: InscripcionSecretaria): void {
     this.secretariaService.getMiEntradaInscripcion(inscription.id).subscribe({
       next: entrada => {
         this.miEntrada = entrada;
+        this.cargarAdjuntosEntrada(entrada.id);
         this.patchEntradaForm(entrada);
         this.associationMode = 'view';
       },
@@ -679,7 +905,10 @@ export class InscripcionesComponent implements OnInit {
     };
 
     asociaciones.forEach(asociacionId => {
-      this.censoService.getAsociadosByAsociacion(asociacionId).subscribe({
+      this.censoService.getAsociadosByAsociacion(
+        asociacionId,
+        this.ejercicioService.selectedEjercicio ?? undefined
+      ).subscribe({
         next: asociados => {
           this.entradaAsociados = { ...this.entradaAsociados, [asociacionId]: asociados };
           done();
@@ -727,7 +956,10 @@ export class InscripcionesComponent implements OnInit {
           );
         }
       });
-      this.censoService.getAsociadosByAsociacion(asociacionId).subscribe({
+      this.censoService.getAsociadosByAsociacion(
+        asociacionId,
+        this.ejercicioService.selectedEjercicio ?? undefined
+      ).subscribe({
         next: asociados => {
           this.entradaAsociados = {
             ...this.entradaAsociados,
@@ -768,7 +1000,47 @@ export class InscripcionesComponent implements OnInit {
     if (!inscription.fechaLimite) {
       return true;
     }
-    return new Date(String(inscription.fechaLimite).slice(0, 10)) >= new Date(new Date().toISOString().slice(0, 10));
+    return String(inscription.fechaLimite).slice(0, 10) >= this.fechaHoyLocal();
+  }
+
+  isInscripcionDisponible(inscription: InscripcionSecretaria): boolean {
+    return !this.mensajeDisponibilidadInscripcion(inscription);
+  }
+
+  mensajeDisponibilidadInscripcion(inscription: InscripcionSecretaria): string | null {
+    const today = this.fechaHoyLocal();
+    const publicacion = String(inscription.fechaPublicacion || '').slice(0, 10);
+    const limite = String(inscription.fechaLimite || '').slice(0, 10);
+    if (publicacion && publicacion > today) return `La inscripción se abrirá el ${this.fechaLegible(publicacion)}.`;
+    if (limite && limite < today) return `El plazo de presentación finalizó el ${this.fechaLegible(limite)}. No es posible enviar la inscripción.`;
+    return null;
+  }
+
+  puedeSolicitarRetirada(entrada: InscripcionEntradaSecretaria): boolean {
+    return entrada.estado === 'validada' || !this.isWithinDeadline(this.selectedInscription!);
+  }
+
+  solicitarRetirada(entrada: InscripcionEntradaSecretaria): void {
+    if (this.loading || !this.puedeSolicitarRetirada(entrada)) return;
+    this.loading = true;
+    this.secretariaService.solicitarRetiradaInscripcion(entrada.id).subscribe({
+      next: updated => { this.miEntrada = updated; this.success = 'Solicitud de retirada enviada a administración.'; this.loading = false; },
+      error: error => { this.error = error?.error?.message || 'No se ha podido solicitar la retirada.'; this.loading = false; }
+    });
+  }
+
+  resolverRetirada(entrada: InscripcionEntradaSecretaria, aprobar: boolean): void {
+    if (!this.isAdminMode || this.loading || entrada.estado !== 'retirada_solicitada') return;
+    this.loading = true;
+    this.secretariaService.resolverRetiradaInscripcion(entrada.id, aprobar).subscribe({
+      next: updated => {
+        this.entradas = this.entradas.map(item => item.id === updated.id ? { ...item, ...updated } : item);
+        this.selectedEntrada = this.selectedEntrada?.id === updated.id ? { ...this.selectedEntrada, ...updated } : this.selectedEntrada;
+        this.success = aprobar ? 'Retirada aprobada.' : 'Solicitud de retirada rechazada.';
+        this.loading = false;
+      },
+      error: error => { this.error = error?.error?.message || 'No se ha podido resolver la retirada.'; this.loading = false; }
+    });
   }
 
   private buildAdminPayload(estado = this.selectedInscription?.estado || 'abierta'): unknown {
@@ -921,6 +1193,24 @@ export class InscripcionesComponent implements OnInit {
       .replace(/[\u0300-\u036f]/g, '')
       .toLowerCase()
       .trim();
+  }
+
+  private fechaLegible(value: string): string {
+    const [year, month, day] = value.split('-');
+    return year && month && day ? `${day}/${month}/${year}` : value;
+  }
+
+  private fechaHoyLocal(): string {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  }
+
+  private contextoListadoInscripciones(): Record<string, string | number> {
+    const context: Record<string, string | number> = { orden: this.ordenInscripciones, pagina: this.paginaInscripciones };
+    if (this.filtroDisponibilidad) context.disponibilidad = this.filtroDisponibilidad;
+    if (this.filtroEstado) context.estado = this.filtroEstado;
+    if (this.busquedaInscripciones) context.busqueda = this.busquedaInscripciones;
+    return context;
   }
 
   private toDateInput(value: string | null | undefined): string {

@@ -13,6 +13,7 @@ import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 import { ErrorService } from '../core/error.service';
 import { Asociado, AsociadosService, HistoricoAsociado } from './asociados.service';
@@ -223,6 +224,80 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
       });
   }
 
+  downloadPdf(): void {
+    const asociados = [
+      ...this.dataSources.adultos.data.map(asociado => ({ ...asociado, grupo: 'Adultos' })),
+      ...this.dataSources.infantiles.data.map(asociado => ({ ...asociado, grupo: 'Infantiles' }))
+    ];
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true });
+    const margin = 32;
+    const headers = ['Categoria', 'Nombre completo', 'DNI/NIE', 'Cargo', 'Estado'];
+    const widths = [82, 242, 105, 246, 102];
+    const rowHeight = 22;
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    let y = 0;
+
+    const drawTableHeader = () => {
+      pdf.setFillColor(181, 18, 27);
+      pdf.rect(margin, y, widths.reduce((total, width) => total + width, 0), rowHeight, 'F');
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(255, 255, 255);
+      let x = margin;
+      headers.forEach((header, index) => {
+        pdf.text(header, x + 6, y + 14);
+        x += widths[index];
+      });
+      y += rowHeight;
+    };
+
+    const startPage = () => {
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(18);
+      pdf.text('Listado de asociados', margin, 38);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text(`Generado: ${new Date().toLocaleString('es-ES')}`, margin, 54);
+      y = 68;
+      drawTableHeader();
+    };
+
+    startPage();
+    asociados.forEach((asociado, index) => {
+      if (y + rowHeight > pageHeight - 32) {
+        pdf.addPage();
+        startPage();
+      }
+
+      if (index % 2 === 1) {
+        pdf.setFillColor(249, 250, 251);
+        pdf.rect(margin, y, widths.reduce((total, width) => total + width, 0), rowHeight, 'F');
+      }
+      pdf.setDrawColor(209, 213, 219);
+      pdf.rect(margin, y, widths.reduce((total, width) => total + width, 0), rowHeight);
+      pdf.setTextColor(17, 24, 39);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(8.5);
+      const values = [
+        asociado.grupo,
+        `${asociado.nombre || ''} ${asociado.apellidos || ''}`.trim(),
+        asociado.dni || '',
+        asociado.cargo || '',
+        asociado.estado || ''
+      ];
+      let x = margin;
+      values.forEach((value, valueIndex) => {
+        pdf.text(this.truncatePdfText(pdf, String(value), widths[valueIndex] - 12), x + 6, y + 14);
+        x += widths[valueIndex];
+      });
+      y += rowHeight;
+    });
+
+    pdf.save('listado-asociados.pdf');
+  }
+
   private configureDataSource(ds: MatTableDataSource<Asociado>): void {
     ds.filterPredicate = (data, filter) => {
       const full = this.normalizeSearchText([
@@ -337,6 +412,17 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), 'Asociados');
     XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(historicoRows), 'Historico');
     XLSX.writeFile(workbook, 'asociados.xlsx');
+  }
+
+  private truncatePdfText(pdf: jsPDF, value: string, width: number): string {
+    if (pdf.getTextWidth(value) <= width) {
+      return value;
+    }
+    let truncated = value;
+    while (truncated.length > 1 && pdf.getTextWidth(`${truncated}...`) > width) {
+      truncated = truncated.slice(0, -1);
+    }
+    return `${truncated}...`;
   }
 
   private normalizeSearchText(values: unknown[]): string {

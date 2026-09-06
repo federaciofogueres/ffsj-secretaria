@@ -43,9 +43,11 @@ describe('SolicitudesComponent', () => {
       'validarSolicitud',
       'rechazarSolicitud',
       'finalizarSolicitud',
-      'cancelarEnvioSolicitud'
+      'cancelarEnvioSolicitud',
+      'getIncidencias'
     ]);
-    secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes }));
+    secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes, paginacion: { page: 1, pageSize: 20, total: 25, totalPages: 2 } }));
+    secretariaService.getIncidencias.and.returnValue(of({ incidencias: [] }));
     secretariaService.getSolicitud.and.returnValue(of({
       ...solicitudes[0],
       items: [
@@ -87,12 +89,25 @@ describe('SolicitudesComponent', () => {
     expect(component.solicitudes.length).toBe(2);
   });
 
-  it('filtra por tipo y texto', () => {
+  it('envía filtros al servidor y reinicia la página', () => {
     component.filtroTipo = 'alta';
     component.filtroTexto = '25';
+    component.paginaActual = 2;
+    component.aplicarFiltros();
 
-    expect(component.solicitudesFiltradas.length).toBe(1);
-    expect(component.solicitudesFiltradas[0].numero).toBe('SOL-2026-000001');
+    expect(component.paginaActual).toBe(1);
+    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({
+      page: 1, tipo: 'alta', busqueda: '25'
+    }));
+  });
+
+  it('cambia de página respetando los límites', () => {
+    component.cambiarPagina(1);
+    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ page: 2 }));
+
+    component.paginaActual = 1;
+    component.cambiarPagina(-1);
+    expect(component.paginaActual).toBe(1);
   });
 
   it('permite validar una solicitud enviada', () => {
@@ -111,6 +126,29 @@ describe('SolicitudesComponent', () => {
     component.cerrarDetalle();
 
     expect(component.detalleDialogOpen).toBeFalse();
+  });
+
+  it('organiza el detalle en pestañas navegables con teclado', () => {
+    component.verSolicitud(solicitudes[0]);
+    component.activarPestanaDetalle('cambios');
+    component.navegarPestanasDetalle(new KeyboardEvent('keydown', { key: 'ArrowRight' }), 1);
+
+    expect(component.pestanaDetalle).toBe('incidencias');
+  });
+
+  it('presenta los cambios de un asociado con efecto y valores comparables', () => {
+    const item = {
+      id: 12,
+      solicitudId: 1,
+      registroPendienteId: 7,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: { nombre: 'Maria', telefono: '600000001' },
+      datosOriginales: { nombre: 'Maria', telefono: '600000000' }
+    };
+
+    expect(component.efectoItem(item)).toBe('Actualización de datos propuesta');
+    expect(component.diferenciasItem(item)).toEqual([{ campo: 'Teléfono', anterior: '600000000', nuevo: '600000001' }]);
   });
 
   it('identifica cambios de cargo dentro de una solicitud conjunta de baja', () => {
@@ -139,5 +177,51 @@ describe('SolicitudesComponent', () => {
       'Ejercicio: 2026',
       'Sustituye a: Ana Presidenta'
     ]);
+  });
+
+  it('completa los datos heredados de una cesión y el DNI original en el detalle', () => {
+    component.detalle = { ...solicitudes[1], ejercicio: 2026 };
+    const item = {
+      id: 13,
+      solicitudId: 2,
+      registroPendienteId: 8,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: {
+        nombre: 'Irene',
+        apellidos: 'Artiaga Inocencio',
+        tipoCambio: 'cargo',
+        cargoNombres: ['Vocal'],
+        cedeCargoANombre: 'Daniel Perez Brotons'
+      },
+      datosOriginales: { dni: '48570119P' }
+    };
+
+    expect(component.identifierItem(item)).toBe('48570119P');
+    expect(component.cambiosItem(item)).toEqual([
+      'Cargo: Vocal',
+      'Ejercicio: 2026',
+      'Cede a: Daniel Perez Brotons'
+    ]);
+    expect(component.diferenciasItem(item)[1].nuevo).toBe('2026');
+  });
+
+  it('no muestra una sustitución inexistente en un cambio de cargo conjunto', () => {
+    component.detalle = { ...solicitudes[1], ejercicio: 2027 };
+    const item = {
+      id: 14,
+      solicitudId: 2,
+      registroPendienteId: 9,
+      tipo: 'cambio' as const,
+      estado: 'pendiente',
+      datos: { tipoCambio: 'cargo', cargoNombres: ['Asociado/a', 'Presidencia'] },
+      datosOriginales: null
+    };
+
+    expect(component.cambiosItem(item)).toEqual([
+      'Cargo: Asociado/a, Presidencia',
+      'Ejercicio: 2027'
+    ]);
+    expect(component.diferenciasItem(item).map(diferencia => diferencia.campo)).not.toContain('Sustituye a');
   });
 });

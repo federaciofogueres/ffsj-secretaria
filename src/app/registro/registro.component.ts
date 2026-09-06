@@ -7,18 +7,22 @@ import { forkJoin, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { Asociacion, RegistroSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { EjercicioService } from '../core/ejercicio.service';
+import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
+import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
-type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas';
+type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
 type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
+type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
 
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })
@@ -28,12 +32,11 @@ export class RegistroComponent implements OnInit {
   detailMode: Exclude<RegistroMode, null> | null = null;
   docBandeja: DocumentacionBandeja = 'presentada';
 
-  readonly responsables = [
-    { id: 'sec', label: 'Secretaria' },
-    { id: 'pres', label: 'Presidencia' },
-    { id: 'inf', label: 'Delegacion de Infantiles' },
-    { id: 'act', label: 'Actividades' }
-  ];
+  destinatarios: RegistroDestinatario[] = [];
+  nuevoDepartamento = '';
+  nuevoDestinatario = '';
+  nuevoDestinatarioEmail = '';
+  guardandoDestinatario = false;
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -55,6 +58,15 @@ export class RegistroComponent implements OnInit {
   docResultado: RegistroSecretaria | null = null;
   commResultado: RegistroSecretaria | null = null;
   registros: RegistroSecretaria[] = [];
+  filtroAnio: number | '' = '';
+  filtroTexto = '';
+  filtroEstado = '';
+  ordenRegistros: OrdenRegistro = 'fecha_desc';
+  paginaActual = 1;
+  tamanoPagina = 20;
+  paginacion: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
+  autorizacionesAlta: AutorizacionAlta[] = [];
+  autorizacionDetalle: AutorizacionAlta | null = null;
   commBandeja: ComunicacionBandeja = 'realizadas';
   asociaciones: Asociacion[] = [];
   respuestaComunicacion = '';
@@ -66,7 +78,7 @@ export class RegistroComponent implements OnInit {
   updatingEstado = false;
   docLocked = false;
   commLocked = false;
-  readonly estadosRegistro: RegistroSecretaria['estado'][] = ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'finalizada'];
+  readonly estadosRegistro: RegistroSecretaria['estado'][] = ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'finalizada', 'archivada'];
 
   constructor(
     private readonly fb: FormBuilder,
@@ -75,13 +87,18 @@ export class RegistroComponent implements OnInit {
     private readonly adminAccess: AdminAccessService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    readonly ejercicioService: EjercicioService
   ) {}
 
   ngOnInit(): void {
     this.commBandeja = this.isAdminMode ? 'recibidas' : 'realizadas';
     this.applyRouteState();
     this.cargarRegistros();
+    this.secretariaService.getRegistroDestinatarios().subscribe({
+      next: response => this.destinatarios = response.destinatarios,
+      error: () => this.errorRegistros = 'No se han podido cargar los destinatarios de Registro.'
+    });
     if (this.isAdminMode) {
       this.censoService.getAsociaciones().subscribe(asociaciones => {
         this.asociaciones = asociaciones.sort((a, b) => this.asociacionNombre(a).localeCompare(this.asociacionNombre(b), 'es'));
@@ -95,6 +112,33 @@ export class RegistroComponent implements OnInit {
 
   setMode(mode: Exclude<RegistroMode, null>): void {
     this.router.navigate(['/registro', mode]);
+  }
+
+  crearDestinatario(): void {
+    if (!this.isAdminMode || !this.permissions.hasPermission('registro:write')) return;
+    const departamento = this.nuevoDepartamento.trim();
+    const nombre = this.nuevoDestinatario.trim();
+    const email = this.nuevoDestinatarioEmail.trim();
+    if (!departamento || !nombre || !email) {
+      this.errorRegistros = 'Indica el departamento, la persona responsable y su correo.';
+      return;
+    }
+    this.guardandoDestinatario = true;
+    this.errorRegistros = '';
+    this.secretariaService.crearRegistroDestinatario({ departamento, nombre, email }).subscribe({
+      next: destinatario => {
+        this.destinatarios = [...this.destinatarios, destinatario]
+          .sort((a, b) => `${a.departamentoNombre} ${a.nombre}`.localeCompare(`${b.departamentoNombre} ${b.nombre}`, 'es'));
+        this.nuevoDepartamento = '';
+        this.nuevoDestinatario = '';
+        this.nuevoDestinatarioEmail = '';
+        this.guardandoDestinatario = false;
+      },
+      error: response => {
+        this.errorRegistros = response?.error?.message || 'No se ha podido crear el destinatario.';
+        this.guardandoDestinatario = false;
+      }
+    });
   }
 
   resetMode(): void {
@@ -148,7 +192,35 @@ export class RegistroComponent implements OnInit {
   }
 
   get canCreateComm(): boolean {
-    return this.permissions.hasPermission('registro:write');
+    return this.permissions.hasPermission('registro:write') && (this.isAdminMode || this.ejercicioService.isSelectedActive);
+  }
+
+  get comunicacionBloqueadaPorEjercicio(): boolean {
+    return !this.isAdminMode && !this.ejercicioService.isSelectedActive;
+  }
+
+  get mensajeComunicacionBloqueada(): string {
+    const selected = this.ejercicioService.selectedSnapshot;
+    return selected
+      ? `Estas consultando el ejercicio ${selected.ejercicio}. Para enviar comunicaciones debes seleccionar el ejercicio activo.`
+      : 'Para enviar comunicaciones debes seleccionar el ejercicio activo.';
+  }
+
+  get aniosDisponibles(): number[] {
+    const years = new Set<number>();
+    this.registros.forEach(registro => {
+      const date = registro.fechaEntrada || registro.fechaCreacion || registro.fechaActualizacion;
+      const year = date ? new Date(date).getFullYear() : Number(registro.ejercicio);
+      if (Number.isFinite(year)) {
+        years.add(year);
+      }
+    });
+    const current = new Date().getFullYear();
+    years.add(current);
+    if (this.filtroAnio) {
+      years.add(Number(this.filtroAnio));
+    }
+    return Array.from(years).sort((a, b) => b - a);
   }
 
   get isFormView(): boolean {
@@ -164,7 +236,8 @@ export class RegistroComponent implements OnInit {
   }
 
   get documentacionNuevaCount(): number {
-    return this.registros.filter(registro => registro.tipo === 'documentacion' && this.esRegistroNuevo(registro)).length;
+    return this.registros.filter(registro => registro.tipo === 'documentacion' && this.esRegistroNuevo(registro)).length
+      + this.autorizacionesAltaPendientes.length;
   }
 
   get comunicacionesNuevasCount(): number {
@@ -174,6 +247,8 @@ export class RegistroComponent implements OnInit {
   get docRefs(): RegistroSecretaria[] {
     return this.registros.filter(registro => {
       if (registro.tipo !== 'documentacion') return false;
+      if (this.docBandeja === 'archivadas') return registro.estado === 'archivada';
+      if (registro.estado === 'archivada') return false;
       if (this.docBandeja === 'nuevas') return this.esRegistroNuevo(registro);
       if (this.docBandeja === 'presentada') return registro.origen === this.actorActual;
       return registro.origen !== this.actorActual && registro.estado !== 'enviada';
@@ -190,9 +265,34 @@ export class RegistroComponent implements OnInit {
   }
 
   get docEmptyMessage(): string {
+    if (this.docBandeja === 'nuevas') {
+      return 'No hay documentacion nueva.';
+    }
+    if (this.docBandeja === 'archivadas') {
+      return 'No hay documentacion archivada.';
+    }
     return this.docBandeja === 'presentada'
       ? 'No hay documentacion presentada.'
       : 'No hay documentacion solicitada.';
+  }
+
+  get autorizacionesFirmaVisibles(): AutorizacionAlta[] {
+    if (this.isAdminMode || this.mode !== 'documentacion') {
+      return [];
+    }
+    if (!['nuevas', 'solicitada', 'archivadas'].includes(this.docBandeja)) {
+      return [];
+    }
+    return this.docBandeja === 'archivadas'
+      ? this.autorizacionesAlta.filter(item => item.estado === 'archivada')
+      : this.autorizacionesAltaPendientes;
+  }
+
+  get autorizacionesAltaPendientes(): AutorizacionAlta[] {
+    if (this.isAdminMode) {
+      return [];
+    }
+    return this.autorizacionesAlta.filter(item => item.estado === 'pendiente_firma');
   }
 
   get commEmptyMessage(): string {
@@ -216,12 +316,14 @@ export class RegistroComponent implements OnInit {
       tipo: 'documentacion',
       titulo: this.docForm.value.titulo,
       mensaje: this.docForm.value.mensaje,
+      destinatarioId: Number(this.docForm.value.responsable),
       adjuntos: this.docAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
     }).pipe(
       switchMap(registro => this.docAdjuntos.length
         ? forkJoin(this.docAdjuntos.map(file => this.secretariaService.subirAdjunto('registro', registro.id, file))).pipe(switchMap(() => of(registro)))
         : of(registro)
-      )
+      ),
+      switchMap(registro => this.secretariaService.getRegistro(registro.id))
     ).subscribe({
       next: registro => {
         this.docBandeja = 'presentada';
@@ -234,8 +336,9 @@ export class RegistroComponent implements OnInit {
         this.submittingDoc = false;
         this.router.navigate(['/registro/documentacion'], { replaceUrl: true });
       },
-      error: () => {
+      error: (response) => {
         this.submittingDoc = false;
+        this.errorRegistros = response?.error?.message || 'No se ha podido presentar la documentación.';
       }
     });
   }
@@ -252,6 +355,7 @@ export class RegistroComponent implements OnInit {
       tipo: 'comunicacion',
       origen: this.isAdminMode ? 'administracion' : 'asociacion',
       responsable: this.commForm.value.responsable,
+      destinatarioId: Number(this.commForm.value.responsable),
       titulo: this.commForm.value.titulo,
       mensaje: this.commForm.value.mensaje,
       adjuntos: this.commAdjuntos.map(file => ({ name: file.name, size: file.size, type: file.type }))
@@ -273,8 +377,9 @@ export class RegistroComponent implements OnInit {
         this.submittingComm = false;
         this.router.navigate(['/registro/comunicacion'], { replaceUrl: true });
       },
-      error: () => {
+      error: (response) => {
         this.submittingComm = false;
+        this.errorRegistros = response?.error?.message || 'No se ha podido enviar la comunicación.';
       }
     });
   }
@@ -318,6 +423,21 @@ export class RegistroComponent implements OnInit {
     return mode === 'documentacion' ? ref.id === this.docResultado?.id : ref.id === this.commResultado?.id;
   }
 
+  marcarRegistroNoLeido(resultado: RegistroSecretaria): void {
+    if (this.updatingEstado) return;
+    this.updatingEstado = true;
+    this.secretariaService.marcarRegistroNoLeido(resultado.id).subscribe({
+      next: registro => {
+        this.prependRegistro(registro);
+        if (this.mode === 'documentacion') this.docResultado = registro;
+        if (this.mode === 'comunicacion') this.commResultado = registro;
+        this.updatingEstado = false;
+        this.cargarRegistros();
+      },
+      error: response => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido marcar el registro como no leido.'; }
+    });
+  }
+
   enableDocEdit(): void {
     this.formMode = 'documentacion';
     this.detailMode = null;
@@ -341,13 +461,15 @@ export class RegistroComponent implements OnInit {
   setDocBandeja(bandeja: DocumentacionBandeja): void {
     this.docBandeja = bandeja;
     this.detailMode = null;
-    this.docResultado = this.docRefs[0] || null;
+    this.docResultado = null;
+    this.cargarRegistros(true);
   }
 
   setCommBandeja(bandeja: ComunicacionBandeja): void {
     this.commBandeja = bandeja;
     this.detailMode = null;
-    this.commResultado = this.commRefs[0] || null;
+    this.commResultado = null;
+    this.cargarRegistros(true);
   }
 
   estadoLabel(estado: string): string {
@@ -359,6 +481,7 @@ export class RegistroComponent implements OnInit {
       incidencia: 'Incidencia',
       rechazado: 'Rechazado',
       finalizada: 'Finalizada',
+      archivada: 'Archivada',
       nueva: 'Nueva',
       contestada: 'Contestada'
     };
@@ -384,6 +507,13 @@ export class RegistroComponent implements OnInit {
     return this.asociacionNombreById(registro.asociacionId);
   }
 
+  emisorRegistro(registro: RegistroSecretaria): string {
+    if (registro.origen === 'administracion') {
+      return 'Administracion';
+    }
+    return this.asociacionNombreById(registro.asociacionId);
+  }
+
   fechaCreacionRegistro(registro: RegistroSecretaria): string {
     return registro.fechaCreacion || registro.fechaEntrada;
   }
@@ -400,8 +530,23 @@ export class RegistroComponent implements OnInit {
       && this.permissions.hasPermission('registro:write');
   }
 
-  descargarAdjunto(url: string): void {
-    window.open(url, '_blank');
+  descargarAdjunto(adjunto: AdjuntoSecretaria): void {
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        if (adjunto.mimeType === 'application/pdf' || (adjunto.mimeType || '').startsWith('image/')) {
+          window.open(url, '_blank', 'noopener');
+          window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+          return;
+        }
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.originalName || adjunto.fileName;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: response => this.errorRegistros = response?.error?.message || 'No se ha podido descargar el adjunto.'
+    });
   }
 
   cambiarEstado(registro: RegistroSecretaria, estado: RegistroSecretaria['estado']): void {
@@ -420,7 +565,7 @@ export class RegistroComponent implements OnInit {
         }
         this.updatingEstado = false;
       },
-      error: () => this.updatingEstado = false
+      error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido actualizar el estado.'; }
     });
   }
 
@@ -443,7 +588,7 @@ export class RegistroComponent implements OnInit {
         this.prependRegistro(registro);
         this.submittingComm = false;
       },
-      error: () => this.submittingComm = false
+      error: (response) => { this.submittingComm = false; this.errorRegistros = response?.error?.message || 'No se ha podido enviar la respuesta.'; }
     });
   }
 
@@ -458,28 +603,209 @@ export class RegistroComponent implements OnInit {
         this.prependRegistro(updated);
         this.submittingComm = false;
       },
-      error: () => this.submittingComm = false
+      error: (response) => { this.submittingComm = false; this.errorRegistros = response?.error?.message || 'No se ha podido cerrar la comunicación.'; }
     });
   }
 
-  private cargarRegistros(): void {
+  archivarDocumentacion(registro: RegistroSecretaria): void {
+    if (registro.tipo !== 'documentacion' || registro.estado === 'archivada' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.archivarRegistro(registro.id).subscribe({
+      next: updated => {
+        this.docResultado = updated;
+        this.docBandeja = 'archivadas';
+        this.prependRegistro(updated);
+        this.updatingEstado = false;
+      },
+      error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido archivar la documentación.'; }
+    });
+  }
+
+  aplicarFiltros(): void {
+    this.cargarRegistros(true);
+  }
+
+  cambiarPagina(delta: number): void {
+    const page = this.paginaActual + delta;
+    if (!this.loadingRegistros && page >= 1 && page <= this.paginacion.totalPages) {
+      this.paginaActual = page;
+      this.cargarRegistros();
+    }
+  }
+
+  cargarRegistros(resetPage = false): void {
     if (!this.permissions.hasPermission('registro:read')) {
       return;
     }
+    if (resetPage) {
+      this.paginaActual = 1;
+    }
     this.loadingRegistros = true;
     this.errorRegistros = '';
-    const filters = this.isAdminMode ? {} : { asociacionId: this.censoService.asociacionId };
+    const filters: {
+      asociacionId?: number;
+      tipo?: Exclude<RegistroMode, null>;
+      origen?: 'asociacion' | 'administracion';
+      anio?: number | '';
+      busqueda?: string;
+      estado?: string;
+      estadosExcluidos?: string;
+      orden: OrdenRegistro;
+      page: number;
+      pageSize: number;
+    } = this.isAdminMode ? { orden: this.ordenRegistros, page: this.paginaActual, pageSize: this.tamanoPagina } : {
+      asociacionId: this.censoService.asociacionId,
+      orden: this.ordenRegistros,
+      page: this.paginaActual,
+      pageSize: this.tamanoPagina
+    };
+    this.aplicarBandejaRegistro(filters);
+    if (this.filtroAnio) {
+      Object.assign(filters, { anio: this.filtroAnio });
+    }
+    if (this.filtroTexto.trim()) {
+      Object.assign(filters, { busqueda: this.filtroTexto.trim() });
+    }
+    if (this.filtroEstado) {
+      const estadosExcluidos = filters.estadosExcluidos?.split(',') || [];
+      if ((filters.estado && filters.estado !== this.filtroEstado) || estadosExcluidos.includes(this.filtroEstado)) {
+        this.registros = [];
+        this.paginacion = { page: 1, pageSize: this.tamanoPagina, total: 0, totalPages: 1 };
+        this.loadingRegistros = false;
+        this.cargarAutorizacionesAlta();
+        return;
+      }
+      Object.assign(filters, { estado: this.filtroEstado });
+    }
     this.secretariaService.getRegistros(filters).subscribe({
       next: response => {
         this.registros = response.registros;
+        this.paginacion = response.paginacion || {
+          page: this.paginaActual,
+          pageSize: this.tamanoPagina,
+          total: response.registros.length,
+          totalPages: 1
+        };
+        this.paginaActual = this.paginacion.page;
+        this.tamanoPagina = this.paginacion.pageSize;
         this.selectInitialRegistro();
         this.loadingRegistros = false;
+        this.cargarAutorizacionesAlta();
       },
       error: () => {
         this.errorRegistros = 'No se ha podido cargar el historico de registros.';
         this.loadingRegistros = false;
       }
     });
+  }
+
+  firmarAutorizacion(autorizacion: AutorizacionAlta): void {
+    if (this.isAdminMode || autorizacion.estado !== 'pendiente_firma' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.firmarAutorizacionAlta(autorizacion.id, {
+      firmante: this.asociacionNombreById(this.censoService.asociacionId),
+      observaciones: 'Autorizacion firmada desde el registro de la asociacion'
+    }).subscribe({
+      next: response => {
+        this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
+          item.id === autorizacion.id ? response.autorizacion : item
+        );
+        this.autorizacionDetalle = null;
+        this.docBandeja = 'archivadas';
+        this.updatingEstado = false;
+      },
+      error: () => this.updatingEstado = false
+    });
+  }
+
+  rechazarAutorizacion(autorizacion: AutorizacionAlta): void {
+    if (this.isAdminMode || autorizacion.estado !== 'pendiente_firma' || !this.permissions.hasPermission('registro:write')) {
+      return;
+    }
+    this.updatingEstado = true;
+    this.secretariaService.rechazarAutorizacionAlta(autorizacion.id, {
+      firmante: this.asociacionNombreById(this.censoService.asociacionId),
+      motivo: 'Autorizacion rechazada desde el registro de la asociacion'
+    }).subscribe({
+      next: response => {
+        this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
+          item.id === autorizacion.id ? response.autorizacion : item
+        );
+        this.autorizacionDetalle = null;
+        this.updatingEstado = false;
+      },
+      error: () => this.updatingEstado = false
+    });
+  }
+
+  abrirDetalleAutorizacion(autorizacion: AutorizacionAlta): void {
+    this.autorizacionDetalle = autorizacion;
+  }
+
+  cerrarDetalleAutorizacion(): void {
+    this.autorizacionDetalle = null;
+  }
+
+  descargarSolicitudAutorizacion(autorizacion: AutorizacionAlta): void {
+    this.descargarJustificante('solicitud', autorizacion.solicitudId);
+  }
+
+  datoAutorizacion(autorizacion: AutorizacionAlta, key: string): string {
+    const item = autorizacion.documento?.['asociado'] as Record<string, any> | undefined;
+    const value = item?.[key] ?? autorizacion.documento?.[key];
+    return value === null || value === undefined || value === '' ? '-' : String(value);
+  }
+
+  private cargarAutorizacionesAlta(): void {
+    if (this.isAdminMode || !this.censoService.asociacionId || !this.permissions.hasPermission('registro:read')) {
+      return;
+    }
+    this.secretariaService.getAutorizacionesAlta({
+      asociacionId: this.censoService.asociacionId,
+      scope: 'anterior'
+    }).subscribe({
+      next: response => this.autorizacionesAlta = response.autorizaciones,
+      error: () => this.autorizacionesAlta = []
+    });
+  }
+
+  private aplicarBandejaRegistro(filters: {
+    tipo?: Exclude<RegistroMode, null>;
+    origen?: 'asociacion' | 'administracion';
+    estado?: string;
+    estadosExcluidos?: string;
+  }): void {
+    if (!this.mode) {
+      return;
+    }
+    const origenEntrante = this.actorActual === 'administracion' ? 'asociacion' : 'administracion';
+    filters.tipo = this.mode;
+    if (this.mode === 'documentacion') {
+      if (this.docBandeja === 'presentada') filters.origen = this.actorActual;
+      if (this.docBandeja === 'solicitada') {
+        filters.origen = origenEntrante;
+        filters.estadosExcluidos = 'enviada,archivada';
+      }
+      if (this.docBandeja === 'nuevas') {
+        filters.origen = origenEntrante;
+        filters.estado = 'enviada';
+      }
+      if (this.docBandeja === 'archivadas') filters.estado = 'archivada';
+      return;
+    }
+    if (this.commBandeja === 'realizadas') filters.origen = this.actorActual;
+    if (this.commBandeja === 'recibidas') {
+      filters.origen = origenEntrante;
+      filters.estadosExcluidos = 'enviada';
+    }
+    if (this.commBandeja === 'nuevas') {
+      filters.origen = origenEntrante;
+      filters.estado = 'enviada';
+    }
   }
 
   private prependRegistro(registro: RegistroSecretaria): void {
@@ -525,7 +851,7 @@ export class RegistroComponent implements OnInit {
     }
 
     const bandeja = this.route.snapshot.queryParamMap.get('bandeja');
-    if (bandeja === 'solicitada' || bandeja === 'presentada' || bandeja === 'nuevas') {
+    if (bandeja === 'solicitada' || bandeja === 'presentada' || bandeja === 'nuevas' || bandeja === 'archivadas') {
       this.docBandeja = bandeja;
     }
     if (bandeja === 'recibidas' || bandeja === 'realizadas' || bandeja === 'nuevas') {
@@ -579,7 +905,7 @@ export class RegistroComponent implements OnInit {
     return lastActor === this.actorActual ? 'enviada' : 'contestada';
   }
 
-  private asociacionNombreById(asociacionId: number): string {
+  asociacionNombreById(asociacionId: number): string {
     const asociacion = this.asociaciones.find(item => Number(item.id) === Number(asociacionId));
     return asociacion ? this.asociacionNombre(asociacion) : `Asociacion ${asociacionId}`;
   }

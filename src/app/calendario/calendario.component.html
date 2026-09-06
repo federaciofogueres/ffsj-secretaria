@@ -4,7 +4,7 @@
       <div>
         <p class="ux-overline mb-2">Calendario</p>
         <h1 class="ux-page-title">Actividades</h1>
-        <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades y accede a las inscripciones vinculadas.' }}</p>
+        <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades, inscripciones vinculadas y propone nuevos eventos.' }}</p>
       </div>
       <div class="calendar-actions">
         <button
@@ -15,6 +15,8 @@
         >
           Añadir actividad
         </button>
+        <button class="ux-btn" type="button" *ngIf="!isAdminMode && permissions.hasPermission('inscripciones:write')" (click)="abrirCrearActividad()">Proponer actividad</button>
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="togglePropuestas()">{{ showPropuestas ? 'Ocultar propuestas' : (isAdminMode ? 'Propuestas pendientes' : 'Mis propuestas') }}</button>
         <button class="ux-btn ux-btn-secondary" type="button" (click)="previousMonth()">Anterior</button>
         <button class="ux-btn ux-btn-secondary" type="button" (click)="nextMonth()">Siguiente</button>
       </div>
@@ -23,6 +25,30 @@
     <div class="alert alert-danger mt-3" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
     <div class="text-muted mt-3" *ngIf="loading">Cargando calendario...</div>
+
+    <div class="calendar-filters mt-3">
+      <label>Estado<select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()"><option value="">Todos los visibles</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option><option value="cancelada" *ngIf="isAdminMode">Archivadas</option></select></label>
+      <label *ngIf="isAdminMode">Visibilidad<select class="form-select" [(ngModel)]="filtroVisibilidad" (ngModelChange)="aplicarFiltros()"><option value="">Todas</option><option value="publica">Públicas</option><option value="privada">Internas</option></select></label>
+      <label class="form-check" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" [(ngModel)]="incluirArchivadas" (ngModelChange)="aplicarFiltros()" /> Mostrar archivadas</label>
+    </div>
+
+    <section class="border rounded p-3 mt-3" *ngIf="showPropuestas">
+      <h2 class="h5">{{ isAdminMode ? 'Propuestas de asociaciones' : 'Mis propuestas de actividad' }}</h2>
+      <p class="text-muted" *ngIf="!propuestas.length">No hay propuestas para mostrar.</p>
+      <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestas">
+        <div class="d-flex justify-content-between gap-2"><strong>{{ propuesta.titulo }}</strong><app-estado-badge [estado]="propuesta.estadoPropuesta || 'pendiente_revision'"></app-estado-badge></div>
+        <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y' }} <span *ngIf="isAdminMode">· {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
+        <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
+        <p class="text-danger mb-1" *ngIf="propuesta.motivoRechazo">{{ propuesta.motivoRechazo }}</p>
+        <button class="btn btn-outline-secondary btn-sm mt-2" type="button" (click)="abrirDetallePropuesta(propuesta)">Ver detalle</button>
+        <div class="d-flex gap-2 mt-2" *ngIf="isAdminMode && (propuesta.estadoPropuesta === 'pendiente_revision' || propuesta.estadoPropuesta === 'con_incidencias')">
+          <button class="btn btn-success btn-sm" type="button" (click)="resolverPropuesta(propuesta, 'publicada')">Publicar</button>
+          <button class="btn btn-outline-warning btn-sm" type="button" (click)="abrirIncidenciaPropuesta(propuesta)">Pedir informacion</button>
+          <button class="btn btn-outline-danger btn-sm" type="button" (click)="resolverPropuesta(propuesta, 'rechazada')">Rechazar</button>
+        </div>
+        <ul class="small mt-2 mb-0" *ngIf="propuesta.eventos?.length"><li *ngFor="let evento of propuesta.eventos">{{ evento.createdAt | date:'dd/MM/y HH:mm' }} — {{ evento.detalle }}</li></ul>
+      </article>
+    </section>
 
     <div class="calendar-layout mt-4">
       <div class="calendar">
@@ -50,6 +76,7 @@
               type="button"
               *ngFor="let actividad of day.actividades"
               [class.inactive]="actividad.estado === 'cerrada'"
+              [class]="'activity-pill color-' + (actividad.colorEtiqueta || 'ffsj')"
               (click)="select(actividad, day.date); $event.stopPropagation()"
             >
               {{ actividad.titulo }}
@@ -84,7 +111,7 @@
               (click)="select(actividad)"
             >
               <span>{{ actividad.titulo }}</span>
-              <small>{{ estadoLabel(actividad.estado) }}</small>
+              <app-estado-badge [estado]="actividad.estado"></app-estado-badge>
             </button>
           </div>
           <ng-template #noDayEvents>
@@ -97,12 +124,13 @@
           <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de actividad</p>
           <div class="d-flex align-items-start justify-content-between gap-2">
             <h2 class="detail-title mb-1">{{ selected.titulo }}</h2>
-            <span class="status" [class.inactive]="selected.estado === 'cerrada'">{{ estadoLabel(selected.estado) }}</span>
+            <app-estado-badge [estado]="selected.estado"></app-estado-badge>
           </div>
           <p class="text-muted mb-2">
             {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
           </p>
           <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
+          <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
           <div class="linked" *ngIf="selected.inscripciones?.length">
             <h3 class="h6">Inscripcion asociada</h3>
             <a
@@ -118,14 +146,13 @@
           </p>
           </div>
 
-          <form
-            class="admin-edit"
-            *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
-            [formGroup]="editActividadForm"
-            (ngSubmit)="guardarActividad()"
-          >
+          <section class="admin-edit" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
             <div class="border-top pt-3 mt-3">
-              <p class="overline text-uppercase text-muted fw-bold mb-1">Gestion del evento</p>
+              <button class="section-toggle" type="button" [attr.aria-expanded]="showActividadGestion" (click)="toggleActividadGestion()">
+                <span class="overline text-uppercase text-muted fw-bold">Gestion del evento</span>
+                <span>{{ showActividadGestion ? 'Ocultar' : 'Editar' }}</span>
+              </button>
+              <form *ngIf="showActividadGestion" [formGroup]="editActividadForm" (ngSubmit)="guardarActividad()" class="mt-3">
               <label class="form-label">Titulo</label>
               <input class="form-control" formControlName="titulo" />
               <label class="form-label mt-2">Responsable</label>
@@ -142,6 +169,17 @@
               </div>
               <label class="form-label mt-2">Descripcion</label>
               <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+              <label class="form-label mt-2">Categoría visual
+                <select class="form-select" formControlName="colorEtiqueta">
+                  <option value="ffsj">FFSJ</option>
+                  <option value="asociacion">Entidad asociada</option>
+                  <option value="ayuntamiento">Ayuntamiento</option>
+                  <option value="otra">Otras entidades</option>
+                </select>
+              </label>
+              <label class="form-check mt-2"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
+              <label class="form-label mt-2">Imagen del evento<input class="form-control" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="subirImagenActividad($event)" /></label>
+              <button *ngIf="imagenActividadId" class="btn btn-outline-danger btn-sm mt-2" type="button" [disabled]="loading" (click)="borrarImagenActividad()">Eliminar imagen</button>
               <div class="admin-actions mt-3">
                 <button class="ux-btn" type="submit" [disabled]="loading">Guardar cambios</button>
                 <button
@@ -169,12 +207,18 @@
                   Borrar definitivamente
                 </button>
               </div>
+              </form>
             </div>
-          </form>
+          </section>
 
           <section class="admin-link-inscripciones" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
             <div class="border-top pt-3 mt-3">
-              <p class="overline text-uppercase text-muted fw-bold mb-1">Inscripciones del evento</p>
+              <button class="section-toggle" type="button" [attr.aria-expanded]="showInscripcionesGestion" (click)="toggleInscripcionesGestion()">
+                <span class="overline text-uppercase text-muted fw-bold">Inscripciones del evento</span>
+                <span>{{ showInscripcionesGestion ? 'Ocultar' : 'Gestionar' }}</span>
+              </button>
+
+              <div *ngIf="showInscripcionesGestion" class="mt-3">
 
               <form [formGroup]="linkInscripcionForm" (ngSubmit)="vincularInscripcion()" class="linked-form">
                 <label class="form-label">Añadir inscripcion existente</label>
@@ -216,6 +260,7 @@
                 </div>
                 <button class="btn btn-foc-rojo mt-2" type="submit" [disabled]="loading">Crear y vincular</button>
               </form>
+              </div>
             </div>
           </section>
         </ng-container>
@@ -227,6 +272,15 @@
     </div>
   </div>
 </section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar actividad"
+  message="Esta acción borrará definitivamente la actividad. No se puede deshacer."
+  confirmLabel="Borrar actividad"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorradoActividad()"
+></app-confirm-dialog>
 
 <div class="modal-backdrop-custom" *ngIf="showCreateDialog" (click)="cerrarCrearActividad()"></div>
 <section class="modal-panel" *ngIf="showCreateDialog" role="dialog" aria-modal="true" aria-label="Añadir actividad">
@@ -254,10 +308,52 @@
     </div>
     <label class="form-label mt-2">Descripcion</label>
     <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+    <label class="form-label mt-2">Imagen del evento (JPG, PNG, WEBP o GIF; máximo 10 MB)<input class="form-control" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="seleccionarImagenActividad($event)" /></label>
+    <label class="form-label mt-2" *ngIf="isAdminMode">Categoría visual<select class="form-select" formControlName="colorEtiqueta"><option value="ffsj">FFSJ</option><option value="asociacion">Entidad asociada</option><option value="ayuntamiento">Ayuntamiento</option><option value="otra">Otras entidades</option></select></label>
+    <label class="form-check mt-2" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
     <div class="d-flex gap-2 mt-3">
-      <button class="ux-btn" type="submit" [disabled]="loading">Crear actividad</button>
+      <button class="ux-btn" type="submit" [disabled]="loading">{{ isAdminMode ? 'Crear actividad' : 'Enviar propuesta' }}</button>
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>
     </div>
   </form>
+</section>
+
+<div class="modal-backdrop-custom" *ngIf="propuestaAccion" (click)="propuestaAccion = null"></div>
+<section class="modal-panel" *ngIf="propuestaAccion" role="dialog" aria-modal="true" aria-label="Tramitar propuesta">
+  <div class="modal-header-custom"><h2 class="h5 mb-0">{{ propuestaAccion.tipo === 'rechazo' ? 'Rechazar propuesta' : 'Solicitar información' }}</h2><button class="btn btn-outline-secondary btn-sm" type="button" (click)="propuestaAccion = null">Cerrar</button></div>
+  <label class="form-label mt-3">{{ propuestaAccion.tipo === 'rechazo' ? 'Motivo del rechazo' : 'Información necesaria' }}<textarea class="form-control" rows="4" [(ngModel)]="propuestaMensaje"></textarea></label>
+  <div class="d-flex gap-2"><button class="ux-btn" type="button" [disabled]="loading || !propuestaMensaje.trim()" (click)="confirmarAccionPropuesta()">Confirmar</button><button class="btn btn-outline-secondary" type="button" (click)="propuestaAccion = null">Cancelar</button></div>
+</section>
+
+<div class="modal-backdrop-custom" *ngIf="propuestaDetalle" (click)="cerrarDetallePropuesta()"></div>
+<section class="modal-panel propuesta-detail-modal" *ngIf="propuestaDetalle" role="dialog" aria-modal="true" aria-label="Detalle de propuesta">
+  <div class="modal-header-custom">
+    <div>
+      <p class="ux-overline mb-2">Propuesta de actividad</p>
+      <h2 class="h5 mb-1 text-rojo">{{ propuestaDetalle.titulo }}</h2>
+      <app-estado-badge [estado]="propuestaDetalle.estadoPropuesta || 'pendiente_revision'"></app-estado-badge>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarDetallePropuesta()">Cerrar</button>
+  </div>
+  <dl class="propuesta-data">
+    <div><dt>Responsable</dt><dd>{{ propuestaDetalle.responsable || propuestaDetalle.asociacionNombre || '-' }}</dd></div>
+    <div><dt>Fecha</dt><dd>{{ propuestaDetalle.fechaInicio | date:'dd/MM/y' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | date:'dd/MM/y' }}</span></dd></div>
+    <div *ngIf="propuestaDetalle.descripcion"><dt>Descripción</dt><dd>{{ propuestaDetalle.descripcion }}</dd></div>
+  </dl>
+  <section class="proposal-thread" aria-label="Conversación de la propuesta">
+    <h3 class="h6">Conversación</h3>
+    <p class="text-muted" *ngIf="!propuestaDetalle.eventos?.length">Aún no hay mensajes.</p>
+    <article class="proposal-message" *ngFor="let evento of propuestaDetalle.eventos" [class.admin-message]="evento.actor === 'administracion'" [class.association-message]="evento.actor === 'asociacion'">
+      <strong>{{ evento.actor === 'administracion' ? 'Administración' : 'Tu asociación' }}</strong>
+      <small>{{ evento.createdAt | date:'dd/MM/y HH:mm' }}</small>
+      <p *ngIf="evento.detalle">{{ evento.detalle }}</p>
+    </article>
+  </section>
+  <form *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta === 'con_incidencias'" (ngSubmit)="responderPropuesta()" class="proposal-reply">
+    <label class="form-label" for="respuestaPropuesta">Responder a Administración</label>
+    <textarea id="respuestaPropuesta" class="form-control" rows="4" maxlength="5000" [(ngModel)]="respuestaPropuesta" name="respuestaPropuesta" placeholder="Escribe la información solicitada"></textarea>
+    <div class="d-flex gap-2 mt-2"><button class="ux-btn" type="submit" [disabled]="loading || !respuestaPropuesta.trim()">Enviar respuesta</button></div>
+  </form>
+  <p class="text-muted mt-3 mb-0" *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta !== 'con_incidencias'">No hay ninguna solicitud de información pendiente.</p>
 </section>
 

@@ -24,6 +24,10 @@
   flex-wrap: wrap;
 }
 
+.calendar-filters { display: flex; gap: .75rem; align-items: end; flex-wrap: wrap; }
+.calendar-filters label { display: grid; gap: .25rem; font-size: .85rem; font-weight: 700; }
+.calendar-filters .form-check { display: flex; align-items: center; gap: .45rem; padding-bottom: .4rem; }
+
 .calendar-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
@@ -105,6 +109,7 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.activity-pill.color-asociacion { background:#166534; }.activity-pill.color-ayuntamiento { background:#1d4ed8; }.activity-pill.color-otra { background:#6b21a8; }
 
 .activity-pill.inactive {
   background: #667085;
@@ -203,6 +208,24 @@
   gap: 0.5rem;
 }
 
+.section-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--ffsj-ink);
+  text-align: left;
+}
+
+.section-toggle > span:last-child {
+  color: var(--ffsj-red);
+  font-weight: 800;
+}
+
 .empty-day {
   color: var(--ffsj-muted);
   background: var(--ffsj-soft-gray);
@@ -240,6 +263,20 @@
   margin-bottom: 1rem;
 }
 
+.propuesta-detail-modal { width: min(680px, calc(100vw - 2rem)); }
+.propuesta-data { display: grid; gap: .65rem; margin: 0 0 1.25rem; }
+.propuesta-data div { display: grid; gap: .15rem; }
+.propuesta-data dt { color: var(--ffsj-muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }
+.propuesta-data dd { margin: 0; white-space: pre-wrap; }
+.proposal-thread { display: grid; gap: .65rem; border-top: 1px solid var(--ffsj-line); padding-top: 1rem; }
+.proposal-thread h3 { margin: 0; }
+.proposal-message { border: 1px solid var(--ffsj-line); border-radius: 12px; padding: .75rem; background: #f8fafc; }
+.proposal-message.admin-message { border-color: #fde68a; background: #fffbeb; }
+.proposal-message.association-message { border-color: #bbf7d0; background: #f0fdf4; }
+.proposal-message small { display: block; color: var(--ffsj-muted); margin-top: .2rem; }
+.proposal-message p { margin: .5rem 0 0; white-space: pre-wrap; }
+.proposal-reply { border-top: 1px solid var(--ffsj-line); margin-top: 1rem; padding-top: 1rem; }
+
 @media (max-width: 991px) {
   .calendar-layout {
     grid-template-columns: 1fr;
@@ -253,7 +290,10 @@
   }
 
   .day {
-    min-height: 82px;
+    min-height: 68px;
     font-size: 0.86rem;
   }
+
+  .weekdays span { padding: .25rem; font-size: .72rem; }
+  .activity-pill { font-size: .65rem; padding: .25rem .35rem; }
 }

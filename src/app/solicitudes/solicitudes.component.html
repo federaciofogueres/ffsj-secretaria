@@ -27,7 +27,7 @@
       </div>
       <div class="summary-item">
         <span class="summary-label">Finalizadas</span>
-        <strong>{{ totalEstado('finalizada') }}</strong>
+        <strong>{{ totalEstado('finalizada', 'rechazada') }}</strong>
       </div>
     </div>
 
@@ -40,23 +40,42 @@
           type="search"
           placeholder="Numero, asociacion, tipo o estado"
           [(ngModel)]="filtroTexto"
+          (keyup.enter)="aplicarFiltros()"
         />
       </div>
       <div>
         <label class="form-label" for="filtroTipo">Tipo</label>
-        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo">
+        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo" (ngModelChange)="aplicarFiltros()">
           <option *ngFor="let tipo of tipos" [value]="tipo.value">{{ tipo.label }}</option>
         </select>
       </div>
       <div>
         <label class="form-label" for="filtroEstado">Estado</label>
-        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado">
+        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
           <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
         </select>
+      </div>
+      <div>
+        <label class="form-label" for="ordenSolicitudes">Orden</label>
+        <select id="ordenSolicitudes" class="form-select" [(ngModel)]="orden" (ngModelChange)="aplicarFiltros()">
+          <option value="fecha_desc">Más recientes primero</option>
+          <option value="fecha_asc">Más antiguas primero</option>
+          <option value="estado">Por estado</option>
+        </select>
+      </div>
+      <div class="d-flex align-items-end pb-2">
+        <label class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" (ngModelChange)="aplicarFiltros()" />
+          <span class="form-check-label">Solo problemáticas</span>
+        </label>
+      </div>
+      <div class="d-flex align-items-end">
+        <button class="btn btn-outline-secondary" type="button" (click)="aplicarFiltros()">Buscar</button>
       </div>
     </div>
 
     <div *ngIf="loading" class="alert alert-info">Cargando solicitudes...</div>
+    <div *ngIf="success" class="alert alert-success validation-toast" role="status">{{ success }}</div>
     <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
     <div class="registro-table">
@@ -85,7 +104,13 @@
                 <span class="tipo-badge" [ngClass]="tipoClass(solicitud.tipo)">{{ labelTipo(solicitud.tipo) }}</span>
               </td>
               <td>
-                <span class="estado-badge" [ngClass]="estadoClass(solicitud.estado)">{{ labelEstado(solicitud.estado) }}</span>
+                <span
+                  class="estado-badge"
+                  [ngClass]="estadoClassSolicitud(solicitud)"
+                  [attr.title]="estadoTooltipSolicitud(solicitud)"
+                >
+                  {{ labelEstadoSolicitud(solicitud) }}
+                </span>
                 <span class="incidence-badge" *ngIf="tieneIncidenciasAbiertas(solicitud.id)">
                   {{ incidenciasAbiertasBySolicitud[solicitud.id] }} incidencia(s)
                 </span>
@@ -105,6 +130,13 @@
         </table>
       </div>
     </div>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3" *ngIf="totalSolicitudes > 0">
+      <span class="text-muted small">{{ totalSolicitudes }} solicitud(es) · Página {{ paginaActual }} de {{ totalPaginas }}</span>
+      <div class="btn-group" role="group" aria-label="Paginación de solicitudes">
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loading" (click)="cambiarPagina(-1)">Anterior</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === totalPaginas || loading" (click)="cambiarPagina(1)">Siguiente</button>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -116,54 +148,103 @@
         <h2 id="solicitudDetalleTitle" class="h5 mb-1">{{ detalle.numero }}</h2>
         <div class="d-flex flex-wrap gap-2">
           <span class="tipo-badge" [ngClass]="tipoClass(detalle.tipo)">{{ labelTipo(detalle.tipo) }}</span>
-          <span class="estado-badge" [ngClass]="estadoClass(detalle.estado)">{{ labelEstado(detalle.estado) }}</span>
+          <span
+            class="estado-badge"
+            [ngClass]="estadoClassSolicitud(detalle)"
+            [attr.title]="estadoTooltipSolicitud(detalle)"
+          >
+            {{ labelEstadoSolicitud(detalle) }}
+          </span>
         </div>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalle()"></button>
     </header>
 
     <div class="detail-body">
-      <dl class="metadata-grid">
-        <div>
-          <dt>Asociacion</dt>
-          <dd>{{ asociacionLabel(detalle.asociacionId) }}</dd>
-        </div>
-        <div>
-          <dt>Registros</dt>
-          <dd>{{ detalle.totalRegistros || 0 }}</dd>
-        </div>
-        <div>
-          <dt>Alta</dt>
-          <dd>{{ detalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd>
-        </div>
-        <div>
-          <dt>Entrada</dt>
-          <dd>{{ detalle.fechaEntrada ? (detalle.fechaEntrada | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd>
-        </div>
-        <div>
-          <dt>Validacion</dt>
-          <dd>{{ detalle.fechaValidacion ? (detalle.fechaValidacion | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd>
-        </div>
-      </dl>
+      <div class="detail-tabs" role="tablist" aria-label="Secciones del detalle de solicitud">
+        <button
+          *ngFor="let pestana of pestanasDetalle; let indice = index"
+          class="detail-tab"
+          type="button"
+          role="tab"
+          [id]="'solicitud-tab-' + pestana.id"
+          [attr.aria-selected]="pestanaDetalle === pestana.id"
+          [attr.aria-controls]="'solicitud-panel-' + pestana.id"
+          [tabIndex]="pestanaDetalle === pestana.id ? 0 : -1"
+          [class.active]="pestanaDetalle === pestana.id"
+          (click)="activarPestanaDetalle(pestana.id)"
+          (keydown)="navegarPestanasDetalle($event, indice)"
+        >{{ pestana.label }}</button>
+      </div>
 
-      <h3 class="h6 mt-4 mb-2">Contenido de la solicitud</h3>
-      <ul class="items-list">
-        <li *ngFor="let item of detalle.items || []">
-          <div class="item-heading">
-            <span class="tipo-badge" [ngClass]="tipoClass(tipoItem(item))">{{ labelTipoItem(item) }}</span>
-            <span class="estado-badge" [ngClass]="estadoItemClass(item)">{{ labelEstadoItem(item) }}</span>
-            <div>
-              <strong>{{ resumenItem(item) }}</strong>
-              <span>{{ identifierItem(item) }}</span>
+      <section *ngIf="pestanaDetalle === 'resumen'" id="solicitud-panel-resumen" role="tabpanel" aria-labelledby="solicitud-tab-resumen">
+        <dl class="metadata-grid">
+          <div><dt>Asociacion</dt><dd>{{ asociacionLabel(detalle.asociacionId) }}</dd></div>
+          <div><dt>Registros</dt><dd>{{ detalle.totalRegistros || 0 }}</dd></div>
+          <div><dt>Alta</dt><dd>{{ detalle.fechaRegistro | date: 'dd/MM/yyyy HH:mm' }}</dd></div>
+          <div><dt>Entrada</dt><dd>{{ detalle.fechaEntrada ? (detalle.fechaEntrada | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd></div>
+          <div><dt>Validacion</dt><dd>{{ detalle.fechaValidacion ? (detalle.fechaValidacion | date: 'dd/MM/yyyy HH:mm') : '-' }}</dd></div>
+        </dl>
+
+        <h3 class="h6 mt-4 mb-2">Contenido de la solicitud</h3>
+        <ul class="items-list">
+          <li *ngFor="let item of detalle.items || []">
+            <div class="item-heading">
+              <span class="tipo-badge" [ngClass]="tipoClass(tipoItem(item))">{{ labelTipoItem(item) }}</span>
+              <span class="estado-badge" [ngClass]="estadoItemClass(item)">{{ labelEstadoItem(item) }}</span>
+              <div><strong>{{ resumenItem(item) }}</strong><span>{{ identifierItem(item) }}</span></div>
             </div>
-          </div>
-          <small *ngIf="cambiosItem(item).length">
-            {{ cambiosItem(item).join(' · ') }}
-          </small>
-        </li>
-      </ul>
+            <small *ngIf="cambiosItem(item).length">{{ cambiosItem(item).join(' · ') }}</small>
+          </li>
+        </ul>
 
-      <app-incidencias-panel scope="solicitud" [scopeId]="detalle.id"></app-incidencias-panel>
+        <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(detalle).length > 0">
+          <h3 class="h6 mb-2">Autorizaciones de alta</h3>
+          <article class="authorization-item" *ngFor="let autorizacion of autorizacionesAltaRegistradas(detalle)">
+            <div>
+              <strong>{{ autorizacion.asociadoNombre }}</strong>
+              <small>{{ autorizacion.asociacionAnteriorNombre || ('Asociacion ' + autorizacion.asociacionAnteriorId) }} autoriza el alta en {{ asociacionLabel(autorizacion.asociacionNuevaId) }}</small>
+              <small *ngIf="firmaAutorizacion(autorizacion)">Firmada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}<ng-container *ngIf="firmaAutorizacion(autorizacion)?.fecha"> el {{ firmaAutorizacion(autorizacion)?.fecha | date: 'dd/MM/yyyy HH:mm' }}</ng-container></small>
+            </div>
+            <span class="estado-badge" [ngClass]="estadoAutorizacionClass(autorizacion.estado)">{{ labelEstadoAutorizacion(autorizacion.estado) }}</span>
+          </article>
+        </section>
+      </section>
+
+      <section *ngIf="pestanaDetalle === 'cambios'" id="solicitud-panel-cambios" role="tabpanel" aria-labelledby="solicitud-tab-cambios">
+        <p class="text-muted mb-3">Comparacion por asociado: revisa el campo original, el valor propuesto y el efecto antes de tramitar.</p>
+        <article class="change-card" *ngFor="let item of detalle.items || []">
+          <header>
+            <div><strong>{{ resumenItem(item) }}</strong><small>{{ identifierItem(item) }} · {{ labelTipoItem(item) }}</small></div>
+            <span class="effect-badge">{{ efectoItem(item) }}</span>
+          </header>
+          <div class="comparison-table" *ngIf="diferenciasItem(item).length; else effectOnly">
+            <div class="comparison-row comparison-head"><span>Campo</span><span>Valor anterior</span><span>Valor propuesto</span></div>
+            <div class="comparison-row" *ngFor="let diferencia of diferenciasItem(item)"><strong>{{ diferencia.campo }}</strong><span>{{ diferencia.anterior }}</span><span>{{ diferencia.nuevo }}</span></div>
+          </div>
+          <ng-template #effectOnly><p class="mb-0 text-muted">No modifica datos previos: {{ efectoItem(item) }}.</p></ng-template>
+        </article>
+        <p class="text-muted mb-0" *ngIf="!(detalle.items?.length)">La solicitud no contiene registros.</p>
+      </section>
+
+      <section *ngIf="pestanaDetalle === 'incidencias'" id="solicitud-panel-incidencias" role="tabpanel" aria-labelledby="solicitud-tab-incidencias">
+        <app-incidencias-panel scope="solicitud" [scopeId]="detalle.id"></app-incidencias-panel>
+      </section>
+
+      <section *ngIf="pestanaDetalle === 'adjuntos'" id="solicitud-panel-adjuntos" role="tabpanel" aria-labelledby="solicitud-tab-adjuntos">
+        <section class="signed-documents" *ngIf="adjuntosSolicitud(detalle).length > 0; else noSignedDocuments">
+          <h3 class="h6 mb-2">Solicitud firmada adjunta</h3>
+          <button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosSolicitud(detalle)" (click)="descargarAdjunto(adjunto)"><i class="bi bi-paperclip me-1"></i>{{ adjunto.originalName }}</button>
+        </section>
+        <ng-template #noSignedDocuments><section class="signed-documents missing"><h3 class="h6 mb-1">Solicitud firmada adjunta</h3><p class="mb-0">No hay documento firmado adjunto a esta solicitud.</p></section></ng-template>
+      </section>
+
+      <section *ngIf="pestanaDetalle === 'historial'" id="solicitud-panel-historial" role="tabpanel" aria-labelledby="solicitud-tab-historial">
+        <ol class="list-group list-group-numbered" *ngIf="detalle.eventos?.length; else emptyHistory">
+          <li class="list-group-item" *ngFor="let evento of detalle.eventos"><strong>{{ labelEvento(evento) }}</strong><small class="d-block text-muted">{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="evento.actor"> · {{ evento.actor }}</ng-container></small></li>
+        </ol>
+        <ng-template #emptyHistory><p class="text-muted mb-0">Todavia no hay eventos registrados.</p></ng-template>
+      </section>
     </div>
 
     <footer class="detail-footer">

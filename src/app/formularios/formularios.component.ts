@@ -1,25 +1,34 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
 import { CampoInscripcion, FormularioInscripcion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 
 type FieldType = CampoInscripcion['type'];
 
 @Component({
   selector: 'app-formularios',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent, EstadoBadgeComponent],
   templateUrl: './formularios.component.html',
   styleUrls: ['./formularios.component.scss']
 })
 export class FormulariosComponent implements OnInit {
+  @Input() contextual = false;
+  @Input() formularioInicial: FormularioInscripcion | null = null;
+  @Input() camposIniciales: CampoInscripcion[] = [];
+  @Output() formularioGuardado = new EventEmitter<FormularioInscripcion>();
+  @Output() cancelado = new EventEmitter<void>();
+
   formularios: FormularioInscripcion[] = [];
   selected: FormularioInscripcion | null = null;
   loading = false;
   error = '';
   success = '';
+  confirmDelete = false;
 
   readonly fieldTypes: { value: FieldType; label: string }[] = [
     { value: 'text', label: 'Texto corto' },
@@ -48,6 +57,14 @@ export class FormulariosComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    if (this.contextual) {
+      if (this.formularioInicial) {
+        this.select(this.formularioInicial);
+      } else {
+        this.nuevo(this.camposIniciales);
+      }
+      return;
+    }
     this.cargar();
   }
 
@@ -68,12 +85,16 @@ export class FormulariosComponent implements OnInit {
     formulario.campos.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
   }
 
-  nuevo(): void {
+  nuevo(camposIniciales: CampoInscripcion[] = []): void {
     this.selected = null;
     this.success = '';
     this.error = '';
     this.form.reset({ nombre: '', descripcion: '', estado: 'activo' });
     this.campos.clear();
+    if (camposIniciales.length) {
+      camposIniciales.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
+      return;
+    }
     this.addCampo();
   }
 
@@ -93,6 +114,24 @@ export class FormulariosComponent implements OnInit {
       return;
     }
     this.campos.removeAt(index);
+  }
+
+  moveCampo(index: number, delta: number): void {
+    const target = index + delta;
+    if (target < 0 || target >= this.campos.length) return;
+    const control = this.campos.at(index);
+    this.campos.removeAt(index);
+    this.campos.insert(target, control);
+  }
+
+  duplicar(): void {
+    if (!this.selected) return;
+    const payload = { ...(this.buildPayload() as Record<string, unknown>), nombre: `${this.selected.nombre} (copia)` };
+    this.loading = true;
+    this.secretariaService.crearFormulario(payload).subscribe({
+      next: formulario => { this.formularios = [...this.formularios, formulario].sort((a, b) => a.nombre.localeCompare(b.nombre)); this.select(formulario); this.success = 'Formulario duplicado correctamente.'; this.loading = false; },
+      error: response => { this.error = response?.error?.message || 'No se ha podido duplicar el formulario.'; this.loading = false; }
+    });
   }
 
   guardar(): void {
@@ -115,6 +154,9 @@ export class FormulariosComponent implements OnInit {
         this.select(formulario);
         this.success = 'Formulario guardado correctamente.';
         this.loading = false;
+        if (this.contextual) {
+          this.formularioGuardado.emit(formulario);
+        }
       },
       error: () => {
         this.error = 'No se ha podido guardar el formulario.';
@@ -131,9 +173,12 @@ export class FormulariosComponent implements OnInit {
 
   borrar(): void {
     if (!this.selected) return;
-    if (!window.confirm('Solo se puede borrar si no esta vinculado a inscripciones. Esta accion no se puede deshacer.')) {
-      return;
-    }
+    this.confirmDelete = true;
+  }
+
+  confirmarBorrado(): void {
+    if (!this.selected) return;
+    this.confirmDelete = false;
     this.loading = true;
     this.secretariaService.borrarFormulario(this.selected.id).subscribe({
       next: () => {
@@ -157,6 +202,10 @@ export class FormulariosComponent implements OnInit {
     campo.patchValue({
       options: value.split('\n').map(item => item.trim()).filter(Boolean)
     });
+  }
+
+  cancelar(): void {
+    this.cancelado.emit();
   }
 
   private cargar(): void {

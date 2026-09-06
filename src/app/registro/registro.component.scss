@@ -28,6 +28,10 @@
   font-weight: 900;
 }
 
+.option-action {
+  position: relative;
+}
+
 .page-head {
   border-bottom: 1px solid var(--ffsj-line);
   display: flex;
@@ -43,6 +47,42 @@
   display: flex;
   flex-direction: column;
   gap: 1.15rem;
+}
+
+.year-filter {
+  display: grid;
+  grid-template-columns: minmax(240px, 2fr) minmax(110px, .65fr) minmax(150px, 1fr) minmax(160px, 1fr) auto;
+  align-items: end;
+  gap: .75rem;
+  padding: 1rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.year-filter .form-label {
+  display: grid;
+  gap: .3rem;
+  color: var(--ffsj-muted);
+  font-size: .82rem;
+  font-weight: 800;
+}
+
+.year-filter > label:nth-child(1) { order: 2; }
+.year-filter > label:nth-child(2) { order: 1; }
+.year-filter > label:nth-child(3) { order: 3; }
+.year-filter > label:nth-child(4) { order: 4; }
+.filter-action { order: 5; display: grid; gap: .3rem; }
+.filter-action .form-label { margin: 0; }
+.filter-action .btn { height: 31px; white-space: nowrap; }
+
+@media (max-width: 980px) {
+  .year-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .year-filter { grid-template-columns: 1fr; }
+  .year-filter .btn { width: 100%; }
 }
 
 .status-card,
@@ -115,6 +155,11 @@
   border-color: var(--ffsj-red);
   background: var(--ffsj-soft-red);
   box-shadow: 0 0 0 3px rgba(178, 31, 45, 0.12);
+}
+
+.authorization-row {
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .referencias {
@@ -202,12 +247,28 @@
   color: #166534;
 }
 
+.estado.archivada {
+  background: #f1f5f9;
+  color: #475569;
+}
+
 .attachments,
 .comm-tabs,
 .actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.registro-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--ffsj-line);
 }
 
 .tab-with-count {
@@ -250,6 +311,81 @@
 
 .reply-box {
   background: #fff;
+}
+
+.auth-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(13, 19, 31, 0.46);
+}
+
+.auth-dialog {
+  width: min(760px, 100%);
+  max-height: min(720px, calc(100vh - 2.5rem));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.auth-header,
+.auth-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+}
+
+.auth-header {
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.auth-footer {
+  border-top: 1px solid var(--ffsj-line);
+}
+
+.auth-body {
+  overflow: auto;
+  padding: 1.2rem;
+}
+
+.auth-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin: 0;
+}
+
+.auth-grid dt {
+  color: var(--ffsj-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.auth-grid dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.auth-note {
+  margin-top: 1rem;
+  border-radius: 12px;
+  padding: 0.8rem;
+  background: #eff6ff;
+  color: #1e3a8a;
+}
+
+.auth-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .form-grid {

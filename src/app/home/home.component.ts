@@ -2,10 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminAccessService } from '../core/admin-access.service';
-import { CensoService } from '../core/censo.service';
 import { DashboardAdminResumen, DashboardAsociacionResumen } from '../core/models';
+import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { PermissionsService } from '../core/permissions.service';
-import { SecretariaService } from '../core/secretaria.service';
 
 interface ModuleTile {
   title: string;
@@ -40,7 +39,8 @@ export class HomeComponent implements OnInit {
   associationSummary: DashboardAsociacionResumen = {
     solicitudesConIncidencia: 0,
     inscripcionesAbiertas: 0,
-    comunicacionesNuevas: 0
+    comunicacionesNuevas: 0,
+    autorizacionesAltaPendientes: 0
   };
   adminSummary: DashboardAdminResumen = {
     solicitudesPendientes: 0,
@@ -95,17 +95,24 @@ export class HomeComponent implements OnInit {
   constructor(
     readonly permissions: PermissionsService,
     readonly adminAccess: AdminAccessService,
-    private readonly secretariaService: SecretariaService,
-    private readonly censoService: CensoService
+    private readonly dashboardSummary: DashboardSummaryService
   ) {
     this.isAdmin = this.adminAccess.isAdmin();
   }
 
   ngOnInit(): void {
+    this.dashboardSummary.associationChanges.subscribe(summary => this.associationSummary = summary);
+    this.dashboardSummary.adminChanges.subscribe(summary => this.adminSummary = summary);
+    this.dashboardSummary.loadingChanges.subscribe(loading => this.dashboardLoading = loading);
+    this.dashboardSummary.errorChanges.subscribe(error => this.dashboardError = error);
+
     if (this.isAdmin) {
-      this.cargarResumenAdmin();
+      this.dashboardSummary.loadAdmin();
     } else {
-      this.cargarResumenAsociacion();
+      const asociacionId = this.permissions.contextSnapshot?.asociacionId;
+      if (asociacionId) {
+        this.dashboardSummary.loadAssociation(asociacionId);
+      }
     }
   }
 
@@ -133,6 +140,15 @@ export class HomeComponent implements OnInit {
         tone: 'orange',
         path: '/asociados/gestion',
         queryParams: { tab: 'solicitudes', filtro: 'incidencias' }
+      },
+      {
+        title: 'Altas pendientes de firma',
+        value: this.formatCount(this.associationSummary.autorizacionesAltaPendientes || 0, 'pendiente', 'pendientes'),
+        count: this.associationSummary.autorizacionesAltaPendientes || 0,
+        icon: 'bi-pen-fill',
+        tone: 'orange',
+        path: '/asociados/gestion',
+        queryParams: { tab: 'solicitudes' }
       },
       {
         title: 'Inscripciones abiertas',
@@ -189,41 +205,6 @@ export class HomeComponent implements OnInit {
         path: '/registro/documentacion'
       }
     ];
-  }
-
-  private cargarResumenAsociacion(): void {
-    const asociacionId = this.censoService.asociacionId;
-    if (!asociacionId) {
-      return;
-    }
-
-    this.dashboardLoading = true;
-    this.dashboardError = false;
-    this.secretariaService.getDashboardAsociacion(asociacionId).subscribe({
-      next: resumen => {
-        this.associationSummary = resumen;
-        this.dashboardLoading = false;
-      },
-      error: () => {
-        this.dashboardError = true;
-        this.dashboardLoading = false;
-      }
-    });
-  }
-
-  private cargarResumenAdmin(): void {
-    this.dashboardLoading = true;
-    this.dashboardError = false;
-    this.secretariaService.getDashboardAdmin().subscribe({
-      next: resumen => {
-        this.adminSummary = resumen;
-        this.dashboardLoading = false;
-      },
-      error: () => {
-        this.dashboardError = true;
-        this.dashboardLoading = false;
-      }
-    });
   }
 
   private formatCount(value: number, singular: string, plural: string): string {

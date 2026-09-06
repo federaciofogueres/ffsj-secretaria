@@ -6,12 +6,15 @@ import { AsociacionComponent } from './asociacion/asociacion.component';
 import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { CalendarioComponent } from './calendario/calendario.component';
+import { EjerciciosComponent } from './ejercicios/ejercicios.component';
 import { FormulariosComponent } from './formularios/formularios.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
 import { SolicitudesComponent } from './solicitudes/solicitudes.component';
+import { SoporteComponent } from './soporte/soporte.component';
+import { SoporteAdminComponent } from './soporte/soporte-admin.component';
 import { adminGuard } from './core/admin.guard';
 import { permissionGuard } from './core/permission.guard';
 
@@ -31,6 +34,12 @@ export const routes: Routes = [
     component: HomeComponent,
     title: 'Inicio',
     canActivate: [AuthGuard]
+  },
+  {
+    path: 'soporte', component: SoporteComponent, title: 'Soporte', canActivate: [AuthGuard]
+  },
+  {
+    path: 'admin/soporte', component: SoporteAdminComponent, title: 'Soporte administrativo', canActivate: [AuthGuard, adminGuard]
   },
   {
     path: 'asociados',
@@ -77,14 +86,14 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'inscripciones',
+    path: 'inscripciones/nueva',
     component: InscripcionesComponent,
-    title: 'Inscripciones',
-    canActivate: [AuthGuard, permissionGuard],
+    title: 'Crear inscripcion',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
     data: {
-      permission: 'inscripciones:read',
+      permission: 'inscripciones:write',
       moduleName: 'Inscripciones',
-      moduleDescription: 'Permite apuntar a asociados de la entidad en eventos y actividades ya existentes.'
+      moduleDescription: 'Creacion de una nueva inscripcion.'
     }
   },
   {
@@ -99,14 +108,25 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'inscripciones/nueva',
-    component: InscripcionesComponent,
-    title: 'Crear inscripcion',
+    path: 'ejercicios',
+    component: EjerciciosComponent,
+    title: 'Ejercicios',
     canActivate: [AuthGuard, permissionGuard, adminGuard],
     data: {
-      permission: 'inscripciones:write',
+      permission: 'admin:permissions',
+      moduleName: 'Ejercicios',
+      moduleDescription: 'Gestion del ejercicio activo, fechas e inicio de datos desde el ejercicio anterior.'
+    }
+  },
+  {
+    path: 'inscripciones',
+    component: InscripcionesComponent,
+    title: 'Inscripciones',
+    canActivate: [AuthGuard, permissionGuard],
+    data: {
+      permission: 'inscripciones:read',
       moduleName: 'Inscripciones',
-      moduleDescription: 'Creacion de una nueva inscripcion.'
+      moduleDescription: 'Permite apuntar a asociados de la entidad en eventos y actividades ya existentes.'
     }
   },
   {

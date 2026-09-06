@@ -4,6 +4,7 @@ import { AsociadosService } from './asociados.service';
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
 import { HistoricoAsociado } from '../core/models';
+import { EjercicioService } from '../core/ejercicio.service';
 
 describe('AsociadosService', () => {
   const historico: HistoricoAsociado[] = [
@@ -38,8 +39,9 @@ describe('AsociadosService', () => {
 
     const adminAccess = jasmine.createSpyObj<AdminAccessService>('AdminAccessService', ['isAdmin']);
     adminAccess.isAdmin.and.returnValue(isAdmin);
+    const ejercicioService = { selectedChanges: of({ ejercicio: 2026 }) } as EjercicioService;
 
-    return new AsociadosService(censo, adminAccess);
+    return new AsociadosService(censo, adminAccess, ejercicioService);
   }
 
   it('filtra el historico por la asociacion autenticada en acceso de asociacion', done => {
@@ -58,7 +60,7 @@ describe('AsociadosService', () => {
     });
   });
 
-  it('rellena el cargo del listado con el cargo del ejercicio actual', done => {
+  it('usa el listado agregado con los cargos del ejercicio seleccionado', done => {
     const currentYear = new Date().getFullYear();
     const censo = jasmine.createSpyObj<CensoService>(
       'CensoService',
@@ -76,34 +78,14 @@ describe('AsociadosService', () => {
         }
       ])
     );
-    censo.getHistoricoByAsociado.and.returnValue(
-      of([
-        {
-          cargo: 'Secretaria',
-          ejercicio: currentYear,
-          nombreAsociacion: 'Doctor Bergez - Carolinas',
-          idCargo: 16,
-          idEjercicio: 5,
-          idAsociacion: 25,
-          active: 1
-        },
-        {
-          cargo: 'Presidenta',
-          ejercicio: currentYear - 1,
-          nombreAsociacion: 'Doctor Bergez - Carolinas',
-          idCargo: 1,
-          idEjercicio: 4,
-          idAsociacion: 25,
-          active: 0
-        }
-      ])
-    );
-
     const adminAccess = jasmine.createSpyObj<AdminAccessService>('AdminAccessService', ['isAdmin']);
     adminAccess.isAdmin.and.returnValue(false);
+    const ejercicioService = { selectedChanges: of({ ejercicio: currentYear }) } as EjercicioService;
 
-    new AsociadosService(censo, adminAccess).getAdultos().subscribe(result => {
-      expect(result[0].cargo).toBe('Secretaria');
+    new AsociadosService(censo, adminAccess, ejercicioService).getAdultos().subscribe(result => {
+      expect(result[0].cargo).toBe('');
+      expect(censo.getAsociadosByAsociacion).toHaveBeenCalledWith(25, currentYear);
+      expect(censo.getHistoricoByAsociado).not.toHaveBeenCalled();
       done();
     });
   });

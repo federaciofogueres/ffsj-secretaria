@@ -1,6 +1,6 @@
 <section class="formularios card border-0 shadow-sm">
   <div class="card-body p-4 p-md-5">
-    <div class="d-flex justify-content-between gap-3 flex-wrap mb-4">
+    <div class="d-flex justify-content-between gap-3 flex-wrap mb-4" *ngIf="!contextual">
       <div>
         <p class="overline text-uppercase text-muted fw-bold mb-1">Administracion</p>
         <h1 class="h4 mb-1 text-rojo">Formularios</h1>
@@ -13,8 +13,8 @@
     <div class="alert alert-success" *ngIf="success">{{ success }}</div>
     <div class="text-muted" *ngIf="loading">Cargando...</div>
 
-    <div class="layout">
-      <aside class="list">
+    <div class="layout" [class.contextual]="contextual">
+      <aside class="list" *ngIf="!contextual">
         <h2 class="h6 mb-3">Plantillas</h2>
         <button
           class="form-item"
@@ -27,7 +27,7 @@
             <strong>{{ formulario.nombre }}</strong>
             <small>{{ formulario.campos.length }} campo(s) - {{ formulario.inscripcionesCount }} inscripcion(es)</small>
           </span>
-          <em [class.archived]="formulario.estado === 'archivado'">{{ formulario.estado }}</em>
+          <app-estado-badge [estado]="formulario.estado"></app-estado-badge>
         </button>
       </aside>
 
@@ -60,7 +60,7 @@
               <div class="field-row" *ngFor="let campo of campos.controls; let i = index" [formGroupName]="i">
                 <div class="field-head">
                   <strong>Campo {{ i + 1 }}</strong>
-                  <button class="btn btn-outline-danger btn-sm" type="button" (click)="removeCampo(i)">Quitar</button>
+                  <span class="d-flex gap-1"><button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="i === 0" (click)="moveCampo(i, -1)">↑</button><button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="i === campos.length - 1" (click)="moveCampo(i, 1)">↓</button><button class="btn btn-outline-danger btn-sm" type="button" (click)="removeCampo(i)">Quitar</button></span>
                 </div>
                 <div class="field-grid">
                   <label>
@@ -122,11 +122,22 @@
           <div class="d-flex gap-2 flex-wrap mt-3">
             <button class="btn btn-foc-rojo" type="submit" [disabled]="loading">Guardar formulario</button>
             <button class="btn btn-outline-warning" type="button" *ngIf="selected && selected.estado !== 'archivado'" [disabled]="loading" (click)="archivar()">Archivar</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="selected" [disabled]="loading" (click)="duplicar()">Duplicar</button>
             <button class="btn btn-outline-danger" type="button" *ngIf="selected" [disabled]="loading" (click)="borrar()">Borrar</button>
+            <button class="btn btn-outline-secondary" type="button" *ngIf="contextual" [disabled]="loading" (click)="cancelar()">Cancelar</button>
           </div>
         </form>
       </section>
     </div>
   </div>
 </section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar formulario"
+  message="Solo se puede borrar si no está vinculado a inscripciones. Esta acción no se puede deshacer."
+  confirmLabel="Borrar formulario"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorrado()"
+></app-confirm-dialog>
 

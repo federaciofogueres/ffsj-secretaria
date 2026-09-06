@@ -12,6 +12,9 @@
 
       <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
       <div class="alert alert-success" *ngIf="success">{{ success }}</div>
+      <div class="alert alert-warning" *ngIf="accionesAsociacionBloqueadasPorEjercicio">
+        <strong>Ejercicio solo consulta.</strong> {{ mensajeEjercicioNoActivo }}
+      </div>
       <div class="text-muted" *ngIf="loading">Cargando...</div>
 
       <div class="layout" *ngIf="!detailMode">
@@ -32,6 +35,13 @@
               Crear inscripcion
             </button>
           </div>
+          <section class="inscription-filters" aria-label="Filtros de inscripciones">
+            <label class="filter-search">Buscar inscripción<input class="form-control form-control-sm" type="search" [(ngModel)]="busquedaInscripciones" (keyup.enter)="cargarPaginaInscripciones(true)" placeholder="Título o actividad" /></label>
+            <label *ngIf="isAdminMode">Estado<select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todos</option><option value="borrador">Borrador</option><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option></select></label>
+            <label>Disponibilidad<select class="form-select form-select-sm" [(ngModel)]="filtroDisponibilidad" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todas</option><option value="activa">Activas</option><option value="cerrada">Plazo cerrado</option></select></label>
+            <label>Ordenar<select class="form-select form-select-sm" [(ngModel)]="ordenInscripciones" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="plazo_asc">Plazo más próximo</option><option value="plazo_desc">Plazo más lejano</option><option value="titulo_asc">Título A-Z</option></select></label>
+            <div class="filter-action"><button class="ux-btn ux-btn-sm" type="button" (click)="cargarPaginaInscripciones(true)">Buscar</button></div>
+          </section>
           <div class="inscription-list mb-4">
             <div
               *ngFor="let item of inscripciones"
@@ -39,6 +49,8 @@
               role="button"
               tabindex="0"
               (click)="openInscription(item)"
+              (keydown.enter)="openInscription(item)"
+              (keydown.space)="openInscription(item); $event.preventDefault()"
             >
               <div class="text-start">
                 <p class="title mb-1">{{ item.titulo }}</p>
@@ -46,8 +58,9 @@
                 <div class="dates small text-muted">
                   <span>Publicada: {{ item.fechaPublicacion | date : 'dd/MM/y' }}</span>
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
-                  <span class="ms-2" *ngIf="isAdminMode">Estado: {{ item.estado }}</span>
+                  <app-estado-badge class="ms-2" *ngIf="isAdminMode" [estado]="item.estado"></app-estado-badge>
                 </div>
+                <div class="inscription-badges" *ngIf="!isAdminMode"><span class="availability-badge" [class.closed]="!isInscripcionDisponible(item)">{{ disponibilidadLabel(item) }}</span><span class="participation-badge" [class.registered]="item.inscrito">{{ item.inscrito ? 'Inscrito' : 'No inscrito' }}</span></div>
               </div>
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
                 <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
@@ -57,6 +70,7 @@
               </div>
             </div>
           </div>
+          <nav class="participant-pagination" *ngIf="paginacionInscripciones.totalPages > 1" aria-label="Paginación de inscripciones"><span class="text-muted small">Página {{ paginacionInscripciones.page }} de {{ paginacionInscripciones.totalPages }}</span><div class="page-actions"><button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="paginacionInscripciones.page === 1" (click)="cambiarPaginaInscripciones(-1)">Anterior</button><button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="paginacionInscripciones.page === paginacionInscripciones.totalPages" (click)="cambiarPaginaInscripciones(1)">Siguiente</button></div></nav>
           <p class="text-muted mb-0" *ngIf="!inscripciones.length && !loading">No hay inscripciones disponibles.</p>
         </section>
       </div>
@@ -126,6 +140,11 @@
               </span>
             </div>
 
+            <div class="alert alert-warning mt-3 mb-0" *ngIf="!isAdminMode && mensajeDisponibilidadInscripcion(inscription)">
+              <i class="bi bi-clock-history me-1" aria-hidden="true"></i>
+              {{ mensajeDisponibilidadInscripcion(inscription) }}
+            </div>
+
             <div class="admin-tabs" *ngIf="isAdminMode">
               <button type="button" class="tab-button" [class.active]="adminTab === 'documentacion'" (click)="setAdminTab('documentacion')">
                 Documentacion
@@ -155,7 +174,7 @@
                 <span>4</span>
                 Revisar
               </button>
-              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit" (click)="submit()">
+              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <span>5</span>
                 Enviar
               </button>
@@ -167,9 +186,9 @@
                 Lee las condiciones y documentos adjuntos. Despues podras rellenar los datos y seleccionar participantes.
               </p>
               <div class="document-list" *ngIf="adjuntos.length; else noDocs">
-                <a class="document-item" *ngFor="let adjunto of adjuntos" [href]="documentUrl(adjunto)" target="_blank" rel="noopener">
-                  {{ adjunto.originalName || adjunto.fileName }}
-                </a>
+                <button class="document-item" type="button" *ngFor="let adjunto of adjuntos" (click)="abrirDocumento(adjunto)">
+                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
+                </button>
               </div>
               <div class="actions mt-3" *ngIf="!isAdminMode">
                 <button class="ux-btn" type="button" (click)="goAssociationStep(2)">Continuar</button>
@@ -195,6 +214,12 @@
                   {{ formulario.nombre }} ({{ formulario.campos.length }} campo(s))
                 </option>
               </select>
+              <div class="d-flex gap-2 mt-2 flex-wrap">
+                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading" (click)="abrirFormularioContextual()">
+                  {{ inscripcionAdminForm.value.formularioId ? 'Editar formulario seleccionado' : 'Crear formulario reutilizable' }}
+                </button>
+              </div>
+              <p class="text-muted small mb-0 mt-1">Abre el editor completo del formulario. Al guardarlo se asociara automaticamente a esta inscripcion.</p>
               <label class="form-label mt-2">Actividad vinculada</label>
               <select class="form-select" formControlName="actividadId">
                 <option value="">Sin actividad vinculada</option>
@@ -261,13 +286,18 @@
                 <div class="entries-row" *ngFor="let entrada of entradas">
                   <span>{{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</span>
                   <span>{{ entrada.numero }}</span>
-                  <span>{{ entrada.estado }}</span>
+                  <span><select class="form-select form-select-sm" [ngModel]="entrada.estado" [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'" (ngModelChange)="cambiarEstadoEntrada(entrada, $event)">
+                    <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
+                    <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
+                  </select></span>
                   <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
                   <span class="entry-actions">
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
                   </span>
                 </div>
               </div>
@@ -293,6 +323,18 @@
                     <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                   </ng-container>
                 </dl>
+                <section class="mt-3">
+                  <h5 class="h6">Adjuntos de la entrada</h5>
+                  <input class="form-control form-control-sm mb-2" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
+                  <div class="document-list" *ngIf="adjuntosEntrada.length; else noEntryAttachments">
+                    <button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">
+                      {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
+                    </button>
+                  </div>
+                  <ng-template #noEntryAttachments><p class="text-muted mb-0">No hay adjuntos para esta entrada.</p></ng-template>
+                </section>
+                <section class="mt-3" *ngIf="entrada.eventos?.length"><h5 class="h6">Historial</h5><ul class="mb-0"><li *ngFor="let evento of entrada.eventos">{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ evento.actor }} · {{ evento.detalle || evento.tipo }}</li></ul></section>
+                <app-incidencias-panel scope="inscripcion" [scopeId]="entrada.id"></app-incidencias-panel>
               </div>
             </section>
 
@@ -304,6 +346,7 @@
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
                 <button class="ux-btn" type="button" (click)="cerrarResumen()">Cerrar</button>
+                <button class="ux-btn ux-btn-secondary" type="button" (click)="descargarJustificanteEntrada(entrada)">Justificante PDF</button>
               </div>
               <dl class="entry-data">
                 <dt>Participantes</dt>
@@ -313,6 +356,10 @@
                   <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                 </ng-container>
               </dl>
+              <section class="mt-3" *ngIf="adjuntosEntrada.length">
+                <h4 class="h6">Adjuntos de la entrada</h4>
+                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
+              </section>
             </section>
 
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'view' && miEntrada as entrada">
@@ -322,8 +369,12 @@
                   <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
                   <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
                 </div>
-                <button class="ux-btn" type="button" [disabled]="!isWithinDeadline(inscription)" (click)="modificarMiInscripcion()">
+                <button class="ux-btn" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
                   Modificar inscripcion
+                </button>
+                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="loading" (click)="solicitarBorradoMiEntrada()">Borrar inscripción</button>
+                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeSolicitarRetirada(entrada)" [disabled]="loading" (click)="solicitarRetirada(entrada)">
+                  Solicitar retirada
                 </button>
               </div>
               <dl class="entry-data">
@@ -334,43 +385,51 @@
                   <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
                 </ng-container>
               </dl>
-              <p class="text-muted mb-0 mt-2" *ngIf="!isWithinDeadline(inscription)">El plazo de modificacion esta cerrado.</p>
+              <section class="mt-3" *ngIf="adjuntosEntrada.length">
+                <h4 class="h6">Adjuntos de la entrada</h4>
+                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
+              </section>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'validada'">Validada: no se puede modificar ni borrar.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado !== 'validada' && !isWithinDeadline(inscription)">Plazo cerrado: no se puede modificar ni borrar.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada_solicitada'">Retirada pendiente de validación administrativa.</p>
+              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
             </section>
 
             <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'edit'">
               <h3 class="section-title">Formulario</h3>
               <div class="field-grid">
                 <ng-container *ngFor="let field of inscription.campos">
-                  <div class="field" [class.full]="field.type === 'textarea'">
-                    <label class="form-label">
-                      {{ field.label }}
-                      <span *ngIf="field.required" class="text-rojo">*</span>
-                    </label>
-                    <ng-container [ngSwitch]="field.type">
-                      <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [formControlName]="field.key"></textarea>
-                      <select *ngSwitchCase="'select'" class="form-select" [formControlName]="field.key">
+                    <div class="field" [class.full]="field.type === 'textarea'">
+                      <label class="form-label" [for]="fieldInputId(field)">
+                        {{ field.label }}
+                        <span *ngIf="isRequiredField(field)" class="required-indicator" aria-hidden="true">*</span>
+                        <span *ngIf="isRequiredField(field)" class="visually-hidden"> (obligatorio)</span>
+                      </label>
+                      <ng-container [ngSwitch]="field.type">
+                        <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key"></textarea>
+                        <select *ngSwitchCase="'select'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona una opcion</option>
                         <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado_adulto'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado_adulto'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado adulto</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'asociado_infantil'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'asociado_infantil'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona un asociado infantil</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <select *ngSwitchCase="'responsable'" class="form-select" [formControlName]="field.key">
+                        <select *ngSwitchCase="'responsable'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
                         <option value="" disabled>Selecciona responsable</option>
                         <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
                       </select>
-                      <input *ngSwitchDefault class="form-control" [attr.type]="field.type" [formControlName]="field.key" />
-                    </ng-container>
-                    <div class="invalid-field" *ngIf="form.get(field.key)?.touched && form.get(field.key)?.invalid">
+                        <input *ngSwitchDefault class="form-control" [id]="fieldInputId(field)" [attr.type]="field.type" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
+                      </ng-container>
+                      <div class="invalid-field" [id]="fieldErrorId(field)" role="alert" *ngIf="isFieldInvalid(field)">
                       Este campo es obligatorio.
                     </div>
                   </div>
@@ -483,7 +542,7 @@
             </div>
 
             <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode && associationMode === 'edit'">
-              <button type="button" class="ux-btn" [disabled]="!canSubmit" (click)="submit()">
+              <button type="button" class="ux-btn" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <i class="bi bi-send me-1"></i>
                 {{ miEntrada ? 'Guardar cambios' : 'Inscribirse' }}
               </button>
@@ -500,4 +559,42 @@
       </div>
   </div>
 </section>
+
+<div class="formulario-backdrop" *ngIf="showFormularioDialog" (click)="cerrarFormularioContextual()"></div>
+<section class="formulario-dialog" *ngIf="showFormularioDialog" role="dialog" aria-modal="true" aria-labelledby="formularioContextualTitulo" (click)="$event.stopPropagation()">
+  <header class="formulario-dialog-header">
+    <div>
+      <p class="ux-overline mb-1">Inscripcion</p>
+      <h2 id="formularioContextualTitulo" class="h5 mb-0">{{ formularioContextual() ? 'Editar formulario reutilizable' : 'Crear formulario reutilizable' }}</h2>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cerrarFormularioContextual()">Cerrar</button>
+  </header>
+  <div class="formulario-dialog-body">
+    <app-formularios
+      [contextual]="true"
+      [formularioInicial]="formularioContextual()"
+      [camposIniciales]="camposFormularioContextual()"
+      (formularioGuardado)="asociarFormularioGuardado($event)"
+      (cancelado)="cerrarFormularioContextual()"
+    ></app-formularios>
+  </div>
+</section>
+
+<app-confirm-dialog
+  *ngIf="confirmDelete"
+  title="Borrar inscripción"
+  message="Esta acción borrará definitivamente la inscripción. No se puede deshacer."
+  confirmLabel="Borrar inscripción"
+  (cancel)="confirmDelete = false"
+  (confirmed)="confirmarBorradoInscripcion()"
+></app-confirm-dialog>
+
+<app-confirm-dialog
+  *ngIf="confirmDeleteEntry"
+  title="Borrar inscripción presentada"
+  message="Se eliminará la entrada y su historial. Esta acción no se puede deshacer."
+  confirmLabel="Borrar inscripción"
+  (cancel)="confirmDeleteEntry = false"
+  (confirmed)="confirmarBorradoMiEntrada()"
+></app-confirm-dialog>
 

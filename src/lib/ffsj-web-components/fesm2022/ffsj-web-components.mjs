@@ -164,7 +164,7 @@ class Configuration {
 class CensoService {
     constructor(httpClient) {
         this.httpClient = httpClient;
-        this.basePath = 'https://censo-api.hogueras.es/emjf1/Censo-Hogueras/1.0.0';
+        this.basePath = globalThis.__FFSJ_CENSO_API_BASE_PATH__ || 'https://censo-api.hogueras.es/emjf1/Censo-Hogueras/1.0.0';
         this.defaultHeaders = new HttpHeaders();
         this.configuration = new Configuration();
     }

@@ -12,12 +12,13 @@
           <div>
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
-                <h2 class="h5 mb-2">Presentar documentacion</h2>
-                <p class="text-muted mb-3">Adjunta ficheros y envialos a la Federacion. Obtendras un registro de entrada.</p>
+                <h2 class="h5 mb-2">Acceso a documentacion</h2>
+                <p class="text-muted mb-3">Consulta documentacion presentada o solicitada, y presenta nuevos documentos.</p>
               </div>
               <div class="mt-auto p-3">
-                <a class="ux-btn w-100" routerLink="/registro/documentacion" [class.disabled]="!permissions.hasPermission('registro:read')">
-                  {{ isAdminMode ? 'Ver documentacion' : 'Abrir presentacion' }}
+                <a class="ux-btn w-100 option-action" routerLink="/registro/documentacion" [class.disabled]="!permissions.hasPermission('registro:read')">
+                  Ir a documentacion
+                  <span class="tab-count" *ngIf="documentacionNuevaCount > 0">{{ documentacionNuevaCount }}</span>
                 </a>
               </div>
             </div>
@@ -25,12 +26,13 @@
           <div>
             <div class="option-card h-100 d-flex flex-column">
               <div class="p-3">
-                <h2 class="h5 mb-2">Realizar comunicacion</h2>
-                <p class="text-muted mb-3">Envia un mensaje con destinatario y adjuntos opcionales. No sustituye a una presentacion documental oficial.</p>
+                <h2 class="h5 mb-2">Acceso a comunicaciones</h2>
+                <p class="text-muted mb-3">Consulta comunicaciones realizadas o recibidas, y envia nuevas comunicaciones.</p>
               </div>
               <div class="mt-auto p-3">
-                <a class="ux-btn ux-btn-secondary w-100" routerLink="/registro/comunicacion" [class.disabled]="!permissions.hasPermission('registro:read')">
-                  {{ isAdminMode ? 'Ver comunicaciones' : 'Abrir comunicacion' }}
+                <a class="ux-btn ux-btn-secondary w-100 option-action" routerLink="/registro/comunicacion" [class.disabled]="!permissions.hasPermission('registro:read')">
+                  Ir a comunicaciones
+                  <span class="tab-count" *ngIf="comunicacionesNuevasCount > 0">{{ comunicacionesNuevasCount }}</span>
                 </a>
               </div>
             </div>
@@ -58,7 +60,43 @@
 
       <div class="body">
         <div class="alert alert-danger" *ngIf="errorRegistros">{{ errorRegistros }}</div>
+        <div class="alert alert-warning" *ngIf="mode === 'comunicacion' && comunicacionBloqueadaPorEjercicio">
+          <strong>Ejercicio solo consulta.</strong> {{ mensajeComunicacionBloqueada }}
+        </div>
         <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
+        <div class="year-filter mb-3" *ngIf="mode !== null">
+          <label class="form-label mb-0">Año
+          <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
+            <option [ngValue]="''">Todos</option>
+            <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
+          </select></label>
+          <label class="form-label mb-0">Buscar
+          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" /></label>
+          <label class="form-label mb-0">Estado
+          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
+            <option value="">Todos los estados</option>
+            <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
+          </select></label>
+          <label class="form-label mb-0">Ordenar
+          <select class="form-select form-select-sm" [(ngModel)]="ordenRegistros" (ngModelChange)="aplicarFiltros()" aria-label="Ordenar registros">
+            <option value="fecha_desc">Actualizados primero</option>
+            <option value="fecha_asc">Actualizados al final</option>
+            <option value="estado">Estado</option>
+            <option value="titulo">Título</option>
+          </select></label>
+          <div class="filter-action"><span class="form-label">Acción</span><button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button></div>
+        </div>
+
+        <section class="border rounded p-3 mb-3" *ngIf="isAdminMode && mode !== null && permissions.hasPermission('registro:write')">
+          <h2 class="h6 mb-1">Destinatarios administrativos</h2>
+          <p class="text-muted small mb-3">Añade departamentos y las personas responsables que aparecerán en los formularios de Registro.</p>
+          <div class="row g-2 align-items-end">
+            <div class="col-md-4"><label class="form-label small">Departamento</label><input class="form-control form-control-sm" [(ngModel)]="nuevoDepartamento" placeholder="Ej. Secretaría" /></div>
+            <div class="col-md-4"><label class="form-label small">Persona responsable</label><input class="form-control form-control-sm" [(ngModel)]="nuevoDestinatario" placeholder="Nombre y apellidos" /></div>
+            <div class="col-md-3"><label class="form-label small">Correo</label><input class="form-control form-control-sm" type="email" [(ngModel)]="nuevoDestinatarioEmail" placeholder="correo@ffsj.es" /></div>
+            <div class="col-md-1 d-grid"><button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="guardandoDestinatario" (click)="crearDestinatario()">Añadir</button></div>
+          </div>
+        </section>
 
         <section class="list-card" *ngIf="mode === 'documentacion' && !isFormView && !isDetailView">
           <div class="list-card-head">
@@ -88,6 +126,30 @@
               Nuevas
               <span class="tab-count">{{ documentacionNuevaCount }}</span>
             </button>
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'archivadas'" [class.ux-btn-secondary]="docBandeja !== 'archivadas'" (click)="setDocBandeja('archivadas')">
+              Archivadas
+            </button>
+          </div>
+          <div class="registro-list mb-3" *ngIf="autorizacionesFirmaVisibles.length > 0">
+            <article class="registro-row authorization-row" *ngFor="let autorizacion of autorizacionesFirmaVisibles">
+              <span>
+                <strong>{{ autorizacion.solicitudNumero }}</strong>
+                <small>Autorizacion de alta de {{ autorizacion.asociadoNombre }}</small>
+                <small class="registro-meta">
+                  Procedencia: {{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}
+                  <span>Dirigida a: {{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</span>
+                  <span>Creada: {{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </small>
+              </span>
+              <span class="d-flex align-items-center gap-2">
+                <span class="badge estado" [ngClass]="autorizacion.estado === 'archivada' ? 'archivada' : 'enviada'">
+                  {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de firma' }}
+                </span>
+                <button class="ux-btn ux-btn-sm" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="abrirDetalleAutorizacion(autorizacion)">
+                  Ver detalles
+                </button>
+              </span>
+            </article>
           </div>
           <div class="registro-list" *ngIf="docRefs.length > 0; else emptyDocs">
             <button
@@ -101,17 +163,25 @@
                 <strong>{{ ref.numero }}</strong>
                 <small>{{ ref.titulo }}</small>
                 <small class="registro-meta">
-                  Receptor: {{ receptorRegistro(ref) }}
+                  Procedencia: {{ emisorRegistro(ref) }}
+                  <span>Dirigida a: {{ receptorRegistro(ref) }}</span>
                   <span>Creada: {{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
                   <span>Actualizada: {{ fechaActualizacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
                 </small>
               </span>
-              <span class="badge estado" [ngClass]="estadoComunicacionClass(ref)">{{ estadoComunicacionLabel(ref) }}</span>
+              <span class="badge estado" [ngClass]="estadoClass(ref.estado)">{{ estadoLabel(ref.estado) }}</span>
             </button>
           </div>
           <ng-template #emptyDocs>
-            <p class="text-muted mb-0">{{ docEmptyMessage }}</p>
+            <p class="text-muted mb-0" *ngIf="autorizacionesFirmaVisibles.length === 0">{{ docEmptyMessage }}</p>
           </ng-template>
+          <nav class="registro-pagination" *ngIf="paginacion.total > 0" aria-label="Paginacion de documentacion">
+            <span class="text-muted small">Mostrando {{ docRefs.length }} de {{ paginacion.total }} &middot; Pagina {{ paginaActual }} de {{ paginacion.totalPages }}</span>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loadingRegistros" (click)="cambiarPagina(-1)">Anterior</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === paginacion.totalPages || loadingRegistros" (click)="cambiarPagina(1)">Siguiente</button>
+            </div>
+          </nav>
         </section>
 
         <section class="list-card" *ngIf="mode === 'comunicacion' && !isFormView && !isDetailView">
@@ -130,6 +200,9 @@
               <i class="bi bi-plus-lg me-1"></i>
               Enviar nueva comunicacion
             </a>
+            <span class="text-muted small" *ngIf="comunicacionBloqueadaPorEjercicio">
+              Selecciona el ejercicio activo para enviar comunicaciones.
+            </span>
           </div>
           <div class="comm-tabs mb-2">
             <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'realizadas'" [class.ux-btn-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
@@ -166,6 +239,13 @@
           <ng-template #emptyComms>
             <p class="text-muted mb-0">{{ commEmptyMessage }}</p>
           </ng-template>
+          <nav class="registro-pagination" *ngIf="paginacion.total > 0" aria-label="Paginacion de comunicaciones">
+            <span class="text-muted small">Mostrando {{ commRefs.length }} de {{ paginacion.total }} &middot; Pagina {{ paginaActual }} de {{ paginacion.totalPages }}</span>
+            <div class="btn-group">
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === 1 || loadingRegistros" (click)="cambiarPagina(-1)">Anterior</button>
+              <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="paginaActual === paginacion.totalPages || loadingRegistros" (click)="cambiarPagina(1)">Siguiente</button>
+            </div>
+          </nav>
         </section>
 
         <section class="status-card" *ngIf="isDetailView && (mode === 'documentacion' ? docResultado : commResultado) as resultado">
@@ -190,12 +270,25 @@
             <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
             <span>Ultima actualizacion: <strong>{{ fechaActualizacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
           </div>
+          <div class="registro-detail-meta mt-2" *ngIf="mode === 'documentacion'">
+            <span>Procedencia: <strong>{{ emisorRegistro(resultado) }}</strong></span>
+            <span>Dirigida a: <strong>{{ receptorRegistro(resultado) }}</strong></span>
+            <span *ngIf="resultado.departamentoNombre">Área: <strong>{{ resultado.departamentoNombre }}</strong></span>
+            <span *ngIf="resultado.destinatarioNombre">Destinatario: <strong>{{ resultado.destinatarioNombre }}</strong></span>
+            <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
+          </div>
 
           <p class="mb-0 mt-2" *ngIf="resultado.mensaje">{{ resultado.mensaje }}</p>
 
+          <div class="d-flex flex-wrap gap-2 mt-3">
+            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="updatingEstado" (click)="marcarRegistroNoLeido(resultado)">
+              <i class="bi bi-envelope me-1"></i>Marcar como no leido
+            </button>
+          </div>
+
           <div class="attachments mt-2" *ngIf="resultado.adjuntos.length">
-            <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of resultado.adjuntos" (click)="descargarAdjunto(adjunto.downloadUrl)">
-              {{ adjunto.originalName }}
+            <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of resultado.adjuntos" (click)="descargarAdjunto(adjunto)">
+              {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
             </button>
           </div>
 
@@ -204,6 +297,12 @@
             <select class="form-select form-select-sm" [disabled]="updatingEstado" [ngModel]="resultado.estado" (ngModelChange)="cambiarEstado(resultado, $event)">
               <option *ngFor="let estado of estadosRegistro" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
             </select>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="mode === 'documentacion' && permissions.hasPermission('registro:write')">
+            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="updatingEstado || resultado.estado === 'archivada'" (click)="archivarDocumentacion(resultado)">
+              Archivar
+            </button>
           </div>
 
           <div class="thread mt-3" *ngIf="mode === 'comunicacion' && resultado.mensajes?.length">
@@ -215,8 +314,8 @@
               </div>
               <p class="mb-2">{{ mensaje.mensaje }}</p>
               <div class="attachments" *ngIf="mensaje.adjuntos.length">
-                <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto.downloadUrl)">
-                  {{ adjunto.originalName }}
+                <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto)">
+                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
                 </button>
               </div>
             </article>
@@ -226,7 +325,7 @@
             <ng-container *ngIf="resultado.estado !== 'finalizada'; else comunicacionFinalizada">
               <label class="form-label">Responder en este hilo</label>
               <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe una respuesta"></textarea>
-              <input class="form-control form-control-sm mt-2" type="file" multiple (change)="onRespuestaFiles($event)" />
+              <app-adjuntos-selector label="Adjuntos de la respuesta" [files]="respuestaAdjuntos" [disabled]="submittingComm" (filesChange)="respuestaAdjuntos = $event" />
               <div class="d-flex flex-wrap gap-2 mt-2">
                 <button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
                   Responder
@@ -240,6 +339,17 @@
               <p class="text-muted mb-0">Esta comunicacion esta finalizada y no admite nuevas respuestas.</p>
             </ng-template>
           </div>
+
+          <section class="thread mt-3" *ngIf="resultado.eventos?.length">
+            <h2 class="h6 mb-2">Trazabilidad</h2>
+            <article class="thread-message" *ngFor="let evento of resultado.eventos">
+              <strong>{{ evento.tipo }}</strong>
+              <small class="text-muted ms-2">{{ evento.actor }} · {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+              <p class="mb-0" *ngIf="evento.detalle">{{ evento.detalle }}</p>
+            </article>
+          </section>
+
+          <app-incidencias-panel scope="registro" [scopeId]="resultado.id"></app-incidencias-panel>
         </section>
 
         <div class="alert alert-light border" *ngIf="isAdminMode && !isFormView">
@@ -250,8 +360,8 @@
           <div class="field">
             <label class="form-label">Responsable (destinatario) <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="responsable">
-              <option value="" disabled>Selecciona un responsable</option>
-              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+              <option value="" disabled>Selecciona un destinatario</option>
+              <option *ngFor="let destinatario of destinatarios" [value]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
             </select>
             <div class="invalid-field" *ngIf="docForm.get('responsable')?.touched && docForm.get('responsable')?.invalid">
               Campo obligatorio.
@@ -276,14 +386,10 @@
 
           <div class="field">
             <label class="form-label">Adjuntar documentos <span class="text-rojo">*</span></label>
-            <input type="file" class="form-control" multiple (change)="onDocFiles($event)" [disabled]="docLocked" />
-            <small class="text-muted d-block mt-1">Puedes adjuntar varios archivos y enviarlos juntos.</small>
+            <app-adjuntos-selector label="Documentación adjunta" [files]="docAdjuntos" [disabled]="docLocked || submittingDoc" (filesChange)="docAdjuntos = $event" />
             <div class="invalid-field" *ngIf="docAdjuntos.length === 0 && docForm.touched">
               Anade al menos un documento.
             </div>
-            <ul class="adjuntos" *ngIf="docAdjuntos.length > 0">
-              <li *ngFor="let file of docAdjuntos">{{ file.name }}</li>
-            </ul>
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
@@ -307,7 +413,7 @@
           </div>
 
           <div class="field" *ngIf="isAdminMode">
-            <label class="form-label">ID asociacion destino <span class="text-rojo">*</span></label>
+            <label class="form-label">Asociación destino <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="asociacionId">
               <option value="" disabled>Selecciona una asociacion</option>
               <option *ngFor="let asociacion of asociaciones" [value]="asociacion.id">
@@ -319,8 +425,8 @@
           <div class="field">
             <label class="form-label">Destinatario <span class="text-rojo">*</span></label>
             <select class="form-select" formControlName="responsable">
-              <option value="" disabled>Selecciona un responsable</option>
-              <option *ngFor="let resp of responsables" [value]="resp.id">{{ resp.label }}</option>
+              <option value="" disabled>Selecciona un destinatario</option>
+              <option *ngFor="let destinatario of destinatarios" [value]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
             </select>
             <div class="invalid-field" *ngIf="commForm.get('responsable')?.touched && commForm.get('responsable')?.invalid">
               Campo obligatorio.
@@ -345,11 +451,7 @@
 
           <div class="field">
             <label class="form-label">Adjuntar documentacion (opcional)</label>
-            <input type="file" class="form-control" multiple (change)="onCommFiles($event)" [disabled]="commLocked" />
-            <small class="text-muted d-block mt-1">Recuerda: para registro oficial, usa la opcion de documentacion.</small>
-            <ul class="adjuntos" *ngIf="commAdjuntos.length > 0">
-              <li *ngFor="let file of commAdjuntos">{{ file.name }}</li>
-            </ul>
+            <app-adjuntos-selector label="Adjuntos de la comunicación" [files]="commAdjuntos" [disabled]="commLocked || submittingComm" (filesChange)="commAdjuntos = $event" />
           </div>
 
           <div class="actions d-flex flex-wrap gap-2">
@@ -371,3 +473,61 @@
   </div>
 </section>
 
+<div class="auth-backdrop" *ngIf="autorizacionDetalle as autorizacion" role="presentation" (click)="cerrarDetalleAutorizacion()">
+  <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle" (click)="$event.stopPropagation()">
+    <header class="auth-header">
+      <div>
+        <p class="ux-overline mb-1">Autorizacion de alta</p>
+        <h2 id="authTitle" class="h5 mb-1">{{ autorizacion.solicitudNumero }}</h2>
+        <p class="text-muted mb-0">Revisa la solicitud antes de autorizar o rechazar el alta.</p>
+      </div>
+      <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalleAutorizacion()"></button>
+    </header>
+
+    <div class="auth-body">
+      <dl class="auth-grid">
+        <div>
+          <dt>Asociado</dt>
+          <dd>{{ autorizacion.asociadoNombre }}</dd>
+        </div>
+        <div>
+          <dt>Solicitud</dt>
+          <dd>{{ autorizacion.solicitudNumero }}</dd>
+        </div>
+        <div>
+          <dt>Asociacion anterior</dt>
+          <dd>{{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}</dd>
+        </div>
+        <div>
+          <dt>Nueva asociacion</dt>
+          <dd>{{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</dd>
+        </div>
+        <div>
+          <dt>Fecha de solicitud</dt>
+          <dd>{{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ autorizacion.estado === 'pendiente_firma' ? 'Pendiente de autorizacion' : estadoLabel(autorizacion.estado) }}</dd>
+        </div>
+      </dl>
+      <div class="auth-note">
+        Esta autorizacion confirma que la asociacion anterior no se opone al alta del asociado en la nueva asociacion.
+      </div>
+    </div>
+
+    <footer class="auth-footer">
+      <button class="ux-btn ux-btn-secondary" type="button" [disabled]="updatingEstado" (click)="descargarSolicitudAutorizacion(autorizacion)">
+        Descargar solicitud PDF
+      </button>
+      <div class="auth-actions">
+        <button class="ux-btn ux-btn-danger" type="button" [disabled]="updatingEstado" (click)="rechazarAutorizacion(autorizacion)">
+          Rechazar solicitud
+        </button>
+        <button class="ux-btn" type="button" [disabled]="updatingEstado" (click)="firmarAutorizacion(autorizacion)">
+          Autorizar solicitud
+        </button>
+      </div>
+    </footer>
+  </section>
+</div>

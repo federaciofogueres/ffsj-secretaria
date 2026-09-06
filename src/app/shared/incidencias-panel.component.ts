@@ -32,6 +32,8 @@ import { SecretariaService } from '../core/secretaria.service';
         </div>
       </div>
 
+      <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+
       <ul class="incidence-list">
         <li *ngFor="let incidencia of incidencias" [class.open]="incidencia.estado === 'abierta'">
           <div class="incidence-title">
@@ -48,9 +50,7 @@ import { SecretariaService } from '../core/secretaria.service';
               </div>
               <p>{{ evento.mensaje }}</p>
               <div class="attachments" *ngIf="evento.adjuntos?.length">
-                <a *ngFor="let adjunto of evento.adjuntos" [href]="adjunto.downloadUrl" target="_blank" rel="noopener">
-                  {{ adjunto.originalName }}
-                </a>
+                <button *ngFor="let adjunto of evento.adjuntos" class="attachment-link" type="button" (click)="descargarAdjunto(adjunto)">{{ adjunto.originalName }}</button>
               </div>
             </article>
           </div>
@@ -62,6 +62,9 @@ import { SecretariaService } from '../core/secretaria.service';
             </button>
           </div>
           <div class="response-box" *ngIf="canAdminManage(incidencia)">
+            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="comentarios[incidencia.id]" placeholder="Añade un comentario para la asociación"></textarea>
+            <input class="form-control form-control-sm" type="file" multiple (change)="onCommentFiles(incidencia.id, $event)" />
+            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading || !comentarios[incidencia.id]?.trim()" (click)="comentar(incidencia)">Añadir comentario</button>
             <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="devoluciones[incidencia.id]" placeholder="Comentario de cierre o motivo si se devuelve a la asociacion"></textarea>
             <input class="form-control form-control-sm" type="file" multiple (change)="onReturnFiles(incidencia.id, $event)" />
             <button class="btn btn-success btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'subsanada')">
@@ -97,7 +100,9 @@ import { SecretariaService } from '../core/secretaria.service';
     .event-meta { display: flex; gap: .5rem; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
     .event-meta span { color: #687386; font-size: .82rem; }
     .attachments { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
-    .attachments a { font-size: .85rem; }
+    .attachment-link { border: 0; padding: 0; color: #0d6efd; background: transparent; font-size: .85rem; text-decoration: underline; }
+    .attachment-link:hover, .attachment-link:focus-visible { color: #084298; }
+    .error { margin: .75rem 0; color: #991b1b; font-size: .9rem; }
     .empty { color: #687386; }
   `]
 })
@@ -109,11 +114,14 @@ export class IncidenciasPanelComponent implements OnChanges {
   adjuntosByIncidencia: Record<string, AdjuntoSecretaria[]> = {};
   respuestas: Record<string, string> = {};
   devoluciones: Record<string, string> = {};
+  comentarios: Record<string, string> = {};
   responseFiles: Record<string, File[]> = {};
   returnFiles: Record<string, File[]> = {};
+  commentFiles: Record<string, File[]> = {};
   nuevoMensaje = '';
   selectedFiles: File[] = [];
   loading = false;
+  error = '';
 
   constructor(
     private readonly secretariaService: SecretariaService,
@@ -156,9 +164,15 @@ export class IncidenciasPanelComponent implements OnChanges {
     this.returnFiles[incidenciaId] = files ? Array.from(files) : [];
   }
 
+  onCommentFiles(incidenciaId: string, event: Event): void {
+    const files = (event.target as HTMLInputElement).files;
+    this.commentFiles[incidenciaId] = files ? Array.from(files) : [];
+  }
+
   crear(): void {
     if (!this.nuevoMensaje.trim()) return;
     this.loading = true;
+    this.error = '';
     this.secretariaService.crearIncidencia({
       scope: this.scope,
       scopeId: this.scopeId,
@@ -178,12 +192,13 @@ export class IncidenciasPanelComponent implements OnChanges {
         this.loading = false;
         this.cargar();
       },
-      error: () => this.loading = false
+      error: () => this.fail('No se ha podido crear la incidencia.')
     });
   }
 
   responder(incidencia: Incidencia): void {
     this.loading = true;
+    this.error = '';
     this.secretariaService.responderIncidencia(incidencia.id, this.respuestas[incidencia.id]).pipe(
       switchMap(updated => {
         const files = this.responseFiles[incidencia.id] || [];
@@ -200,24 +215,51 @@ export class IncidenciasPanelComponent implements OnChanges {
         this.loading = false;
         this.cargar();
       },
-      error: () => this.loading = false
+      error: () => this.fail('No se ha podido enviar la respuesta.')
+    });
+  }
+
+  comentar(incidencia: Incidencia): void {
+    const mensaje = this.comentarios[incidencia.id]?.trim();
+    if (!mensaje) return;
+    this.loading = true;
+    this.error = '';
+    this.secretariaService.comentarIncidencia(incidencia.id, mensaje).pipe(
+      switchMap(actualizada => {
+        const files = this.commentFiles[incidencia.id] || [];
+        const eventoId = this.lastEventoId(actualizada);
+        if (!files.length || !eventoId) return of(actualizada);
+        return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
+          switchMap(() => of(actualizada))
+        );
+      })
+    ).subscribe({
+      next: () => {
+        this.comentarios[incidencia.id] = '';
+        this.commentFiles[incidencia.id] = [];
+        this.loading = false;
+        this.cargar();
+      },
+      error: () => this.fail('No se ha podido añadir el comentario.')
     });
   }
 
   resolver(incidencia: Incidencia, estado: 'subsanada' | 'cerrada'): void {
     this.loading = true;
+    this.error = '';
     this.secretariaService.cerrarIncidencia(incidencia.id, this.devoluciones[incidencia.id] || this.respuestas[incidencia.id], estado).subscribe({
       next: () => {
         this.devoluciones[incidencia.id] = '';
         this.loading = false;
         this.cargar();
       },
-      error: () => this.loading = false
+      error: () => this.fail('No se ha podido cerrar la incidencia.')
     });
   }
 
   reabrir(incidencia: Incidencia): void {
     this.loading = true;
+    this.error = '';
     this.secretariaService.reabrirIncidencia(incidencia.id, this.devoluciones[incidencia.id]).pipe(
       switchMap(updated => {
         const files = this.returnFiles[incidencia.id] || [];
@@ -234,7 +276,7 @@ export class IncidenciasPanelComponent implements OnChanges {
         this.loading = false;
         this.cargar();
       },
-      error: () => this.loading = false
+      error: () => this.fail('No se ha podido devolver la incidencia a la asociación.')
     });
   }
 
@@ -242,6 +284,7 @@ export class IncidenciasPanelComponent implements OnChanges {
     const labels: Record<string, string> = {
       creada: 'Incidencia creada',
       respuesta_asociacion: 'Respuesta de asociacion',
+      comentario_administracion: 'Comentario de administracion',
       devuelta_admin: 'Devuelta por administracion',
       subsanada: 'Subsanada',
       cerrada: 'Cerrada'
@@ -259,12 +302,35 @@ export class IncidenciasPanelComponent implements OnChanges {
       next: response => {
         this.incidencias = response.incidencias;
       },
-      error: () => this.incidencias = []
+      error: () => {
+        this.incidencias = [];
+        this.error = 'No se han podido cargar las incidencias.';
+      }
     });
   }
 
   private lastEventoId(incidencia: Incidencia): number | null {
     const eventos = incidencia.eventos || [];
     return eventos.length ? eventos[eventos.length - 1].id : null;
+  }
+
+  descargarAdjunto(adjunto: AdjuntoSecretaria): void {
+    this.error = '';
+    this.secretariaService.descargarAdjunto(adjunto.id).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = adjunto.originalName || `adjunto-${adjunto.id}`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.error = 'No se ha podido descargar el adjunto.'
+    });
+  }
+
+  private fail(message: string): void {
+    this.loading = false;
+    this.error = message;
   }
 }

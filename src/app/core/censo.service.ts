@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from 'ffsj-web-components';
 import { Observable, map } from 'rxjs';
@@ -40,13 +40,27 @@ export class CensoService {
       .pipe(map(response => response.asociaciones?.[0] ?? (response as unknown as Asociacion)));
   }
 
-  getAsociadosByAsociacion(asociacionId: number): Observable<Asociado[]> {
+  getAsociadosByAsociacion(asociacionId: number, ejercicio?: number): Observable<Asociado[]> {
+    const params = ejercicio ? new HttpParams().set('ejercicio', ejercicio) : undefined;
     return this.http
       .get<{ asociados?: unknown[] }>(
         `${this.apiUrl.censoBasePath}/asociaciones/${asociacionId}/asociados`,
-        this.authOptions()
+        { ...this.authOptions(), params }
       )
       .pipe(map(response => (response.asociados ?? []).map(item => this.mapAsociado(item))));
+  }
+
+  getAsociadoByDocumento(documento: string): Observable<Asociado | null> {
+    const safeDocumento = encodeURIComponent(documento.trim());
+    return this.http
+      .get<{ asociados?: unknown[] }>(
+        `${this.apiUrl.censoBasePath}/asociados/buscar/${safeDocumento}`,
+        this.authOptions()
+      )
+      .pipe(map(response => {
+        const first = response.asociados?.[0];
+        return first ? this.mapAsociado(first) : null;
+      }));
   }
 
   getHistoricoByAsociado(asociadoId: number): Observable<HistoricoAsociado[]> {
@@ -93,7 +107,9 @@ export class CensoService {
       email: item.email,
       telefono: item.telefono ?? item.phone,
       direccion: item.direccion ?? item.address,
-      codigoPostal: item.codigo_postal ?? item.codigoPostal ?? item.cp
+      codigoPostal: item.codigo_postal ?? item.codigoPostal ?? item.cp,
+      localidad: item.localidad ?? item.location ?? item.poblacion ?? item.city,
+      provincia: item.provincia ?? item.state
     };
   }
 
