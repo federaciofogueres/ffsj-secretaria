@@ -577,6 +577,14 @@ export class SecretariaService {
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/actividades/propuestas/mias`, { params, headers: this.authHeaders() });
   }
 
+  getMiPropuestaActividad(id: string): Observable<ActividadSecretaria> {
+    return this.http.get<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades/propuestas/mias/${id}`, { headers: this.authHeaders() });
+  }
+
+  responderPropuestaActividad(id: string, mensaje: string): Observable<ActividadSecretaria> {
+    return this.http.post<ActividadSecretaria>(`${this.apiUrl.secretariaBasePath}/actividades/propuestas/mias/${id}/respuestas`, { mensaje }, { headers: this.authHeaders() });
+  }
+
   getPropuestasActividadAdmin(estado?: string): Observable<{ actividades: ActividadSecretaria[] }> {
     let params = new HttpParams(); if (estado) params = params.set('estado', estado);
     return this.http.get<{ actividades: ActividadSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/admin/actividades/propuestas`, { params, headers: this.authHeaders() });

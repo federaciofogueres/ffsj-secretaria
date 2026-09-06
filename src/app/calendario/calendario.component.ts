@@ -47,6 +47,8 @@ export class CalendarioComponent implements OnInit {
   imagenSeleccionada: File | null = null;
   propuestaAccion: { id: string; tipo: 'rechazo' | 'incidencia' } | null = null;
   propuestaMensaje = '';
+  propuestaDetalle: ActividadSecretaria | null = null;
+  respuestaPropuesta = '';
   readonly maxImagenBytes = 10 * 1024 * 1024;
 
   actividadForm = this.fb.group({
@@ -233,6 +235,42 @@ export class CalendarioComponent implements OnInit {
 
   abrirIncidenciaPropuesta(propuesta: ActividadSecretaria): void {
     this.propuestaAccion = { id: propuesta.id, tipo: 'incidencia' }; this.propuestaMensaje = '';
+  }
+
+  abrirDetallePropuesta(propuesta: ActividadSecretaria): void {
+    this.error = '';
+    this.respuestaPropuesta = '';
+    if (this.isAdminMode) {
+      this.propuestaDetalle = propuesta;
+      return;
+    }
+    this.loading = true;
+    this.secretariaService.getMiPropuestaActividad(propuesta.id).subscribe({
+      next: detalle => { this.propuestaDetalle = detalle; this.loading = false; },
+      error: response => { this.error = response.error?.message || 'No se ha podido abrir el detalle de la propuesta.'; this.loading = false; }
+    });
+  }
+
+  cerrarDetallePropuesta(): void {
+    this.propuestaDetalle = null;
+    this.respuestaPropuesta = '';
+  }
+
+  responderPropuesta(): void {
+    if (!this.propuestaDetalle) return;
+    const mensaje = this.respuestaPropuesta.trim();
+    if (!mensaje) return;
+    this.loading = true;
+    this.secretariaService.responderPropuestaActividad(this.propuestaDetalle.id, mensaje).subscribe({
+      next: propuesta => {
+        this.propuestaDetalle = propuesta;
+        this.propuestas = this.propuestas.map(item => item.id === propuesta.id ? propuesta : item);
+        this.respuestaPropuesta = '';
+        this.success = 'Respuesta enviada a Administración. La propuesta vuelve a estar pendiente de revisión.';
+        this.loading = false;
+      },
+      error: response => { this.error = response.error?.message || 'No se ha podido enviar la respuesta.'; this.loading = false; }
+    });
   }
 
   confirmarAccionPropuesta(): void {
