@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0#ESMERALDA - 2026-09-06
+
+### Corregido
+
+- El calendario sólo publica propuestas de asociaciones tras una decisión administrativa válida.
+- Las actividades y propuestas admiten imagen al crearse, validan formato y tamaño, y permiten sustituirla o eliminarla.
+- La revisión administrativa de propuestas usa diálogos integrados para solicitar información o indicar el motivo del rechazo.
+
 ## 0.22.0#ESMERALDA - 2026-09-05
 
 ### Añadido

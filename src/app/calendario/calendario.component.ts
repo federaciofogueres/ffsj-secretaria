@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { of, switchMap } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
@@ -42,6 +43,11 @@ export class CalendarioComponent implements OnInit {
   propuestas: ActividadSecretaria[] = [];
   showPropuestas = false;
   imagenActividadUrl = '';
+  imagenActividadId: number | null = null;
+  imagenSeleccionada: File | null = null;
+  propuestaAccion: { id: string; tipo: 'rechazo' | 'incidencia' } | null = null;
+  propuestaMensaje = '';
+  readonly maxImagenBytes = 10 * 1024 * 1024;
 
   actividadForm = this.fb.group({
     titulo: ['', Validators.required],
@@ -185,19 +191,22 @@ export class CalendarioComponent implements OnInit {
     const request = this.isAdminMode
       ? this.secretariaService.crearActividad(this.actividadForm.value)
       : this.secretariaService.crearPropuestaActividad(this.actividadForm.value);
-    request.subscribe({
+    request.pipe(switchMap(actividad => this.imagenSeleccionada
+      ? this.secretariaService.subirAdjunto('actividad_imagen', actividad.id, this.imagenSeleccionada).pipe(switchMap(() => of(actividad)))
+      : of(actividad)
+    )).subscribe({
       next: actividad => {
         this.showCreateDialog = false;
         if (this.isAdminMode) {
           this.recargarTrasCrear(actividad.id);
         } else {
-          this.propuestas = [actividad, ...this.propuestas];
+          this.propuestas = [actividad, ...this.propuestas.filter(item => item.id !== actividad.id)];
           this.loading = false;
           this.success = 'Propuesta enviada a Administracion para su revision.';
         }
       },
-      error: () => {
-        this.error = 'No se ha podido crear la actividad.';
+      error: response => {
+        this.error = response.error?.message || 'No se ha podido crear la actividad.';
         this.loading = false;
       }
     });
@@ -211,29 +220,42 @@ export class CalendarioComponent implements OnInit {
   }
 
   resolverPropuesta(propuesta: ActividadSecretaria, decision: 'publicada' | 'rechazada'): void {
-    const detalle = decision === 'rechazada' ? window.prompt('Indica el motivo del rechazo:') || '' : '';
-    if (decision === 'rechazada' && !detalle) return;
+    if (decision === 'rechazada') { this.propuestaAccion = { id: propuesta.id, tipo: 'rechazo' }; this.propuestaMensaje = ''; return; }
     this.loading = true;
-    this.secretariaService.resolverPropuestaActividad(propuesta.id, decision, detalle).subscribe({
+    this.secretariaService.resolverPropuestaActividad(propuesta.id, decision).subscribe({
       next: () => { this.loading = false; this.success = decision === 'publicada' ? 'Propuesta publicada.' : 'Propuesta rechazada.'; this.showPropuestas = false; this.cargar(); },
       error: () => { this.loading = false; this.error = 'No se ha podido resolver la propuesta.'; }
     });
   }
 
   abrirIncidenciaPropuesta(propuesta: ActividadSecretaria): void {
-    const mensaje = window.prompt('Indica la informacion que debe completar la asociacion:') || '';
-    if (!mensaje) return;
-    this.secretariaService.abrirIncidenciaPropuestaActividad(propuesta.id, mensaje).subscribe({
-      next: () => { this.success = 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; },
-      error: () => this.error = 'No se ha podido abrir la incidencia.'
+    this.propuestaAccion = { id: propuesta.id, tipo: 'incidencia' }; this.propuestaMensaje = '';
+  }
+
+  confirmarAccionPropuesta(): void {
+    const action = this.propuestaAccion;
+    const mensaje = this.propuestaMensaje.trim();
+    if (!action || !mensaje) return;
+    this.loading = true;
+    const request = action.tipo === 'rechazo' ? this.secretariaService.resolverPropuestaActividad(action.id, 'rechazada', mensaje) : this.secretariaService.abrirIncidenciaPropuestaActividad(action.id, mensaje);
+    request.subscribe({
+      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; this.propuestaAccion = null; this.cargar(); },
+      error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido tramitar la propuesta.'; },
+      complete: () => this.loading = false
     });
+  }
+
+  seleccionarImagenActividad(event: Event): void {
+    const file = (event.target as HTMLInputElement).files?.[0] || null;
+    this.imagenSeleccionada = null;
+    if (file && this.esImagenValida(file)) this.imagenSeleccionada = file;
   }
 
   subirImagenActividad(event: Event): void {
     if (!this.selected) return;
     const file = (event.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    if (!file.type.startsWith('image/')) { this.error = 'Selecciona una imagen valida.'; return; }
+    if (!this.esImagenValida(file)) return;
     this.loading = true;
     this.secretariaService.subirAdjunto('actividad_imagen', this.selected.id, file).subscribe({
       next: () => { this.loading = false; this.success = 'Imagen de actividad actualizada.'; this.cargarImagenActividad(this.selected!.id); },
@@ -248,8 +270,18 @@ export class CalendarioComponent implements OnInit {
       next: response => {
         const image = response.adjuntos[0];
         if (!image) return;
+        this.imagenActividadId = image.id;
         this.secretariaService.descargarAdjunto(image.id).subscribe({ next: blob => this.imagenActividadUrl = URL.createObjectURL(blob) });
       }
+    });
+  }
+
+  borrarImagenActividad(): void {
+    if (!this.imagenActividadId || this.loading) return;
+    this.loading = true;
+    this.secretariaService.borrarAdjunto(this.imagenActividadId).subscribe({
+      next: () => { this.imagenActividadId = null; if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl); this.imagenActividadUrl = ''; this.success = 'Imagen eliminada correctamente.'; this.loading = false; },
+      error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido eliminar la imagen.'; }
     });
   }
 
@@ -449,6 +481,12 @@ export class CalendarioComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+
+  private esImagenValida(file: File): boolean {
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) { this.error = 'Selecciona una imagen JPG, PNG, WEBP o GIF.'; return false; }
+    if (file.size > this.maxImagenBytes) { this.error = 'La imagen supera el tamaño máximo de 10 MB.'; return false; }
+    return true;
   }
 
   private cargarInscripciones(): void {
