@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.23.7#ESMERALDA - 2026-09-06
+
+### Añadido
+
+- Las propuestas de actividad disponen de un detalle propio con sus datos y conversación.
+- Las asociaciones pueden responder desde el hilo cuando Administración solicita información, devolviendo la propuesta a revisión.
+
 ## 0.23.5#ESMERALDA - 2026-09-06
 
 ### Mejorado

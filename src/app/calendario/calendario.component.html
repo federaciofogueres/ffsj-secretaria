@@ -40,6 +40,7 @@
         <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y' }} <span *ngIf="isAdminMode">· {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
         <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
         <p class="text-danger mb-1" *ngIf="propuesta.motivoRechazo">{{ propuesta.motivoRechazo }}</p>
+        <button class="btn btn-outline-secondary btn-sm mt-2" type="button" (click)="abrirDetallePropuesta(propuesta)">Ver detalle</button>
         <div class="d-flex gap-2 mt-2" *ngIf="isAdminMode && (propuesta.estadoPropuesta === 'pendiente_revision' || propuesta.estadoPropuesta === 'con_incidencias')">
           <button class="btn btn-success btn-sm" type="button" (click)="resolverPropuesta(propuesta, 'publicada')">Publicar</button>
           <button class="btn btn-outline-warning btn-sm" type="button" (click)="abrirIncidenciaPropuesta(propuesta)">Pedir informacion</button>
@@ -322,5 +323,37 @@
   <div class="modal-header-custom"><h2 class="h5 mb-0">{{ propuestaAccion.tipo === 'rechazo' ? 'Rechazar propuesta' : 'Solicitar información' }}</h2><button class="btn btn-outline-secondary btn-sm" type="button" (click)="propuestaAccion = null">Cerrar</button></div>
   <label class="form-label mt-3">{{ propuestaAccion.tipo === 'rechazo' ? 'Motivo del rechazo' : 'Información necesaria' }}<textarea class="form-control" rows="4" [(ngModel)]="propuestaMensaje"></textarea></label>
   <div class="d-flex gap-2"><button class="ux-btn" type="button" [disabled]="loading || !propuestaMensaje.trim()" (click)="confirmarAccionPropuesta()">Confirmar</button><button class="btn btn-outline-secondary" type="button" (click)="propuestaAccion = null">Cancelar</button></div>
+</section>
+
+<div class="modal-backdrop-custom" *ngIf="propuestaDetalle" (click)="cerrarDetallePropuesta()"></div>
+<section class="modal-panel propuesta-detail-modal" *ngIf="propuestaDetalle" role="dialog" aria-modal="true" aria-label="Detalle de propuesta">
+  <div class="modal-header-custom">
+    <div>
+      <p class="ux-overline mb-2">Propuesta de actividad</p>
+      <h2 class="h5 mb-1 text-rojo">{{ propuestaDetalle.titulo }}</h2>
+      <app-estado-badge [estado]="propuestaDetalle.estadoPropuesta || 'pendiente_revision'"></app-estado-badge>
+    </div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarDetallePropuesta()">Cerrar</button>
+  </div>
+  <dl class="propuesta-data">
+    <div><dt>Responsable</dt><dd>{{ propuestaDetalle.responsable || propuestaDetalle.asociacionNombre || '-' }}</dd></div>
+    <div><dt>Fecha</dt><dd>{{ propuestaDetalle.fechaInicio | date:'dd/MM/y' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | date:'dd/MM/y' }}</span></dd></div>
+    <div *ngIf="propuestaDetalle.descripcion"><dt>Descripción</dt><dd>{{ propuestaDetalle.descripcion }}</dd></div>
+  </dl>
+  <section class="proposal-thread" aria-label="Conversación de la propuesta">
+    <h3 class="h6">Conversación</h3>
+    <p class="text-muted" *ngIf="!propuestaDetalle.eventos?.length">Aún no hay mensajes.</p>
+    <article class="proposal-message" *ngFor="let evento of propuestaDetalle.eventos" [class.admin-message]="evento.actor === 'administracion'" [class.association-message]="evento.actor === 'asociacion'">
+      <strong>{{ evento.actor === 'administracion' ? 'Administración' : 'Tu asociación' }}</strong>
+      <small>{{ evento.createdAt | date:'dd/MM/y HH:mm' }}</small>
+      <p *ngIf="evento.detalle">{{ evento.detalle }}</p>
+    </article>
+  </section>
+  <form *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta === 'con_incidencias'" (ngSubmit)="responderPropuesta()" class="proposal-reply">
+    <label class="form-label" for="respuestaPropuesta">Responder a Administración</label>
+    <textarea id="respuestaPropuesta" class="form-control" rows="4" maxlength="5000" [(ngModel)]="respuestaPropuesta" name="respuestaPropuesta" placeholder="Escribe la información solicitada"></textarea>
+    <div class="d-flex gap-2 mt-2"><button class="ux-btn" type="submit" [disabled]="loading || !respuestaPropuesta.trim()">Enviar respuesta</button></div>
+  </form>
+  <p class="text-muted mt-3 mb-0" *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta !== 'con_incidencias'">No hay ninguna solicitud de información pendiente.</p>
 </section>
 
