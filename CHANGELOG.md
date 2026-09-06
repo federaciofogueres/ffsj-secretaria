@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.2#ESMERALDA - 2026-09-06
+
+### Técnico
+
+- La configuración de desarrollo usa las URL DEV normales de las APIs de Censo y Secretaría, sin el sufijo de contingencia East US.
+
 ## 0.23.1#ESMERALDA - 2026-09-06
 
 ### Corregido
