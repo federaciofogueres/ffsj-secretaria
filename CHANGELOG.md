@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.23.1#ESMERALDA - 2026-09-06
+
+### Corregido
+
+- El fallback de i18n ya no expone claves técnicas cuando falta una traducción.
+- Los diálogos de confirmación reutilizan la acción Cancelar localizada y reaccionan al idioma activo.
+
 ## 0.23.0#ESMERALDA - 2026-09-06
 
 ### Corregido
