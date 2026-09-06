@@ -157,14 +157,17 @@ export class CalendarioComponent implements OnInit {
     const target = date || new Date();
     this.selectedDate = target;
     const formatted = this.formatDate(target);
+    const responsable = this.isAdminMode ? 'Secretaria' : (this.permissions.contextSnapshot?.asociacionNombre || '');
     this.actividadForm.reset({
       titulo: '',
-      responsable: 'Secretaria',
+      responsable,
       fechaInicio: formatted,
       fechaFin: formatted,
       descripcion: ''
       , colorEtiqueta: 'ffsj'
     });
+    if (this.isAdminMode) this.actividadForm.controls.responsable.enable({ emitEvent: false });
+    else this.actividadForm.controls.responsable.disable({ emitEvent: false });
     this.showCreateDialog = true;
   }
 
