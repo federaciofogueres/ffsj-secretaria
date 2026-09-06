@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.5#ESMERALDA - 2026-09-06
+
+### Mejorado
+
+- Las asociaciones proponen actividades con su responsable precargado y bloqueado; la etiqueta se fija como Entidad asociada sin mostrar el selector.
+
 ## 0.23.2#ESMERALDA - 2026-09-06
 
 ### Técnico
