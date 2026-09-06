@@ -4,6 +4,13 @@ on:
   push:
     branches: [develop]
   workflow_dispatch:
+    inputs:
+      api_environment:
+        description: Entorno de GitHub que contiene las URLs de las APIs
+        required: true
+        default: frontend-eastus
+        type: choice
+        options: [frontend-eastus, frontend-france, frontend-production]
 
 permissions:
   contents: write
@@ -11,6 +18,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.api_environment || 'frontend-eastus' }}
 
     steps:
       - name: Checkout
@@ -27,6 +35,13 @@ jobs:
 
       - name: Build Angular development
         run: npm run build:dev -- --base-href / --output-hashing=all
+
+      - name: Configure runtime API URLs
+        env:
+          FFSJ_CENSO_API_BASE_PATH: ${{ vars.FFSJ_CENSO_API_BASE_PATH }}
+          FFSJ_SECRETARIA_API_BASE_PATH: ${{ vars.FFSJ_SECRETARIA_API_BASE_PATH }}
+          FFSJ_FILES_BASE_PATH: ${{ vars.FFSJ_FILES_BASE_PATH }}
+        run: node scripts/write-runtime-config.js ./dist/ffsj-secretaria/browser/assets/runtime-config.json
 
       - name: Add SPA fallback
         run: |
