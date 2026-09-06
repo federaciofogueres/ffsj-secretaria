@@ -34,6 +34,11 @@ export class I18nService {
   readonly languageChanges = this.languageSubject.asObservable();
   get language(): AppLanguage { return this.languageSubject.value; }
   setLanguage(language: AppLanguage): void { localStorage.setItem(this.storageKey, language); this.languageSubject.next(language); }
-  t(key: string): string { return translations[this.language][key] || translations.es[key] || key; }
+  t(key: string): string {
+    const translated = translations[this.language][key] || translations.es[key];
+    if (translated) return translated;
+    // A missing catalogue entry must never render as an implementation key.
+    return key.split('.').pop()?.replace(/([a-z])([A-Z])/g, '$1 $2') || '—';
+  }
   private initialLanguage(): AppLanguage { const saved = localStorage.getItem(this.storageKey); return saved === 'va' || saved === 'en' || saved === 'es' ? saved : 'es'; }
 }

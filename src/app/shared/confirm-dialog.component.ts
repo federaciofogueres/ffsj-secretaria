@@ -1,17 +1,18 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { TranslatePipe } from './translate.pipe';
 
 @Component({
   selector: 'app-confirm-dialog',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     <div class="confirm-backdrop" (click)="cancel.emit()"></div>
     <section class="confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message" (click)="$event.stopPropagation()">
       <h2 id="confirm-dialog-title">{{ title }}</h2>
       <p id="confirm-dialog-message">{{ message }}</p>
       <div class="confirm-actions">
-        <button class="ux-btn ux-btn-secondary" type="button" (click)="cancel.emit()">Cancelar</button>
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="cancel.emit()">{{ 'common.cancel' | t }}</button>
         <button class="ux-btn ux-btn-danger" type="button" (click)="confirmed.emit()">{{ confirmLabel }}</button>
       </div>
     </section>
