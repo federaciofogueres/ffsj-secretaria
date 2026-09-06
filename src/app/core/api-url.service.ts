@@ -1,10 +1,12 @@
 import { Injectable } from '@angular/core';
 
-import { environment } from '../../environments/environment';
+import { RuntimeConfigService } from './runtime-config.service';
 
 @Injectable({ providedIn: 'root' })
 export class ApiUrlService {
-  readonly censoBasePath = environment.CENSO_API_BASE_PATH;
-  readonly secretariaBasePath = environment.SECRETARIA_API_BASE_PATH;
-  readonly filesBasePath = environment.FILES_BASE_PATH;
+  constructor(private readonly runtimeConfig: RuntimeConfigService) {}
+
+  get censoBasePath(): string { return this.runtimeConfig.censoBasePath; }
+  get secretariaBasePath(): string { return this.runtimeConfig.secretariaBasePath; }
+  get filesBasePath(): string { return this.runtimeConfig.filesBasePath; }
 }
