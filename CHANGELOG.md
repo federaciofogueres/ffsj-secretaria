@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.24.0#ESMERALDA - 2026-09-07
+
+### Añadido
+
+- La ficha de asociación se organiza por pestañas y conserva el formulario de edición compartido entre secciones.
+- La asociación puede actualizar su propia contraseña desde la pestaña Acceso, validando la contraseña actual en servidor.
+- El acceso por QR intercambia una credencial opaca por una sesión normal y elimina el token de la URL inmediatamente.
+
+### Mejorado
+
+- Las altas con historial solicitan certificaciones de antecedentes, limitadas a los cuatro ejercicios anteriores al seleccionado.
+
 ## 0.23.7#ESMERALDA - 2026-09-06
 
 ### Añadido
