@@ -10,7 +10,13 @@ on:
         required: true
         default: frontend-production
         type: choice
-        options: [frontend-eastus, frontend-france, frontend-production]
+        options:
+          [
+            frontend-eastus,
+            frontend-france,
+            frontend-production,
+            frontend-spaincentral,
+          ]
 
 permissions:
   contents: write
