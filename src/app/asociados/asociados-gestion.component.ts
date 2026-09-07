@@ -452,10 +452,10 @@ export class AsociadosGestionComponent implements OnInit {
         this.loading = false;
         this.dialog.openDialogAlert({
           title: 'Alta registrada',
-          content: 'Se ha creado el alta y queda pendiente de firma por la asociacion anterior.',
+          content: 'Se ha creado el alta y queda pendiente de certificacion por la asociacion anterior.',
           innerHtml: `
             <p>Se ha creado la solicitud <strong>${solicitud.numero}</strong>.</p>
-            <p>Queda pendiente de autorizacion por la asociacion anterior. Cuando se firme, se enviara automaticamente a Secretaria.</p>
+            <p>Queda pendiente de certificacion por la asociacion anterior. Cuando se certifique, se enviara automaticamente a Secretaria.</p>
           `,
           buttonsAlert: [AlertButtonType.Entendido]
         });
@@ -463,7 +463,7 @@ export class AsociadosGestionComponent implements OnInit {
       error: error => {
         this.loading = false;
         if (!this.gestionarErrorAltaDuplicada(error)) {
-          this.showError('No se ha podido crear el alta con autorizacion previa.');
+          this.showError('No se ha podido crear el alta con certificacion previa.');
         }
       }
     });
@@ -471,9 +471,9 @@ export class AsociadosGestionComponent implements OnInit {
 
   private confirmarAltaConAutorizacionAnterior(datos: Record<string, any>, datosOriginales: Record<string, any> | null): void {
     const ref = this.dialog.openDialogAlert({
-      title: 'Autorizacion necesaria',
-      content: 'Para validar el alta de esta persona sera necesaria la autorizacion de la asociacion a la que pertenecio anteriormente.',
-      innerHtml: '<p>Para validar el alta de esta persona sera necesaria la autorizacion de la asociacion a la que pertenecio anteriormente.</p>',
+      title: 'Certificacion necesaria',
+      content: 'Para validar el alta de esta persona sera necesaria la certificacion de la asociacion a la que pertenecio anteriormente.',
+      innerHtml: '<p>Para validar el alta de esta persona sera necesaria la certificacion de la asociacion a la que pertenecio anteriormente.</p>',
       buttonsAlert: [AlertButtonType.Cancelar, AlertButtonType.Aceptar]
     });
 
@@ -707,9 +707,17 @@ export class AsociadosGestionComponent implements OnInit {
       buttonsAlert: [AlertButtonType.Entendido]
     });
 
+    const ejercicioActual = Number(this.ejercicioService.selectedSnapshot?.ejercicio || new Date().getFullYear());
+    const ejercicioMinimo = ejercicioActual - 4;
     const anteriores = new Map<number, { id: number; nombre?: string | null }>();
     historico
-      .filter(item => Number(item.idAsociacion) > 0 && Number(item.idAsociacion) !== Number(this.asociacionId))
+      .filter(item => {
+        const ejercicio = Number(item.ejercicio);
+        return Number(item.idAsociacion) > 0
+          && Number(item.idAsociacion) !== Number(this.asociacionId)
+          && ejercicio >= ejercicioMinimo
+          && ejercicio < ejercicioActual;
+      })
       .forEach(item => anteriores.set(Number(item.idAsociacion), {
         id: Number(item.idAsociacion),
         nombre: item.nombreAsociacion || null
@@ -1275,8 +1283,8 @@ export class AsociadosGestionComponent implements OnInit {
   labelEstado(estado: string): string {
     const labels: Record<string, string> = {
       registrada: 'Registrada',
-      autorizacion_rechazada: 'Autorizacion rechazada',
-      pendiente_firma: 'Pendiente de firma',
+      autorizacion_rechazada: 'Certificacion rechazada',
+      pendiente_firma: 'Pendiente de certificacion',
       enviada: 'Enviada',
       en_revision: 'En revision',
       con_incidencias: 'Con incidencias',
@@ -1301,9 +1309,9 @@ export class AsociadosGestionComponent implements OnInit {
 
   labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
     const labels: Record<AutorizacionAlta['estado'], string> = {
-      pendiente_firma: 'Pendiente de firma',
-      firmada: 'Autorizada',
-      archivada: 'Autorizada',
+      pendiente_firma: 'Pendiente de certificacion',
+      firmada: 'Certificada',
+      archivada: 'Certificada',
       rechazada: 'Rechazada',
       cancelada: 'Cancelada'
     };

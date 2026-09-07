@@ -40,6 +40,18 @@ export class CensoService {
       .pipe(map(response => response.asociaciones?.[0] ?? (response as unknown as Asociacion)));
   }
 
+  loginAsociacionQr(token: string): Observable<{ token: string }> {
+    return this.http.post<{ token: string }>(`${this.apiUrl.censoBasePath}/login/asociacion/qr`, { token });
+  }
+
+  cambiarPasswordAsociacion(passwordActual: string, passwordNueva: string): Observable<void> {
+    return this.http.post<void>(
+      `${this.apiUrl.censoBasePath}/asociaciones/password`,
+      { passwordActual, passwordNueva },
+      this.authOptions()
+    );
+  }
+
   getAsociadosByAsociacion(asociacionId: number, ejercicio?: number): Observable<Asociado[]> {
     const params = ejercicio ? new HttpParams().set('ejercicio', ejercicio) : undefined;
     return this.http

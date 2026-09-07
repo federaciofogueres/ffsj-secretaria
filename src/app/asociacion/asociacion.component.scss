@@ -38,6 +38,11 @@
   font-weight: 750;
 }
 
+.association-tabs { display:flex; gap:.5rem; overflow-x:auto; margin:0 0 1rem; padding-bottom:.25rem; }
+.association-tabs button { border:1px solid var(--ffsj-line); border-radius:999px; background:#fff; color:var(--ffsj-ink); font-weight:800; padding:.6rem .85rem; white-space:nowrap; }
+.association-tabs button.active { background:var(--ffsj-primary); border-color:var(--ffsj-primary); color:#fff; }
+.access-card { max-width:760px; }
+
 .read-grid,
 .edit-grid {
   display: grid;

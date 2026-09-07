@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { AuthService } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged } from 'rxjs';
 import { I18nService } from '../core/i18n.service';
+import { CensoService } from '../core/censo.service';
 import { TranslatePipe } from '../shared/translate.pipe';
 
 @Component({
@@ -25,6 +26,7 @@ export class LoginComponent implements OnInit, OnDestroy {
   constructor(
     private readonly router: Router,
     private readonly auth: AuthService,
+    private readonly censoService: CensoService,
     private readonly zone: NgZone,
     readonly i18n: I18nService = { t: (key: string) => key } as I18nService
   ) {}
@@ -35,6 +37,23 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.goHome();
       }
     });
+    const qrToken = new URLSearchParams(window.location.hash.replace(/^#/, '')).get('qr');
+    if (qrToken) {
+      this.loading = true;
+      this.censoService.loginAsociacionQr(qrToken).subscribe({
+        next: response => {
+          this.loading = false;
+          this.auth.saveToken(response.token);
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          this.goHome();
+        },
+        error: () => {
+          this.loading = false;
+          history.replaceState(null, '', window.location.pathname + window.location.search);
+          this.error = 'El acceso QR no es válido o ha sido revocado.';
+        }
+      });
+    }
   }
 
   ngOnDestroy(): void {

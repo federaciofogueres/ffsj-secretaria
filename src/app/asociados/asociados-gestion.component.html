@@ -352,7 +352,7 @@
                   [disabled]="loading || accionesBloqueadasPorEjercicio"
                   (click)="reenviarAutorizacion(solicitudDetalle)"
                 >
-                  Enviar autorizacion
+                  Reenviar certificacion
                 </button>
                 <button
                   class="ux-btn ux-btn-secondary ux-btn-sm"
@@ -421,16 +421,16 @@
                 </li>
               </ul>
               <section class="authorization-summary" *ngIf="autorizacionesAltaRegistradas(solicitudDetalle).length > 0">
-                <h6 class="fw-bold mb-2">Autorizaciones de alta</h6>
+                <h6 class="fw-bold mb-2">Certificaciones de antecedentes</h6>
                 <article class="authorization-item" *ngFor="let autorizacion of autorizacionesAltaRegistradas(solicitudDetalle)">
                   <div>
                     <strong>{{ autorizacion.asociadoNombre }}</strong>
                     <small>
                       {{ autorizacion.asociacionAnteriorNombre || ('Asociacion ' + autorizacion.asociacionAnteriorId) }}
-                      autoriza el alta en Asociacion {{ autorizacion.asociacionNuevaId }}
+                      certifica el antecedente para el alta en Asociacion {{ autorizacion.asociacionNuevaId }}
                     </small>
                     <small *ngIf="firmaAutorizacion(autorizacion)">
-                      Firmada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}
+                      Certificada por {{ firmaAutorizacion(autorizacion)?.firmante || 'la asociacion anterior' }}
                       <ng-container *ngIf="firmaAutorizacion(autorizacion)?.fecha">
                         el {{ firmaAutorizacion(autorizacion)?.fecha | date: 'dd/MM/yyyy HH:mm' }}
                       </ng-container>

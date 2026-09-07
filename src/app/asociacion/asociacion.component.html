@@ -1,4 +1,4 @@
-<section class="association ux-card">
+<section class="association ux-card" [attr.data-active-tab]="activeTab">
   <div *ngIf="loading" class="alert alert-info">Cargando datos de la asociacion...</div>
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
@@ -36,9 +36,17 @@
     Vas a actualizar los datos oficiales de tu asociacion. Revisa los campos antes de guardar.
   </div>
 
+  <nav class="association-tabs" role="tablist" aria-label="Secciones de datos de la asociación">
+    <button type="button" role="tab" [attr.aria-selected]="activeTab === 'general'" [class.active]="activeTab === 'general'" (click)="selectTab('general')">Datos generales</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab === 'public'" [class.active]="activeTab === 'public'" (click)="selectTab('public')">Información pública</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab === 'headquarters'" [class.active]="activeTab === 'headquarters'" (click)="selectTab('headquarters')">Sede social</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab === 'contact'" [class.active]="activeTab === 'contact'" (click)="selectTab('contact')">Contacto</button>
+    <button type="button" role="tab" [attr.aria-selected]="activeTab === 'access'" [class.active]="activeTab === 'access'" (click)="selectTab('access')">Acceso</button>
+  </nav>
+
   <ng-container *ngIf="!isEditing; else editForm">
     <div class="read-grid">
-      <section class="section-card">
+      <section class="section-card tab-general" [hidden]="activeTab !== 'general'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Informacion basica</p>
@@ -74,7 +82,7 @@
         </dl>
       </section>
 
-      <section class="section-card">
+      <section class="section-card tab-public" [hidden]="activeTab !== 'public'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Informacion publica</p>
@@ -105,7 +113,7 @@
         </dl>
       </section>
 
-      <section class="section-card">
+      <section class="section-card tab-headquarters" [hidden]="activeTab !== 'headquarters'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Sede social</p>
@@ -132,7 +140,7 @@
         </dl>
       </section>
 
-      <section class="section-card">
+      <section class="section-card tab-contact" [hidden]="activeTab !== 'contact'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Contacto</p>
@@ -155,7 +163,7 @@
 
   <ng-template #editForm>
     <form [formGroup]="form" class="edit-grid">
-      <section class="section-card" formGroupName="basic">
+      <section class="section-card tab-general" formGroupName="basic" [hidden]="activeTab !== 'general'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Informacion basica</p>
@@ -199,7 +207,7 @@
         </div>
       </section>
 
-      <section class="section-card" formGroupName="publicInfo">
+      <section class="section-card tab-public" formGroupName="publicInfo" [hidden]="activeTab !== 'public'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Informacion publica</p>
@@ -230,7 +238,7 @@
         </div>
       </section>
 
-      <section class="section-card" formGroupName="headquarters">
+      <section class="section-card tab-headquarters" formGroupName="headquarters" [hidden]="activeTab !== 'headquarters'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Sede social</p>
@@ -257,7 +265,7 @@
         </div>
       </section>
 
-      <section class="section-card" formGroupName="contact">
+      <section class="section-card tab-contact" formGroupName="contact" [hidden]="activeTab !== 'contact'">
         <div class="section-header">
           <div>
             <p class="section-kicker">Contacto</p>
@@ -277,4 +285,16 @@
       </section>
     </form>
   </ng-template>
+
+  <section class="section-card access-card" *ngIf="activeTab === 'access'">
+    <div class="section-header"><div><p class="section-kicker">Seguridad de acceso</p><p class="section-subtitle">Cambia únicamente la contraseña de esta asociación.</p></div></div>
+    <div class="alert alert-danger" *ngIf="passwordError">{{ passwordError }}</div>
+    <div class="alert alert-success" *ngIf="passwordSuccess">{{ passwordSuccess }}</div>
+    <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="row g-3">
+      <div class="col-12"><label class="form-label" for="passwordActual">Contraseña actual</label><input id="passwordActual" class="form-control" type="password" autocomplete="current-password" formControlName="actual" /></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordNueva">Nueva contraseña</label><input id="passwordNueva" class="form-control" type="password" autocomplete="new-password" formControlName="nueva" /></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordConfirmacion">Confirmar nueva contraseña</label><input id="passwordConfirmacion" class="form-control" type="password" autocomplete="new-password" formControlName="confirmacion" /></div>
+      <div class="col-12"><button class="ux-btn" type="submit" [disabled]="passwordSaving">{{ passwordSaving ? 'Actualizando...' : 'Actualizar contraseña' }}</button></div>
+    </form>
+  </section>
 </section>
