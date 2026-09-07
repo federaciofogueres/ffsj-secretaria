@@ -51,6 +51,15 @@ export class AsociacionComponent implements OnInit {
   loading = false;
   saving = false;
   error = '';
+  activeTab: 'general' | 'public' | 'headquarters' | 'contact' | 'access' = 'general';
+  readonly passwordForm = this.fb.group({
+    actual: ['', Validators.required],
+    nueva: ['', [Validators.required, Validators.minLength(8)]],
+    confirmacion: ['', Validators.required]
+  });
+  passwordSaving = false;
+  passwordError = '';
+  passwordSuccess = '';
 
   constructor(
     private readonly fb: FormBuilder,
@@ -110,6 +119,38 @@ export class AsociacionComponent implements OnInit {
       error: () => {
         this.saving = false;
         this.errorService.show('No se han podido guardar los datos de la asociacion.');
+      }
+    });
+  }
+
+  selectTab(tab: typeof this.activeTab): void {
+    this.activeTab = tab;
+  }
+
+  cambiarPassword(): void {
+    this.passwordError = '';
+    this.passwordSuccess = '';
+    if (!this.permissions.hasPermission('asociacion:write')) {
+      this.passwordError = 'No tienes permiso para cambiar la contraseña.';
+      return;
+    }
+    if (this.passwordForm.invalid || this.passwordForm.value.nueva !== this.passwordForm.value.confirmacion) {
+      this.passwordForm.markAllAsTouched();
+      this.passwordError = this.passwordForm.value.nueva !== this.passwordForm.value.confirmacion
+        ? 'La nueva contraseña y su confirmación no coinciden.'
+        : 'Completa los tres campos. La nueva contraseña debe tener al menos 8 caracteres.';
+      return;
+    }
+    this.passwordSaving = true;
+    this.censoService.cambiarPasswordAsociacion(this.passwordForm.value.actual || '', this.passwordForm.value.nueva || '').subscribe({
+      next: () => {
+        this.passwordSaving = false;
+        this.passwordForm.reset();
+        this.passwordSuccess = 'Contraseña actualizada correctamente.';
+      },
+      error: error => {
+        this.passwordSaving = false;
+        this.passwordError = error?.error?.message || 'No se ha podido actualizar la contraseña.';
       }
     });
   }
