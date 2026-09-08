@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { of, switchMap } from 'rxjs';
+import { forkJoin, of, switchMap } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
@@ -49,6 +49,7 @@ export class CalendarioComponent implements OnInit {
   propuestaMensaje = '';
   propuestaDetalle: ActividadSecretaria | null = null;
   respuestaPropuesta = '';
+  adjuntosRespuestaPropuesta: File[] = [];
   readonly maxImagenBytes = 10 * 1024 * 1024;
 
   actividadForm = this.fb.group({
@@ -136,8 +137,8 @@ export class CalendarioComponent implements OnInit {
     this.editActividadForm.patchValue({
       titulo: hydrated.titulo,
       responsable: hydrated.responsable || '',
-      fechaInicio: this.toDateInput(hydrated.fechaInicio),
-      fechaFin: this.toDateInput(hydrated.fechaFin),
+      fechaInicio: this.toDateTimeInput(hydrated.fechaInicio),
+      fechaFin: this.toDateTimeInput(hydrated.fechaFin),
       descripcion: hydrated.descripcion || '',
       visiblePublico: hydrated.visiblePublico !== false,
       colorEtiqueta: hydrated.colorEtiqueta || 'ffsj'
@@ -158,7 +159,7 @@ export class CalendarioComponent implements OnInit {
   abrirCrearActividad(date: Date | null = this.selectedDate): void {
     const target = date || new Date();
     this.selectedDate = target;
-    const formatted = this.formatDate(target);
+    const formatted = `${this.formatDate(target)}T09:00`;
     const responsable = this.isAdminMode ? 'Secretaria' : (this.permissions.contextSnapshot?.asociacionNombre || '');
     this.actividadForm.reset({
       titulo: '',
@@ -261,11 +262,20 @@ export class CalendarioComponent implements OnInit {
     const mensaje = this.respuestaPropuesta.trim();
     if (!mensaje) return;
     this.loading = true;
-    this.secretariaService.responderPropuestaActividad(this.propuestaDetalle.id, mensaje).subscribe({
+    this.secretariaService.responderPropuestaActividad(this.propuestaDetalle.id, mensaje).pipe(
+      switchMap(propuesta => {
+        const evento = [...(propuesta.eventos || [])].reverse().find(item => item.actor === 'asociacion');
+        if (!evento || !this.adjuntosRespuestaPropuesta.length) return of(propuesta);
+        return forkJoin(this.adjuntosRespuestaPropuesta.map(file => this.secretariaService.subirAdjunto('actividad_evento', evento.id, file))).pipe(
+          switchMap(() => this.secretariaService.getMiPropuestaActividad(propuesta.id))
+        );
+      })
+    ).subscribe({
       next: propuesta => {
         this.propuestaDetalle = propuesta;
         this.propuestas = this.propuestas.map(item => item.id === propuesta.id ? propuesta : item);
         this.respuestaPropuesta = '';
+        this.adjuntosRespuestaPropuesta = [];
         this.success = 'Respuesta enviada a Administración. La propuesta vuelve a estar pendiente de revisión.';
         this.loading = false;
       },
@@ -292,6 +302,32 @@ export class CalendarioComponent implements OnInit {
     if (file && this.esImagenValida(file)) this.imagenSeleccionada = file;
   }
 
+  seleccionarAdjuntosRespuestaPropuesta(event: Event): void {
+    const files = Array.from((event.target as HTMLInputElement).files || []);
+    const invalid = files.find(file => !['image/png', 'image/jpeg', 'application/pdf', 'text/plain'].includes(file.type) || file.size > this.maxImagenBytes);
+    if (invalid) { this.error = 'Solo se admiten PNG, JPG, PDF o TXT de hasta 10 MB.'; return; }
+    if (this.adjuntosRespuestaPropuesta.length + files.length > 5) { this.error = 'Puedes adjuntar un máximo de 5 archivos por mensaje.'; return; }
+    this.adjuntosRespuestaPropuesta = [...this.adjuntosRespuestaPropuesta, ...files];
+  }
+
+  quitarAdjuntoRespuestaPropuesta(index: number): void {
+    this.adjuntosRespuestaPropuesta = this.adjuntosRespuestaPropuesta.filter((_, current) => current !== index);
+  }
+
+  descargarAdjunto(id: number): void {
+    this.secretariaService.descargarAdjunto(id).subscribe({
+      next: blob => window.open(URL.createObjectURL(blob), '_blank', 'noopener'),
+      error: () => this.error = 'No se ha podido abrir el adjunto.'
+    });
+  }
+
+  sincronizarFin(form: 'crear' | 'editar'): void {
+    const target = form === 'crear' ? this.actividadForm : this.editActividadForm;
+    const inicio = String(target.controls.fechaInicio.value || '');
+    const fin = String(target.controls.fechaFin.value || '');
+    if (inicio && (!fin || fin < inicio)) target.controls.fechaFin.setValue(inicio);
+  }
+
   subirImagenActividad(event: Event): void {
     if (!this.selected) return;
     const file = (event.target as HTMLInputElement).files?.[0];
@@ -307,13 +343,18 @@ export class CalendarioComponent implements OnInit {
   private cargarImagenActividad(id: string): void {
     if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl);
     this.imagenActividadUrl = '';
+    this.imagenActividadId = null;
     this.secretariaService.getAdjuntos('actividad_imagen', id).subscribe({
       next: response => {
         const image = response.adjuntos[0];
         if (!image) return;
         this.imagenActividadId = image.id;
-        this.secretariaService.descargarAdjunto(image.id).subscribe({ next: blob => this.imagenActividadUrl = URL.createObjectURL(blob) });
-      }
+        this.secretariaService.descargarAdjunto(image.id).subscribe({
+          next: blob => this.imagenActividadUrl = URL.createObjectURL(blob),
+          error: () => { this.imagenActividadId = null; this.error = 'No se ha podido cargar la imagen.'; }
+        });
+      },
+      error: () => { this.imagenActividadId = null; }
     });
   }
 
@@ -599,6 +640,13 @@ export class CalendarioComponent implements OnInit {
   private toDateInput(value: string | null | undefined): string {
     if (!value) return '';
     return String(value).slice(0, 10);
+  }
+
+  private toDateTimeInput(value: string | null | undefined): string {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
 
   private actualizarActividadLocal(actividad: ActividadSecretaria, message: string): void {
