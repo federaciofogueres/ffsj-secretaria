@@ -50,6 +50,7 @@ export class CalendarioComponent implements OnInit {
   propuestaDetalle: ActividadSecretaria | null = null;
   respuestaPropuesta = '';
   adjuntosRespuestaPropuesta: File[] = [];
+  adjuntosIncidenciaPropuesta: File[] = [];
   readonly maxImagenBytes = 10 * 1024 * 1024;
 
   actividadForm = this.fb.group({
@@ -235,7 +236,9 @@ export class CalendarioComponent implements OnInit {
   }
 
   abrirIncidenciaPropuesta(propuesta: ActividadSecretaria): void {
-    this.propuestaAccion = { id: propuesta.id, tipo: 'incidencia' }; this.propuestaMensaje = '';
+    this.propuestaAccion = { id: propuesta.id, tipo: 'incidencia' };
+    this.propuestaMensaje = '';
+    this.adjuntosIncidenciaPropuesta = [];
   }
 
   abrirDetallePropuesta(propuesta: ActividadSecretaria): void {
@@ -292,9 +295,20 @@ export class CalendarioComponent implements OnInit {
     const mensaje = this.propuestaMensaje.trim();
     if (!action || !mensaje) return;
     this.loading = true;
-    const request = action.tipo === 'rechazo' ? this.secretariaService.resolverPropuestaActividad(action.id, 'rechazada', mensaje) : this.secretariaService.abrirIncidenciaPropuestaActividad(action.id, mensaje);
-    request.subscribe({
-      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; this.propuestaAccion = null; this.cargar(); },
+    const request = action.tipo === 'rechazo'
+      ? this.secretariaService.resolverPropuestaActividad(action.id, 'rechazada', mensaje)
+      : this.secretariaService.abrirIncidenciaPropuestaActividad(action.id, mensaje);
+    request.pipe(
+      switchMap(propuesta => {
+        if (action.tipo !== 'incidencia' || !this.adjuntosIncidenciaPropuesta.length) return of(propuesta);
+        const evento = [...(propuesta.eventos || [])].reverse().find(item => item.tipo === 'incidencia_abierta' && item.actor === 'administracion');
+        if (!evento) return of(propuesta);
+        return forkJoin(this.adjuntosIncidenciaPropuesta.map(file => this.secretariaService.subirAdjunto('actividad_evento', evento.id, file))).pipe(
+          switchMap(() => of(propuesta))
+        );
+      })
+    ).subscribe({
+      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; this.propuestaAccion = null; this.adjuntosIncidenciaPropuesta = []; this.cargar(); },
       error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido tramitar la propuesta.'; },
       complete: () => this.loading = false
     });
@@ -308,14 +322,27 @@ export class CalendarioComponent implements OnInit {
 
   seleccionarAdjuntosRespuestaPropuesta(event: Event): void {
     const files = Array.from((event.target as HTMLInputElement).files || []);
-    const invalid = files.find(file => !['image/png', 'image/jpeg', 'application/pdf', 'text/plain'].includes(file.type) || file.size > this.maxImagenBytes);
-    if (invalid) { this.error = 'Solo se admiten PNG, JPG, PDF o TXT de hasta 10 MB.'; return; }
+    if (!this.validarAdjuntos(files)) return;
     if (this.adjuntosRespuestaPropuesta.length + files.length > 5) { this.error = 'Puedes adjuntar un máximo de 5 archivos por mensaje.'; return; }
     this.adjuntosRespuestaPropuesta = [...this.adjuntosRespuestaPropuesta, ...files];
   }
 
   quitarAdjuntoRespuestaPropuesta(index: number): void {
     this.adjuntosRespuestaPropuesta = this.adjuntosRespuestaPropuesta.filter((_, current) => current !== index);
+  }
+
+  seleccionarAdjuntosIncidenciaPropuesta(event: Event): void {
+    const files = Array.from((event.target as HTMLInputElement).files || []);
+    if (!this.validarAdjuntos(files)) return;
+    if (this.adjuntosIncidenciaPropuesta.length + files.length > 5) {
+      this.error = 'Puedes adjuntar un máximo de 5 archivos por incidencia.';
+      return;
+    }
+    this.adjuntosIncidenciaPropuesta = [...this.adjuntosIncidenciaPropuesta, ...files];
+  }
+
+  quitarAdjuntoIncidenciaPropuesta(index: number): void {
+    this.adjuntosIncidenciaPropuesta = this.adjuntosIncidenciaPropuesta.filter((_, current) => current !== index);
   }
 
   descargarAdjunto(id: number): void {
@@ -572,6 +599,16 @@ export class CalendarioComponent implements OnInit {
   private esImagenValida(file: File): boolean {
     if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) { this.error = 'Selecciona una imagen JPG, PNG, WEBP o GIF.'; return false; }
     if (file.size > this.maxImagenBytes) { this.error = 'La imagen supera el tamaño máximo de 10 MB.'; return false; }
+    return true;
+  }
+
+  private validarAdjuntos(files: File[]): boolean {
+    const mimeTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf', 'text/plain', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+    const invalid = files.find(file => !mimeTypes.includes(file.type) || file.size > this.maxImagenBytes);
+    if (invalid) {
+      this.error = 'Solo se admiten imágenes, PDF, TXT, Word o Excel de hasta 10 MB.';
+      return false;
+    }
     return true;
   }
 

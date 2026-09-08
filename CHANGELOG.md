@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.3#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- El detalle de actividad muestra su responsable.
+- Administración puede adjuntar imágenes y documentos al abrir una incidencia de propuesta; las asociaciones pueden responder con los mismos tipos permitidos.
+- El detalle de propuestas muestra el nombre real de la asociación responsable y reutiliza la descarga autenticada de sus imágenes.
+
 ## 0.25.2#ESMERALDA - 2026-09-08
 
 ### Corregido
