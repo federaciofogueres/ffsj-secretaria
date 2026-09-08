@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.25.8#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- Los checks de permisos usan una acción explícita y actualizan su estado de forma inmediata.
+- Si no se puede guardar un permiso, la pantalla restaura el valor anterior en lugar de quedar en un estado inconsistente.
+
 ## 0.25.7#ESMERALDA - 2026-09-08
 
 ### Corregido

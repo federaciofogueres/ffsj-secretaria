@@ -110,19 +110,27 @@ export class AdminComponent implements OnInit, OnDestroy {
     });
   }
 
-  toggleAsociacionBasePermiso(permiso: PermisoSecretaria, checked: boolean): void {
+  onAsociacionBasePermisoClick(event: MouseEvent, permiso: PermisoSecretaria): void {
+    event.preventDefault();
+    this.toggleAsociacionBasePermiso(permiso, !this.asociacionBaseTienePermiso(permiso));
+  }
+
+  private toggleAsociacionBasePermiso(permiso: PermisoSecretaria, checked: boolean): void {
     const actuales = new Set(this.asociacionBasePermisos.map(item => item.codigo));
     if (checked) {
       actuales.add(permiso.codigo);
     } else {
       actuales.delete(permiso.codigo);
     }
+    const previous = this.asociacionBasePermisos;
+    this.asociacionBasePermisos = this.permisosFromCodes(actuales);
 
     this.permissions.actualizarAsociacionBasePermisos(Array.from(actuales)).subscribe({
       next: updated => {
         this.asociacionBasePermisos = updated.permisos;
       },
       error: () => {
+        this.asociacionBasePermisos = previous;
         this.error = 'No se han podido actualizar los permisos base de asociaciones.';
       }
     });
@@ -132,13 +140,24 @@ export class AdminComponent implements OnInit, OnDestroy {
     return this.asociacionBasePermisos.some(item => item.codigo === permiso.codigo);
   }
 
-  togglePermiso(cargo: CargoResumen, permiso: PermisoSecretaria, checked: boolean): void {
+  onCargoPermisoClick(event: MouseEvent, cargo: CargoResumen, permiso: PermisoSecretaria): void {
+    event.preventDefault();
+    this.togglePermiso(cargo, permiso, !this.cargoTienePermiso(cargo, permiso));
+  }
+
+  private togglePermiso(cargo: CargoResumen, permiso: PermisoSecretaria, checked: boolean): void {
     const actuales = new Set(this.permisosCargo(cargo.id).map(item => item.codigo));
     if (checked) {
       actuales.add(permiso.codigo);
     } else {
       actuales.delete(permiso.codigo);
     }
+    const previous = this.cargoPermisos;
+    const next = { cargoId: cargo.id, permisos: this.permisosFromCodes(actuales) };
+    const exists = this.cargoPermisos.some(item => item.cargoId === cargo.id);
+    this.cargoPermisos = exists
+      ? this.cargoPermisos.map(item => (item.cargoId === cargo.id ? next : item))
+      : [...this.cargoPermisos, next];
 
     this.permissions.actualizarPermisosCargo(cargo.id, Array.from(actuales)).subscribe({
       next: updated => {
@@ -148,6 +167,7 @@ export class AdminComponent implements OnInit, OnDestroy {
           : [...this.cargoPermisos, updated];
       },
       error: () => {
+        this.cargoPermisos = previous;
         this.error = 'No se han podido actualizar los permisos del cargo.';
       }
     });
@@ -171,6 +191,10 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   permisosCargo(cargoId: number): PermisoSecretaria[] {
     return this.cargoPermisos.find(item => item.cargoId === cargoId)?.permisos ?? [];
+  }
+
+  private permisosFromCodes(codigos: Set<string>): PermisoSecretaria[] {
+    return this.permisos.filter(permiso => codigos.has(permiso.codigo));
   }
 
   permisosPorModulo(): { modulo: string; permisos: PermisoSecretaria[] }[] {
