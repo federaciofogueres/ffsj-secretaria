@@ -129,6 +129,7 @@
           <p class="text-muted mb-2">
             {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
           </p>
+          <p class="text-muted mb-2" *ngIf="selected.responsable"><strong>Responsable:</strong> {{ selected.responsable }}</p>
           <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
           <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
           <div class="linked" *ngIf="selected.inscripciones?.length">
@@ -322,6 +323,10 @@
 <section class="modal-panel" *ngIf="propuestaAccion" role="dialog" aria-modal="true" aria-label="Tramitar propuesta">
   <div class="modal-header-custom"><h2 class="h5 mb-0">{{ propuestaAccion.tipo === 'rechazo' ? 'Rechazar propuesta' : 'Solicitar información' }}</h2><button class="btn btn-outline-secondary btn-sm" type="button" (click)="propuestaAccion = null">Cerrar</button></div>
   <label class="form-label mt-3">{{ propuestaAccion.tipo === 'rechazo' ? 'Motivo del rechazo' : 'Información necesaria' }}<textarea class="form-control" rows="4" [(ngModel)]="propuestaMensaje"></textarea></label>
+  <ng-container *ngIf="propuestaAccion.tipo === 'incidencia'">
+    <label class="form-label mt-2">Adjuntos (opcional)<input class="form-control" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" (change)="seleccionarAdjuntosIncidenciaPropuesta($event)" /></label>
+    <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosIncidenciaPropuesta.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosIncidenciaPropuesta; let i = index" (click)="quitarAdjuntoIncidenciaPropuesta(i)">{{ adjunto.name }} ×</button></div>
+  </ng-container>
   <div class="d-flex gap-2"><button class="ux-btn" type="button" [disabled]="loading || !propuestaMensaje.trim()" (click)="confirmarAccionPropuesta()">Confirmar</button><button class="btn btn-outline-secondary" type="button" (click)="propuestaAccion = null">Cancelar</button></div>
 </section>
 
@@ -356,7 +361,7 @@
   <form *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta === 'con_incidencias'" (ngSubmit)="responderPropuesta()" class="proposal-reply">
     <label class="form-label" for="respuestaPropuesta">Responder a Administración</label>
     <textarea id="respuestaPropuesta" class="form-control" rows="4" maxlength="5000" [(ngModel)]="respuestaPropuesta" name="respuestaPropuesta" placeholder="Escribe la información solicitada"></textarea>
-    <label class="form-label mt-2">Adjuntos (opcional)<input class="form-control" type="file" multiple accept="image/png,image/jpeg,application/pdf,text/plain" (change)="seleccionarAdjuntosRespuestaPropuesta($event)" /></label>
+    <label class="form-label mt-2">Adjuntos (opcional)<input class="form-control" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" (change)="seleccionarAdjuntosRespuestaPropuesta($event)" /></label>
     <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosRespuestaPropuesta.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosRespuestaPropuesta; let i = index" (click)="quitarAdjuntoRespuestaPropuesta(i)">{{ adjunto.name }} ×</button></div>
     <div class="d-flex gap-2 mt-2"><button class="ux-btn" type="submit" [disabled]="loading || !respuestaPropuesta.trim()">Enviar respuesta</button></div>
   </form>
