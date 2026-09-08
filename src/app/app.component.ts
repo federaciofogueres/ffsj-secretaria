@@ -101,6 +101,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.permissions.loadContext().subscribe();
     }
     this.contextSubscription = this.permissions.contextChanges.subscribe(context => {
+      this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
       this.associationName = context?.asociacionNombre || context?.nombre || '';
       this.associationType = context?.asociacionTipo || '';
       if (!context) {

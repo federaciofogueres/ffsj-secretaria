@@ -1,22 +1,21 @@
-import { AuthService } from 'ffsj-web-components';
-
-import { ADMIN_CARGO_ID, AdminAccessService } from './admin-access.service';
+import { PermissionsService } from './permissions.service';
+import { AdminAccessService } from './admin-access.service';
 
 describe('AdminAccessService', () => {
-  it('detecta cargo admin por idCargo', () => {
-    const auth = jasmine.createSpyObj<AuthService>('AuthService', ['getCargos']);
-    auth.getCargos.and.returnValue([{ idCargo: ADMIN_CARGO_ID }]);
+  it('reconoce el permiso de acceso administrativo', () => {
+    const permissions = jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission']);
+    permissions.hasPermission.and.returnValue(true);
 
-    const service = new AdminAccessService(auth);
+    const service = new AdminAccessService(permissions);
 
     expect(service.isAdmin()).toBeTrue();
   });
 
-  it('rechaza usuarios sin cargo admin', () => {
-    const auth = jasmine.createSpyObj<AuthService>('AuthService', ['getCargos']);
-    auth.getCargos.and.returnValue([{ idCargo: 1 }]);
+  it('rechaza usuarios sin acceso administrativo', () => {
+    const permissions = jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission']);
+    permissions.hasPermission.and.returnValue(false);
 
-    const service = new AdminAccessService(auth);
+    const service = new AdminAccessService(permissions);
 
     expect(service.isAdmin()).toBeFalse();
   });

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.6#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- El modo administrativo se determina por el permiso `admin:access` cargado desde Secretaría, no por un ID fijo de cargo.
+- Las rutas administrativas esperan la resolución del contexto autenticado y la cabecera se actualiza correctamente al entrar como personal autorizado.
+- La pantalla de permisos queda protegida también en el cliente por `admin:permissions`.
+
 ## 0.25.3#ESMERALDA - 2026-09-08
 
 ### Corregido

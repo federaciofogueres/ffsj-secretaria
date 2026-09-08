@@ -1,18 +1,11 @@
 import { Injectable } from '@angular/core';
-import { AuthService } from 'ffsj-web-components';
-
-/** Cargo administrativo configurado en el censo: Vicepresidencia. */
-export const ADMIN_CARGO_ID = 5;
+import { PermissionsService } from './permissions.service';
 
 @Injectable({ providedIn: 'root' })
 export class AdminAccessService {
-  constructor(private readonly auth: AuthService) {}
+  constructor(private readonly permissions: PermissionsService) {}
 
   isAdmin(): boolean {
-    return this.hasAdminCargo(this.auth.getCargos());
-  }
-
-  hasAdminCargo(cargos: unknown[]): boolean {
-    return cargos.some((cargo: any) => Number(cargo?.idCargo ?? cargo?.id_cargo ?? cargo?.id) === ADMIN_CARGO_ID);
+    return this.permissions.hasPermission('admin:access');
   }
 }
