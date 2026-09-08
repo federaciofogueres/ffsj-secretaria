@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.25.7#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- La ruta `/admin` vuelve a mostrar el formulario de acceso de personas antes de exigir una sesión.
+- Tras autenticar, la pantalla espera el contexto de permisos y sólo carga la administración para usuarios con `admin:permissions`.
+
 ## 0.25.6#ESMERALDA - 2026-09-08
 
 ### Corregido
