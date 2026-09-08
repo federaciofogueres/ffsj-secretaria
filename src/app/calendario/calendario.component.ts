@@ -243,11 +243,12 @@ export class CalendarioComponent implements OnInit {
     this.respuestaPropuesta = '';
     if (this.isAdminMode) {
       this.propuestaDetalle = propuesta;
+      this.cargarImagenActividad(propuesta.id);
       return;
     }
     this.loading = true;
     this.secretariaService.getMiPropuestaActividad(propuesta.id).subscribe({
-      next: detalle => { this.propuestaDetalle = detalle; this.loading = false; },
+      next: detalle => { this.propuestaDetalle = detalle; this.cargarImagenActividad(detalle.id); this.loading = false; },
       error: response => { this.error = response.error?.message || 'No se ha podido abrir el detalle de la propuesta.'; this.loading = false; }
     });
   }
@@ -255,6 +256,9 @@ export class CalendarioComponent implements OnInit {
   cerrarDetallePropuesta(): void {
     this.propuestaDetalle = null;
     this.respuestaPropuesta = '';
+    if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl);
+    this.imagenActividadUrl = '';
+    this.imagenActividadId = null;
   }
 
   responderPropuesta(): void {
