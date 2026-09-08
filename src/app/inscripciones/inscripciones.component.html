@@ -15,7 +15,7 @@
       <div class="alert alert-warning" *ngIf="accionesAsociacionBloqueadasPorEjercicio">
         <strong>Ejercicio solo consulta.</strong> {{ mensajeEjercicioNoActivo }}
       </div>
-      <div class="text-muted" *ngIf="loading">Cargando...</div>
+      <div class="text-muted d-flex align-items-center gap-2" *ngIf="loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando...</div>
 
       <div class="layout" *ngIf="!detailMode">
         <section class="detail list-page">

@@ -134,6 +134,10 @@ export class AsociadosComponent implements OnInit, AfterViewInit {
     return String(asociado.estado || '').toLowerCase() === 'baja';
   }
 
+  totalActivos(tab: TabKey): number {
+    return this.dataSources[tab].filteredData.filter(asociado => !this.esBaja(asociado)).length;
+  }
+
   closeDetails(): void {
     this.selectedAsociado = null;
     this.selectedHistorico = [];

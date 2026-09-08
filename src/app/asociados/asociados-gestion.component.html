@@ -558,7 +558,7 @@
             <div class="col-12 col-md-5">
               <label class="form-label">Tipo de asociado</label>
               <select class="form-select" formControlName="tipo" (change)="actualizarCargoPorTipo()">
-                <option *ngFor="let option of tipoOpciones" [value]="option">{{ option }}</option>
+                <option *ngFor="let option of tipoOpciones" [value]="option">{{ labelTipoAsociado(option) }}</option>
               </select>
             </div>
             <div class="col-12 col-md-7">

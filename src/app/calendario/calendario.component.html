@@ -24,7 +24,7 @@
 
     <div class="alert alert-danger mt-3" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
-    <div class="text-muted mt-3" *ngIf="loading">Cargando calendario...</div>
+    <div class="text-muted mt-3 d-flex align-items-center gap-2" *ngIf="loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando calendario...</div>
 
     <div class="calendar-filters mt-3">
       <label>Estado<select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()"><option value="">Todos los visibles</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option><option value="cancelada" *ngIf="isAdminMode">Archivadas</option></select></label>
@@ -160,11 +160,11 @@
               <div class="row g-2 mt-1">
                 <div class="col">
                   <label class="form-label">Inicio</label>
-                  <input type="date" class="form-control" formControlName="fechaInicio" />
+                  <input type="datetime-local" class="form-control" formControlName="fechaInicio" (change)="sincronizarFin('editar')" />
                 </div>
                 <div class="col">
                   <label class="form-label">Fin</label>
-                  <input type="date" class="form-control" formControlName="fechaFin" />
+                  <input type="datetime-local" class="form-control" formControlName="fechaFin" />
                 </div>
               </div>
               <label class="form-label mt-2">Descripcion</label>
@@ -299,11 +299,11 @@
     <div class="row g-2 mt-1">
       <div class="col">
         <label class="form-label">Inicio</label>
-        <input type="date" class="form-control" formControlName="fechaInicio" />
+        <input type="datetime-local" class="form-control" formControlName="fechaInicio" (change)="sincronizarFin('crear')" />
       </div>
       <div class="col">
         <label class="form-label">Fin</label>
-        <input type="date" class="form-control" formControlName="fechaFin" />
+        <input type="datetime-local" class="form-control" formControlName="fechaFin" />
       </div>
     </div>
     <label class="form-label mt-2">Descripcion</label>
@@ -347,11 +347,16 @@
       <strong>{{ evento.actor === 'administracion' ? 'Administración' : 'Tu asociación' }}</strong>
       <small>{{ evento.createdAt | date:'dd/MM/y HH:mm' }}</small>
       <p *ngIf="evento.detalle">{{ evento.detalle }}</p>
+      <div class="d-flex flex-wrap gap-2" *ngIf="evento.adjuntos?.length">
+        <button type="button" class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of evento.adjuntos" (click)="descargarAdjunto(adjunto.id)">{{ adjunto.originalName || adjunto.fileName }}</button>
+      </div>
     </article>
   </section>
   <form *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta === 'con_incidencias'" (ngSubmit)="responderPropuesta()" class="proposal-reply">
     <label class="form-label" for="respuestaPropuesta">Responder a Administración</label>
     <textarea id="respuestaPropuesta" class="form-control" rows="4" maxlength="5000" [(ngModel)]="respuestaPropuesta" name="respuestaPropuesta" placeholder="Escribe la información solicitada"></textarea>
+    <label class="form-label mt-2">Adjuntos (opcional)<input class="form-control" type="file" multiple accept="image/png,image/jpeg,application/pdf,text/plain" (change)="seleccionarAdjuntosRespuestaPropuesta($event)" /></label>
+    <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosRespuestaPropuesta.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosRespuestaPropuesta; let i = index" (click)="quitarAdjuntoRespuestaPropuesta(i)">{{ adjunto.name }} ×</button></div>
     <div class="d-flex gap-2 mt-2"><button class="ux-btn" type="submit" [disabled]="loading || !respuestaPropuesta.trim()">Enviar respuesta</button></div>
   </form>
   <p class="text-muted mt-3 mb-0" *ngIf="!isAdminMode && propuestaDetalle.estadoPropuesta !== 'con_incidencias'">No hay ninguna solicitud de información pendiente.</p>

@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.25.1#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- Soporte muestra junto a la descripción el error de obligatoriedad y longitud mínima al intentar enviar una incidencia inválida.
+- El contador del listado de asociados excluye las bajas y el selector de tipo adapta su etiqueta a Barraca o Foguera sin alterar el valor técnico.
+
+### Mejorado
+
+- Calendario, Inscripciones y Registro muestran el indicador de carga común durante sus peticiones principales.
+
+## 0.25.0#ESMERALDA - 2026-09-08
+
+### Mejorado
+
+- Calendario permite indicar día y hora de inicio y fin, ajustando el fin cuando queda antes del inicio.
+- El detalle de propuestas muestra el hilo con sus adjuntos y permite a asociaciones adjuntar ficheros a la respuesta de una incidencia.
+
+### Corregido
+
+- La sustitución de la imagen de una actividad deja una única referencia activa y la carga limpia correctamente referencias no disponibles.
+
 ## 0.24.0#ESMERALDA - 2026-09-07
 
 ### Añadido

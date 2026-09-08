@@ -55,7 +55,7 @@
       <mat-tab>
         <ng-template mat-tab-label>
           <span>{{ tab.label }}</span>
-          <span class="tab-count">{{ dataSources[tab.key].filteredData.length }}</span>
+          <span class="tab-count">{{ totalActivos(tab.key) }}</span>
         </ng-template>
 
         <div class="tab-panel">
