@@ -27,7 +27,13 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminComponent,
-    title: 'Administracion'
+    title: 'Administracion',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'admin:permissions',
+      moduleName: 'Administracion',
+      moduleDescription: 'Gestion de permisos de Secretaria reservada al cargo Webmaster.'
+    }
   },
   {
     path: '',
