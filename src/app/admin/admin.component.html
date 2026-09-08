@@ -96,7 +96,7 @@
                 class="form-check-input"
                 type="checkbox"
                 [checked]="asociacionBaseTienePermiso(permiso)"
-                (change)="toggleAsociacionBasePermiso(permiso, $any($event.target).checked)"
+                (click)="onAsociacionBasePermisoClick($event, permiso)"
               />
               <span class="form-check-label">
                 <strong>{{ permiso.codigo }}</strong>
@@ -147,7 +147,7 @@
                     class="form-check-input"
                     type="checkbox"
                     [checked]="cargoTienePermiso(cargo, permiso)"
-                    (change)="togglePermiso(cargo, permiso, $any($event.target).checked)"
+                    (click)="onCargoPermisoClick($event, cargo, permiso)"
                   />
                   <span class="form-check-label">
                     <strong>{{ permiso.codigo }}</strong>
