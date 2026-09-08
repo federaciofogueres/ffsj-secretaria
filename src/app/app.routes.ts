@@ -27,13 +27,10 @@ export const routes: Routes = [
   {
     path: 'admin',
     component: AdminComponent,
-    title: 'Administracion',
-    canActivate: [AuthGuard, permissionGuard, adminGuard],
-    data: {
-      permission: 'admin:permissions',
-      moduleName: 'Administracion',
-      moduleDescription: 'Gestion de permisos de Secretaria reservada al cargo Webmaster.'
-    }
+    // Esta ruta contiene el formulario de acceso administrativo. No puede
+    // protegerse antes de autenticarse: el propio componente limita el panel
+    // de permisos una vez se ha resuelto el contexto del usuario.
+    title: 'Administracion'
   },
   {
     path: '',

@@ -39,12 +39,16 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.refreshAuthState();
-    if (this.isAdmin) {
-      this.load();
+    if (this.isLoggedIn) {
+      this.resolveAdministrativeAccess();
     }
     this.loginSubscription = this.auth.loginStatusObservable.pipe(distinctUntilChanged()).subscribe(isLogged => {
       this.isLoggedIn = isLogged;
-      this.isAdmin = isLogged && this.adminAccess.isAdmin();
+      if (isLogged) {
+        this.resolveAdministrativeAccess();
+      } else {
+        this.isAdmin = false;
+      }
     });
   }
 
@@ -54,15 +58,11 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   onLoginStatus(isLogged: boolean): void {
     this.isLoggedIn = isLogged;
-    this.isAdmin = isLogged && this.adminAccess.isAdmin();
-
-    if (this.isAdmin) {
-      this.permissions.loadContext().subscribe(() => this.load());
+    if (!isLogged) {
+      this.isAdmin = false;
       return;
     }
-    if (isLogged) {
-      this.error = 'El usuario autenticado no tiene cargo de administracion.';
-    }
+    this.resolveAdministrativeAccess();
   }
 
   canShowAdmin(): boolean {
@@ -72,6 +72,18 @@ export class AdminComponent implements OnInit, OnDestroy {
   private refreshAuthState(): void {
     this.isLoggedIn = this.auth.isLoggedIn();
     this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
+  }
+
+  private resolveAdministrativeAccess(): void {
+    this.error = '';
+    this.permissions.loadContext().subscribe(() => {
+      this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
+      if (this.isAdmin) {
+        this.load();
+        return;
+      }
+      this.error = 'El usuario autenticado no tiene acceso a la administracion.';
+    });
   }
 
   load(): void {
