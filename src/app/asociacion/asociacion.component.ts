@@ -116,9 +116,10 @@ export class AsociacionComponent implements OnInit {
         this.isEditing = false;
         this.saving = false;
       },
-      error: () => {
+      error: response => {
         this.saving = false;
-        this.errorService.show('No se han podido guardar los datos de la asociacion.');
+        this.error = response?.error?.status?.message || response?.error?.message || 'No se han podido guardar los datos de la asociacion.';
+        this.errorService.show(this.error);
       }
     });
   }

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.2#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- El acceso administrativo reconoce el cargo vigente de Vicepresidencia en lugar del cargo no administrativo `16`.
+- El guardado de datos de asociación muestra el motivo seguro devuelto por API cuando no puede completarse.
+- Las propuestas de Calendario muestran fecha y hora, e incluyen la imagen autenticada cuando existe.
+
 ## 0.25.1#ESMERALDA - 2026-09-08
 
 ### Corregido

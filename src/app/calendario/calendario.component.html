@@ -37,7 +37,7 @@
       <p class="text-muted" *ngIf="!propuestas.length">No hay propuestas para mostrar.</p>
       <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestas">
         <div class="d-flex justify-content-between gap-2"><strong>{{ propuesta.titulo }}</strong><app-estado-badge [estado]="propuesta.estadoPropuesta || 'pendiente_revision'"></app-estado-badge></div>
-        <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y' }} <span *ngIf="isAdminMode">· {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
+        <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y HH:mm' }} <span *ngIf="propuesta.fechaFin && propuesta.fechaFin !== propuesta.fechaInicio">– {{ propuesta.fechaFin | date: 'dd/MM/y HH:mm' }}</span><span *ngIf="isAdminMode"> · {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
         <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
         <p class="text-danger mb-1" *ngIf="propuesta.motivoRechazo">{{ propuesta.motivoRechazo }}</p>
         <button class="btn btn-outline-secondary btn-sm mt-2" type="button" (click)="abrirDetallePropuesta(propuesta)">Ver detalle</button>
@@ -337,9 +337,10 @@
   </div>
   <dl class="propuesta-data">
     <div><dt>Responsable</dt><dd>{{ propuestaDetalle.responsable || propuestaDetalle.asociacionNombre || '-' }}</dd></div>
-    <div><dt>Fecha</dt><dd>{{ propuestaDetalle.fechaInicio | date:'dd/MM/y' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | date:'dd/MM/y' }}</span></dd></div>
+    <div><dt>Fecha y hora</dt><dd>{{ propuestaDetalle.fechaInicio | date:'dd/MM/y HH:mm' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | date:'dd/MM/y HH:mm' }}</span></dd></div>
     <div *ngIf="propuestaDetalle.descripcion"><dt>Descripción</dt><dd>{{ propuestaDetalle.descripcion }}</dd></div>
   </dl>
+  <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-3" [src]="imagenActividadUrl" [alt]="'Imagen de ' + propuestaDetalle.titulo" />
   <section class="proposal-thread" aria-label="Conversación de la propuesta">
     <h3 class="h6">Conversación</h3>
     <p class="text-muted" *ngIf="!propuestaDetalle.eventos?.length">Aún no hay mensajes.</p>

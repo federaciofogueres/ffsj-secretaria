@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { AuthService } from 'ffsj-web-components';
 
-export const ADMIN_CARGO_ID = 16;
+/** Cargo administrativo configurado en el censo: Vicepresidencia. */
+export const ADMIN_CARGO_ID = 5;
 
 @Injectable({ providedIn: 'root' })
 export class AdminAccessService {
