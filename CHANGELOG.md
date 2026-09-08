@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.25.1#ESMERALDA - 2026-09-08
+
+### Corregido
+
+- Soporte muestra junto a la descripción el error de obligatoriedad y longitud mínima al intentar enviar una incidencia inválida.
+- El contador del listado de asociados excluye las bajas y el selector de tipo adapta su etiqueta a Barraca o Foguera sin alterar el valor técnico.
+
+### Mejorado
+
+- Calendario, Inscripciones y Registro muestran el indicador de carga común durante sus peticiones principales.
+
 ## 0.25.0#ESMERALDA - 2026-09-08
 
 ### Mejorado

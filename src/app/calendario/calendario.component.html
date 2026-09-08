@@ -24,7 +24,7 @@
 
     <div class="alert alert-danger mt-3" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
-    <div class="text-muted mt-3" *ngIf="loading">Cargando calendario...</div>
+    <div class="text-muted mt-3 d-flex align-items-center gap-2" *ngIf="loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando calendario...</div>
 
     <div class="calendar-filters mt-3">
       <label>Estado<select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()"><option value="">Todos los visibles</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option><option value="cancelada" *ngIf="isAdminMode">Archivadas</option></select></label>
