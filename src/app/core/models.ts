@@ -314,7 +314,7 @@ export interface InscripcionEntradaSecretaria {
   fechaEntrada: string;
   participantes: string[];
   datos: Record<string, unknown>;
-  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
+  eventos?: { id: number; tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
 }
 
 export interface CampoInscripcion {
@@ -400,7 +400,7 @@ export interface ActividadSecretaria {
   creadoPor?: string | null;
   motivoRechazo?: string | null;
   resueltoAt?: string | null;
-  eventos?: { tipo: string; actor: string; detalle?: string | null; createdAt: string }[];
+  eventos?: { id: number; tipo: string; actor: string; detalle?: string | null; createdAt: string; adjuntos?: AdjuntoSecretaria[] }[];
 }
 
 export interface CargoResumen {
