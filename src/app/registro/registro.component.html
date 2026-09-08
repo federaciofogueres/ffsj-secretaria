@@ -63,7 +63,7 @@
         <div class="alert alert-warning" *ngIf="mode === 'comunicacion' && comunicacionBloqueadaPorEjercicio">
           <strong>Ejercicio solo consulta.</strong> {{ mensajeComunicacionBloqueada }}
         </div>
-        <div class="text-muted" *ngIf="loadingRegistros">Cargando historico...</div>
+        <div class="text-muted d-flex align-items-center gap-2" *ngIf="loadingRegistros" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando historico...</div>
         <div class="year-filter mb-3" *ngIf="mode !== null">
           <label class="form-label mb-0">Año
           <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">

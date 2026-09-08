@@ -39,7 +39,7 @@
             rows="6"
             formControlName="descripcion"
             maxlength="5000"
-          ></textarea></label
+          ></textarea><small class="text-danger d-block mt-1" *ngIf="isInvalid('descripcion')">La descripción es obligatoria y debe tener al menos 10 caracteres.</small></label
         ><app-adjuntos-selector
           class="support-description-field"
           label="Adjuntos (opcional)"

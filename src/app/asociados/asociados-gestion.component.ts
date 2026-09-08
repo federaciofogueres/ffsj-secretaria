@@ -107,6 +107,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
+  tipoAsociacion = 2;
 
   readonly tipoOpciones = ['Hoguera adulta', 'Hoguera infantil'];
   readonly pageSize = 10;
@@ -153,6 +154,13 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = requestedTab === 'altas';
     }
     this.filtroSolicitudes = this.route.snapshot.queryParamMap.get('filtro') === 'incidencias' ? 'incidencias' : null;
+
+    if (this.asociacionId) {
+      this.censoService.getAsociacion(this.asociacionId).subscribe({
+        next: asociacion => this.tipoAsociacion = Number(asociacion.tipo_asociacion ?? asociacion.tipoAsociacion) === 1 ? 1 : 2,
+        error: () => undefined
+      });
+    }
 
     this.asociadosService.getAdultos().subscribe(ad => (this.adultos = ad));
     this.asociadosService.getInfantiles().subscribe(kids => (this.infantiles = kids));
@@ -1559,6 +1567,11 @@ export class AsociadosGestionComponent implements OnInit {
       this.cargosSeleccionadosIds.add(this.getDefaultCargoId(this.altaForm.value.tipo || 'Hoguera adulta'));
     }
     this.altaForm.patchValue({ cargoId: null });
+  }
+
+  labelTipoAsociado(tipo: string): string {
+    const entidad = this.tipoAsociacion === 1 ? 'Barraca' : 'Foguera';
+    return `${entidad} ${tipo === 'Hoguera infantil' ? 'infantil' : 'adulta'}`;
   }
 
   agregarCargoSeleccionado(): void {
