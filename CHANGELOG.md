@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.3#ESMERALDA - 2026-09-09
+
+### Corregido
+
+- El selector de ubicación resuelve por geocodificación inversa la dirección, código postal, localidad y provincia del punto elegido antes de permitir confirmarlo.
+- Los fallos de guardado de asociación conservan el mensaje funcional seguro de la API en las distintas formas de respuesta.
+- La pestaña activa utiliza texto rojo corporativo sobre fondo blanco, con estados de foco y hover visibles.
+
 ## 0.26.2#ESMERALDA - 2026-09-09
 
 ### Corregido
