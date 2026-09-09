@@ -380,6 +380,9 @@ export class InscripcionesComponent implements OnInit {
   }
 
   asociadosForField(field: { type: string }): Asociado[] {
+    if (field.type === 'responsable') {
+      return this.asociados.filter(person => person.tipo === 'adulto').sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)));
+    }
     if (field.type === 'asociado_adulto') {
       return this.asociados.filter(person => person.tipo === 'adulto').sort((a, b) => this.fullName(a).localeCompare(this.fullName(b)));
     }
@@ -391,6 +394,11 @@ export class InscripcionesComponent implements OnInit {
 
   asociadoLabel(person: Asociado): string {
     return `${person.nombre} ${person.apellidos}${person.cargo ? ` - ${person.cargo}` : ''}`;
+  }
+
+  asociadoForFieldValue(field: CampoInscripcion): Asociado | undefined {
+    const value = String(this.form.get(field.key)?.value || '').trim();
+    return this.asociadosForField(field).find(person => String(person.id) === value || this.asociadoLabel(person) === value);
   }
 
   setParticipantTab(tab: ParticipantType): void {
@@ -847,8 +855,12 @@ export class InscripcionesComponent implements OnInit {
     const values: Record<string, unknown> = {};
     (this.selectedInscription?.campos || []).forEach(field => {
       const value = entrada.datos?.[field.key];
-      if (field.type === 'responsable' && value && typeof value === 'object') {
-        values[field.key] = String((value as Record<string, unknown>)['id'] || '');
+      if (['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type)) {
+        const id = value && typeof value === 'object'
+          ? String((value as Record<string, unknown>)['id'] || '')
+          : String(value || '');
+        const asociado = this.asociadosForField(field).find(person => String(person.id) === id);
+        values[field.key] = asociado ? this.asociadoLabel(asociado) : id;
       } else {
         values[field.key] = value;
       }
@@ -979,18 +991,18 @@ export class InscripcionesComponent implements OnInit {
   private buildDatosFormulario(): Record<string, unknown> {
     const datos: Record<string, unknown> = { ...this.form.value };
     (this.selectedInscription?.campos || []).forEach(field => {
-      if (field.type !== 'responsable') {
+      if (!['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type)) {
         return;
       }
-      const asociado = this.asociados.find(person => String(person.id) === String(this.form.value[field.key]));
+      const asociado = this.asociadoForFieldValue(field);
       if (asociado) {
-        datos[field.key] = {
+        datos[field.key] = field.type === 'responsable' ? {
           id: asociado.id,
           nombre: `${asociado.nombre} ${asociado.apellidos}`.trim(),
           telefono: asociado.telefono || '',
           email: asociado.email || '',
           cargo: asociado.cargo || ''
-        };
+        } : String(asociado.id);
       }
     });
     return datos;
