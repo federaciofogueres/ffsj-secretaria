@@ -310,23 +310,8 @@ export class AsociacionComponent implements OnInit {
       sede_poblacion: data.headquarters.city,
       sede_provincia: data.headquarters.province,
       sede_latitud: data.headquarters.latitud, sede_longitud: data.headquarters.longitud,
-      anyo_fundacion: data.publicInfo.foundationYear ? Number(data.publicInfo.foundationYear) : null,
-      active: this.toBooleanOrNull(original.active),
-      img: null,
-      asociacion_order: (original as any).asociacion_order ?? null
+      ...(data.publicInfo.foundationYear ? { anyo_fundacion: Number(data.publicInfo.foundationYear) } : {})
     } as Asociacion;
-  }
-
-  private toBooleanOrNull(value: unknown): boolean | null {
-    if (value === null || value === undefined || value === '') {
-      return null;
-    }
-
-    if (typeof value === 'boolean') {
-      return value;
-    }
-
-    return Number(value) === 1;
   }
 
   private mapAddressParts(asociacion: Asociacion): { address: string; postalCode: string; city: string; province: string } {
