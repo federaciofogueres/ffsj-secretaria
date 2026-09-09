@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.6#ESMERALDA - 2026-09-10
+
+### Corregido
+
+- Los selectores con búsqueda de responsables y asociados sincronizan su valor visible con el formulario de inscripción.
+- El envío detecta y explica cuando el texto introducido no pertenece a un asociado válido, sin enviar ese valor.
+
 ## 0.27.5#ESMERALDA - 2026-09-10
 
 ### Corregido
