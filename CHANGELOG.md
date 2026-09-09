@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.4#ESMERALDA - 2026-09-09
+
+### Corregido
+
+- Las tabs activas de Datos de asociación mantienen borde, fondo rojo suave y contraste visible.
+- El selector de ubicación conserva en el campo visible la dirección confirmada junto con sus datos estructurados.
+- La pantalla conserva el mensaje funcional seguro de Censo API cuando falla el guardado.
+
 ## 0.26.3#ESMERALDA - 2026-09-09
 
 ### Corregido
