@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
@@ -191,7 +191,10 @@ export class InscripcionesComponent implements OnInit {
     this.error = '';
     const group: Record<string, FormControl> = {};
     inscription.campos.forEach(field => {
-      group[field.key] = this.fb.control('', this.isRequiredField(field) ? Validators.required : undefined);
+      const validators: ValidatorFn[] = [];
+      if (this.isRequiredField(field)) validators.push(Validators.required);
+      if (this.isMultipleChoice(field)) validators.push(this.maxSelectionsValidator(field));
+      group[field.key] = this.fb.control(this.isMultipleChoice(field) ? [] : '', validators.length ? validators : undefined);
     });
     this.form = this.fb.group(group);
     this.cargarAdjuntos(inscription.id);
@@ -232,6 +235,20 @@ export class InscripcionesComponent implements OnInit {
   isFieldInvalid(field: CampoInscripcion): boolean {
     const control = this.form.get(field.key);
     return Boolean(control?.touched && control.invalid);
+  }
+
+  isMultipleChoice(field: CampoInscripcion): boolean {
+    return field.type === 'select' && field.selectionMode === 'multiple';
+  }
+
+  inputType(field: CampoInscripcion): string {
+    return field.type === 'datetime' ? 'datetime-local' : field.type;
+  }
+
+  fieldErrorMessage(field: CampoInscripcion): string {
+    const errors = this.form.get(field.key)?.errors;
+    if (errors?.['maxSelections']) return `Selecciona como máximo ${field.maxSelections || 1} opciones.`;
+    return 'Este campo es obligatorio.';
   }
 
   openInscription(inscription: InscripcionSecretaria): void {
@@ -575,6 +592,7 @@ export class InscripcionesComponent implements OnInit {
 
   entradaDatoLabel(value: unknown): string {
     if (value === null || value === undefined) return '-';
+    if (Array.isArray(value)) return value.join(', ');
     if (typeof value === 'object') {
       const item = value as Record<string, unknown>;
       return String(item['nombre'] || JSON.stringify(value));
@@ -1006,6 +1024,13 @@ export class InscripcionesComponent implements OnInit {
       }
     });
     return datos;
+  }
+
+  private maxSelectionsValidator(field: CampoInscripcion): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const values = Array.isArray(control.value) ? control.value : [];
+      return values.length > (field.maxSelections || 1) ? { maxSelections: true } : null;
+    };
   }
 
   isWithinDeadline(inscription: InscripcionSecretaria): boolean {
