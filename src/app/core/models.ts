@@ -328,9 +328,11 @@ export interface InscripcionEntradaSecretaria {
 export interface CampoInscripcion {
   key: string;
   label: string;
-  type: 'text' | 'textarea' | 'tel' | 'email' | 'number' | 'date' | 'select' | 'asociado' | 'asociado_adulto' | 'asociado_infantil' | 'responsable';
+  type: 'text' | 'textarea' | 'tel' | 'email' | 'number' | 'date' | 'datetime' | 'time' | 'select' | 'asociado' | 'asociado_adulto' | 'asociado_infantil' | 'responsable';
   required?: boolean;
   options?: string[];
+  selectionMode?: 'single' | 'multiple';
+  maxSelections?: number;
 }
 
 export interface FormularioInscripcion {

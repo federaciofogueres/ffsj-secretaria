@@ -86,6 +86,19 @@
                   <span>Opciones, una por linea</span>
                   <textarea class="form-control" rows="3" [ngModel]="optionsText(campo)" [ngModelOptions]="{ standalone: true }" (ngModelChange)="setOptions(campo, $event)"></textarea>
                 </label>
+                <div class="field-grid mt-2" *ngIf="campo.value.type === 'select'">
+                  <label>
+                    <span>Selección</span>
+                    <select class="form-select" formControlName="selectionMode">
+                      <option value="single">Una opción</option>
+                      <option value="multiple">Varias opciones</option>
+                    </select>
+                  </label>
+                  <label *ngIf="campo.value.selectionMode === 'multiple'">
+                    <span>Máximo de opciones</span>
+                    <input class="form-control" type="number" min="1" [max]="campo.value.options?.length || null" formControlName="maxSelections" />
+                  </label>
+                </div>
                 <p class="text-muted small mb-0 mt-2" *ngIf="campo.value.type === 'asociado'">
                   La asociacion elegira un asociado real de su censo.
                 </p>
@@ -114,7 +127,7 @@
                 <select *ngIf="campo.value.type === 'asociado' || campo.value.type === 'asociado_adulto' || campo.value.type === 'asociado_infantil' || campo.value.type === 'responsable'" class="form-select" disabled>
                   <option>{{ campo.value.type === 'responsable' ? 'Seleccionar responsable' : 'Seleccionar asociado' }}</option>
                 </select>
-                <input *ngIf="campo.value.type !== 'textarea' && campo.value.type !== 'select' && campo.value.type !== 'asociado' && campo.value.type !== 'asociado_adulto' && campo.value.type !== 'asociado_infantil' && campo.value.type !== 'responsable'" class="form-control" [type]="campo.value.type" disabled />
+                <input *ngIf="campo.value.type !== 'textarea' && campo.value.type !== 'select' && campo.value.type !== 'asociado' && campo.value.type !== 'asociado_adulto' && campo.value.type !== 'asociado_infantil' && campo.value.type !== 'responsable'" class="form-control" [type]="campo.value.type === 'datetime' ? 'datetime-local' : campo.value.type" disabled />
               </label>
             </div>
           </div>

@@ -407,18 +407,18 @@
                       </label>
                       <ng-container [ngSwitch]="field.type">
                         <textarea *ngSwitchCase="'textarea'" class="form-control" rows="3" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key"></textarea>
-                        <select *ngSwitchCase="'select'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
-                        <option value="" disabled>Selecciona una opcion</option>
+                        <select *ngSwitchCase="'select'" class="form-select" [id]="fieldInputId(field)" [multiple]="isMultipleChoice(field)" [attr.size]="isMultipleChoice(field) ? (field.options?.length || 2) : null" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
+                        <option *ngIf="!isMultipleChoice(field)" value="" disabled>Selecciona una opcion</option>
                         <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
                       </select>
                         <ng-container *ngSwitchCase="'asociado'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado' }"></ng-container>
                         <ng-container *ngSwitchCase="'asociado_adulto'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado adulto' }"></ng-container>
                         <ng-container *ngSwitchCase="'asociado_infantil'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado infantil' }"></ng-container>
                         <ng-container *ngSwitchCase="'responsable'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un responsable adulto' }"></ng-container>
-                        <input *ngSwitchDefault class="form-control" [id]="fieldInputId(field)" [attr.type]="field.type" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
+                        <input *ngSwitchDefault class="form-control" [id]="fieldInputId(field)" [attr.type]="inputType(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
                       </ng-container>
                       <div class="invalid-field" [id]="fieldErrorId(field)" role="alert" *ngIf="isFieldInvalid(field)">
-                      Este campo es obligatorio.
+                      {{ fieldErrorMessage(field) }}
                     </div>
                   </div>
                 </ng-container>
