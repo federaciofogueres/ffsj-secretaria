@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.2#ESMERALDA - 2026-09-09
+
+### Corregido
+
+- La edición de asociación no reenvía metadatos nulos ajenos a los campos editables.
+- La pestaña activa conserva contraste visible durante la edición.
+
 ## 0.26.1#ESMERALDA - 2026-09-09
 
 ### Corregido
