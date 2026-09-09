@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.0#ESMERALDA - 2026-09-09
+
+### Añadido
+
+- El constructor de formularios permite campos de fecha y hora, hora y selectores de opciones con selección única o múltiple y límite configurable.
+- Las inscripciones validan y muestran las nuevas respuestas, incluidas las selecciones múltiples.
+
 ## 0.26.4#ESMERALDA - 2026-09-09
 
 ### Corregido

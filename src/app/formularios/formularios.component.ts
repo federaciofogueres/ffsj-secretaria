@@ -37,7 +37,9 @@ export class FormulariosComponent implements OnInit {
     { value: 'email', label: 'Email' },
     { value: 'number', label: 'Numero' },
     { value: 'date', label: 'Fecha' },
-    { value: 'select', label: 'Seleccionable manual' },
+    { value: 'datetime', label: 'Fecha y hora' },
+    { value: 'time', label: 'Hora' },
+    { value: 'select', label: 'Selector de opciones' },
     { value: 'asociado', label: 'Asociados de la asociacion' },
     { value: 'asociado_adulto', label: 'Asociados adultos' },
     { value: 'asociado_infantil', label: 'Asociados infantiles' },
@@ -104,7 +106,9 @@ export class FormulariosComponent implements OnInit {
       label: type === 'responsable' ? 'Responsable' : '',
       type,
       required: false,
-      options: []
+      options: [],
+      selectionMode: 'single',
+      maxSelections: 1
     }));
   }
 
@@ -231,7 +235,9 @@ export class FormulariosComponent implements OnInit {
       label: [campo.label || '', Validators.required],
       type: [campo.type || 'text', Validators.required],
       required: [Boolean(campo.required)],
-      options: [campo.options || []]
+      options: [campo.options || []],
+      selectionMode: [campo.selectionMode || 'single'],
+      maxSelections: [campo.maxSelections || 1]
     });
   }
 
@@ -241,7 +247,11 @@ export class FormulariosComponent implements OnInit {
       label: control.value.label,
       type: control.value.type,
       required: Boolean(control.value.required),
-      options: control.value.type === 'select' ? control.value.options || [] : []
+      options: control.value.type === 'select' ? control.value.options || [] : [],
+      selectionMode: control.value.type === 'select' && control.value.selectionMode === 'multiple' ? 'multiple' : 'single',
+      maxSelections: control.value.type === 'select' && control.value.selectionMode === 'multiple'
+        ? Math.max(1, Number(control.value.maxSelections) || 1)
+        : 1
     }));
     return {
       nombre: this.form.value.nombre,
