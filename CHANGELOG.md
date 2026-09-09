@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.2#ESMERALDA - 2026-09-09
+
+### Modificado
+
+- La creación y edición de formularios se realiza en una página dedicada, con pestañas separadas para los datos y los campos.
+- El listado abre cada formulario en su editor, sin perder los cambios introducidos al cambiar de pestaña.
+
 ## 0.27.1#ESMERALDA - 2026-09-09
 
 ### Añadido

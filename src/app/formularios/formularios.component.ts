@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 import { CampoInscripcion, FormularioAuditoria, FormularioInscripcion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
@@ -16,7 +18,7 @@ type FieldType = CampoInscripcion['type'];
   templateUrl: './formularios.component.html',
   styleUrls: ['./formularios.component.scss']
 })
-export class FormulariosComponent implements OnInit {
+export class FormulariosComponent implements OnInit, OnDestroy {
   @Input() contextual = false;
   @Input() formularioInicial: FormularioInscripcion | null = null;
   @Input() camposIniciales: CampoInscripcion[] = [];
@@ -30,6 +32,10 @@ export class FormulariosComponent implements OnInit {
   success = '';
   confirmDelete = false;
   auditoria: FormularioAuditoria[] = [];
+  editorMode = false;
+  editorTab: 'datos' | 'campos' = 'datos';
+  private routeSubscription?: Subscription;
+  private formularioIdRuta: string | null = null;
 
   readonly fieldTypes: { value: FieldType; label: string }[] = [
     { value: 'text', label: 'Texto corto' },
@@ -56,7 +62,9 @@ export class FormulariosComponent implements OnInit {
 
   constructor(
     private readonly fb: FormBuilder,
-    private readonly secretariaService: SecretariaService
+    private readonly secretariaService: SecretariaService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
 
   ngOnInit(): void {
@@ -68,7 +76,16 @@ export class FormulariosComponent implements OnInit {
       }
       return;
     }
-    this.cargar();
+    this.routeSubscription = this.route.paramMap.subscribe(params => {
+      this.formularioIdRuta = params.get('id');
+      this.editorMode = this.route.snapshot.routeConfig?.path !== 'formularios';
+      this.editorTab = 'datos';
+      this.cargar();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.routeSubscription?.unsubscribe();
   }
 
   get campos(): FormArray<FormGroup> {
@@ -87,6 +104,14 @@ export class FormulariosComponent implements OnInit {
     this.campos.clear();
     formulario.campos.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
     this.cargarAuditoria(formulario.id);
+  }
+
+  abrirEditor(formulario: FormularioInscripcion): void {
+    this.router.navigate(['/formularios', formulario.id]);
+  }
+
+  crearFormulario(): void {
+    this.router.navigate(['/formularios/nuevo']);
   }
 
   nuevo(camposIniciales: CampoInscripcion[] = []): void {
@@ -136,7 +161,13 @@ export class FormulariosComponent implements OnInit {
     const payload = { ...(this.buildPayload() as Record<string, unknown>), nombre: `${this.selected.nombre} (copia)` };
     this.loading = true;
     this.secretariaService.crearFormulario(payload).subscribe({
-      next: formulario => { this.formularios = [...this.formularios, formulario].sort((a, b) => a.nombre.localeCompare(b.nombre)); this.select(formulario); this.success = 'Formulario duplicado correctamente.'; this.loading = false; },
+      next: formulario => {
+        this.formularios = [...this.formularios, formulario].sort((a, b) => a.nombre.localeCompare(b.nombre));
+        this.select(formulario);
+        this.success = 'Formulario duplicado correctamente.';
+        this.loading = false;
+        if (!this.contextual) this.router.navigate(['/formularios', formulario.id]);
+      },
       error: response => { this.error = response?.error?.message || 'No se ha podido duplicar el formulario.'; this.loading = false; }
     });
   }
@@ -163,6 +194,8 @@ export class FormulariosComponent implements OnInit {
         this.loading = false;
         if (this.contextual) {
           this.formularioGuardado.emit(formulario);
+        } else if (!this.formularioIdRuta) {
+          this.router.navigate(['/formularios', formulario.id]);
         }
       },
       error: () => {
@@ -193,6 +226,7 @@ export class FormulariosComponent implements OnInit {
         this.nuevo();
         this.success = 'Formulario borrado correctamente.';
         this.loading = false;
+        if (!this.contextual) this.volverAlListado();
       },
       error: () => {
         this.error = 'No se ha podido borrar. Si tiene inscripciones vinculadas, archivalo.';
@@ -212,7 +246,15 @@ export class FormulariosComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.cancelado.emit();
+    if (this.contextual) {
+      this.cancelado.emit();
+      return;
+    }
+    this.volverAlListado();
+  }
+
+  volverAlListado(): void {
+    this.router.navigate(['/formularios']);
   }
 
   private cargar(): void {
@@ -221,9 +263,18 @@ export class FormulariosComponent implements OnInit {
       next: response => {
         this.formularios = response.formularios;
         this.loading = false;
-        if (!this.formularios.length) {
+        if (this.contextual || !this.editorMode) return;
+        if (!this.formularioIdRuta) {
           this.nuevo();
+          return;
         }
+        const formulario = this.formularios.find(item => item.id === this.formularioIdRuta);
+        if (formulario) {
+          this.select(formulario);
+          return;
+        }
+        this.error = 'No se ha encontrado el formulario solicitado.';
+        this.volverAlListado();
       },
       error: () => {
         this.error = 'No se han podido cargar los formularios.';
