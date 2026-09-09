@@ -23,7 +23,7 @@ export class SolicitudesComponent implements OnInit {
     { value: 'todos', label: 'Todos' },
     { value: 'registrada', label: 'Registrada' },
     { value: 'pendiente_firma', label: 'Pendiente de firma' },
-    { value: 'autorizacion_rechazada', label: 'Autorizacion rechazada' },
+    { value: 'autorizacion_rechazada', label: 'Certificación rechazada' },
     { value: 'enviada', label: 'Enviada' },
     { value: 'en_revision', label: 'En revision' },
     { value: 'con_incidencias', label: 'Con incidencias' },
@@ -195,7 +195,7 @@ export class SolicitudesComponent implements OnInit {
       return 'Pendiente de firma';
     }
     if (estado === 'autorizacion_rechazada') {
-      return 'Autorizacion rechazada';
+      return 'Certificación rechazada';
     }
     return this.estados.find(item => item.value === estado)?.label ?? estado;
   }
@@ -210,9 +210,9 @@ export class SolicitudesComponent implements OnInit {
 
   labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
     const labels: Record<AutorizacionAlta['estado'], string> = {
-      pendiente_firma: 'Pendiente de firma',
-      firmada: 'Autorizada',
-      archivada: 'Autorizada',
+      pendiente_firma: 'Pendiente de certificaciÃ³n',
+      firmada: 'Certificada',
+      archivada: 'Certificada',
       rechazada: 'Rechazada',
       cancelada: 'Cancelada'
     };

@@ -708,7 +708,7 @@ export class RegistroComponent implements OnInit {
     this.updatingEstado = true;
     this.secretariaService.firmarAutorizacionAlta(autorizacion.id, {
       firmante: this.asociacionNombreById(this.censoService.asociacionId),
-      observaciones: 'Autorizacion firmada desde el registro de la asociacion'
+      observaciones: 'Certificación firmada desde el registro de la asociación'
     }).subscribe({
       next: response => {
         this.autorizacionesAlta = this.autorizacionesAlta.map(item =>
@@ -729,7 +729,7 @@ export class RegistroComponent implements OnInit {
     this.updatingEstado = true;
     this.secretariaService.rechazarAutorizacionAlta(autorizacion.id, {
       firmante: this.asociacionNombreById(this.censoService.asociacionId),
-      motivo: 'Autorizacion rechazada desde el registro de la asociacion'
+      motivo: 'Certificación rechazada desde el registro de la asociación'
     }).subscribe({
       next: response => {
         this.autorizacionesAlta = this.autorizacionesAlta.map(item =>

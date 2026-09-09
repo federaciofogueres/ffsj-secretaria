@@ -411,22 +411,10 @@
                         <option value="" disabled>Selecciona una opcion</option>
                         <option *ngFor="let opt of field.options ?? []" [value]="opt">{{ opt }}</option>
                       </select>
-                        <select *ngSwitchCase="'asociado'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
-                        <option value="" disabled>Selecciona un asociado</option>
-                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
-                      </select>
-                        <select *ngSwitchCase="'asociado_adulto'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
-                        <option value="" disabled>Selecciona un asociado adulto</option>
-                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
-                      </select>
-                        <select *ngSwitchCase="'asociado_infantil'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
-                        <option value="" disabled>Selecciona un asociado infantil</option>
-                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
-                      </select>
-                        <select *ngSwitchCase="'responsable'" class="form-select" [id]="fieldInputId(field)" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key">
-                        <option value="" disabled>Selecciona responsable</option>
-                        <option *ngFor="let person of asociadosForField(field)" [value]="person.id">{{ asociadoLabel(person) }}</option>
-                      </select>
+                        <ng-container *ngSwitchCase="'asociado'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado' }"></ng-container>
+                        <ng-container *ngSwitchCase="'asociado_adulto'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado adulto' }"></ng-container>
+                        <ng-container *ngSwitchCase="'asociado_infantil'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un asociado infantil' }"></ng-container>
+                        <ng-container *ngSwitchCase="'responsable'" [ngTemplateOutlet]="asociadoSearch" [ngTemplateOutletContext]="{ field: field, placeholder: 'Busca un responsable adulto' }"></ng-container>
                         <input *ngSwitchDefault class="form-control" [id]="fieldInputId(field)" [attr.type]="field.type" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
                       </ng-container>
                       <div class="invalid-field" [id]="fieldErrorId(field)" role="alert" *ngIf="isFieldInvalid(field)">
@@ -436,6 +424,13 @@
                 </ng-container>
               </div>
             </form>
+
+            <ng-template #asociadoSearch let-field="field" let-placeholder="placeholder">
+              <input class="form-control" type="search" [id]="fieldInputId(field)" [attr.list]="fieldInputId(field) + '-options'" [placeholder]="placeholder" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
+              <datalist [id]="fieldInputId(field) + '-options'">
+                <option *ngFor="let person of asociadosForField(field)" [value]="asociadoLabel(person)" [label]="person.dni || ''"></option>
+              </datalist>
+            </ng-template>
 
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'asociados' && associationMode !== 'edit' && miEntrada as entrada">
               <h3 class="section-title">Asociados inscritos</h3>
