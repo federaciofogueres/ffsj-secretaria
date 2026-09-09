@@ -68,8 +68,8 @@ export class InscripcionesComponent implements OnInit {
     actividadId: [''],
     fechaPublicacion: [new Date().toISOString().slice(0, 10), Validators.required],
     fechaLimite: ['', Validators.required],
-    adultos: [true],
-    infantiles: [true]
+    adultos: [false],
+    infantiles: [false]
   });
 
   constructor(
@@ -319,8 +319,8 @@ export class InscripcionesComponent implements OnInit {
       actividadId: '',
       fechaPublicacion: new Date().toISOString().slice(0, 10),
       fechaLimite: '',
-      adultos: true,
-      infantiles: true
+      adultos: false,
+      infantiles: false
     });
   }
 
@@ -336,10 +336,6 @@ export class InscripcionesComponent implements OnInit {
       this.inscripcionAdminForm.value.adultos ? 'adulto' : null,
       this.inscripcionAdminForm.value.infantiles ? 'infantil' : null
     ].filter((tipo): tipo is ParticipantType => Boolean(tipo));
-    if (!tiposPermitidos.length) {
-      this.error = 'Selecciona al menos un tipo de participante.';
-      return;
-    }
     this.loading = true;
     const payload = this.editingInscription && this.selectedInscription ? this.buildAdminPayload(this.selectedInscription.estado || 'abierta') : {
       titulo: this.inscripcionAdminForm.value.titulo,
@@ -555,6 +551,10 @@ export class InscripcionesComponent implements OnInit {
     }
 
     if (step === 3) {
+      if (!this.requiresParticipants) {
+        this.associationTab = 'formulario';
+        return;
+      }
       this.associationTab = 'asociados';
       return;
     }
@@ -1262,6 +1262,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   private ensureAllowedParticipantTab(): void {
+    if (!this.requiresParticipants) return;
     if (!this.selectedInscription?.tiposPermitidos.includes(this.participantTab)) {
       this.participantTab = this.selectedInscription?.tiposPermitidos.includes('adulto') ? 'adulto' : 'infantil';
     }

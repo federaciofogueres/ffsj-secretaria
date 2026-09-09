@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.4#ESMERALDA - 2026-09-10
+
+### Modificado
+
+- La creación y edición de inscripciones permite no configurar asociados adultos ni infantiles.
+- Las inscripciones sin participantes omiten ese paso para la asociación, conservando las validaciones cuando sí hay tipos configurados.
+
 ## 0.27.3#ESMERALDA - 2026-09-09
 
 ### Añadido
