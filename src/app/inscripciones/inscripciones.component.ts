@@ -284,6 +284,15 @@ export class InscripcionesComponent implements OnInit {
     control?.markAsTouched();
   }
 
+  syncAsociadoField(field: CampoInscripcion, value: string): void {
+    const control = this.form.get(field.key);
+    if (!control) return;
+    control.setValue(value);
+    control.markAsDirty();
+    control.updateValueAndValidity();
+    this.error = '';
+  }
+
   inputType(field: CampoInscripcion): string {
     return field.type === 'datetime' ? 'datetime-local' : field.type;
   }
@@ -291,6 +300,7 @@ export class InscripcionesComponent implements OnInit {
   fieldErrorMessage(field: CampoInscripcion): string {
     const errors = this.form.get(field.key)?.errors;
     if (errors?.['maxSelections']) return `Selecciona como máximo ${field.maxSelections || 1} opciones.`;
+    if (errors?.['asociadoInvalido']) return 'Selecciona un asociado de la lista.';
     return 'Este campo es obligatorio.';
   }
 
@@ -690,6 +700,16 @@ export class InscripcionesComponent implements OnInit {
       this.error = invalidFields.length
         ? `Revisa los campos obligatorios o inválidos: ${invalidFields.join(', ')}.`
         : 'Revisa los campos obligatorios o inválidos antes de enviar la inscripción.';
+      return;
+    }
+    const invalidAsociados = this.invalidAsociadoFields();
+    if (invalidAsociados.length) {
+      invalidAsociados.forEach(field => {
+        const control = this.form.get(field.key);
+        control?.setErrors({ ...(control.errors || {}), asociadoInvalido: true });
+        control?.markAsTouched();
+      });
+      this.error = `Selecciona un asociado válido de la lista: ${invalidAsociados.map(field => field.label).join(', ')}.`;
       return;
     }
     this.secretariaService.enviarInscripcion({
@@ -1098,6 +1118,15 @@ export class InscripcionesComponent implements OnInit {
       }
     });
     return datos;
+  }
+
+  private invalidAsociadoFields(): CampoInscripcion[] {
+    return (this.selectedInscription?.campos || []).filter(field =>
+      this.isAsociadoField(field) &&
+      !this.isMultipleAsociado(field) &&
+      Boolean(this.form.get(field.key)?.value) &&
+      !this.asociadoForFieldValue(field)
+    );
   }
 
   private maxSelectionsValidator(field: CampoInscripcion): ValidatorFn {
