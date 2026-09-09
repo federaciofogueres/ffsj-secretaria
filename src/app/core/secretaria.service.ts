@@ -16,6 +16,7 @@ import {
   Incidencia,
   AutorizacionAlta,
   FormularioInscripcion,
+  FormularioAuditoria,
   InscripcionEntradaSecretaria,
   InscripcionSecretaria,
   JustificanteSecretaria,
@@ -468,6 +469,12 @@ export class SecretariaService {
 
   actualizarFormulario(id: string, payload: unknown): Observable<FormularioInscripcion> {
     return this.http.put<FormularioInscripcion>(`${this.apiUrl.secretariaBasePath}/formularios/${id}`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getFormularioAuditoria(id: string): Observable<{ eventos: FormularioAuditoria[] }> {
+    return this.http.get<{ eventos: FormularioAuditoria[] }>(`${this.apiUrl.secretariaBasePath}/formularios/${id}/auditoria`, {
       headers: this.authHeaders()
     });
   }
