@@ -44,6 +44,14 @@
               <option value="activo">Activo</option>
               <option value="archivado">Archivado</option>
             </select>
+            <p class="text-muted small mb-0 mt-3" *ngIf="selected?.creadoPor">Creado por: {{ selected?.creadoPor }}</p>
+          </div>
+
+          <div class="panel" *ngIf="selected && auditoria.length">
+            <h2 class="h6 mb-3">Historial de modificaciones</h2>
+            <ul class="list-unstyled mb-0">
+              <li *ngFor="let evento of auditoria" class="mb-2"><strong>{{ evento.accion === 'CREADO' ? 'Creado' : 'Modificado' }}</strong> por {{ evento.actor }} · {{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }}</li>
+            </ul>
           </div>
 
           <div class="panel">

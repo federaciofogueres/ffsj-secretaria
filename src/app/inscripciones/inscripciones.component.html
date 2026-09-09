@@ -318,6 +318,8 @@
                   </div>
                 </div>
                 <dl class="entry-data">
+                  <dt>Responsable</dt>
+                  <dd>{{ entrada.responsable || '-' }}</dd>
                   <ng-container *ngFor="let field of inscription.campos">
                     <dt>{{ field.label }}</dt>
                     <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
@@ -349,6 +351,8 @@
                 <button class="ux-btn ux-btn-secondary" type="button" (click)="descargarJustificanteEntrada(entrada)">Justificante PDF</button>
               </div>
               <dl class="entry-data">
+                <dt>Responsable</dt>
+                <dd>{{ entrada.responsable || '-' }}</dd>
                 <dt>Participantes</dt>
                 <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
                 <ng-container *ngFor="let field of inscription.campos">
@@ -378,6 +382,8 @@
                 </button>
               </div>
               <dl class="entry-data">
+                <dt>Responsable</dt>
+                <dd>{{ entrada.responsable || '-' }}</dd>
                 <dt>Participantes</dt>
                 <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
                 <ng-container *ngFor="let field of inscription.campos">

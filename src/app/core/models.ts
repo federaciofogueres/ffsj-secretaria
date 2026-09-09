@@ -317,6 +317,7 @@ export interface InscripcionEntradaSecretaria {
   ejercicioId?: number | null;
   ejercicio?: number | null;
   asociacionNombre?: string;
+  responsable?: string | null;
   formularioId: string;
   estado: 'recibida' | 'en_revision' | 'con_incidencias' | 'validada' | 'rechazada' | 'retirada_solicitada' | 'retirada';
   fechaEntrada: string;
@@ -341,9 +342,17 @@ export interface FormularioInscripcion {
   descripcion?: string | null;
   estado: 'activo' | 'archivado';
   campos: CampoInscripcion[];
+  creadoPor?: string | null;
   inscripcionesCount: number;
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface FormularioAuditoria {
+  id: number;
+  accion: string;
+  actor: string;
+  createdAt: string;
 }
 
 export interface Incidencia {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.1#ESMERALDA - 2026-09-09
+
+### Añadido
+
+- La gestión de formularios muestra su creador y el historial de cambios.
+- El detalle de una inscripción muestra la persona responsable de su presentación.
+
 ## 0.27.0#ESMERALDA - 2026-09-09
 
 ### Añadido

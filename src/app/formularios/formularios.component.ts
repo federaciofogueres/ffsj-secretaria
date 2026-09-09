@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 
-import { CampoInscripcion, FormularioInscripcion } from '../core/models';
+import { CampoInscripcion, FormularioAuditoria, FormularioInscripcion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
@@ -29,6 +29,7 @@ export class FormulariosComponent implements OnInit {
   error = '';
   success = '';
   confirmDelete = false;
+  auditoria: FormularioAuditoria[] = [];
 
   readonly fieldTypes: { value: FieldType; label: string }[] = [
     { value: 'text', label: 'Texto corto' },
@@ -85,6 +86,7 @@ export class FormulariosComponent implements OnInit {
     });
     this.campos.clear();
     formulario.campos.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
+    this.cargarAuditoria(formulario.id);
   }
 
   nuevo(camposIniciales: CampoInscripcion[] = []): void {
@@ -93,6 +95,7 @@ export class FormulariosComponent implements OnInit {
     this.error = '';
     this.form.reset({ nombre: '', descripcion: '', estado: 'activo' });
     this.campos.clear();
+    this.auditoria = [];
     if (camposIniciales.length) {
       camposIniciales.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
       return;
@@ -226,6 +229,14 @@ export class FormulariosComponent implements OnInit {
         this.error = 'No se han podido cargar los formularios.';
         this.loading = false;
       }
+    });
+  }
+
+  private cargarAuditoria(id: string): void {
+    this.auditoria = [];
+    this.secretariaService.getFormularioAuditoria(id).subscribe({
+      next: response => this.auditoria = response.eventos,
+      error: () => this.auditoria = []
     });
   }
 
