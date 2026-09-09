@@ -42,6 +42,7 @@ export class InscripcionesComponent implements OnInit {
   adjuntosEntrada: AdjuntoSecretaria[] = [];
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
+  asociadoSearchTerms: Record<string, string> = {};
   loading = false;
   error = '';
   success = '';
@@ -194,9 +195,10 @@ export class InscripcionesComponent implements OnInit {
       const validators: ValidatorFn[] = [];
       if (this.isRequiredField(field)) validators.push(Validators.required);
       if (this.isMultipleChoice(field)) validators.push(this.maxSelectionsValidator(field));
-      group[field.key] = this.fb.control(this.isMultipleChoice(field) ? [] : '', validators.length ? validators : undefined);
+      group[field.key] = this.fb.control(this.isMultipleValueField(field) ? [] : '', validators.length ? validators : undefined);
     });
     this.form = this.fb.group(group);
+    this.asociadoSearchTerms = {};
     this.cargarAdjuntos(inscription.id);
     if (this.isAdminMode) {
       this.cargarEntradas(inscription.id);
@@ -239,6 +241,43 @@ export class InscripcionesComponent implements OnInit {
 
   isMultipleChoice(field: CampoInscripcion): boolean {
     return field.type === 'select' && field.selectionMode === 'multiple';
+  }
+
+  isMultipleAsociado(field: CampoInscripcion): boolean {
+    return this.isAsociadoField(field) && field.selectionMode === 'multiple';
+  }
+
+  selectedAsociadosForField(field: CampoInscripcion): Asociado[] {
+    const value = this.form.get(field.key)?.value;
+    const ids = Array.isArray(value) ? value.map(item => String(item)) : [];
+    return ids
+      .map(id => this.asociadosForField(field).find(person => String(person.id) === id))
+      .filter((person): person is Asociado => Boolean(person));
+  }
+
+  addAsociadoToField(field: CampoInscripcion): void {
+    const search = String(this.asociadoSearchTerms[field.key] || '').trim();
+    const asociado = this.asociadosForField(field).find(person =>
+      String(person.id) === search || this.asociadoLabel(person) === search
+    );
+    if (!asociado) {
+      this.error = 'Selecciona un asociado de la lista antes de añadirlo.';
+      return;
+    }
+    const control = this.form.get(field.key);
+    const selected = Array.isArray(control?.value) ? control.value.map((id: unknown) => String(id)) : [];
+    const id = String(asociado.id);
+    if (!selected.includes(id)) control?.setValue([...selected, id]);
+    control?.markAsTouched();
+    this.asociadoSearchTerms[field.key] = '';
+    this.error = '';
+  }
+
+  removeAsociadoFromField(field: CampoInscripcion, asociadoId: string | number): void {
+    const control = this.form.get(field.key);
+    const selected = Array.isArray(control?.value) ? control.value.map((id: unknown) => String(id)) : [];
+    control?.setValue(selected.filter(id => id !== String(asociadoId)));
+    control?.markAsTouched();
   }
 
   inputType(field: CampoInscripcion): string {
@@ -414,7 +453,8 @@ export class InscripcionesComponent implements OnInit {
   }
 
   asociadoForFieldValue(field: CampoInscripcion): Asociado | undefined {
-    const value = String(this.form.get(field.key)?.value || '').trim();
+    const rawValue = this.form.get(field.key)?.value;
+    const value = Array.isArray(rawValue) ? String(rawValue[0] || '').trim() : String(rawValue || '').trim();
     return this.asociadosForField(field).find(person => String(person.id) === value || this.asociadoLabel(person) === value);
   }
 
@@ -873,6 +913,13 @@ export class InscripcionesComponent implements OnInit {
     const values: Record<string, unknown> = {};
     (this.selectedInscription?.campos || []).forEach(field => {
       const value = entrada.datos?.[field.key];
+      if (this.isMultipleAsociado(field)) {
+        const ids = (Array.isArray(value) ? value : [value])
+          .map(item => String(item || '').trim())
+          .filter(id => this.asociadosForField(field).some(person => String(person.id) === id));
+        values[field.key] = ids;
+        return;
+      }
       if (['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type)) {
         const id = value && typeof value === 'object'
           ? String((value as Record<string, unknown>)['id'] || '')
@@ -1012,6 +1059,11 @@ export class InscripcionesComponent implements OnInit {
       if (!['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type)) {
         return;
       }
+      if (this.isMultipleAsociado(field)) {
+        const selected = this.selectedAsociadosForField(field).map(asociado => String(asociado.id));
+        datos[field.key] = selected;
+        return;
+      }
       const asociado = this.asociadoForFieldValue(field);
       if (asociado) {
         datos[field.key] = field.type === 'responsable' ? {
@@ -1031,6 +1083,14 @@ export class InscripcionesComponent implements OnInit {
       const values = Array.isArray(control.value) ? control.value : [];
       return values.length > (field.maxSelections || 1) ? { maxSelections: true } : null;
     };
+  }
+
+  private isMultipleValueField(field: CampoInscripcion): boolean {
+    return this.isMultipleChoice(field) || this.isMultipleAsociado(field);
+  }
+
+  private isAsociadoField(field: CampoInscripcion): boolean {
+    return ['asociado', 'asociado_adulto', 'asociado_infantil'].includes(field.type);
   }
 
   isWithinDeadline(inscription: InscripcionSecretaria): boolean {

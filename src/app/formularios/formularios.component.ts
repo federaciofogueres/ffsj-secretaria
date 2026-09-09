@@ -110,6 +110,10 @@ export class FormulariosComponent implements OnInit, OnDestroy {
     this.router.navigate(['/formularios', formulario.id]);
   }
 
+  esSelectorAsociados(type: FieldType): boolean {
+    return ['asociado', 'asociado_adulto', 'asociado_infantil'].includes(type);
+  }
+
   crearFormulario(): void {
     this.router.navigate(['/formularios/nuevo']);
   }
@@ -310,7 +314,7 @@ export class FormulariosComponent implements OnInit, OnDestroy {
       type: control.value.type,
       required: Boolean(control.value.required),
       options: control.value.type === 'select' ? control.value.options || [] : [],
-      selectionMode: control.value.type === 'select' && control.value.selectionMode === 'multiple' ? 'multiple' : 'single',
+      selectionMode: (control.value.type === 'select' || this.esSelectorAsociados(control.value.type)) && control.value.selectionMode === 'multiple' ? 'multiple' : 'single',
       maxSelections: control.value.type === 'select' && control.value.selectionMode === 'multiple'
         ? Math.max(1, Number(control.value.maxSelections) || 1)
         : 1

@@ -432,10 +432,25 @@
             </form>
 
             <ng-template #asociadoSearch let-field="field" let-placeholder="placeholder">
-              <input class="form-control" type="search" [id]="fieldInputId(field)" [attr.list]="fieldInputId(field) + '-options'" [placeholder]="placeholder" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
-              <datalist [id]="fieldInputId(field) + '-options'">
-                <option *ngFor="let person of asociadosForField(field)" [value]="asociadoLabel(person)" [label]="person.dni || ''"></option>
-              </datalist>
+              <ng-container *ngIf="isMultipleAsociado(field); else associatedSingleSearch">
+                <div class="asociado-multiple">
+                  <div class="asociado-selected" *ngIf="selectedAsociadosForField(field).length">
+                    <span class="asociado-chip" *ngFor="let person of selectedAsociadosForField(field)">
+                      {{ asociadoLabel(person) }}
+                      <button type="button" [attr.aria-label]="'Quitar ' + asociadoLabel(person)" (click)="removeAsociadoFromField(field, person.id)">×</button>
+                    </span>
+                  </div>
+                  <div class="input-group">
+                    <input class="form-control" type="search" [id]="fieldInputId(field)" [attr.list]="fieldInputId(field) + '-options'" [placeholder]="placeholder" [(ngModel)]="asociadoSearchTerms[field.key]" [ngModelOptions]="{ standalone: true }" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" />
+                    <button class="btn btn-outline-secondary" type="button" (click)="addAsociadoToField(field)">Añadir</button>
+                  </div>
+                  <datalist [id]="fieldInputId(field) + '-options'"><option *ngFor="let person of asociadosForField(field)" [value]="asociadoLabel(person)" [label]="person.dni || ''"></option></datalist>
+                </div>
+              </ng-container>
+              <ng-template #associatedSingleSearch>
+                <input class="form-control" type="search" [id]="fieldInputId(field)" [attr.list]="fieldInputId(field) + '-options'" [placeholder]="placeholder" [required]="isRequiredField(field)" [attr.aria-required]="isRequiredField(field) ? 'true' : null" [attr.aria-invalid]="isFieldInvalid(field) ? 'true' : null" [attr.aria-describedby]="isFieldInvalid(field) ? fieldErrorId(field) : null" [formControlName]="field.key" />
+                <datalist [id]="fieldInputId(field) + '-options'"><option *ngFor="let person of asociadosForField(field)" [value]="asociadoLabel(person)" [label]="person.dni || ''"></option></datalist>
+              </ng-template>
             </ng-template>
 
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'asociados' && associationMode !== 'edit' && miEntrada as entrada">
