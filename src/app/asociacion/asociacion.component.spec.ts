@@ -83,4 +83,9 @@ describe('AsociacionComponent', () => {
     expect(component.getTipoLabel('1')).toBe('Barraca');
     expect(component.getTipoLabel(null)).toBe('');
   });
+
+  it('conserva el mensaje funcional seguro devuelto por Censo API al guardar', () => {
+    expect((component as any).saveErrorMessage({ error: { status: { message: 'El campo nombre de la asociación es obligatorio.' } } }))
+      .toBe('El campo nombre de la asociación es obligatorio.');
+  });
 });

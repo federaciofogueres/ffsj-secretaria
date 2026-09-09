@@ -40,8 +40,8 @@
 
 .association-tabs { display:flex; gap:.5rem; overflow-x:auto; margin:0 0 1rem; padding-bottom:.25rem; }
 .association-tabs button { border:1px solid var(--ffsj-line); border-radius:999px; background:#fff; color:var(--ffsj-ink); font-weight:800; padding:.6rem .85rem; white-space:nowrap; }
-.association-tabs button.active { background:#fff; border:2px solid var(--ffsj-primary); color:var(--ffsj-primary) !important; box-shadow:inset 0 -3px 0 var(--ffsj-primary); }
-.association-tabs button:hover,.association-tabs button:focus-visible { border-color:var(--ffsj-primary); color:var(--ffsj-primary); outline:2px solid color-mix(in srgb,var(--ffsj-primary) 30%,transparent); outline-offset:2px; }
+.association-tabs button.active { background:var(--ffsj-soft-red); border:2px solid var(--ffsj-primary); color:var(--ffsj-primary) !important; box-shadow:inset 0 -3px 0 var(--ffsj-primary); }
+.association-tabs button:hover,.association-tabs button:focus-visible { border-color:var(--ffsj-primary); background:var(--ffsj-soft-red); color:var(--ffsj-primary); outline:2px solid color-mix(in srgb,var(--ffsj-primary) 30%,transparent); outline-offset:2px; }
 .access-card { max-width:760px; }
 
 .read-grid,
