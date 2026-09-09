@@ -100,6 +100,28 @@ export const routes: Routes = [
     }
   },
   {
+    path: 'formularios/nuevo',
+    component: FormulariosComponent,
+    title: 'Nuevo formulario',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'inscripciones:write',
+      moduleName: 'Formularios',
+      moduleDescription: 'Constructor de plantillas de formulario reutilizables para inscripciones.'
+    }
+  },
+  {
+    path: 'formularios/:id',
+    component: FormulariosComponent,
+    title: 'Editar formulario',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'inscripciones:write',
+      moduleName: 'Formularios',
+      moduleDescription: 'Constructor de plantillas de formulario reutilizables para inscripciones.'
+    }
+  },
+  {
     path: 'formularios',
     component: FormulariosComponent,
     title: 'Formularios',
