@@ -66,6 +66,14 @@ export interface Asociacion {
   sedePoblacion?: string;
   sede_provincia?: string;
   sedeProvincia?: string;
+  latitud?: number | string | null;
+  longitud?: number | string | null;
+  sede_latitud?: number | string | null;
+  sede_longitud?: number | string | null;
+  ubicacion_foguera_infantil?: string;
+  ubicacion_raco?: string;
+  ubicacion_barraca?: string;
+  [key: string]: unknown;
   anyo_fundacion?: number | string | null;
   anyoFundacion?: number | string | null;
   tipo_asociacion?: number | string;

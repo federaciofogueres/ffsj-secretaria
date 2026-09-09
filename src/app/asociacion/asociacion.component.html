@@ -188,22 +188,7 @@
             <label class="form-label">CIF</label>
             <input type="text" class="form-control" formControlName="cif" />
           </div>
-          <div class="col-12">
-            <label class="form-label">Direccion</label>
-            <input type="text" class="form-control" formControlName="address" />
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">Codigo postal</label>
-            <input type="text" class="form-control" formControlName="postalCode" />
-          </div>
-          <div class="col-12 col-md-5">
-            <label class="form-label">Localidad</label>
-            <input type="text" class="form-control" formControlName="city" />
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Provincia</label>
-            <input type="text" class="form-control" formControlName="province" />
-          </div>
+          <div class="col-12"><app-location-picker label="Domicilio social" [value]="location('basic')" (locationChange)="setLocation('basic', $event)"></app-location-picker></div>
         </div>
       </section>
 
@@ -227,14 +212,7 @@
             <label class="form-label">Lema</label>
             <input type="text" class="form-control" formControlName="motto" />
           </div>
-          <div class="col-12">
-            <label class="form-label">Lugar de planta de los monumentos</label>
-            <input type="text" class="form-control" formControlName="monumentLocation" />
-          </div>
-          <div class="col-12">
-            <label class="form-label">Lugar de planta de la portada</label>
-            <input type="text" class="form-control" formControlName="gateLocation" />
-          </div>
+          <ng-container *ngIf="isFoguera(); else barracaLocations"><div class="col-12"><app-location-picker label="Lugar de plantà de la foguera" [value]="location('publicInfo','monumentLocation')" (locationChange)="setLocation('publicInfo',$event,'monumentLocation')"></app-location-picker><app-location-picker label="Lugar de plantà de la foguera infantil" [value]="location('publicInfo','childMonumentLocation')" (locationChange)="setLocation('publicInfo',$event,'childMonumentLocation')"></app-location-picker><app-location-picker label="Lugar de ubicación del racó" [value]="location('publicInfo','racoLocation')" (locationChange)="setLocation('publicInfo',$event,'racoLocation')"></app-location-picker></div></ng-container><ng-template #barracaLocations><div class="col-12"><app-location-picker label="Lugar de plantà de la portalada" [value]="location('publicInfo','gateLocation')" (locationChange)="setLocation('publicInfo',$event,'gateLocation')"></app-location-picker><app-location-picker label="Lugar de plantà de la barraca" [value]="location('publicInfo','barracaLocation')" (locationChange)="setLocation('publicInfo',$event,'barracaLocation')"></app-location-picker></div></ng-template>
         </div>
       </section>
 
@@ -246,22 +224,7 @@
           </div>
         </div>
         <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label">Direccion</label>
-            <input type="text" class="form-control" formControlName="address" />
-          </div>
-          <div class="col-6 col-md-3">
-            <label class="form-label">Codigo postal</label>
-            <input type="text" class="form-control" formControlName="postalCode" />
-          </div>
-          <div class="col-12 col-md-5">
-            <label class="form-label">Poblacion</label>
-            <input type="text" class="form-control" formControlName="city" />
-          </div>
-          <div class="col-12 col-md-4">
-            <label class="form-label">Provincia</label>
-            <input type="text" class="form-control" formControlName="province" />
-          </div>
+          <div class="col-12"><app-location-picker label="Sede social" [value]="location('headquarters')" (locationChange)="setLocation('headquarters',$event)"></app-location-picker></div>
         </div>
       </section>
 
@@ -291,9 +254,9 @@
     <div class="alert alert-danger" *ngIf="passwordError">{{ passwordError }}</div>
     <div class="alert alert-success" *ngIf="passwordSuccess">{{ passwordSuccess }}</div>
     <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="row g-3">
-      <div class="col-12"><label class="form-label" for="passwordActual">Contraseña actual</label><input id="passwordActual" class="form-control" type="password" autocomplete="current-password" formControlName="actual" /></div>
-      <div class="col-12 col-md-6"><label class="form-label" for="passwordNueva">Nueva contraseña</label><input id="passwordNueva" class="form-control" type="password" autocomplete="new-password" formControlName="nueva" /></div>
-      <div class="col-12 col-md-6"><label class="form-label" for="passwordConfirmacion">Confirmar nueva contraseña</label><input id="passwordConfirmacion" class="form-control" type="password" autocomplete="new-password" formControlName="confirmacion" /></div>
+      <div class="col-12"><label class="form-label" for="passwordActual">Contraseña actual</label><div class="input-group"><input id="passwordActual" class="form-control" [type]="showPassword.actual ? 'text' : 'password'" autocomplete="current-password" formControlName="actual" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.actual=!showPassword.actual">Mostrar</button></div></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordNueva">Nueva contraseña</label><div class="input-group"><input id="passwordNueva" class="form-control" [type]="showPassword.nueva ? 'text' : 'password'" autocomplete="new-password" formControlName="nueva" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.nueva=!showPassword.nueva">Mostrar</button></div></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordConfirmacion">Confirmar nueva contraseña</label><div class="input-group"><input id="passwordConfirmacion" class="form-control" [type]="showPassword.confirmacion ? 'text' : 'password'" autocomplete="new-password" formControlName="confirmacion" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.confirmacion=!showPassword.confirmacion">Mostrar</button></div></div>
       <div class="col-12"><button class="ux-btn" type="submit" [disabled]="passwordSaving">{{ passwordSaving ? 'Actualizando...' : 'Actualizar contraseña' }}</button></div>
     </form>
   </section>

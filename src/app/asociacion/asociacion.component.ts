@@ -6,6 +6,7 @@ import { CensoService } from '../core/censo.service';
 import { ErrorService } from '../core/error.service';
 import { Asociacion } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
+import { LocationPickerComponent, StructuredLocation } from '../shared/location-picker.component';
 
 interface AssociationData {
   basic: {
@@ -16,6 +17,8 @@ interface AssociationData {
     postalCode: string;
     city: string;
     province: string;
+    latitud: number | null;
+    longitud: number | null;
   };
   publicInfo: {
     foundationYear: string;
@@ -23,12 +26,17 @@ interface AssociationData {
     motto: string;
     monumentLocation: string;
     gateLocation: string;
+    childMonumentLocation: string;
+    racoLocation: string;
+    barracaLocation: string;
   };
   headquarters: {
     address: string;
     postalCode: string;
     city: string;
     province: string;
+    latitud: number | null;
+    longitud: number | null;
   };
   contact: {
     email: string;
@@ -39,7 +47,7 @@ interface AssociationData {
 @Component({
   selector: 'app-asociacion',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, LocationPickerComponent],
   templateUrl: './asociacion.component.html',
   styleUrls: ['./asociacion.component.scss']
 })
@@ -60,6 +68,7 @@ export class AsociacionComponent implements OnInit {
   passwordSaving = false;
   passwordError = '';
   passwordSuccess = '';
+  showPassword = { actual: false, nueva: false, confirmacion: false };
 
   constructor(
     private readonly fb: FormBuilder,
@@ -127,6 +136,18 @@ export class AsociacionComponent implements OnInit {
   selectTab(tab: typeof this.activeTab): void {
     this.activeTab = tab;
   }
+
+  location(group: 'basic' | 'headquarters' | 'publicInfo', prefix = ''): StructuredLocation {
+    const value = this.form.get(group)?.value as any || {}; const apiPrefix: Record<string, string> = { monumentLocation: 'ubicacion_monumento', childMonumentLocation: 'ubicacion_foguera_infantil', racoLocation: 'ubicacion_raco', gateLocation: 'ubicacion_portada', barracaLocation: 'ubicacion_barraca' };
+    const key = prefix ? (apiPrefix[prefix] || prefix) : '';
+    return { direccion: key ? value[key] || '' : value.address || '', codigoPostal: key ? value[`${key}_codigo_postal`] || '' : value.postalCode || '', localidad: key ? value[`${key}_localidad`] || '' : value.city || '', provincia: key ? value[`${key}_provincia`] || '' : value.province || '', latitud: Number(key ? value[`${key}_latitud`] : value.latitud) || null, longitud: Number(key ? value[`${key}_longitud`] : value.longitud) || null };
+  }
+
+  setLocation(group: 'basic' | 'headquarters' | 'publicInfo', location: StructuredLocation, prefix = ''): void {
+    const target = this.form.get(group) as FormGroup; const apiPrefix: Record<string, string> = { monumentLocation: 'ubicacion_monumento', childMonumentLocation: 'ubicacion_foguera_infantil', racoLocation: 'ubicacion_raco', gateLocation: 'ubicacion_portada', barracaLocation: 'ubicacion_barraca' }; const key = apiPrefix[prefix] || prefix; const patch: any = prefix ? { [prefix]: location.direccion, [`${key}_codigo_postal`]: location.codigoPostal, [`${key}_localidad`]: location.localidad, [`${key}_provincia`]: location.provincia, [`${key}_latitud`]: location.latitud, [`${key}_longitud`]: location.longitud } : { address: location.direccion, postalCode: location.codigoPostal, city: location.localidad, province: location.provincia, latitud: location.latitud, longitud: location.longitud }; target.patchValue(patch);
+  }
+
+  isFoguera(): boolean { return Number(this.form.get('basic.tag')?.value) === 2; }
 
   cambiarPassword(): void {
     this.passwordError = '';
@@ -200,19 +221,21 @@ export class AsociacionComponent implements OnInit {
         postalCode: [data.basic.postalCode],
         city: [data.basic.city],
         province: [data.basic.province]
+        , latitud: [data.basic.latitud], longitud: [data.basic.longitud]
       }),
       publicInfo: this.fb.group({
         foundationYear: [data.publicInfo.foundationYear],
         hymn: [data.publicInfo.hymn],
         motto: [data.publicInfo.motto],
         monumentLocation: [data.publicInfo.monumentLocation],
-        gateLocation: [data.publicInfo.gateLocation]
+        gateLocation: [data.publicInfo.gateLocation], childMonumentLocation: [data.publicInfo.childMonumentLocation], racoLocation: [data.publicInfo.racoLocation], barracaLocation: [data.publicInfo.barracaLocation],
+        ubicacion_monumento_codigo_postal: [(this.rawAssociation as any)?.ubicacion_monumento_codigo_postal || ''], ubicacion_monumento_localidad: [(this.rawAssociation as any)?.ubicacion_monumento_localidad || ''], ubicacion_monumento_provincia: [(this.rawAssociation as any)?.ubicacion_monumento_provincia || ''], ubicacion_monumento_latitud: [(this.rawAssociation as any)?.ubicacion_monumento_latitud || null], ubicacion_monumento_longitud: [(this.rawAssociation as any)?.ubicacion_monumento_longitud || null], ubicacion_foguera_infantil_codigo_postal: [(this.rawAssociation as any)?.ubicacion_foguera_infantil_codigo_postal || ''], ubicacion_foguera_infantil_localidad: [(this.rawAssociation as any)?.ubicacion_foguera_infantil_localidad || ''], ubicacion_foguera_infantil_provincia: [(this.rawAssociation as any)?.ubicacion_foguera_infantil_provincia || ''], ubicacion_foguera_infantil_latitud: [(this.rawAssociation as any)?.ubicacion_foguera_infantil_latitud || null], ubicacion_foguera_infantil_longitud: [(this.rawAssociation as any)?.ubicacion_foguera_infantil_longitud || null], ubicacion_raco_codigo_postal: [(this.rawAssociation as any)?.ubicacion_raco_codigo_postal || ''], ubicacion_raco_localidad: [(this.rawAssociation as any)?.ubicacion_raco_localidad || ''], ubicacion_raco_provincia: [(this.rawAssociation as any)?.ubicacion_raco_provincia || ''], ubicacion_raco_latitud: [(this.rawAssociation as any)?.ubicacion_raco_latitud || null], ubicacion_raco_longitud: [(this.rawAssociation as any)?.ubicacion_raco_longitud || null], ubicacion_portada_codigo_postal: [(this.rawAssociation as any)?.ubicacion_portada_codigo_postal || ''], ubicacion_portada_localidad: [(this.rawAssociation as any)?.ubicacion_portada_localidad || ''], ubicacion_portada_provincia: [(this.rawAssociation as any)?.ubicacion_portada_provincia || ''], ubicacion_portada_latitud: [(this.rawAssociation as any)?.ubicacion_portada_latitud || null], ubicacion_portada_longitud: [(this.rawAssociation as any)?.ubicacion_portada_longitud || null], ubicacion_barraca_codigo_postal: [(this.rawAssociation as any)?.ubicacion_barraca_codigo_postal || ''], ubicacion_barraca_localidad: [(this.rawAssociation as any)?.ubicacion_barraca_localidad || ''], ubicacion_barraca_provincia: [(this.rawAssociation as any)?.ubicacion_barraca_provincia || ''], ubicacion_barraca_latitud: [(this.rawAssociation as any)?.ubicacion_barraca_latitud || null], ubicacion_barraca_longitud: [(this.rawAssociation as any)?.ubicacion_barraca_longitud || null]
       }),
       headquarters: this.fb.group({
         address: [data.headquarters.address],
         postalCode: [data.headquarters.postalCode],
         city: [data.headquarters.city],
-        province: [data.headquarters.province]
+        province: [data.headquarters.province], latitud: [data.headquarters.latitud], longitud: [data.headquarters.longitud]
       }),
       contact: this.fb.group({
         email: [data.contact.email, Validators.email],
@@ -237,19 +260,20 @@ export class AsociacionComponent implements OnInit {
         postalCode: addressParts.postalCode,
         city: addressParts.city,
         province: addressParts.province
+        , latitud: Number((asociacion as any).latitud) || null, longitud: Number((asociacion as any).longitud) || null
       },
       publicInfo: {
         foundationYear: String((asociacion as any).anyo_fundacion ?? (asociacion as any).anyoFundacion ?? ''),
         hymn: (asociacion as any).himno ?? '',
         motto: (asociacion as any).lema ?? '',
         monumentLocation: (asociacion as any).ubicacion_monumento ?? (asociacion as any).ubicacionMonumento ?? '',
-        gateLocation: (asociacion as any).ubicacion_portada ?? (asociacion as any).ubicacionPortada ?? ''
+        gateLocation: (asociacion as any).ubicacion_portada ?? (asociacion as any).ubicacionPortada ?? '', childMonumentLocation: (asociacion as any).ubicacion_foguera_infantil ?? '', racoLocation: (asociacion as any).ubicacion_raco ?? '', barracaLocation: (asociacion as any).ubicacion_barraca ?? ''
       },
       headquarters: {
         address: (asociacion as any).sede_direccion ?? (asociacion as any).sedeDireccion ?? '',
         postalCode: (asociacion as any).sede_codigo_postal ?? (asociacion as any).sedeCodigoPostal ?? '',
         city: (asociacion as any).sede_poblacion ?? (asociacion as any).sedePoblacion ?? (asociacion as any).sedeCiudad ?? '',
-        province: (asociacion as any).sede_provincia ?? (asociacion as any).sedeProvincia ?? ''
+        province: (asociacion as any).sede_provincia ?? (asociacion as any).sedeProvincia ?? '', latitud: Number((asociacion as any).sede_latitud) || null, longitud: Number((asociacion as any).sede_longitud) || null
       },
       contact: {
         email: asociacion.email ?? '',
@@ -270,6 +294,7 @@ export class AsociacionComponent implements OnInit {
       localidad: data.basic.city,
       codigo_postal: data.basic.postalCode,
       provincia: data.basic.province,
+      latitud: data.basic.latitud, longitud: data.basic.longitud,
       email: data.contact.email,
       telefono: data.contact.phone,
       tipo_asociacion: Number.isFinite(tipoAsociacion) ? tipoAsociacion : (original as any).tipo_asociacion,
@@ -277,12 +302,14 @@ export class AsociacionComponent implements OnInit {
       himno: data.publicInfo.hymn,
       ubicacion_monumento: data.publicInfo.monumentLocation,
       ubicacion_portada: data.publicInfo.gateLocation,
+      ubicacion_foguera_infantil: data.publicInfo.childMonumentLocation, ubicacion_raco: data.publicInfo.racoLocation, ubicacion_barraca: data.publicInfo.barracaLocation,
+      ...this.locationPayload(data.publicInfo as any),
       sede_direccion: data.headquarters.address,
       sede_codigo_postal: data.headquarters.postalCode,
       sede_poblacion: data.headquarters.city,
       sede_provincia: data.headquarters.province,
+      sede_latitud: data.headquarters.latitud, sede_longitud: data.headquarters.longitud,
       anyo_fundacion: data.publicInfo.foundationYear ? Number(data.publicInfo.foundationYear) : null,
-      password: original.password ?? null,
       active: this.toBooleanOrNull(original.active),
       img: null,
       asociacion_order: (original as any).asociacion_order ?? null
@@ -353,10 +380,12 @@ export class AsociacionComponent implements OnInit {
 
   private emptyAssociation(): AssociationData {
     return {
-      basic: { name: '', cif: '', tag: '', address: '', postalCode: '', city: '', province: '' },
-      publicInfo: { foundationYear: '', hymn: '', motto: '', monumentLocation: '', gateLocation: '' },
-      headquarters: { address: '', postalCode: '', city: '', province: '' },
+      basic: { name: '', cif: '', tag: '', address: '', postalCode: '', city: '', province: '', latitud: null, longitud: null },
+      publicInfo: { foundationYear: '', hymn: '', motto: '', monumentLocation: '', gateLocation: '', childMonumentLocation: '', racoLocation: '', barracaLocation: '' },
+      headquarters: { address: '', postalCode: '', city: '', province: '', latitud: null, longitud: null },
       contact: { email: '', phone: '' }
     };
   }
+
+  private locationPayload(publicInfo: any): Record<string, unknown> { const keys=['ubicacion_monumento','ubicacion_foguera_infantil','ubicacion_raco','ubicacion_portada','ubicacion_barraca']; return Object.fromEntries(keys.flatMap(key=>['codigo_postal','localidad','provincia','latitud','longitud'].map(suffix=>[`${key}_${suffix}`,publicInfo[`${key}_${suffix}`] ?? null]))); }
 }
