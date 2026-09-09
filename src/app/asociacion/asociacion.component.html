@@ -1,5 +1,5 @@
 <section class="association ux-card" [attr.data-active-tab]="activeTab">
-  <div *ngIf="loading" class="alert alert-info">Cargando datos de la asociacion...</div>
+  <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
   <header class="page-head">
@@ -254,9 +254,9 @@
     <div class="alert alert-danger" *ngIf="passwordError">{{ passwordError }}</div>
     <div class="alert alert-success" *ngIf="passwordSuccess">{{ passwordSuccess }}</div>
     <form [formGroup]="passwordForm" (ngSubmit)="cambiarPassword()" class="row g-3">
-      <div class="col-12"><label class="form-label" for="passwordActual">Contraseña actual</label><div class="input-group"><input id="passwordActual" class="form-control" [type]="showPassword.actual ? 'text' : 'password'" autocomplete="current-password" formControlName="actual" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.actual=!showPassword.actual">Mostrar</button></div></div>
-      <div class="col-12 col-md-6"><label class="form-label" for="passwordNueva">Nueva contraseña</label><div class="input-group"><input id="passwordNueva" class="form-control" [type]="showPassword.nueva ? 'text' : 'password'" autocomplete="new-password" formControlName="nueva" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.nueva=!showPassword.nueva">Mostrar</button></div></div>
-      <div class="col-12 col-md-6"><label class="form-label" for="passwordConfirmacion">Confirmar nueva contraseña</label><div class="input-group"><input id="passwordConfirmacion" class="form-control" [type]="showPassword.confirmacion ? 'text' : 'password'" autocomplete="new-password" formControlName="confirmacion" /><button type="button" class="btn btn-outline-secondary" (click)="showPassword.confirmacion=!showPassword.confirmacion">Mostrar</button></div></div>
+      <div class="col-12"><label class="form-label" for="passwordActual">Contraseña actual</label><div class="input-group"><input id="passwordActual" class="form-control" [type]="showPassword.actual ? 'text' : 'password'" autocomplete="current-password" formControlName="actual" /><button type="button" class="btn btn-outline-secondary" [attr.aria-label]="showPassword.actual ? 'Ocultar contraseña actual' : 'Mostrar contraseña actual'" (click)="showPassword.actual=!showPassword.actual"><i [class]="showPassword.actual ? 'bi bi-eye-slash' : 'bi bi-eye'"></i></button></div></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordNueva">Nueva contraseña</label><div class="input-group"><input id="passwordNueva" class="form-control" [type]="showPassword.nueva ? 'text' : 'password'" autocomplete="new-password" formControlName="nueva" /><button type="button" class="btn btn-outline-secondary" [attr.aria-label]="showPassword.nueva ? 'Ocultar nueva contraseña' : 'Mostrar nueva contraseña'" (click)="showPassword.nueva=!showPassword.nueva"><i [class]="showPassword.nueva ? 'bi bi-eye-slash' : 'bi bi-eye'"></i></button></div></div>
+      <div class="col-12 col-md-6"><label class="form-label" for="passwordConfirmacion">Confirmar nueva contraseña</label><div class="input-group"><input id="passwordConfirmacion" class="form-control" [type]="showPassword.confirmacion ? 'text' : 'password'" autocomplete="new-password" formControlName="confirmacion" /><button type="button" class="btn btn-outline-secondary" [attr.aria-label]="showPassword.confirmacion ? 'Ocultar confirmación' : 'Mostrar confirmación'" (click)="showPassword.confirmacion=!showPassword.confirmacion"><i [class]="showPassword.confirmacion ? 'bi bi-eye-slash' : 'bi bi-eye'"></i></button></div></div>
       <div class="col-12"><button class="ux-btn" type="submit" [disabled]="passwordSaving">{{ passwordSaving ? 'Actualizando...' : 'Actualizar contraseña' }}</button></div>
     </form>
   </section>
