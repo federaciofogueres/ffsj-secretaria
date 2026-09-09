@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.3#ESMERALDA - 2026-09-09
+
+### Añadido
+
+- Los campos de asociado, asociado adulto y asociado infantil permiten configurarse como selección múltiple.
+- El formulario de inscripción permite buscar, añadir y retirar individualmente los asociados elegidos, conservando las selecciones al consultar o editar la entrada.
+
 ## 0.27.2#ESMERALDA - 2026-09-09
 
 ### Modificado
