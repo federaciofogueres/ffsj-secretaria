@@ -7,6 +7,7 @@ import { ErrorService } from '../core/error.service';
 import { Asociacion } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { LocationPickerComponent, StructuredLocation } from '../shared/location-picker.component';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 interface AssociationData {
   basic: {
@@ -47,7 +48,7 @@ interface AssociationData {
 @Component({
   selector: 'app-asociacion',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, LocationPickerComponent],
+  imports: [CommonModule, ReactiveFormsModule, LocationPickerComponent, FfsjSpinnerComponent],
   templateUrl: './asociacion.component.html',
   styleUrls: ['./asociacion.component.scss']
 })

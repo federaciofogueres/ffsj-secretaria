@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.1#ESMERALDA - 2026-09-09
+
+### Corregido
+
+- Datos de asociación usa el spinner común y mantiene la pestaña activa legible.
+- El selector de ubicación abre un diálogo con mapa, búsqueda y ajuste exacto del punto.
+- Los campos de contraseña usan iconos accesibles para mostrar u ocultar su contenido.
+
 ## 0.26.0#ESMERALDA - 2026-09-09
 
 ### Mejorado
