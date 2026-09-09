@@ -157,11 +157,15 @@ export class InscripcionesComponent implements OnInit {
   }
 
   get canSubmit(): boolean {
+    return this.canAttemptSubmit &&
+      this.form.valid;
+  }
+
+  get canAttemptSubmit(): boolean {
     return !this.isAdminMode &&
       this.permissions.hasPermission('inscripciones:write') &&
       this.associationMode === 'edit' &&
       Boolean(this.selectedInscription && this.isInscripcionDisponible(this.selectedInscription)) &&
-      this.form.valid &&
       (!this.requiresParticipants || this.selectedParticipants.size > 0);
   }
 
@@ -288,6 +292,12 @@ export class InscripcionesComponent implements OnInit {
     const errors = this.form.get(field.key)?.errors;
     if (errors?.['maxSelections']) return `Selecciona como máximo ${field.maxSelections || 1} opciones.`;
     return 'Este campo es obligatorio.';
+  }
+
+  invalidFieldLabels(): string[] {
+    return (this.selectedInscription?.campos || [])
+      .filter(field => this.form.get(field.key)?.invalid)
+      .map(field => field.label);
   }
 
   openInscription(inscription: InscripcionSecretaria): void {
@@ -666,8 +676,20 @@ export class InscripcionesComponent implements OnInit {
       this.error = disponibilidad;
       return;
     }
-    if (!this.canSubmit) {
+    if (!this.canAttemptSubmit) {
+      if (!this.permissions.hasPermission('inscripciones:write')) {
+        this.error = 'No tienes permiso para enviar inscripciones.';
+      } else if (this.requiresParticipants && !this.selectedParticipants.size) {
+        this.error = 'Selecciona al menos un asociado para continuar.';
+      }
+      return;
+    }
+    if (this.form.invalid) {
       this.form.markAllAsTouched();
+      const invalidFields = this.invalidFieldLabels();
+      this.error = invalidFields.length
+        ? `Revisa los campos obligatorios o inválidos: ${invalidFields.join(', ')}.`
+        : 'Revisa los campos obligatorios o inválidos antes de enviar la inscripción.';
       return;
     }
     this.secretariaService.enviarInscripcion({
@@ -1081,7 +1103,9 @@ export class InscripcionesComponent implements OnInit {
   private maxSelectionsValidator(field: CampoInscripcion): ValidatorFn {
     return (control: AbstractControl): ValidationErrors | null => {
       const values = Array.isArray(control.value) ? control.value : [];
-      return values.length > (field.maxSelections || 1) ? { maxSelections: true } : null;
+      const maxSelections = Number(field.maxSelections);
+      if (!Number.isInteger(maxSelections) || maxSelections < 1) return null;
+      return values.length > maxSelections ? { maxSelections: true } : null;
     };
   }
 

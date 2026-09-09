@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.27.5#ESMERALDA - 2026-09-10
+
+### Corregido
+
+- Las inscripciones con participantes opcionales ya no bloquean silenciosamente el envío por una selección múltiple sin límite configurado.
+- El botón de envío permite comprobar el formulario y muestra los campos que requieren revisión sin lanzar la petición hasta que sean válidos.
+
 ## 0.27.4#ESMERALDA - 2026-09-10
 
 ### Modificado
