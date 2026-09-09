@@ -6,6 +6,8 @@
 
 - La edición de asociación no reenvía metadatos nulos ajenos a los campos editables.
 - La pestaña activa conserva contraste visible durante la edición.
+- El selector de ubicación incorpora la base visual de Leaflet, con mapa dimensionado correctamente y sin desbordamiento horizontal en el diálogo.
+- Los errores de guardado de datos de asociación muestran el mensaje funcional devuelto por Censo API.
 
 ## 0.26.1#ESMERALDA - 2026-09-09
 

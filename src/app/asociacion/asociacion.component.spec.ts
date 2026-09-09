@@ -74,7 +74,8 @@ describe('AsociacionComponent', () => {
     expect(payload.localidad).toBe('Alicante');
     expect(payload.codigo_postal).toBe('03110');
     expect(payload.tipo_asociacion).toBe(2);
-    expect(payload.active).toBeTrue();
+    expect(payload.active).toBeUndefined();
+    expect(payload.img).toBeUndefined();
   });
 
   it('muestra la etiqueta del tipo de asociacion a partir del codigo numerico', () => {
