@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.25.11#ESMERALDA - 2026-09-09
+
+### Mejorado
+
+- Los campos individuales de asociado en Inscripciones permiten escribir y localizar por nombre al asociado, manteniendo el selector múltiple de asistentes.
+- El selector de responsable sólo ofrece asociados adultos.
+- Las pantallas de Registro, Solicitudes y gestión de asociados emplean terminología de certificación en los textos visibles.
+
 ## 0.25.8#ESMERALDA - 2026-09-08
 
 ### Corregido

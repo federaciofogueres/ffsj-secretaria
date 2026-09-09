@@ -134,7 +134,7 @@
             <article class="registro-row authorization-row" *ngFor="let autorizacion of autorizacionesFirmaVisibles">
               <span>
                 <strong>{{ autorizacion.solicitudNumero }}</strong>
-                <small>Autorizacion de alta de {{ autorizacion.asociadoNombre }}</small>
+                <small>Certificación de alta de {{ autorizacion.asociadoNombre }}</small>
                 <small class="registro-meta">
                   Procedencia: {{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}
                   <span>Dirigida a: {{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</span>
@@ -143,7 +143,7 @@
               </span>
               <span class="d-flex align-items-center gap-2">
                 <span class="badge estado" [ngClass]="autorizacion.estado === 'archivada' ? 'archivada' : 'enviada'">
-                  {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de firma' }}
+                  {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de certificaciÃ³n' }}
                 </span>
                 <button class="ux-btn ux-btn-sm" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="abrirDetalleAutorizacion(autorizacion)">
                   Ver detalles
@@ -477,9 +477,9 @@
   <section class="auth-dialog" role="dialog" aria-modal="true" aria-labelledby="authTitle" (click)="$event.stopPropagation()">
     <header class="auth-header">
       <div>
-        <p class="ux-overline mb-1">Autorizacion de alta</p>
+        <p class="ux-overline mb-1">Certificación de alta</p>
         <h2 id="authTitle" class="h5 mb-1">{{ autorizacion.solicitudNumero }}</h2>
-        <p class="text-muted mb-0">Revisa la solicitud antes de autorizar o rechazar el alta.</p>
+        <p class="text-muted mb-0">Revisa la solicitud antes de certificar o rechazar el alta.</p>
       </div>
       <button class="btn-close" type="button" aria-label="Cerrar" (click)="cerrarDetalleAutorizacion()"></button>
     </header>
@@ -508,11 +508,11 @@
         </div>
         <div>
           <dt>Estado</dt>
-          <dd>{{ autorizacion.estado === 'pendiente_firma' ? 'Pendiente de autorizacion' : estadoLabel(autorizacion.estado) }}</dd>
+          <dd>{{ autorizacion.estado === 'pendiente_firma' ? 'Pendiente de certificación' : estadoLabel(autorizacion.estado) }}</dd>
         </div>
       </dl>
       <div class="auth-note">
-        Esta autorizacion confirma que la asociacion anterior no se opone al alta del asociado en la nueva asociacion.
+        Esta certificación confirma que la asociación anterior no se opone al alta del asociado en la nueva asociación.
       </div>
     </div>
 
@@ -525,7 +525,7 @@
           Rechazar solicitud
         </button>
         <button class="ux-btn" type="button" [disabled]="updatingEstado" (click)="firmarAutorizacion(autorizacion)">
-          Autorizar solicitud
+          Certificar solicitud
         </button>
       </div>
     </footer>

@@ -1113,7 +1113,7 @@ export class AsociadosGestionComponent implements OnInit {
     this.cambiarEstadoSolicitud(
       solicitud,
       () => this.secretariaService.reenviarAutorizacionesAlta(solicitud.id),
-      'No se ha podido reenviar la autorizacion.'
+      'No se ha podido reenviar la certificaciÃ³n.'
     );
   }
 
@@ -1291,8 +1291,8 @@ export class AsociadosGestionComponent implements OnInit {
   labelEstado(estado: string): string {
     const labels: Record<string, string> = {
       registrada: 'Registrada',
-      autorizacion_rechazada: 'Certificacion rechazada',
-      pendiente_firma: 'Pendiente de certificacion',
+      autorizacion_rechazada: 'CertificaciÃ³n rechazada',
+      pendiente_firma: 'Pendiente de certificaciÃ³n',
       enviada: 'Enviada',
       en_revision: 'En revision',
       con_incidencias: 'Con incidencias',
@@ -1317,7 +1317,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   labelEstadoAutorizacion(estado: AutorizacionAlta['estado']): string {
     const labels: Record<AutorizacionAlta['estado'], string> = {
-      pendiente_firma: 'Pendiente de certificacion',
+      pendiente_firma: 'Pendiente de certificaciÃ³n',
       firmada: 'Certificada',
       archivada: 'Certificada',
       rechazada: 'Rechazada',
