@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.26.0#ESMERALDA - 2026-09-09
+
+### Mejorado
+
+- Datos de la asociación usa ubicaciones estructuradas y georreferenciadas para domicilio, sede y plantàs específicas de Foguera o Barraca.
+- Los campos derivados de ubicación se completan desde el selector y no se editan manualmente.
+- Acceso permite mostrar u ocultar las tres contraseñas sin modificar su comportamiento.
+
 ## 0.25.11#ESMERALDA - 2026-09-09
 
 ### Mejorado
