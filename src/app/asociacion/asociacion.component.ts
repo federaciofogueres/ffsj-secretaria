@@ -128,7 +128,7 @@ export class AsociacionComponent implements OnInit {
       },
       error: response => {
         this.saving = false;
-        this.error = response?.error?.status?.message || response?.error?.message || 'No se han podido guardar los datos de la asociacion.';
+        this.error = this.saveErrorMessage(response);
         this.errorService.show(this.error);
       }
     });
@@ -312,6 +312,14 @@ export class AsociacionComponent implements OnInit {
       sede_latitud: data.headquarters.latitud, sede_longitud: data.headquarters.longitud,
       ...(data.publicInfo.foundationYear ? { anyo_fundacion: Number(data.publicInfo.foundationYear) } : {})
     } as Asociacion;
+  }
+
+  private saveErrorMessage(response: any): string {
+    const error = response?.error ?? response;
+    return error?.status?.message
+      || error?.message
+      || response?.status?.message
+      || 'No se han podido guardar los datos de la asociación. Revisa los campos e inténtalo de nuevo.';
   }
 
   private mapAddressParts(asociacion: Asociacion): { address: string; postalCode: string; city: string; province: string } {
