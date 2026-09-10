@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.27.7#ESMERALDA - 2026-09-10
+
+### Corregido
+
+- El envío de inscripciones vuelve a permanecer deshabilitado mientras el formulario tenga campos inválidos.
+
 ## 0.27.6#ESMERALDA - 2026-09-10
 
 ### Corregido

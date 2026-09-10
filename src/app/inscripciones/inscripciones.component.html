@@ -175,7 +175,7 @@
                 <span>4</span>
                 Revisar
               </button>
-              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canAttemptSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
+              <button type="button" class="step-pill" [class.active]="associationStep === 5" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <span>5</span>
                 Enviar
               </button>
@@ -560,7 +560,7 @@
             </div>
 
             <div class="actions d-flex flex-wrap gap-2 mt-3" *ngIf="!isAdminMode && associationMode === 'edit'">
-              <button type="button" class="ux-btn" [disabled]="!canAttemptSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
+              <button type="button" class="ux-btn" [disabled]="!canSubmit || accionesAsociacionBloqueadasPorEjercicio" (click)="submit()">
                 <i class="bi bi-send me-1"></i>
                 {{ miEntrada ? 'Guardar cambios' : 'Inscribirse' }}
               </button>
