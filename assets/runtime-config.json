@@ -1,0 +1,5 @@
+{
+  "censoApiBasePath": "https://ffsj-new-censo-api-dev-eastus.azurewebsites.net/emjf1/Censo-Hogueras/1.0.0",
+  "secretariaApiBasePath": "https://ffsj-secretaria-api-dev-eastus.azurewebsites.net/emjf1/Secretaria/1.0.0",
+  "filesBasePath": "https://files-dev.secretaria.hogueras.es/uploads"
+}
