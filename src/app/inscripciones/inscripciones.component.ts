@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
+import { jsPDF } from 'jspdf';
+import * as XLSX from 'xlsx';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ApiUrlService } from '../core/api-url.service';
@@ -64,6 +66,10 @@ export class InscripcionesComponent implements OnInit {
   confirmDelete = false;
   confirmDeleteEntry = false;
   showFormularioDialog = false;
+  showExportDialog = false;
+  exportFormat: 'xlsx' | 'pdf' = 'xlsx';
+  exportInscription: InscripcionSecretaria | null = null;
+  exportColumnKeys = new Set<string>();
   adminTab: AdminTab = 'gestion';
   associationTab: AssociationTab = 'formulario';
   associationMode: AssociationMode = 'edit';
@@ -440,36 +446,6 @@ export class InscripcionesComponent implements OnInit {
     });
   }
 
-  borrarInscripcion(): void {
-    if (!this.selectedInscription || !this.isAdminMode) {
-      return;
-    }
-    this.confirmDelete = true;
-  }
-
-  confirmarBorradoInscripcion(): void {
-    if (!this.selectedInscription || !this.isAdminMode) return;
-    this.confirmDelete = false;
-    this.loading = true;
-    this.error = '';
-    this.success = '';
-    this.secretariaService.borrarInscripcion(this.selectedInscription.id).subscribe({
-      next: () => {
-        const deletedId = this.selectedInscription?.id;
-        this.inscripciones = this.inscripciones.filter(item => item.id !== deletedId);
-        this.selectedInscription = null;
-        this.nuevaInscripcion();
-        this.router.navigate(['/inscripciones']);
-        this.success = 'Inscripcion borrada correctamente.';
-        this.loading = false;
-      },
-      error: () => {
-        this.error = 'No se ha podido borrar la inscripcion. Comprueba que no tenga entradas presentadas.';
-        this.loading = false;
-      }
-    });
-  }
-
   toggleParticipant(participant: Asociado): void {
     const id = String(participant.id);
     this.selectedParticipants.has(id)
@@ -662,23 +638,57 @@ export class InscripcionesComponent implements OnInit {
     });
   }
 
-  descargarEntrada(entrada: InscripcionEntradaSecretaria, format: 'csv' | 'pdf'): void {
-    if (format === 'pdf') {
-      this.imprimirEntrada(entrada);
-      return;
-    }
-    this.hidratarEntradasParaExport([entrada], entradas => {
-      this.downloadCsv(entradas, `inscripcion-${entrada.numero}.csv`);
-    });
+  abrirExportacion(inscripcion: InscripcionSecretaria, format: 'xlsx' | 'pdf'): void {
+    if (!this.isAdminMode || !this.permissions.hasPermission('inscripciones:read')) return;
+    this.exportInscription = inscripcion;
+    this.exportFormat = format;
+    this.exportColumnKeys = new Set(this.columnasExportacion(inscripcion).map(columna => columna.key));
+    this.showExportDialog = true;
   }
 
-  descargarTodas(inscripcion: InscripcionSecretaria, format: 'csv' | 'pdf'): void {
-    if (format === 'pdf') {
-      this.imprimirTodas(inscripcion);
+  confirmarBorradoInscripcion(): void {
+    // La retirada de una inscripción se realiza únicamente mediante archivado.
+    this.confirmDelete = false;
+  }
+
+  cerrarExportacion(): void {
+    this.showExportDialog = false;
+    this.exportInscription = null;
+    this.exportColumnKeys.clear();
+  }
+
+  cambiarColumnaExportacion(key: string, checked: boolean): void {
+    if (checked) this.exportColumnKeys.add(key);
+    else this.exportColumnKeys.delete(key);
+  }
+
+  seleccionarTodasColumnasExportacion(): void {
+    this.exportColumnKeys = new Set(this.columnasExportacion(this.exportInscription).map(columna => columna.key));
+  }
+
+  exportarInscritos(): void {
+    const inscripcion = this.exportInscription;
+    const columnas = this.columnasExportacion(inscripcion).filter(columna => this.exportColumnKeys.has(columna.key));
+    if (!inscripcion || !columnas.length) {
+      this.error = 'Selecciona al menos una columna para exportar.';
       return;
     }
+    this.loading = true;
+    this.error = '';
     this.withEntradas(inscripcion, entradas => {
-      this.downloadCsv(entradas, `inscripciones-${this.safeFileName(inscripcion.titulo)}.csv`, inscripcion);
+      this.hidratarEntradasParaExport(entradas, hydrated => {
+        const rows = hydrated.map(entrada => Object.fromEntries(columnas.map(columna => [columna.label, this.valorColumnaExportacion(entrada, columna.key, inscripcion)])));
+        const baseName = `inscritos-${this.safeFileName(inscripcion.titulo)}`;
+        if (this.exportFormat === 'xlsx') {
+          const workbook = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(rows), 'Inscritos');
+          XLSX.writeFile(workbook, `${baseName}.xlsx`);
+        } else {
+          this.generarPdfInscritos(inscripcion.titulo, columnas.map(columna => columna.label), rows, `${baseName}.pdf`);
+        }
+        this.loading = false;
+        this.cerrarExportacion();
+      });
     });
   }
 
@@ -1333,31 +1343,49 @@ export class InscripcionesComponent implements OnInit {
     return inscripcion.propietarioImagen ? `${this.apiUrl.filesBasePath}${inscripcion.propietarioImagen}` : null;
   }
 
-  private downloadCsv(entries: InscripcionEntradaSecretaria[], fileName: string, inscripcion = this.selectedInscription): void {
-    const fields = inscripcion?.campos || [];
-    const headers = ['Numero', 'Asociacion', 'Estado', 'Fecha entrada', 'Participantes', ...fields.map(field => field.label)];
-    const rows = entries.map(entrada => [
-      entrada.numero,
-      entrada.asociacionNombre || `Asociacion ${entrada.asociacionId}`,
-      entrada.estado,
-      entrada.fechaEntrada,
-      this.entradaParticipantesLabel(entrada),
-      ...fields.map(field => this.entradaCampoLabel(entrada, field))
-    ]);
-    const csv = [headers, ...rows]
-      .map(row => row.map(value => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';'))
-      .join('\r\n');
-    this.downloadBlob(csv, fileName, 'text/csv;charset=utf-8');
+  columnasExportacion(inscripcion = this.exportInscription): { key: string; label: string }[] {
+    if (!inscripcion) return [];
+    return [
+      { key: 'numero', label: 'Número de inscripción' },
+      { key: 'asociacion', label: 'Asociación' },
+      { key: 'estado', label: 'Estado' },
+      { key: 'fechaEntrada', label: 'Fecha de inscripción' },
+      { key: 'participantes', label: 'Participantes' },
+      ...inscripcion.campos.map(field => ({ key: `campo:${field.key}`, label: field.label }))
+    ];
   }
 
-  private downloadBlob(content: string, fileName: string, mimeType: string): void {
-    const blob = new Blob([`\ufeff${content}`], { type: mimeType });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = fileName;
-    anchor.click();
-    URL.revokeObjectURL(url);
+  private valorColumnaExportacion(entrada: InscripcionEntradaSecretaria, key: string, inscripcion: InscripcionSecretaria): string {
+    if (key === 'numero') return entrada.numero;
+    if (key === 'asociacion') return entrada.asociacionNombre || `Asociación ${entrada.asociacionId}`;
+    if (key === 'estado') return entrada.estado;
+    if (key === 'fechaEntrada') return entrada.fechaEntrada;
+    if (key === 'participantes') return this.entradaParticipantesLabel(entrada);
+    const field = inscripcion.campos.find(item => `campo:${item.key}` === key);
+    return field ? this.entradaCampoLabel(entrada, field) : '-';
+  }
+
+  private generarPdfInscritos(title: string, headers: string[], rows: Record<string, string>[], fileName: string): void {
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4', compress: true });
+    const margin = 36;
+    const width = pdf.internal.pageSize.getWidth() - margin * 2;
+    const columnWidth = width / Math.max(1, headers.length);
+    let y = 42;
+    pdf.setFontSize(16);
+    pdf.text(`Inscritos · ${title}`, margin, y);
+    y += 24;
+    const drawRow = (values: string[], bold = false) => {
+      pdf.setFont('helvetica', bold ? 'bold' : 'normal');
+      const lines = values.map(value => pdf.splitTextToSize(String(value || '-'), columnWidth - 8));
+      const height = Math.max(18, ...lines.map(line => line.length * 11 + 7));
+      if (y + height > pdf.internal.pageSize.getHeight() - margin) { pdf.addPage(); y = margin; }
+      lines.forEach((line, index) => pdf.text(line, margin + columnWidth * index + 4, y + 12));
+      pdf.setDrawColor(210); pdf.line(margin, y + height, margin + width, y + height);
+      y += height;
+    };
+    drawRow(headers, true);
+    rows.forEach(row => drawRow(headers.map(header => row[header] || '-')));
+    pdf.save(fileName);
   }
 
   private printHtml(title: string, body: string): void {

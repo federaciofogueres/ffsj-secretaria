@@ -468,12 +468,6 @@ export class SecretariaService {
     });
   }
 
-  borrarInscripcion(id: string): Observable<unknown> {
-    return this.http.delete(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}`, {
-      headers: this.authHeaders()
-    });
-  }
-
   getFormularios(includeInactive = false): Observable<{ formularios: FormularioInscripcion[] }> {
     const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
     return this.http.get<{ formularios: FormularioInscripcion[] }>(`${this.apiUrl.secretariaBasePath}/formularios`, {

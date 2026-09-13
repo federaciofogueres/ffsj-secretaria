@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.29.3#ESMERALDA - 2026-09-13
+
+### AÃ±adido
+
+- El listado administrativo de inscripciones incorpora el filtro de archivadas y conserva paginaciÃ³n, ordenaciÃ³n y búsqueda.
+- La exportación administrativa permite elegir columnas reales del formulario y descargar las inscripciones en Excel o PDF.
+
+### Modificado
+
+- Las inscripciones se retiran mediante archivado; la interfaz y la API ya no exponen su borrado físico.
+
 ## 0.29.2#ESMERALDA - 2026-09-13
 
 ### Añadido

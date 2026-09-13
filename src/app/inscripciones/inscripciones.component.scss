@@ -416,6 +416,10 @@
   padding: 1rem;
 }
 
+.export-dialog { max-width: 680px; }
+.export-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .65rem 1rem; }
+.export-columns .form-check { margin: 0; }
+
 @media (max-width: 991px) {
   .inscription-list {
     max-height: none;

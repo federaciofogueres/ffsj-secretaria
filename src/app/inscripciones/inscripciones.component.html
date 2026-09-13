@@ -37,7 +37,7 @@
           </div>
           <section class="inscription-filters" aria-label="Filtros de inscripciones">
             <label class="filter-search">Buscar inscripción<input class="form-control form-control-sm" type="search" [(ngModel)]="busquedaInscripciones" (keyup.enter)="cargarPaginaInscripciones(true)" placeholder="Título o actividad" /></label>
-            <label *ngIf="isAdminMode">Estado<select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todos</option><option value="borrador">Borrador</option><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option></select></label>
+            <label *ngIf="isAdminMode">Estado<select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todos</option><option value="borrador">Borrador</option><option value="abierta">Abierta</option><option value="cerrada">Cerrada</option><option value="archivada">Archivada</option></select></label>
             <label>Disponibilidad<select class="form-select form-select-sm" [(ngModel)]="filtroDisponibilidad" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="">Todas</option><option value="activa">Activas</option><option value="cerrada">Plazo cerrado</option></select></label>
             <label>Ordenar<select class="form-select form-select-sm" [(ngModel)]="ordenInscripciones" (ngModelChange)="cargarPaginaInscripciones(true)"><option value="plazo_asc">Plazo más próximo</option><option value="plazo_desc">Plazo más lejano</option><option value="titulo_asc">Título A-Z</option></select></label>
             <div class="filter-action"><button class="ux-btn ux-btn-sm" type="button" (click)="cargarPaginaInscripciones(true)">Buscar</button></div>
@@ -69,8 +69,8 @@
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
                 <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
                 <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirTodas(item)">Imprimir</button>
-                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarTodas(item, 'csv')">Excel</button>
-                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarTodas(item, 'pdf')">PDF</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(item, 'xlsx')">Excel</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(item, 'pdf')">PDF</button>
               </div>
             </div>
           </div>
@@ -269,11 +269,8 @@
                 <button class="ux-btn ux-btn-secondary" type="button" *ngIf="inscription.estado === 'cerrada'" [disabled]="loading" (click)="cambiarEstadoInscripcion('abierta')">
                   Activar
                 </button>
-                <button class="ux-btn ux-btn-light" type="button" [disabled]="loading" (click)="cambiarEstadoInscripcion('archivada')">
+                <button class="ux-btn ux-btn-light" type="button" *ngIf="inscription.estado !== 'archivada'" [disabled]="loading" (click)="cambiarEstadoInscripcion('archivada')">
                   Archivar
-                </button>
-                <button class="ux-btn ux-btn-danger" type="button" [disabled]="loading" (click)="borrarInscripcion()">
-                  Borrar definitivamente
                 </button>
               </div>
             </form>
@@ -286,8 +283,8 @@
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                   <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="imprimirTodas(inscription)">Imprimir todas</button>
-                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'csv')">Excel</button>
-                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="descargarTodas(inscription, 'pdf')">PDF</button>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="abrirExportacion(inscription, 'xlsx')">Excel</button>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="abrirExportacion(inscription, 'pdf')">PDF</button>
                 </div>
               </div>
 
@@ -310,8 +307,8 @@
                   <span class="entry-actions">
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'xlsx')">Excel</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'pdf')">PDF</button>
                     <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
                   </span>
@@ -329,8 +326,8 @@
                   </div>
                   <div class="d-flex gap-2 flex-wrap">
                     <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'csv')">Excel</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="descargarEntrada(entrada, 'pdf')">PDF</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'xlsx')">Excel</button>
+                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'pdf')">PDF</button>
                   </div>
                 </div>
                 <dl class="entry-data">
@@ -612,8 +609,24 @@
   </div>
 </section>
 
+<div class="formulario-backdrop" *ngIf="showExportDialog" (click)="cerrarExportacion()"></div>
+<section class="formulario-dialog export-dialog" *ngIf="showExportDialog && exportInscription" role="dialog" aria-modal="true" aria-labelledby="exportacionTitulo" (click)="$event.stopPropagation()">
+  <header class="formulario-dialog-header">
+    <div><p class="ux-overline mb-1">Exportar inscritos</p><h2 id="exportacionTitulo" class="h5 mb-0">{{ exportFormat === 'xlsx' ? 'Excel' : 'PDF' }} · {{ exportInscription.titulo }}</h2></div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarExportacion()">Cerrar</button>
+  </header>
+  <div class="formulario-dialog-body">
+    <p class="text-muted">Selecciona las columnas que deseas incluir. Se exportarán los valores almacenados de las inscripciones.</p>
+    <button class="ux-btn ux-btn-light ux-btn-sm mb-2" type="button" (click)="seleccionarTodasColumnasExportacion()">Seleccionar todas</button>
+    <div class="export-columns">
+      <label class="form-check" *ngFor="let columna of columnasExportacion(exportInscription)"><input class="form-check-input" type="checkbox" [checked]="exportColumnKeys.has(columna.key)" (change)="cambiarColumnaExportacion(columna.key, $any($event.target).checked)" /> {{ columna.label }}</label>
+    </div>
+    <div class="d-flex justify-content-end gap-2 mt-3"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarExportacion()">Cancelar</button><button class="ux-btn" type="button" [disabled]="loading || !exportColumnKeys.size" (click)="exportarInscritos()">Exportar</button></div>
+  </div>
+</section>
+
 <app-confirm-dialog
-  *ngIf="confirmDelete"
+  *ngIf="false"
   title="Borrar inscripción"
   message="Esta acción borrará definitivamente la inscripción. No se puede deshacer."
   confirmLabel="Borrar inscripción"
