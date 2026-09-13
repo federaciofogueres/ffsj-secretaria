@@ -379,7 +379,7 @@ export interface IncidenciaEvento {
 
 export interface AdjuntoSecretaria {
   id: number;
-  scope: 'solicitud' | 'registro' | 'inscripcion' | 'inscripcion_entrada' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje';
+  scope: 'solicitud' | 'registro' | 'inscripcion' | 'inscripcion_entrada' | 'incidencia' | 'incidencia_evento' | 'registro_mensaje' | 'actividad' | 'actividad_imagen' | 'actividad_evento';
   scopeId: string;
   fileName: string;
   originalName: string;

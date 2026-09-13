@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.1#ESMERALDA - 2026-09-13
+
+### Añadido
+
+- Las actividades y propuestas admiten documentación adicional (imágenes, PDF y formatos de oficina) y la muestran en su detalle.
+- Los adjuntos de incidencias y respuestas de propuestas se consultan desde la conversación manteniendo las autorizaciones existentes.
+
 ## 0.29.0#ESMERALDA - 2026-09-13
 
 ### Añadido
