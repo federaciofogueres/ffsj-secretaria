@@ -17,6 +17,8 @@ interface CalendarDay {
   actividades: ActividadSecretaria[];
 }
 
+type CalendarTab = 'calendario' | 'crear' | 'propuestas';
+
 @Component({
   selector: 'app-calendario',
   standalone: true,
@@ -30,7 +32,6 @@ export class CalendarioComponent implements OnInit {
   days: CalendarDay[] = [];
   selected: ActividadSecretaria | null = null;
   selectedDate: Date | null = null;
-  showCreateDialog = false;
   showActividadGestion = false;
   showInscripcionesGestion = false;
   confirmDelete = false;
@@ -41,7 +42,14 @@ export class CalendarioComponent implements OnInit {
   filtroVisibilidad = '';
   incluirArchivadas = false;
   propuestas: ActividadSecretaria[] = [];
-  showPropuestas = false;
+  activeTab: CalendarTab = 'calendario';
+  showDayDialog = false;
+  showActividadDetail = false;
+  propuestasFiltro = '';
+  propuestasEstado = '';
+  propuestasOrden = 'fecha_desc';
+  propuestasPagina = 1;
+  readonly propuestasPorPagina = 8;
   imagenActividadUrl = '';
   imagenActividadId: number | null = null;
   imagenSeleccionada: File | null = null;
@@ -109,6 +117,32 @@ export class CalendarioComponent implements OnInit {
     return this.actividades.filter(actividad => this.isActividadOnDate(actividad, this.selectedDate as Date));
   }
 
+  get propuestasFiltradas(): ActividadSecretaria[] {
+    const search = this.propuestasFiltro.trim().toLocaleLowerCase('es');
+    const items = this.propuestas.filter(propuesta => {
+      const estadoOk = !this.propuestasEstado || propuesta.estadoPropuesta === this.propuestasEstado;
+      const text = `${propuesta.titulo} ${propuesta.descripcion || ''} ${propuesta.asociacionNombre || ''}`.toLocaleLowerCase('es');
+      return estadoOk && (!search || text.includes(search));
+    });
+    return [...items].sort((a, b) => {
+      if (this.propuestasOrden === 'titulo_asc') return a.titulo.localeCompare(b.titulo, 'es');
+      if (this.propuestasOrden === 'titulo_desc') return b.titulo.localeCompare(a.titulo, 'es');
+      const first = new Date(a.fechaInicio).getTime();
+      const second = new Date(b.fechaInicio).getTime();
+      return this.propuestasOrden === 'fecha_asc' ? first - second : second - first;
+    });
+  }
+
+  get totalPaginasPropuestas(): number {
+    return Math.max(1, Math.ceil(this.propuestasFiltradas.length / this.propuestasPorPagina));
+  }
+
+  get propuestasPaginadas(): ActividadSecretaria[] {
+    const page = Math.min(this.propuestasPagina, this.totalPaginasPropuestas);
+    const start = (page - 1) * this.propuestasPorPagina;
+    return this.propuestasFiltradas.slice(start, start + this.propuestasPorPagina);
+  }
+
   get availableInscripciones(): InscripcionSecretaria[] {
     if (!this.selected) return [];
     const linkedIds = new Set((this.selected.inscripciones || []).map(inscripcion => inscripcion.id));
@@ -151,13 +185,33 @@ export class CalendarioComponent implements OnInit {
   selectDay(day: CalendarDay): void {
     this.selectedDate = day.date;
     this.selected = null;
-    if (this.isAdminMode && this.permissions.hasPermission('inscripciones:write')) {
-      const date = this.formatDate(day.date);
-      this.actividadForm.patchValue({ fechaInicio: date, fechaFin: date });
-    }
+    this.showDayDialog = true;
+  }
+
+  abrirDetalleActividad(actividad: ActividadSecretaria, date: Date | null = null): void {
+    this.select(actividad, date);
+    this.showDayDialog = false;
+    this.showActividadDetail = true;
+  }
+
+  cerrarDetalleActividad(): void {
+    this.showActividadDetail = false;
+  }
+
+  activarTab(tab: CalendarTab): void {
+    this.activeTab = tab;
+    this.error = '';
+    this.success = '';
+    if (tab === 'crear') this.prepararFormularioActividad();
+    if (tab === 'propuestas') this.cargarPropuestas();
   }
 
   abrirCrearActividad(date: Date | null = this.selectedDate): void {
+    this.prepararFormularioActividad(date);
+    this.activeTab = 'crear';
+  }
+
+  private prepararFormularioActividad(date: Date | null = this.selectedDate): void {
     const target = date || new Date();
     this.selectedDate = target;
     const formatted = `${this.formatDate(target)}T09:00`;
@@ -172,11 +226,10 @@ export class CalendarioComponent implements OnInit {
     });
     if (this.isAdminMode) this.actividadForm.controls.responsable.enable({ emitEvent: false });
     else this.actividadForm.controls.responsable.disable({ emitEvent: false });
-    this.showCreateDialog = true;
   }
 
   cerrarCrearActividad(): void {
-    this.showCreateDialog = false;
+    this.activeTab = 'calendario';
   }
 
   toggleActividadGestion(): void {
@@ -203,7 +256,7 @@ export class CalendarioComponent implements OnInit {
       : of(actividad)
     )).subscribe({
       next: actividad => {
-        this.showCreateDialog = false;
+        this.activeTab = this.isAdminMode ? 'calendario' : 'propuestas';
         if (this.isAdminMode) {
           this.recargarTrasCrear(actividad.id);
         } else {
@@ -219,18 +272,28 @@ export class CalendarioComponent implements OnInit {
     });
   }
 
-  togglePropuestas(): void {
-    this.showPropuestas = !this.showPropuestas;
-    if (!this.showPropuestas) return;
+  cargarPropuestas(): void {
+    this.propuestasPagina = 1;
+    if (this.isAdminMode && !this.propuestas.length && !this.propuestasEstado) {
+      this.propuestasEstado = 'pendiente_revision';
+    }
     const request = this.isAdminMode ? this.secretariaService.getPropuestasActividadAdmin() : this.secretariaService.getMisPropuestasActividad();
     request.subscribe({ next: response => this.propuestas = response.actividades, error: () => this.error = 'No se han podido cargar las propuestas.' });
+  }
+
+  actualizarFiltroPropuestas(): void {
+    this.propuestasPagina = 1;
+  }
+
+  cambiarPaginaPropuestas(delta: number): void {
+    this.propuestasPagina = Math.min(this.totalPaginasPropuestas, Math.max(1, this.propuestasPagina + delta));
   }
 
   resolverPropuesta(propuesta: ActividadSecretaria, decision: 'publicada' | 'rechazada'): void {
     if (decision === 'rechazada') { this.propuestaAccion = { id: propuesta.id, tipo: 'rechazo' }; this.propuestaMensaje = ''; return; }
     this.loading = true;
     this.secretariaService.resolverPropuestaActividad(propuesta.id, decision).subscribe({
-      next: () => { this.loading = false; this.success = decision === 'publicada' ? 'Propuesta publicada.' : 'Propuesta rechazada.'; this.showPropuestas = false; this.cargar(); },
+      next: () => { this.loading = false; this.success = decision === 'publicada' ? 'Propuesta publicada.' : 'Propuesta rechazada.'; this.cargarPropuestas(); this.cargar(); },
       error: () => { this.loading = false; this.error = 'No se ha podido resolver la propuesta.'; }
     });
   }
@@ -308,7 +371,7 @@ export class CalendarioComponent implements OnInit {
         );
       })
     ).subscribe({
-      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.showPropuestas = false; this.propuestaAccion = null; this.adjuntosIncidenciaPropuesta = []; this.cargar(); },
+      next: () => { this.success = action.tipo === 'rechazo' ? 'Propuesta rechazada.' : 'Incidencia abierta para la propuesta.'; this.propuestaAccion = null; this.adjuntosIncidenciaPropuesta = []; this.cargarPropuestas(); this.cargar(); },
       error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido tramitar la propuesta.'; },
       complete: () => this.loading = false
     });

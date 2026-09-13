@@ -12,6 +12,7 @@ import { DashboardSummaryService } from './core/dashboard-summary.service';
 import { SecretariaService } from './core/secretaria.service';
 import { AppLanguage, I18nService } from './core/i18n.service';
 import { TranslatePipe } from './shared/translate.pipe';
+import { APP_VERSION } from './core/app-version';
 
 interface PendingTask {
   title: string;
@@ -30,6 +31,7 @@ interface PendingTask {
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly title = 'ffsj-secretaria';
+  readonly version = APP_VERSION;
 
   readonly navLinks = [
     { path: '/', label: 'nav.home', icon: 'bi-house-fill' },

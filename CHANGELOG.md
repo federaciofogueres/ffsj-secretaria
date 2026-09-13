@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.0#ESMERALDA - 2026-09-13
+
+### Añadido
+
+- El menú contextual muestra la versión de Secretaría desde una fuente única.
+- Calendario incorpora tabs para consulta, creación/propuesta y propuestas, junto con filtros, ordenación y paginación de estas últimas.
+- Los días y actividades abren diálogos de consulta con sus eventos y detalles completos.
+
 ## 0.28.1#ESMERALDA - 2026-09-13
 
 ### Corregido
