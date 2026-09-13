@@ -477,14 +477,10 @@
             </div>
           </div>
           <div class="row g-3">
-            <div class="col-12 col-md-4">
-              <label class="form-label">DNI/NIE/Pasaporte</label>
-              <input class="form-control" [class.is-invalid]="controlInvalido('dni')" formControlName="dni" placeholder="Documento de identidad" (blur)="comprobarAltaExistentePorDocumento()" />
-              <div class="invalid-feedback">Indica un DNI, NIE o pasaporte válido.</div>
-            </div>
-            <div class="col-12 col-md-4">
-              <label class="form-label">SIP</label>
-              <input class="form-control" formControlName="sip" (blur)="comprobarAltaExistentePorDocumento()" />
+            <div class="col-12 col-md-8">
+              <label class="form-label">DNI/NIE/Pasaporte o SIP</label>
+              <input class="form-control" [class.is-invalid]="controlInvalido('identificacion')" formControlName="identificacion" placeholder="Documento de identidad o SIP" (blur)="comprobarAltaExistentePorDocumento()" />
+              <div class="invalid-feedback">Indica un DNI, NIE, pasaporte o SIP válido.</div>
             </div>
             <div class="col-12 col-md-4 d-flex align-items-end" *ngIf="comprobandoDocumentoAlta">
               <span class="text-muted small">Comprobando si ya existe...</span>

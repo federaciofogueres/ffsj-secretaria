@@ -26,6 +26,15 @@ function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | 
     ? null : { fechaNacimientoInvalida: true };
 }
 
+function identificacionValidator(control: AbstractControl): ValidationErrors | null {
+  const value = String(control.value || '').trim().replace(/\s+/g, '').toUpperCase();
+  if (!value) return { required: true };
+  const documento = /^(?:\d{8}|[XYZ]\d{7})[A-Z]$/.test(value)
+    || /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{5,20}$/.test(value);
+  const sip = /^(?=.*\d)[A-Z0-9-]{5,30}$/.test(value);
+  return documento || sip ? null : { identificacionInvalida: true };
+}
+
 function fechaHoyLocal(): string {
   const today = new Date();
   return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
@@ -123,8 +132,9 @@ export class AsociadosGestionComponent implements OnInit {
   altaForm = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
     cargoId: [null as number | null],
-    dni: ['', [Validators.required, Validators.pattern(/^(?:(?:\d{8}|[XYZ]\d{7})[A-Za-z]|(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9]{5,20})$/)]],
-    sip: ['', [Validators.maxLength(30)]],
+    identificacion: ['', [identificacionValidator]],
+    dni: [''],
+    sip: [''],
     nacimiento: ['', [Validators.required, fechaNacimientoValidator]],
     nombre: ['', [Validators.required, Validators.maxLength(100)]],
     apellidos: ['', [Validators.required, Validators.maxLength(150)]],
@@ -292,7 +302,8 @@ export class AsociadosGestionComponent implements OnInit {
       this.altaForm.patchValue({
         tipo: asociado.tipo === 'adulto' ? 'Hoguera adulta' : 'Hoguera infantil',
         cargoId: null,
-        dni: asociado.dni ?? String(asociado.id),
+        identificacion: asociado.dni ?? asociado.sip ?? String(asociado.id),
+        dni: asociado.dni ?? '',
         sip: asociado.sip ?? '',
         nacimiento: asociado.fechaNacimiento ?? '',
         nombre: asociado.nombre,
@@ -366,8 +377,12 @@ export class AsociadosGestionComponent implements OnInit {
     const cargosSeleccionados = this.cargosSeleccionados;
     const cargoIds = cargosSeleccionados.map(cargo => Number(cargo.id));
     const cargoNombres = cargosSeleccionados.map(cargo => cargo.nombre);
+    const identificacion = this.getDocumentoAlta();
+    const esDocumento = this.esDocumentoIdentidad(identificacion);
     const datos = {
       ...this.altaForm.value,
+      dni: esDocumento ? identificacion : '',
+      sip: esDocumento ? '' : identificacion,
       cargoId: cargoIds[0],
       cargoIds,
       cargoNombre: cargoNombres[0] || '',
@@ -658,10 +673,15 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private getDocumentoAlta(): string {
-    return String(this.altaForm.value.dni || this.altaForm.value.sip || '')
+    return String(this.altaForm.value.identificacion || '')
       .trim()
       .replace(/\s+/g, '')
       .toUpperCase();
+  }
+
+  private esDocumentoIdentidad(value: string): boolean {
+    return /^(?:\d{8}|[XYZ]\d{7})[A-Z]$/.test(value)
+      || /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{5,20}$/.test(value);
   }
 
   private comprobarHistoricoAsociadoParaAlta(asociado: Asociado): void {
@@ -694,8 +714,9 @@ export class AsociadosGestionComponent implements OnInit {
     const tipo = asociado.tipo === 'infantil' ? 'Hoguera infantil' : 'Hoguera adulta';
     this.altaForm.patchValue({
       tipo,
-      dni: asociado.dni ?? this.altaForm.value.dni ?? '',
-      sip: asociado.sip ?? this.altaForm.value.sip ?? '',
+      identificacion: asociado.dni ?? asociado.sip ?? this.altaForm.value.identificacion ?? '',
+      dni: asociado.dni ?? '',
+      sip: asociado.sip ?? '',
       nacimiento: asociado.fechaNacimiento ?? '',
       nombre: asociado.nombre,
       apellidos: asociado.apellidos,
@@ -734,7 +755,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   private limpiarDocumentoAltaDuplicado(): void {
-    this.altaForm.patchValue({ dni: '', sip: '' });
+    this.altaForm.patchValue({ identificacion: '', dni: '', sip: '' });
     this.ultimoDocumentoAltaConsultado = '';
   }
 
@@ -1541,6 +1562,7 @@ export class AsociadosGestionComponent implements OnInit {
     this.altaForm.reset({
       tipo: 'Hoguera adulta',
       cargoId: null,
+      identificacion: '',
       dni: '',
       sip: '',
       nacimiento: '',
@@ -1903,13 +1925,12 @@ export class AsociadosGestionComponent implements OnInit {
 
   private mensajeErrorFormulario(): string {
     const errors: Array<[string, string]> = [
-      ['dni', 'Indica un DNI, NIE o pasaporte válido.'],
+      ['identificacion', 'Indica un DNI, NIE, pasaporte o SIP válido.'],
       ['nombre', 'El nombre es obligatorio y no puede superar 100 caracteres.'],
       ['apellidos', 'Los apellidos son obligatorios y no pueden superar 150 caracteres.'],
       ['cp', 'El código postal debe tener cinco cifras.'],
       ['telefono', 'El teléfono debe contener entre 8 y 20 caracteres válidos.'],
       ['email', 'Indica una dirección de correo electrónico válida.'],
-      ['sip', 'El SIP no puede superar 30 caracteres.'],
       ['nacimiento', 'La fecha de nacimiento es obligatoria, debe ser real y no puede ser futura.']
     ];
     return errors.find(([name]) => this.altaForm.get(name)?.invalid)?.[1]

@@ -19,6 +19,12 @@ type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
 type AssociationTab = 'documentacion' | 'formulario' | 'asociados';
 type AssociationMode = 'edit' | 'view' | 'summary';
 
+interface InscripcionDraft {
+  datos: Record<string, unknown>;
+  participantes: string[];
+  busquedasAsociados: Record<string, string>;
+}
+
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
@@ -43,6 +49,8 @@ export class InscripcionesComponent implements OnInit {
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   asociadoSearchTerms: Record<string, string> = {};
+  private readonly drafts: Record<string, InscripcionDraft> = {};
+  private asociadosCargados = false;
   loading = false;
   error = '';
   success = '';
@@ -187,6 +195,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   selectInscription(inscription: InscripcionSecretaria): void {
+    this.guardarBorradorActual();
     this.selectedInscription = inscription;
     this.selectedParticipants.clear();
     this.miEntrada = null;
@@ -203,10 +212,11 @@ export class InscripcionesComponent implements OnInit {
     });
     this.form = this.fb.group(group);
     this.asociadoSearchTerms = {};
+    this.restaurarBorrador(inscription.id);
     this.cargarAdjuntos(inscription.id);
     if (this.isAdminMode) {
       this.cargarEntradas(inscription.id);
-    } else {
+    } else if (this.asociadosCargados) {
       this.cargarMiEntrada(inscription);
     }
     this.ensureAllowedParticipantTab();
@@ -273,6 +283,7 @@ export class InscripcionesComponent implements OnInit {
     const id = String(asociado.id);
     if (!selected.includes(id)) control?.setValue([...selected, id]);
     control?.markAsTouched();
+    control?.markAsDirty();
     this.asociadoSearchTerms[field.key] = '';
     this.error = '';
   }
@@ -282,6 +293,7 @@ export class InscripcionesComponent implements OnInit {
     const selected = Array.isArray(control?.value) ? control.value.map((id: unknown) => String(id)) : [];
     control?.setValue(selected.filter(id => id !== String(asociadoId)));
     control?.markAsTouched();
+    control?.markAsDirty();
   }
 
   syncAsociadoField(field: CampoInscripcion, value: string): void {
@@ -552,10 +564,12 @@ export class InscripcionesComponent implements OnInit {
   }
 
   setAssociationTab(tab: AssociationTab): void {
+    this.guardarBorradorActual();
     this.associationTab = tab;
   }
 
   goAssociationStep(step: 1 | 2 | 3 | 4 | 5): void {
+    this.guardarBorradorActual();
     if (step === 1) {
       this.associationTab = 'documentacion';
       return;
@@ -719,6 +733,7 @@ export class InscripcionesComponent implements OnInit {
       participantes: [...this.selectedParticipants]
     }).subscribe({
       next: entry => {
+        this.borrarBorrador(this.selectedInscription?.id);
         this.miEntrada = entry as InscripcionEntradaSecretaria;
         this.associationMode = 'summary';
         this.success = 'Inscripcion enviada correctamente.';
@@ -758,6 +773,7 @@ export class InscripcionesComponent implements OnInit {
     this.loading = true;
     this.secretariaService.borrarMiEntradaInscripcion(this.miEntrada.id).subscribe({
       next: () => {
+        this.borrarBorrador(this.selectedInscription?.id);
         this.miEntrada = null;
         this.adjuntosEntrada = [];
         this.associationMode = 'edit';
@@ -899,12 +915,17 @@ export class InscripcionesComponent implements OnInit {
       this.loading = false;
       return;
     }
+    this.asociadosCargados = false;
     this.censoService.getAsociadosByAsociacion(
       this.censoService.asociacionId,
       this.ejercicioService.selectedEjercicio ?? undefined
     ).subscribe({
       next: asociados => {
         this.asociados = asociados;
+        this.asociadosCargados = true;
+        if (this.selectedInscription) {
+          this.cargarMiEntrada(this.selectedInscription);
+        }
         this.loading = false;
       },
       error: () => {
@@ -937,6 +958,9 @@ export class InscripcionesComponent implements OnInit {
   private cargarMiEntrada(inscription: InscripcionSecretaria): void {
     this.secretariaService.getMiEntradaInscripcion(inscription.id).subscribe({
       next: entrada => {
+        if (this.selectedInscription?.id !== inscription.id || this.form.dirty) {
+          return;
+        }
         this.miEntrada = entrada;
         this.cargarAdjuntosEntrada(entrada.id);
         this.patchEntradaForm(entrada);
@@ -974,6 +998,38 @@ export class InscripcionesComponent implements OnInit {
     });
     this.form.patchValue(values);
     this.selectedParticipants = new Set((entrada.participantes || []).map(id => String(id)));
+  }
+
+  private guardarBorradorActual(): void {
+    if (this.isAdminMode || !this.selectedInscription || this.associationMode !== 'edit') {
+      return;
+    }
+    const datos = this.form.getRawValue() as Record<string, unknown>;
+    if (!this.form.dirty && !this.selectedParticipants.size && !Object.values(this.asociadoSearchTerms).some(Boolean)) {
+      return;
+    }
+    this.drafts[this.selectedInscription.id] = {
+      datos: { ...datos },
+      participantes: [...this.selectedParticipants],
+      busquedasAsociados: { ...this.asociadoSearchTerms }
+    };
+  }
+
+  private restaurarBorrador(inscripcionId: string): void {
+    const draft = this.drafts[inscripcionId];
+    if (!draft) {
+      return;
+    }
+    this.form.patchValue(draft.datos);
+    this.form.markAsDirty();
+    this.selectedParticipants = new Set(draft.participantes);
+    this.asociadoSearchTerms = { ...draft.busquedasAsociados };
+  }
+
+  private borrarBorrador(inscripcionId?: string): void {
+    if (inscripcionId) {
+      delete this.drafts[inscripcionId];
+    }
   }
 
   private cargarEntradas(inscripcionId: string): void {
@@ -1143,7 +1199,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   private isAsociadoField(field: CampoInscripcion): boolean {
-    return ['asociado', 'asociado_adulto', 'asociado_infantil'].includes(field.type);
+    return ['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type);
   }
 
   isWithinDeadline(inscription: InscripcionSecretaria): boolean {
