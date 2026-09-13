@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.4#ESMERALDA - 2026-09-13
+
+### Añadido
+
+- El listado de formularios permite buscar, filtrar, ordenar y paginar plantillas.
+- La edición de una plantilla muestra sus inscripciones asociadas y permite abrirlas directamente.
+
 ## 0.29.3#ESMERALDA - 2026-09-13
 
 ### AÃ±adido

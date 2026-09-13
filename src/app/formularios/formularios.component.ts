@@ -4,7 +4,7 @@ import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Va
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 
-import { CampoInscripcion, FormularioAuditoria, FormularioInscripcion } from '../core/models';
+import { CampoInscripcion, FormularioAuditoria, FormularioInscripcion, InscripcionSecretaria, PaginacionSecretaria } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
@@ -33,7 +33,14 @@ export class FormulariosComponent implements OnInit, OnDestroy {
   confirmDelete = false;
   auditoria: FormularioAuditoria[] = [];
   editorMode = false;
-  editorTab: 'datos' | 'campos' = 'datos';
+  editorTab: 'datos' | 'campos' | 'inscripciones' = 'datos';
+  busqueda = '';
+  filtroEstado = '';
+  orden = 'nombre_asc';
+  pagina = 1;
+  readonly pageSize = 20;
+  paginacion: PaginacionSecretaria = { page: 1, pageSize: this.pageSize, total: 0, totalPages: 1 };
+  inscripcionesAsociadas: InscripcionSecretaria[] = [];
   private routeSubscription?: Subscription;
   private formularioIdRuta: string | null = null;
 
@@ -104,6 +111,7 @@ export class FormulariosComponent implements OnInit, OnDestroy {
     this.campos.clear();
     formulario.campos.forEach(campo => this.campos.push(this.createCampoGroup(campo)));
     this.cargarAuditoria(formulario.id);
+    this.cargarInscripciones(formulario.id);
   }
 
   abrirEditor(formulario: FormularioInscripcion): void {
@@ -261,11 +269,34 @@ export class FormulariosComponent implements OnInit, OnDestroy {
     this.router.navigate(['/formularios']);
   }
 
+  aplicarFiltros(): void {
+    this.pagina = 1;
+    this.cargar();
+  }
+
+  cambiarPagina(delta: number): void {
+    const page = this.pagina + delta;
+    if (page < 1 || page > this.paginacion.totalPages) return;
+    this.pagina = page;
+    this.cargar();
+  }
+
+  abrirInscripcion(inscripcion: InscripcionSecretaria): void {
+    this.router.navigate(['/inscripciones', inscripcion.id]);
+  }
+
   private cargar(): void {
     this.loading = true;
-    this.secretariaService.getFormularios(true).subscribe({
+    this.secretariaService.getFormularios(true, {
+      page: this.editorMode ? 1 : this.pagina,
+      pageSize: this.editorMode ? 100 : this.pageSize,
+      busqueda: this.editorMode ? '' : this.busqueda,
+      estado: this.editorMode ? '' : this.filtroEstado,
+      orden: this.editorMode ? 'nombre_asc' : this.orden
+    }).subscribe({
       next: response => {
         this.formularios = response.formularios;
+        this.paginacion = response.paginacion;
         this.loading = false;
         if (this.contextual || !this.editorMode) return;
         if (!this.formularioIdRuta) {
@@ -292,6 +323,14 @@ export class FormulariosComponent implements OnInit, OnDestroy {
     this.secretariaService.getFormularioAuditoria(id).subscribe({
       next: response => this.auditoria = response.eventos,
       error: () => this.auditoria = []
+    });
+  }
+
+  private cargarInscripciones(id: string): void {
+    this.inscripcionesAsociadas = [];
+    this.secretariaService.getInscripcionesFormulario(id).subscribe({
+      next: response => this.inscripcionesAsociadas = response.inscripciones,
+      error: () => this.inscripcionesAsociadas = []
     });
   }
 
