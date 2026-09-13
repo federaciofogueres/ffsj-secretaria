@@ -11,6 +11,7 @@ import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, 
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
+import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
@@ -88,7 +89,8 @@ export class RegistroComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     readonly permissions: PermissionsService,
-    readonly ejercicioService: EjercicioService
+    readonly ejercicioService: EjercicioService,
+    private readonly dashboardSummary: DashboardSummaryService
   ) {}
 
   ngOnInit(): void {
@@ -616,6 +618,7 @@ export class RegistroComponent implements OnInit {
       next: updated => {
         this.docResultado = updated;
         this.docBandeja = 'archivadas';
+        this.dashboardSummary.refreshAssociation();
         this.prependRegistro(updated);
         this.updatingEstado = false;
       },
@@ -715,6 +718,7 @@ export class RegistroComponent implements OnInit {
           item.id === autorizacion.id ? response.autorizacion : item
         );
         this.autorizacionDetalle = null;
+        this.dashboardSummary.refreshAssociation();
         this.docBandeja = 'archivadas';
         this.updatingEstado = false;
       },
@@ -736,6 +740,7 @@ export class RegistroComponent implements OnInit {
           item.id === autorizacion.id ? response.autorizacion : item
         );
         this.autorizacionDetalle = null;
+        this.dashboardSummary.refreshAssociation();
         this.updatingEstado = false;
       },
       error: () => this.updatingEstado = false

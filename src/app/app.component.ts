@@ -276,7 +276,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     return ([
       { title: 'Solicitudes con incidencia', count: this.associationSummary.solicitudesConIncidencia, icon: 'bi-exclamation-triangle-fill', path: '/asociados/gestion', queryParams: { tab: 'solicitudes', filtro: 'incidencias' } },
-      { title: 'Altas pendientes de firma', count: this.associationSummary.autorizacionesAltaPendientes || 0, icon: 'bi-pen-fill', path: '/asociados/gestion', queryParams: { tab: 'solicitudes' } },
+      { title: 'Certificaciones pendientes', count: this.associationSummary.autorizacionesAltaPendientes || 0, icon: 'bi-pen-fill', path: '/registro/documentacion' },
       { title: 'Inscripciones abiertas', count: this.associationSummary.inscripcionesAbiertas, icon: 'bi-clipboard-check-fill', path: '/inscripciones' },
       { title: 'Comunicaciones nuevas', count: this.associationSummary.comunicacionesNuevas, icon: 'bi-envelope-fill', path: '/registro/comunicacion', queryParams: { bandeja: 'recibidas', filtro: 'nuevas' } }
       ,...(this.associationSummary.soporteTareas || []).map(tarea => ({ title: tarea.requiereRespuesta ? `Soporte solicita información: ${tarea.asunto}` : `Respuesta de soporte: ${tarea.asunto}`, count: 1, icon: 'bi-headset', path: '/soporte', queryParams: { ticket: String(tarea.ticketId) } }))
