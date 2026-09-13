@@ -24,6 +24,7 @@ import {
   RegistroDestinatario,
   RegistroPendiente,
   RegistroSecretaria,
+  ResponsableInscripcion,
   PaginacionSecretaria,
   SolicitudSecretaria,
   SolicitudTipo,
@@ -390,6 +391,26 @@ export class SecretariaService {
     return this.http.get<{ inscripciones: InscripcionSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones`, {
       params,
       headers: this.authHeaders()
+    });
+  }
+
+  getResponsablesInscripcion(): Observable<{ responsables: ResponsableInscripcion[] }> {
+    return this.http.get<{ responsables: ResponsableInscripcion[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones/responsables`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getAdjuntosInscripcion(id: string): Observable<{ adjuntos: AdjuntoSecretaria[] }> {
+    return this.http.get<{ adjuntos: AdjuntoSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}/adjuntos`, { headers: this.authHeaders() });
+  }
+
+  subirAdjuntoInscripcion(id: string, file: File): Observable<AdjuntoSecretaria> {
+    return this.http.post<AdjuntoSecretaria>(`${this.apiUrl.secretariaBasePath}/inscripciones/${id}/adjuntos`, file, {
+      params: new HttpParams().set('fileName', file.name).set('mimeType', file.type || 'application/octet-stream'),
+      headers: {
+        ...this.authHeaders(),
+        'Content-Type': file.type || 'application/octet-stream'
+      }
     });
   }
 

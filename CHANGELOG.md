@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.2#ESMERALDA - 2026-09-13
+
+### Añadido
+
+- La gestión de inscripciones permite asignar un responsable administrativo habilitado, mostrarlo en el listado con su imagen y conservar información general.
+- Se pueden adjuntar documentos durante el alta o edición de una inscripción y consultarlos desde su documentación.
+
 ## 0.29.1#ESMERALDA - 2026-09-13
 
 ### Añadido

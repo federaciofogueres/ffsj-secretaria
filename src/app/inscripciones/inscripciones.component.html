@@ -55,6 +55,10 @@
               <div class="text-start">
                 <p class="title mb-1">{{ item.titulo }}</p>
                 <p class="subtitle mb-1 text-muted">{{ actividadDe(item)?.titulo || 'Sin actividad vinculada' }}</p>
+                <div class="d-flex align-items-center gap-2 small text-muted" *ngIf="item.propietarioNombre">
+                  <img *ngIf="imagenPropietario(item)" class="rounded-circle" [src]="imagenPropietario(item)" [alt]="'Perfil de ' + item.propietarioNombre" width="28" height="28" />
+                  <span>Responsable: {{ item.propietarioNombre }}</span>
+                </div>
                 <div class="dates small text-muted">
                   <span>Publicada: {{ item.fechaPublicacion | date : 'dd/MM/y' }}</span>
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
@@ -102,6 +106,11 @@
               <option value="">Sin actividad vinculada</option>
               <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
             </select>
+            <label class="form-label mt-2">Responsable de la inscripción</label>
+            <select class="form-select" formControlName="propietarioId"><option value="">Selecciona responsable</option><option *ngFor="let responsable of responsablesInscripcion" [value]="responsable.id">{{ responsable.nombreCompleto }}</option></select>
+            <label class="form-label mt-2">Información general<textarea class="form-control" rows="4" formControlName="informacion"></textarea></label>
+            <label class="form-label mt-2">Documentación adjunta<input class="form-control" type="file" multiple (change)="seleccionarAdjuntosNuevaInscripcion($event)" /></label>
+            <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosInscripcionSeleccionados.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosInscripcionSeleccionados; let i = index" (click)="quitarAdjuntoNuevaInscripcion(i)">{{ adjunto.name }} ×</button></div>
             <div class="row g-2 mt-1">
               <div class="col">
                 <label class="form-label">Publicacion</label>
@@ -135,6 +144,7 @@
                 <p class="ux-overline mb-1">Formulario</p>
                 <h3 class="detail-title mb-1">{{ inscription.titulo }}</h3>
                 <p class="text-muted mb-0">{{ actividadDe(inscription)?.titulo || 'Inscripcion sin actividad vinculada' }}</p>
+                <p class="mt-2 mb-0" *ngIf="inscription.informacion">{{ inscription.informacion }}</p>
               </div>
               <span class="type-badge">
                 {{ inscription.tiposPermitidos.length ? inscription.tiposPermitidos.join(', ') : 'Sin asociados configurados' }}
@@ -186,6 +196,7 @@
               <p class="text-muted" *ngIf="!isAdminMode">
                 Lee las condiciones y documentos adjuntos. Despues podras rellenar los datos y seleccionar participantes.
               </p>
+              <label class="form-label" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">Añadir documentación<input class="form-control" type="file" multiple [disabled]="loading" (change)="onAdjuntosInscripcionChange($event, inscription)" /></label>
               <div class="document-list" *ngIf="adjuntos.length; else noDocs">
                 <button class="document-item" type="button" *ngFor="let adjunto of adjuntos" (click)="abrirDocumento(adjunto)">
                   {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
@@ -226,6 +237,9 @@
                 <option value="">Sin actividad vinculada</option>
                 <option *ngFor="let actividad of actividades" [value]="actividad.id">{{ actividad.titulo }}</option>
               </select>
+              <label class="form-label mt-2">Responsable de la inscripción</label>
+              <select class="form-select" formControlName="propietarioId"><option value="">Selecciona responsable</option><option *ngFor="let responsable of responsablesInscripcion" [value]="responsable.id">{{ responsable.nombreCompleto }}</option></select>
+              <label class="form-label mt-2">Información general<textarea class="form-control" rows="4" formControlName="informacion"></textarea></label>
               <div class="row g-2 mt-1">
                 <div class="col">
                   <label class="form-label">Publicacion</label>

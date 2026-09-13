@@ -2,10 +2,12 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { forkJoin, of, switchMap } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
+import { ApiUrlService } from '../core/api-url.service';
 import { CensoService } from '../core/censo.service';
-import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria, ResponsableInscripcion } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -46,6 +48,8 @@ export class InscripcionesComponent implements OnInit {
   asociados: Asociado[] = [];
   adjuntos: AdjuntoSecretaria[] = [];
   adjuntosEntrada: AdjuntoSecretaria[] = [];
+  adjuntosInscripcionSeleccionados: File[] = [];
+  responsablesInscripcion: ResponsableInscripcion[] = [];
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   asociadoSearchTerms: Record<string, string> = {};
@@ -76,6 +80,8 @@ export class InscripcionesComponent implements OnInit {
     actividadId: [''],
     fechaPublicacion: [new Date().toISOString().slice(0, 10), Validators.required],
     fechaLimite: ['', Validators.required],
+    propietarioId: ['', Validators.required],
+    informacion: [''],
     adultos: [false],
     infantiles: [false]
   });
@@ -84,6 +90,7 @@ export class InscripcionesComponent implements OnInit {
     private readonly fb: FormBuilder,
     private readonly secretariaService: SecretariaService,
     private readonly censoService: CensoService,
+    private readonly apiUrl: ApiUrlService,
     private readonly adminAccess: AdminAccessService,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
@@ -230,6 +237,8 @@ export class InscripcionesComponent implements OnInit {
         actividadId: inscription.actividadId || '',
         fechaPublicacion: this.toDateInput(inscription.fechaPublicacion) || new Date().toISOString().slice(0, 10),
         fechaLimite: this.toDateInput(inscription.fechaLimite) || '',
+        propietarioId: inscription.propietarioId ? String(inscription.propietarioId) : '',
+        informacion: inscription.informacion || '',
         adultos: inscription.tiposPermitidos.includes('adulto'),
         infantiles: inscription.tiposPermitidos.includes('infantil')
       });
@@ -351,9 +360,12 @@ export class InscripcionesComponent implements OnInit {
       actividadId: '',
       fechaPublicacion: new Date().toISOString().slice(0, 10),
       fechaLimite: '',
+      propietarioId: '',
+      informacion: '',
       adultos: false,
       infantiles: false
     });
+    this.adjuntosInscripcionSeleccionados = [];
   }
 
   crearInscripcion(): void {
@@ -376,18 +388,24 @@ export class InscripcionesComponent implements OnInit {
       estado: 'abierta',
       fechaPublicacion: this.inscripcionAdminForm.value.fechaPublicacion,
       fechaLimite: this.inscripcionAdminForm.value.fechaLimite,
+      propietarioId: Number(this.inscripcionAdminForm.value.propietarioId),
+      informacion: this.inscripcionAdminForm.value.informacion || '',
       tiposPermitidos
     };
     const request = this.editingInscription && this.selectedInscription
       ? this.secretariaService.actualizarInscripcion(this.selectedInscription.id, payload)
       : this.secretariaService.crearInscripcion(payload);
 
-    request.subscribe({
+    request.pipe(switchMap(inscripcion => this.adjuntosInscripcionSeleccionados.length
+      ? forkJoin(this.adjuntosInscripcionSeleccionados.map(file => this.secretariaService.subirAdjuntoInscripcion(inscripcion.id, file))).pipe(switchMap(() => of(inscripcion)))
+      : of(inscripcion)
+    )).subscribe({
       next: inscripcion => {
         this.inscripciones = [inscripcion, ...this.inscripciones.filter(item => item.id !== inscripcion.id)];
         this.selectInscription(inscripcion);
         this.router.navigate(['/inscripciones', inscripcion.id]);
         this.success = this.editingInscription ? 'Inscripcion actualizada correctamente.' : 'Inscripcion creada correctamente.';
+        this.adjuntosInscripcionSeleccionados = [];
         this.loading = false;
       },
       error: error => {
@@ -835,6 +853,12 @@ export class InscripcionesComponent implements OnInit {
     this.secretariaService.getActividades(this.isAdminMode).subscribe({
       next: actividadesResponse => {
         this.actividades = actividadesResponse.actividades;
+        if (this.isAdminMode) {
+          this.secretariaService.getResponsablesInscripcion().subscribe({
+            next: response => { this.responsablesInscripcion = response.responsables; },
+            error: () => { this.error = 'No se han podido cargar los responsables de inscripción.'; }
+          });
+        }
         this.cargarFormulariosEInscripciones();
       },
       error: () => {
@@ -937,7 +961,7 @@ export class InscripcionesComponent implements OnInit {
 
   private cargarAdjuntos(inscripcionId: string): void {
     this.adjuntos = [];
-    this.secretariaService.getAdjuntos('inscripcion', inscripcionId).subscribe({
+    this.secretariaService.getAdjuntosInscripcion(inscripcionId).subscribe({
       next: response => {
         this.adjuntos = response.adjuntos;
       },
@@ -1258,12 +1282,55 @@ export class InscripcionesComponent implements OnInit {
       estado,
       fechaPublicacion: this.inscripcionAdminForm.value.fechaPublicacion,
       fechaLimite: this.inscripcionAdminForm.value.fechaLimite,
+      propietarioId: Number(this.inscripcionAdminForm.value.propietarioId),
+      informacion: this.inscripcionAdminForm.value.informacion || '',
       tiposPermitidos: [
         this.inscripcionAdminForm.value.adultos ? 'adulto' : null,
         this.inscripcionAdminForm.value.infantiles ? 'infantil' : null
       ].filter(Boolean),
       campos: formularioSeleccionado?.campos || this.selectedInscription?.campos || undefined
     };
+  }
+
+  onAdjuntosInscripcionChange(event: Event, inscripcion: InscripcionSecretaria): void {
+    const input = event.target as HTMLInputElement;
+    const files = Array.from(input.files || []);
+    if (!files.length) return;
+    this.loading = true;
+    this.error = '';
+    let pendientes = files.length;
+    const finalizar = () => {
+      pendientes -= 1;
+      if (pendientes) return;
+      input.value = '';
+      this.loading = false;
+      this.cargarAdjuntos(inscripcion.id);
+    };
+    files.forEach(file => this.secretariaService.subirAdjuntoInscripcion(inscripcion.id, file).subscribe({
+      next: () => finalizar(),
+      error: () => {
+        this.error = 'No se ha podido adjuntar uno de los documentos de la inscripción.';
+        finalizar();
+      }
+    }));
+  }
+
+  seleccionarAdjuntosNuevaInscripcion(event: Event): void {
+    const files = Array.from((event.target as HTMLInputElement).files || []);
+    if (!files.length) return;
+    if (this.adjuntosInscripcionSeleccionados.length + files.length > 5) {
+      this.error = 'Puedes adjuntar un máximo de 5 archivos por inscripción.';
+      return;
+    }
+    this.adjuntosInscripcionSeleccionados = [...this.adjuntosInscripcionSeleccionados, ...files];
+  }
+
+  quitarAdjuntoNuevaInscripcion(index: number): void {
+    this.adjuntosInscripcionSeleccionados = this.adjuntosInscripcionSeleccionados.filter((_, current) => current !== index);
+  }
+
+  imagenPropietario(inscripcion: InscripcionSecretaria): string | null {
+    return inscripcion.propietarioImagen ? `${this.apiUrl.filesBasePath}${inscripcion.propietarioImagen}` : null;
   }
 
   private downloadCsv(entries: InscripcionEntradaSecretaria[], fileName: string, inscripcion = this.selectedInscription): void {
