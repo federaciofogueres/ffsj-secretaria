@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.28.0#ESMERALDA - 2026-09-13
+
+### Corregido
+
+- El alta de asociado unifica la identificación visible y permite usar DNI, NIE, pasaporte o SIP.
+- Las certificaciones pendientes se muestran en tareas y enlazan a Registro → Documentación; la tarea se actualiza al resolverlas.
+- Los campos dinámicos de inscripciones, incluido Responsable, conservan su estado al navegar entre pestañas.
+
 ## 0.27.7#ESMERALDA - 2026-09-10
 
 ### Corregido
