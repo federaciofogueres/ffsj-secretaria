@@ -327,6 +327,14 @@
   color: #a11b2c;
 }
 
+.app-version {
+  display: block;
+  padding: .35rem .7rem 0;
+  color: var(--ffsj-muted);
+  font-size: .72rem;
+  font-weight: 700;
+}
+
 .tasks-popover-heading {
   display: flex;
   align-items: flex-start;

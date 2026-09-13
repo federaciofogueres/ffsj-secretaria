@@ -264,6 +264,17 @@
 }
 
 .propuesta-detail-modal { width: min(680px, calc(100vw - 2rem)); }
+.day-detail-modal,
+.activity-detail-modal { width: min(720px, calc(100vw - 2rem)); }
+.calendar-tabs { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1.25rem; border-bottom: 1px solid var(--ffsj-line); padding-bottom: .75rem; }
+.calendar-tabs button { border: 1px solid var(--ffsj-line); border-radius: 999px; background: #fff; color: var(--ffsj-ink); font-weight: 800; padding: .55rem .85rem; }
+.calendar-tabs button.active { border-color: var(--ffsj-red); background: var(--ffsj-soft-red); color: var(--ffsj-red); }
+.calendar-tab-panel,
+.create-tab-panel { margin-top: 1.25rem; padding: 1.25rem; border: 1px solid var(--ffsj-line); border-radius: 16px; background: #fff; }
+.proposal-filters { display: grid; grid-template-columns: minmax(220px, 2fr) minmax(150px, 1fr) minmax(170px, 1fr); gap: .75rem; margin: 1rem 0; }
+.proposal-filters label { display: grid; gap: .35rem; font-size: .84rem; font-weight: 800; }
+.proposal-pagination { display: flex; align-items: center; justify-content: flex-end; gap: .75rem; margin-top: 1rem; font-size: .86rem; }
+@media (max-width: 720px) { .proposal-filters { grid-template-columns: 1fr; } .proposal-pagination { justify-content: space-between; } }
 .propuesta-data { display: grid; gap: .65rem; margin: 0 0 1.25rem; }
 .propuesta-data div { display: grid; gap: .15rem; }
 .propuesta-data dt { color: var(--ffsj-muted); font-size: .78rem; font-weight: 800; text-transform: uppercase; }

@@ -7,18 +7,8 @@
         <p class="ux-muted mb-0">{{ isAdminMode ? 'Gestiona actividades, estado publico e inscripciones vinculadas.' : 'Consulta actividades, inscripciones vinculadas y propone nuevos eventos.' }}</p>
       </div>
       <div class="calendar-actions">
-        <button
-          class="ux-btn"
-          type="button"
-          *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
-          (click)="abrirCrearActividad()"
-        >
-          Añadir actividad
-        </button>
-        <button class="ux-btn" type="button" *ngIf="!isAdminMode && permissions.hasPermission('inscripciones:write')" (click)="abrirCrearActividad()">Proponer actividad</button>
-        <button class="ux-btn ux-btn-secondary" type="button" (click)="togglePropuestas()">{{ showPropuestas ? 'Ocultar propuestas' : (isAdminMode ? 'Propuestas pendientes' : 'Mis propuestas') }}</button>
-        <button class="ux-btn ux-btn-secondary" type="button" (click)="previousMonth()">Anterior</button>
-        <button class="ux-btn ux-btn-secondary" type="button" (click)="nextMonth()">Siguiente</button>
+        <button class="ux-btn ux-btn-secondary" type="button" *ngIf="activeTab === 'calendario'" (click)="previousMonth()">Anterior</button>
+        <button class="ux-btn ux-btn-secondary" type="button" *ngIf="activeTab === 'calendario'" (click)="nextMonth()">Siguiente</button>
       </div>
     </div>
 
@@ -26,16 +16,27 @@
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
     <div class="text-muted mt-3 d-flex align-items-center gap-2" *ngIf="loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando calendario...</div>
 
-    <div class="calendar-filters mt-3">
+    <nav class="calendar-tabs" aria-label="Secciones del calendario">
+      <button type="button" [class.active]="activeTab === 'calendario'" (click)="activarTab('calendario')">Calendario</button>
+      <button type="button" *ngIf="permissions.hasPermission('inscripciones:write')" [class.active]="activeTab === 'crear'" (click)="activarTab('crear')">{{ isAdminMode ? 'Añadir actividad' : 'Proponer actividad' }}</button>
+      <button type="button" [class.active]="activeTab === 'propuestas'" (click)="activarTab('propuestas')">{{ isAdminMode ? 'Propuestas pendientes' : 'Mis propuestas' }}</button>
+    </nav>
+
+    <div class="calendar-filters mt-3" *ngIf="activeTab === 'calendario'">
       <label>Estado<select class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()"><option value="">Todos los visibles</option><option value="activa">Activas</option><option value="cerrada">Cerradas</option><option value="cancelada" *ngIf="isAdminMode">Archivadas</option></select></label>
       <label *ngIf="isAdminMode">Visibilidad<select class="form-select" [(ngModel)]="filtroVisibilidad" (ngModelChange)="aplicarFiltros()"><option value="">Todas</option><option value="publica">Públicas</option><option value="privada">Internas</option></select></label>
       <label class="form-check" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" [(ngModel)]="incluirArchivadas" (ngModelChange)="aplicarFiltros()" /> Mostrar archivadas</label>
     </div>
 
-    <section class="border rounded p-3 mt-3" *ngIf="showPropuestas">
+    <section class="calendar-tab-panel mt-3" *ngIf="activeTab === 'propuestas'">
       <h2 class="h5">{{ isAdminMode ? 'Propuestas de asociaciones' : 'Mis propuestas de actividad' }}</h2>
-      <p class="text-muted" *ngIf="!propuestas.length">No hay propuestas para mostrar.</p>
-      <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestas">
+      <div class="proposal-filters">
+        <label>Buscar<input class="form-control" type="search" [(ngModel)]="propuestasFiltro" (ngModelChange)="actualizarFiltroPropuestas()" placeholder="Título, texto o asociación" /></label>
+        <label>Estado<select class="form-select" [(ngModel)]="propuestasEstado" (ngModelChange)="actualizarFiltroPropuestas()"><option value="">Todos</option><option value="pendiente_revision">Pendientes</option><option value="con_incidencias">Con incidencias</option><option value="publicada">Publicadas</option><option value="rechazada">Rechazadas</option></select></label>
+        <label>Ordenar<select class="form-select" [(ngModel)]="propuestasOrden" (ngModelChange)="actualizarFiltroPropuestas()"><option value="fecha_desc">Fecha más reciente</option><option value="fecha_asc">Fecha más próxima</option><option value="titulo_asc">Título A-Z</option><option value="titulo_desc">Título Z-A</option></select></label>
+      </div>
+      <p class="text-muted" *ngIf="!propuestasFiltradas.length">No hay propuestas para mostrar.</p>
+      <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestasPaginadas">
         <div class="d-flex justify-content-between gap-2"><strong>{{ propuesta.titulo }}</strong><app-estado-badge [estado]="propuesta.estadoPropuesta || 'pendiente_revision'"></app-estado-badge></div>
         <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y HH:mm' }} <span *ngIf="propuesta.fechaFin && propuesta.fechaFin !== propuesta.fechaInicio">– {{ propuesta.fechaFin | date: 'dd/MM/y HH:mm' }}</span><span *ngIf="isAdminMode"> · {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
         <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
@@ -48,9 +49,14 @@
         </div>
         <ul class="small mt-2 mb-0" *ngIf="propuesta.eventos?.length"><li *ngFor="let evento of propuesta.eventos">{{ evento.createdAt | date:'dd/MM/y HH:mm' }} — {{ evento.detalle }}</li></ul>
       </article>
+      <div class="proposal-pagination" *ngIf="propuestasFiltradas.length > propuestasPorPagina">
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="propuestasPagina === 1" (click)="cambiarPaginaPropuestas(-1)">Anterior</button>
+        <span>Página {{ propuestasPagina }} de {{ totalPaginasPropuestas }}</span>
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="propuestasPagina === totalPaginasPropuestas" (click)="cambiarPaginaPropuestas(1)">Siguiente</button>
+      </div>
     </section>
 
-    <div class="calendar-layout mt-4">
+    <div class="calendar-layout mt-4" *ngIf="activeTab === 'calendario'">
       <div class="calendar">
         <h2 class="month-title text-capitalize">{{ monthLabel }}</h2>
         <div class="weekdays">
@@ -77,7 +83,7 @@
               *ngFor="let actividad of day.actividades"
               [class.inactive]="actividad.estado === 'cerrada'"
               [class]="'activity-pill color-' + (actividad.colorEtiqueta || 'ffsj')"
-              (click)="select(actividad, day.date); $event.stopPropagation()"
+              (click)="abrirDetalleActividad(actividad, day.date); $event.stopPropagation()"
             >
               {{ actividad.titulo }}
             </button>
@@ -108,7 +114,7 @@
               *ngFor="let actividad of selectedDayActividades"
               [class.active]="actividad.id === selected?.id"
               [class.inactive]="actividad.estado === 'cerrada'"
-              (click)="select(actividad)"
+              (click)="abrirDetalleActividad(actividad)"
             >
               <span>{{ actividad.titulo }}</span>
               <app-estado-badge [estado]="actividad.estado"></app-estado-badge>
@@ -272,6 +278,36 @@
       </ng-template>
     </div>
   </div>
+
+<div class="modal-backdrop-custom" *ngIf="showDayDialog" (click)="showDayDialog = false"></div>
+<section class="modal-panel day-detail-modal" *ngIf="showDayDialog" role="dialog" aria-modal="true" aria-label="Actividades del día">
+  <div class="modal-header-custom">
+    <div><p class="ux-overline mb-2">Calendario</p><h2 class="h5 mb-0">{{ selectedDate | date:'dd/MM/y' }}</h2></div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="showDayDialog = false">Cerrar</button>
+  </div>
+  <p class="text-muted" *ngIf="!selectedDayActividades.length">No hay actividades en este día.</p>
+  <div class="event-list" *ngIf="selectedDayActividades.length">
+    <button class="event-item" type="button" *ngFor="let actividad of selectedDayActividades" (click)="abrirDetalleActividad(actividad)">
+      <span><strong>{{ actividad.titulo }}</strong><small>{{ actividad.fechaInicio | date:'HH:mm' }} · {{ actividad.responsable || 'Sin responsable' }}</small></span>
+      <app-estado-badge [estado]="actividad.estado"></app-estado-badge>
+    </button>
+  </div>
+  <button class="ux-btn mt-3" type="button" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')" (click)="abrirCrearActividad(selectedDate)">Añadir actividad</button>
+</section>
+
+<div class="modal-backdrop-custom" *ngIf="showActividadDetail" (click)="cerrarDetalleActividad()"></div>
+<section class="modal-panel activity-detail-modal" *ngIf="showActividadDetail && selected" role="dialog" aria-modal="true" aria-label="Detalle de actividad">
+  <div class="modal-header-custom">
+    <div><p class="ux-overline mb-2">Detalle de actividad</p><h2 class="h5 mb-1 text-rojo">{{ selected.titulo }}</h2><app-estado-badge [estado]="selected.estado"></app-estado-badge></div>
+    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarDetalleActividad()">Cerrar</button>
+  </div>
+  <dl class="propuesta-data">
+    <div><dt>Fecha y hora</dt><dd>{{ selected.fechaInicio | date:'dd/MM/y HH:mm' }}<span *ngIf="selected.fechaFin && selected.fechaFin !== selected.fechaInicio"> – {{ selected.fechaFin | date:'dd/MM/y HH:mm' }}</span></dd></div>
+    <div *ngIf="selected.responsable"><dt>Responsable</dt><dd>{{ selected.responsable }}</dd></div>
+    <div *ngIf="selected.descripcion"><dt>Descripción</dt><dd>{{ selected.descripcion }}</dd></div>
+  </dl>
+  <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
+  <div class="linked" *ngIf="selected.inscripciones?.length"><h3 class="h6">Inscripciones vinculadas</h3><a class="linked-item" [routerLink]="['/inscripciones', inscripcion.id]" *ngFor="let inscripcion of selected.inscripciones" (click)="cerrarDetalleActividad()">{{ inscripcion.titulo }}</a></div>
 </section>
 
 <app-confirm-dialog
@@ -283,8 +319,7 @@
   (confirmed)="confirmarBorradoActividad()"
 ></app-confirm-dialog>
 
-<div class="modal-backdrop-custom" *ngIf="showCreateDialog" (click)="cerrarCrearActividad()"></div>
-<section class="modal-panel" *ngIf="showCreateDialog" role="dialog" aria-modal="true" aria-label="Añadir actividad">
+<section class="create-tab-panel" *ngIf="activeTab === 'crear'" aria-label="Añadir actividad">
   <div class="modal-header-custom">
     <div>
       <p class="ux-overline mb-2">Calendario</p>
@@ -317,6 +352,7 @@
       <button class="btn btn-outline-secondary" type="button" (click)="cerrarCrearActividad()">Cancelar</button>
     </div>
   </form>
+</section>
 </section>
 
 <div class="modal-backdrop-custom" *ngIf="propuestaAccion" (click)="propuestaAccion = null"></div>
