@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.28.1#ESMERALDA - 2026-09-13
+
+### Corregido
+
+- El alta de asociados envía DNI, NIE, pasaporte o SIP mediante el campo unificado `nif`, permitiendo generar correctamente las certificaciones por historial reciente.
+
 ## 0.28.0#ESMERALDA - 2026-09-13
 
 ### Corregido
