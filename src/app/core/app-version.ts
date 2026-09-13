@@ -1,2 +1,2 @@
 /** Fuente única de la versión mostrada por Secretaría. */
-export const APP_VERSION = '0.29.1#ESMERALDA';
+export const APP_VERSION = '0.29.2#ESMERALDA';

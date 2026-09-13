@@ -305,9 +305,21 @@ export interface InscripcionSecretaria {
   estado: string;
   fechaPublicacion: string;
   fechaLimite: string;
+  propietarioId?: number | null;
+  propietarioNombre?: string | null;
+  propietarioImagen?: string | null;
+  informacion?: string;
   tiposPermitidos: AsociadoTipo[];
   campos: CampoInscripcion[];
   inscrito?: boolean;
+}
+
+export interface ResponsableInscripcion {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  nombreCompleto: string;
+  imagen?: string | null;
 }
 
 export interface InscripcionEntradaSecretaria {
