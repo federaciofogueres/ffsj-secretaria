@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 
 import { AdminAccessService } from '../core/admin-access.service';
-import { ActividadSecretaria, InscripcionSecretaria } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
@@ -53,6 +53,8 @@ export class CalendarioComponent implements OnInit {
   imagenActividadUrl = '';
   imagenActividadId: number | null = null;
   imagenSeleccionada: File | null = null;
+  adjuntosActividad: AdjuntoSecretaria[] = [];
+  adjuntosActividadSeleccionados: File[] = [];
   propuestaAccion: { id: string; tipo: 'rechazo' | 'incidencia' } | null = null;
   propuestaMensaje = '';
   propuestaDetalle: ActividadSecretaria | null = null;
@@ -180,6 +182,7 @@ export class CalendarioComponent implements OnInit {
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
     this.cargarImagenActividad(hydrated.id);
+    this.cargarAdjuntosActividad(hydrated.id);
   }
 
   selectDay(day: CalendarDay): void {
@@ -224,6 +227,8 @@ export class CalendarioComponent implements OnInit {
       descripcion: ''
       , colorEtiqueta: 'ffsj'
     });
+    this.imagenSeleccionada = null;
+    this.adjuntosActividadSeleccionados = [];
     if (this.isAdminMode) this.actividadForm.controls.responsable.enable({ emitEvent: false });
     else this.actividadForm.controls.responsable.disable({ emitEvent: false });
   }
@@ -251,16 +256,21 @@ export class CalendarioComponent implements OnInit {
     const request = this.isAdminMode
       ? this.secretariaService.crearActividad(this.actividadForm.value)
       : this.secretariaService.crearPropuestaActividad(this.actividadForm.value);
-    request.pipe(switchMap(actividad => this.imagenSeleccionada
-      ? this.secretariaService.subirAdjunto('actividad_imagen', actividad.id, this.imagenSeleccionada).pipe(switchMap(() => of(actividad)))
-      : of(actividad)
-    )).subscribe({
+    request.pipe(switchMap(actividad => {
+      const uploads = [
+        ...(this.imagenSeleccionada ? [this.secretariaService.subirAdjunto('actividad_imagen', actividad.id, this.imagenSeleccionada)] : []),
+        ...this.adjuntosActividadSeleccionados.map(file => this.secretariaService.subirAdjunto('actividad', actividad.id, file))
+      ];
+      return uploads.length ? forkJoin(uploads).pipe(switchMap(() => of(actividad))) : of(actividad);
+    })).subscribe({
       next: actividad => {
         this.activeTab = this.isAdminMode ? 'calendario' : 'propuestas';
         if (this.isAdminMode) {
           this.recargarTrasCrear(actividad.id);
         } else {
           this.propuestas = [actividad, ...this.propuestas.filter(item => item.id !== actividad.id)];
+          this.imagenSeleccionada = null;
+          this.adjuntosActividadSeleccionados = [];
           this.loading = false;
           this.success = 'Propuesta enviada a Administracion para su revision.';
         }
@@ -310,11 +320,12 @@ export class CalendarioComponent implements OnInit {
     if (this.isAdminMode) {
       this.propuestaDetalle = propuesta;
       this.cargarImagenActividad(propuesta.id);
+      this.cargarAdjuntosActividad(propuesta.id);
       return;
     }
     this.loading = true;
     this.secretariaService.getMiPropuestaActividad(propuesta.id).subscribe({
-      next: detalle => { this.propuestaDetalle = detalle; this.cargarImagenActividad(detalle.id); this.loading = false; },
+      next: detalle => { this.propuestaDetalle = detalle; this.cargarImagenActividad(detalle.id); this.cargarAdjuntosActividad(detalle.id); this.loading = false; },
       error: response => { this.error = response.error?.message || 'No se ha podido abrir el detalle de la propuesta.'; this.loading = false; }
     });
   }
@@ -383,6 +394,20 @@ export class CalendarioComponent implements OnInit {
     if (file && this.esImagenValida(file)) this.imagenSeleccionada = file;
   }
 
+  seleccionarAdjuntosActividad(event: Event): void {
+    const files = Array.from((event.target as HTMLInputElement).files || []);
+    if (!this.validarAdjuntos(files)) return;
+    if (this.adjuntosActividadSeleccionados.length + files.length > 5) {
+      this.error = 'Puedes adjuntar un máximo de 5 archivos por actividad.';
+      return;
+    }
+    this.adjuntosActividadSeleccionados = [...this.adjuntosActividadSeleccionados, ...files];
+  }
+
+  quitarAdjuntoActividadSeleccionado(index: number): void {
+    this.adjuntosActividadSeleccionados = this.adjuntosActividadSeleccionados.filter((_, current) => current !== index);
+  }
+
   seleccionarAdjuntosRespuestaPropuesta(event: Event): void {
     const files = Array.from((event.target as HTMLInputElement).files || []);
     if (!this.validarAdjuntos(files)) return;
@@ -449,6 +474,14 @@ export class CalendarioComponent implements OnInit {
         });
       },
       error: () => { this.imagenActividadId = null; }
+    });
+  }
+
+  private cargarAdjuntosActividad(id: string): void {
+    this.adjuntosActividad = [];
+    this.secretariaService.getAdjuntos('actividad', id).subscribe({
+      next: response => this.adjuntosActividad = response.adjuntos,
+      error: () => this.adjuntosActividad = []
     });
   }
 
