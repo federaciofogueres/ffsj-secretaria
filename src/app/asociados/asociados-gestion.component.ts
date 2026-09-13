@@ -378,11 +378,12 @@ export class AsociadosGestionComponent implements OnInit {
     const cargoIds = cargosSeleccionados.map(cargo => Number(cargo.id));
     const cargoNombres = cargosSeleccionados.map(cargo => cargo.nombre);
     const identificacion = this.getDocumentoAlta();
-    const esDocumento = this.esDocumentoIdentidad(identificacion);
     const datos = {
       ...this.altaForm.value,
-      dni: esDocumento ? identificacion : '',
-      sip: esDocumento ? '' : identificacion,
+      // Censo conserva todos los identificadores personales en nif.
+      nif: identificacion,
+      dni: '',
+      sip: '',
       cargoId: cargoIds[0],
       cargoIds,
       cargoNombre: cargoNombres[0] || '',
@@ -677,11 +678,6 @@ export class AsociadosGestionComponent implements OnInit {
       .trim()
       .replace(/\s+/g, '')
       .toUpperCase();
-  }
-
-  private esDocumentoIdentidad(value: string): boolean {
-    return /^(?:\d{8}|[XYZ]\d{7})[A-Z]$/.test(value)
-      || /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{5,20}$/.test(value);
   }
 
   private comprobarHistoricoAsociadoParaAlta(asociado: Asociado): void {
