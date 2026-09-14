@@ -90,9 +90,10 @@ describe('AsociadosGestionComponent', () => {
       }
     ]));
 
-    const censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getCargos']);
+    const censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getCargos', 'getAsociacion']);
     Object.defineProperty(censoService, 'asociacionId', { get: () => 25 });
     censoService.getCargos.and.returnValue(of([{ id: 1, nombre: 'Presidente', requerido: 1 } as any]));
+    censoService.getAsociacion.and.returnValue(of({ tipo_asociacion: 2 } as any));
 
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, AsociadosGestionComponent],
@@ -120,6 +121,10 @@ describe('AsociadosGestionComponent', () => {
     expect(component.sustitucionesCargo.length).toBe(1);
     expect(component.sustitutosDisponibles(component.sustitucionesCargo[0]).map(item => item.id)).toEqual([101]);
     expect(secretariaService.crearRegistroPendiente).not.toHaveBeenCalled();
+  });
+
+  it('consulta cupos con el tipo real de la asociación', () => {
+    expect(secretariaService.getCargosCupos).toHaveBeenCalledWith(25, new Date().getFullYear(), 2);
   });
 
   it('crea una solicitud conjunta con baja y cambio de cargo cuando se confirma el sustituto', () => {
