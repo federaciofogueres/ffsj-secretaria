@@ -190,7 +190,14 @@ export class FormulariosComponent implements OnInit, OnDestroy {
       this.error = 'Revisa el nombre y los campos del formulario.';
       return;
     }
-    const payload = this.buildPayload();
+    let payload: unknown;
+    try {
+      payload = this.buildPayload();
+    } catch (_error) {
+      this.error = 'No se ha podido preparar el formulario para guardarlo.';
+      this.loading = false;
+      return;
+    }
     this.loading = true;
     this.error = '';
     this.success = '';
@@ -210,8 +217,8 @@ export class FormulariosComponent implements OnInit, OnDestroy {
           this.router.navigate(['/formularios', formulario.id]);
         }
       },
-      error: () => {
-        this.error = 'No se ha podido guardar el formulario.';
+      error: response => {
+        this.error = response?.error?.message || 'No se ha podido guardar el formulario.';
         this.loading = false;
       }
     });
@@ -299,7 +306,7 @@ export class FormulariosComponent implements OnInit, OnDestroy {
         this.paginacion = response.paginacion;
         this.loading = false;
         if (this.contextual || !this.editorMode) return;
-        if (!this.formularioIdRuta) {
+        if (!this.formularioIdRuta || this.formularioIdRuta === 'nuevo') {
           this.nuevo();
           return;
         }
