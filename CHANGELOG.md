@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.7#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- Los cambios de Datos de asociación se envían ahora como solicitud de validación, conservando los datos oficiales hasta la decisión administrativa.
+
 ## 0.29.6#ESMERALDA - 2026-09-14
 
 ### Añadido
