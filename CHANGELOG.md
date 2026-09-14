@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.8#ESMERALDA - 2026-09-14
+
+### Añadido
+
+- El alta de menores incluye representantes legales, que se conservan en la solicitud.
+
 ## 0.29.7#ESMERALDA - 2026-09-14
 
 ### Modificado

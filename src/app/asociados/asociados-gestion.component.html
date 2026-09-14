@@ -503,6 +503,11 @@
           </div>
         </section>
 
+        <section class="form-section" *ngIf="modoFormulario === 'alta' && esMenorEdad">
+          <div class="form-section-head"><span class="form-step">2</span><div><h5 class="section-title mb-1">Representación legal</h5><p class="text-muted mb-0">Indica las personas representantes del menor.</p></div></div>
+          <div class="row g-3"><div class="col-md-6"><label class="form-label">Representación legal 1 · Nombre y apellidos</label><input class="form-control" formControlName="representante1Nombre" /></div><div class="col-md-6"><label class="form-label">Teléfono</label><input class="form-control" formControlName="representante1Telefono" /></div><div class="col-md-6"><label class="form-label">Representación legal 2 · Nombre y apellidos</label><input class="form-control" formControlName="representante2Nombre" /></div><div class="col-md-6"><label class="form-label">Teléfono</label><input class="form-control" formControlName="representante2Telefono" /></div></div>
+        </section>
+
         <section class="form-section">
           <div class="form-section-head">
             <span class="form-step">2</span>
