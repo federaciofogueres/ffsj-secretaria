@@ -349,6 +349,12 @@ export class SecretariaService {
     });
   }
 
+  actualizarRegistroDestinatario(id: number, payload: { responsableId: number; email: string }): Observable<RegistroDestinatario> {
+    return this.http.put<RegistroDestinatario>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios/${id}`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
   crearRegistro(payload: unknown): Observable<RegistroSecretaria> {
     return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros`, payload, {
       headers: this.authHeaders()

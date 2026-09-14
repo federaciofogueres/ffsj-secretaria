@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.11#ESMERALDA - 2026-09-14
+
+### Corregido
+
+- Configuración de Registro recupera el identificador persistido del responsable en cada selector y permite sustituirlo por otro miembro habilitado.
+
 ## 0.29.10#ESMERALDA - 2026-09-14
 
 ### Corregido
