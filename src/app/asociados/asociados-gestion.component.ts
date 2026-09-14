@@ -144,6 +144,7 @@ export class AsociadosGestionComponent implements OnInit {
     provincia: ['', Validators.maxLength(100)],
     telefono: ['', Validators.pattern(/^[+0-9][0-9\s-]{7,19}$/)],
     email: ['', [Validators.email]]
+    , representante1Nombre: [''], representante1Telefono: [''], representante2Nombre: [''], representante2Telefono: ['']
   });
 
   constructor(
@@ -378,7 +379,7 @@ export class AsociadosGestionComponent implements OnInit {
     const cargoIds = cargosSeleccionados.map(cargo => Number(cargo.id));
     const cargoNombres = cargosSeleccionados.map(cargo => cargo.nombre);
     const identificacion = this.getDocumentoAlta();
-    const datos = {
+    const datos: Record<string, any> = {
       ...this.altaForm.value,
       // Censo conserva todos los identificadores personales en nif.
       nif: identificacion,
@@ -391,6 +392,12 @@ export class AsociadosGestionComponent implements OnInit {
       tipoCambio: this.modoFormulario === 'modificacion' ? 'cargo' : undefined,
       tipoHoguera: this.altaForm.value.tipo
     };
+    if (tipo === 'alta' && this.esMenorEdad) {
+      datos.representantesLegales = [
+        { nombre: this.altaForm.value.representante1Nombre, telefono: this.altaForm.value.representante1Telefono },
+        { nombre: this.altaForm.value.representante2Nombre, telefono: this.altaForm.value.representante2Telefono }
+      ].filter(item => item.nombre || item.telefono);
+    }
     const datosOriginales = this.asociadoEnEdicion ? { ...this.asociadoEnEdicion } : null;
 
     if (this.tieneDuplicadoPendiente(tipo, this.asociadoEnEdicion?.id ?? null, datos)) {
@@ -1931,6 +1938,15 @@ export class AsociadosGestionComponent implements OnInit {
     ];
     return errors.find(([name]) => this.altaForm.get(name)?.invalid)?.[1]
       || 'Revisa los datos obligatorios del formulario.';
+  }
+
+  get esMenorEdad(): boolean {
+    const nacimiento = new Date(`${this.altaForm.value.nacimiento || ''}T00:00:00`);
+    if (Number.isNaN(nacimiento.getTime())) return false;
+    const hoy = new Date();
+    let edad = hoy.getFullYear() - nacimiento.getFullYear();
+    if (hoy.getMonth() < nacimiento.getMonth() || (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate())) edad--;
+    return edad < 18;
   }
 
   private fechaNacimientoValida(): boolean {
