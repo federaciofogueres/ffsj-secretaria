@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.10#ESMERALDA - 2026-09-14
+
+### Corregido
+
+- Cupos y cargos solicita y valida el tipo real de la asociación, aplicando las mismas reglas de visibilidad que el formulario de alta.
+
 ## 0.29.9#ESMERALDA - 2026-09-14
 
 ### Modificado

@@ -116,7 +116,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
-  tipoAsociacion = 2;
+  tipoAsociacion: number | null = null;
 
   readonly tipoOpciones = ['Hoguera adulta', 'Hoguera infantil'];
   readonly pageSize = 10;
@@ -168,7 +168,11 @@ export class AsociadosGestionComponent implements OnInit {
 
     if (this.asociacionId) {
       this.censoService.getAsociacion(this.asociacionId).subscribe({
-        next: asociacion => this.tipoAsociacion = Number(asociacion.tipo_asociacion ?? asociacion.tipoAsociacion) === 1 ? 1 : 2,
+        next: asociacion => {
+          const tipo = Number(asociacion.tipo_asociacion ?? asociacion.tipoAsociacion);
+          this.tipoAsociacion = Number.isInteger(tipo) && tipo > 0 ? tipo : null;
+          this.cargarCupos();
+        },
         error: () => undefined
       });
     }
@@ -190,8 +194,8 @@ export class AsociadosGestionComponent implements OnInit {
 
   cargarCupos(): void {
     const ejercicio = Number(this.ejercicioService.selectedSnapshot?.ejercicio || new Date().getFullYear());
-    if (!this.asociacionId || !ejercicio) return;
-    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio).subscribe({
+    if (!this.asociacionId || !ejercicio || !this.tipoAsociacion) return;
+    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio, this.tipoAsociacion).subscribe({
       next: response => {
         this.cuposCargos = response.cargos;
         this.errorCupos = '';
@@ -379,6 +383,14 @@ export class AsociadosGestionComponent implements OnInit {
     const cargoIds = cargosSeleccionados.map(cargo => Number(cargo.id));
     const cargoNombres = cargosSeleccionados.map(cargo => cargo.nombre);
     const identificacion = this.getDocumentoAlta();
+    if (tipo === 'alta' && this.esMenorEdad) {
+      const representante1Nombre = String(this.altaForm.value.representante1Nombre || '').trim();
+      const representante1Telefono = String(this.altaForm.value.representante1Telefono || '').trim();
+      if (!representante1Nombre || !/^[+0-9][0-9\s-]{7,19}$/.test(representante1Telefono)) {
+        this.showError('Indica nombre y teléfono válidos para la representación legal 1.');
+        return;
+      }
+    }
     const datos: Record<string, any> = {
       ...this.altaForm.value,
       // Censo conserva todos los identificadores personales en nif.
