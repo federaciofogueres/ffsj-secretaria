@@ -45,7 +45,7 @@ export class SolicitudesComponent implements OnInit {
   error = '';
   success = '';
   filtroTexto = '';
-  filtroEstado = 'todos';
+  filtroEstado = 'enviada';
   filtroTipo = 'todos';
   orden: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
   soloProblematicas = false;

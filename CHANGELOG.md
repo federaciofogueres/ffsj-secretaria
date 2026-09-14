@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.9#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- El listado administrativo de Solicitudes abre filtrado por estado Enviada; el filtro sigue pudiendo modificarse o eliminarse.
+
 ## 0.29.8#ESMERALDA - 2026-09-14
 
 ### Añadido
