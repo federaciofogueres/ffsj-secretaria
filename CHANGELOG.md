@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.12#ESMERALDA - 2026-09-14
+
+### Corregido
+
+- El editor de formularios reconoce la ruta de creación como formulario nuevo y reserva la actualización para identificadores existentes; los errores de guardado muestran su causa y liberan la carga.
+
 ## 0.29.11#ESMERALDA - 2026-09-14
 
 ### Corregido
