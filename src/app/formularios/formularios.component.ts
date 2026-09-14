@@ -87,6 +87,10 @@ export class FormulariosComponent implements OnInit, OnDestroy {
       this.formularioIdRuta = params.get('id');
       this.editorMode = this.route.snapshot.routeConfig?.path !== 'formularios';
       this.editorTab = 'datos';
+      // La ruta de alta no tiene :id. Restablecer el editor antes de cargar
+      // evita que un formulario abierto anteriormente convierta el POST de
+      // creación en un PUT contra ese identificador.
+      if (this.editorMode && !this.formularioIdRuta) this.nuevo();
       this.cargar();
     });
   }
@@ -128,6 +132,7 @@ export class FormulariosComponent implements OnInit, OnDestroy {
 
   nuevo(camposIniciales: CampoInscripcion[] = []): void {
     this.selected = null;
+    this.formularioIdRuta = null;
     this.success = '';
     this.error = '';
     this.form.reset({ nombre: '', descripcion: '', estado: 'activo' });
