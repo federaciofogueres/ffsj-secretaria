@@ -124,7 +124,7 @@ describe('AsociadosGestionComponent', () => {
   });
 
   it('consulta cupos con el tipo real de la asociación', () => {
-    expect(secretariaService.getCargosCupos).toHaveBeenCalledWith(25, new Date().getFullYear(), 2);
+    expect(secretariaService.getCargosCupos).toHaveBeenCalledWith(25, new Date().getFullYear());
   });
 
   it('crea una solicitud conjunta con baja y cambio de cargo cuando se confirma el sustituto', () => {

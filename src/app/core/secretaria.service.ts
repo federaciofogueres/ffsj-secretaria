@@ -665,8 +665,8 @@ export class SecretariaService {
     });
   }
 
-  getCargosCupos(asociacionId: number, ejercicio: number, tipoAsociacion: number): Observable<{ cargos: CargoCupoSecretaria[] }> {
-    const params = new HttpParams().set('asociacionId', asociacionId).set('ejercicio', ejercicio).set('tipoAsociacion', tipoAsociacion);
+  getCargosCupos(asociacionId: number, ejercicio: number): Observable<{ cargos: CargoCupoSecretaria[] }> {
+    const params = new HttpParams().set('asociacionId', asociacionId).set('ejercicio', ejercicio);
     return this.http.get<{ cargos: CargoCupoSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/cargos/cupos`, {
       params,
       headers: this.authHeaders()
