@@ -6,6 +6,7 @@ import { CensoService } from '../core/censo.service';
 import { ErrorService } from '../core/error.service';
 import { Asociacion } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
+import { SecretariaService } from '../core/secretaria.service';
 import { LocationPickerComponent, StructuredLocation } from '../shared/location-picker.component';
 import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
@@ -74,6 +75,7 @@ export class AsociacionComponent implements OnInit {
   constructor(
     private readonly fb: FormBuilder,
     private readonly censoService: CensoService,
+    private readonly secretariaService: SecretariaService,
     private readonly errorService: ErrorService,
     readonly permissions: PermissionsService
   ) {}
@@ -117,15 +119,27 @@ export class AsociacionComponent implements OnInit {
     const payload = this.mapFormToPayload(formValue);
 
     this.saving = true;
-    this.censoService.updateAsociacion(payload.id, payload).subscribe({
-      next: asociacion => {
-        this.rawAssociation = asociacion;
-        this.association = this.mapAssociation(asociacion);
+    this.secretariaService.crearRegistroPendiente({
+      asociacionId: payload.id,
+      tipo: 'cambio',
+      datos: { tipoCambio: 'asociacion', propuestos: payload, solicitante: 'Asociación' },
+      datosOriginales: this.rawAssociation as Record<string, any>,
+      observaciones: 'Solicitud de modificación de datos de asociación'
+    }).subscribe({
+      next: pendiente => this.secretariaService.crearSolicitud({ asociacionId: payload.id, tipo: 'cambio', registroPendienteIds: [pendiente.id] }).subscribe({
+        next: () => {
         this.form.reset(this.association);
         this.form.disable({ emitEvent: false });
         this.isEditing = false;
         this.saving = false;
+        this.errorService.show('Los cambios se han enviado a Secretaría para su validación. Los datos oficiales no se modificarán hasta su aprobación.');
       },
+      error: response => {
+        this.saving = false;
+        this.error = this.saveErrorMessage(response);
+        this.errorService.show(this.error);
+      }
+      }),
       error: response => {
         this.saving = false;
         this.error = this.saveErrorMessage(response);
