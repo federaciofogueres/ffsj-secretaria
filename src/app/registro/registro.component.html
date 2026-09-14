@@ -102,7 +102,7 @@
           <div class="list-card-head">
             <div>
               <h2 class="h5 mb-1">Listado de documentacion</h2>
-              <p class="text-muted mb-0">Consulta la documentacion presentada por la asociacion y la solicitada por administracion.</p>
+              <p class="text-muted mb-0">Separa la documentacion recibida y enviada con trazabilidad de emisor.</p>
             </div>
             <a
               class="ux-btn ux-btn-sm"
@@ -116,16 +116,17 @@
             </a>
           </div>
           <div class="comm-tabs mb-3">
-            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'presentada'" [class.ux-btn-secondary]="docBandeja !== 'presentada'" (click)="setDocBandeja('presentada')">
-              Presentada
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'recibidas'" [class.ux-btn-secondary]="docBandeja !== 'recibidas'" (click)="setDocBandeja('recibidas')">
+              Recibidas
             </button>
-            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'solicitada'" [class.ux-btn-secondary]="docBandeja !== 'solicitada'" (click)="setDocBandeja('solicitada')">
-              Solicitada
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'enviadas'" [class.ux-btn-secondary]="docBandeja !== 'enviadas'" (click)="setDocBandeja('enviadas')">
+              Enviadas
             </button>
             <button class="ux-btn ux-btn-sm tab-with-count" type="button" [class.ux-btn-light]="docBandeja === 'nuevas'" [class.ux-btn-secondary]="docBandeja !== 'nuevas'" (click)="setDocBandeja('nuevas')">
               Nuevas
               <span class="tab-count">{{ documentacionNuevaCount }}</span>
             </button>
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'contestadas'" [class.ux-btn-secondary]="docBandeja !== 'contestadas'" (click)="setDocBandeja('contestadas')">Contestadas</button>
             <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="docBandeja === 'archivadas'" [class.ux-btn-secondary]="docBandeja !== 'archivadas'" (click)="setDocBandeja('archivadas')">
               Archivadas
             </button>
@@ -163,7 +164,7 @@
                 <strong>{{ ref.numero }}</strong>
                 <small>{{ ref.titulo }}</small>
                 <small class="registro-meta">
-                  Procedencia: {{ emisorRegistro(ref) }}
+                  Emisor: {{ emisorCompleto(ref) }}
                   <span>Dirigida a: {{ receptorRegistro(ref) }}</span>
                   <span>Creada: {{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
                   <span>Actualizada: {{ fechaActualizacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
@@ -188,7 +189,7 @@
           <div class="list-card-head">
             <div>
               <h2 class="h5 mb-1">Listado de comunicaciones</h2>
-              <p class="text-muted mb-0">Consulta comunicaciones realizadas y recibidas manteniendo el hilo completo.</p>
+              <p class="text-muted mb-0">Separa comunicaciones recibidas y enviadas manteniendo el hilo completo.</p>
             </div>
             <a
               class="ux-btn ux-btn-sm"
@@ -205,16 +206,15 @@
             </span>
           </div>
           <div class="comm-tabs mb-2">
-            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'realizadas'" [class.ux-btn-secondary]="commBandeja !== 'realizadas'" (click)="setCommBandeja('realizadas')">
-              Realizadas
-            </button>
             <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'recibidas'" [class.ux-btn-secondary]="commBandeja !== 'recibidas'" (click)="setCommBandeja('recibidas')">
               Recibidas
             </button>
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'enviadas'" [class.ux-btn-secondary]="commBandeja !== 'enviadas'" (click)="setCommBandeja('enviadas')">Enviadas</button>
             <button class="ux-btn ux-btn-sm tab-with-count" type="button" [class.ux-btn-light]="commBandeja === 'nuevas'" [class.ux-btn-secondary]="commBandeja !== 'nuevas'" (click)="setCommBandeja('nuevas')">
               Nuevas
               <span class="tab-count">{{ comunicacionesNuevasCount }}</span>
             </button>
+            <button class="ux-btn ux-btn-sm" type="button" [class.ux-btn-light]="commBandeja === 'contestadas'" [class.ux-btn-secondary]="commBandeja !== 'contestadas'" (click)="setCommBandeja('contestadas')">Contestadas</button>
           </div>
           <div class="registro-list" *ngIf="commRefs.length > 0; else emptyComms">
             <button
@@ -228,7 +228,8 @@
                 <strong>{{ ref.numero }}</strong>
                 <small>{{ ref.titulo }}</small>
                 <small class="registro-meta">
-                  Receptor: {{ receptorRegistro(ref) }}
+                  Emisor: {{ emisorCompleto(ref) }}
+                  <span>Receptor: {{ receptorRegistro(ref) }}</span>
                   <span>Creada: {{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
                   <span>Actualizada: {{ fechaActualizacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
                 </small>
@@ -266,12 +267,13 @@
             <div class="text-muted">{{ resultado.titulo }}</div>
           </div>
           <div class="registro-detail-meta mt-2" *ngIf="mode === 'comunicacion'">
+            <span>Emisor: <strong>{{ emisorCompleto(resultado) }}</strong></span>
             <span>Receptor: <strong>{{ receptorRegistro(resultado) }}</strong></span>
             <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
             <span>Ultima actualizacion: <strong>{{ fechaActualizacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
           </div>
           <div class="registro-detail-meta mt-2" *ngIf="mode === 'documentacion'">
-            <span>Procedencia: <strong>{{ emisorRegistro(resultado) }}</strong></span>
+            <span>Emisor: <strong>{{ emisorCompleto(resultado) }}</strong></span>
             <span>Dirigida a: <strong>{{ receptorRegistro(resultado) }}</strong></span>
             <span *ngIf="resultado.departamentoNombre">Área: <strong>{{ resultado.departamentoNombre }}</strong></span>
             <span *ngIf="resultado.destinatarioNombre">Destinatario: <strong>{{ resultado.destinatarioNombre }}</strong></span>
@@ -309,7 +311,7 @@
             <h2 class="h6 mb-2">Hilo de comunicacion</h2>
             <article class="thread-message" *ngFor="let mensaje of resultado.mensajes" [class.admin]="mensaje.actor === 'administracion'">
               <div class="d-flex justify-content-between gap-2 flex-wrap">
-                <strong>{{ mensaje.actor === 'administracion' ? 'Administracion' : 'Asociacion' }}</strong>
+                <strong>{{ emisorMensaje(mensaje.actor, mensaje.emisorPersona) }}</strong>
                 <small class="text-muted">{{ mensaje.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
               </div>
               <p class="mb-2">{{ mensaje.mensaje }}</p>

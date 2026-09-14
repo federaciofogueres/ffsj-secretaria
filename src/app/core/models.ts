@@ -252,6 +252,7 @@ export interface RegistroSecretaria {
   ejercicio?: number | null;
   tipo: 'documentacion' | 'comunicacion';
   origen: 'asociacion' | 'administracion';
+  emisorPersona?: string | null;
   titulo: string;
   mensaje?: string;
   responsable?: string | null;
@@ -289,6 +290,7 @@ export interface RegistroMensajeSecretaria {
   id: number;
   registroId: number;
   actor: 'asociacion' | 'administracion';
+  emisorPersona?: string | null;
   mensaje: string;
   createdAt: string;
   adjuntos: AdjuntoSecretaria[];
