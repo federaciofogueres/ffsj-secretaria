@@ -40,7 +40,7 @@ export class AppComponent implements OnInit, OnDestroy {
     { path: '/calendario', label: 'nav.calendar', icon: 'bi-calendar-event-fill', permission: 'inscripciones:read' },
     { path: '/inscripciones', label: 'nav.registrations', icon: 'bi-clipboard-check-fill', permission: 'inscripciones:read' },
     { path: '/formularios', label: 'nav.forms', icon: 'bi-ui-checks-grid', permission: 'inscripciones:write', adminOnly: true },
-    { path: '/ejercicios', label: 'nav.exercises', icon: 'bi-calendar2-range-fill', permission: 'admin:permissions', adminOnly: true },
+    { path: '/configuracion', label: 'Configuración', icon: 'bi-gear-fill', permission: 'admin:permissions', adminOnly: true },
     { path: '/registro', label: 'nav.record', icon: 'bi-inbox-fill', permission: 'registro:read' },
     { path: '/solicitudes', label: 'nav.requests', icon: 'bi-file-earmark-check-fill', permission: 'solicitudes:validate' },
     { path: '/admin', label: 'nav.permissions', icon: 'bi-shield-lock-fill', permission: 'admin:permissions', adminOnly: true }

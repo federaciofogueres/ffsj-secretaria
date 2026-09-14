@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.6#ESMERALDA - 2026-09-14
+
+### Añadido
+
+- Nueva sección administrativa de Configuración con Ejercicios y Registro.
+- Los destinatarios de Registro se asignan a responsables habilitados de Federación.
+
 ## 0.29.5#ESMERALDA - 2026-09-14
 
 ### Modificado

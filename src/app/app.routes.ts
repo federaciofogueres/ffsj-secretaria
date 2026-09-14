@@ -6,7 +6,7 @@ import { AsociacionComponent } from './asociacion/asociacion.component';
 import { AsociadosGestionComponent } from './asociados/asociados-gestion.component';
 import { AsociadosComponent } from './asociados/asociados.component';
 import { CalendarioComponent } from './calendario/calendario.component';
-import { EjerciciosComponent } from './ejercicios/ejercicios.component';
+import { ConfiguracionComponent } from './configuracion/configuracion.component';
 import { FormulariosComponent } from './formularios/formularios.component';
 import { HomeComponent } from './home/home.component';
 import { InscripcionesComponent } from './inscripciones/inscripciones.component';
@@ -133,14 +133,14 @@ export const routes: Routes = [
     }
   },
   {
-    path: 'ejercicios',
-    component: EjerciciosComponent,
-    title: 'Ejercicios',
+    path: 'configuracion',
+    component: ConfiguracionComponent,
+    title: 'Configuración',
     canActivate: [AuthGuard, permissionGuard, adminGuard],
     data: {
       permission: 'admin:permissions',
-      moduleName: 'Ejercicios',
-      moduleDescription: 'Gestion del ejercicio activo, fechas e inicio de datos desde el ejercicio anterior.'
+      moduleName: 'Configuración',
+      moduleDescription: 'Gestiona ejercicios y la configuración administrativa de Registro.'
     }
   },
   {

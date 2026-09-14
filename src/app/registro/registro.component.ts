@@ -34,10 +34,6 @@ export class RegistroComponent implements OnInit {
   docBandeja: DocumentacionBandeja = 'recibidas';
 
   destinatarios: RegistroDestinatario[] = [];
-  nuevoDepartamento = '';
-  nuevoDestinatario = '';
-  nuevoDestinatarioEmail = '';
-  guardandoDestinatario = false;
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -114,33 +110,6 @@ export class RegistroComponent implements OnInit {
 
   setMode(mode: Exclude<RegistroMode, null>): void {
     this.router.navigate(['/registro', mode]);
-  }
-
-  crearDestinatario(): void {
-    if (!this.isAdminMode || !this.permissions.hasPermission('registro:write')) return;
-    const departamento = this.nuevoDepartamento.trim();
-    const nombre = this.nuevoDestinatario.trim();
-    const email = this.nuevoDestinatarioEmail.trim();
-    if (!departamento || !nombre || !email) {
-      this.errorRegistros = 'Indica el departamento, la persona responsable y su correo.';
-      return;
-    }
-    this.guardandoDestinatario = true;
-    this.errorRegistros = '';
-    this.secretariaService.crearRegistroDestinatario({ departamento, nombre, email }).subscribe({
-      next: destinatario => {
-        this.destinatarios = [...this.destinatarios, destinatario]
-          .sort((a, b) => `${a.departamentoNombre} ${a.nombre}`.localeCompare(`${b.departamentoNombre} ${b.nombre}`, 'es'));
-        this.nuevoDepartamento = '';
-        this.nuevoDestinatario = '';
-        this.nuevoDestinatarioEmail = '';
-        this.guardandoDestinatario = false;
-      },
-      error: response => {
-        this.errorRegistros = response?.error?.message || 'No se ha podido crear el destinatario.';
-        this.guardandoDestinatario = false;
-      }
-    });
   }
 
   resetMode(): void {

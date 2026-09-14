@@ -22,6 +22,7 @@ import {
   JustificanteSecretaria,
   RegistroMensajeSecretaria,
   RegistroDestinatario,
+  RegistroResponsable,
   RegistroPendiente,
   RegistroSecretaria,
   ResponsableInscripcion,
@@ -336,7 +337,13 @@ export class SecretariaService {
     });
   }
 
-  crearRegistroDestinatario(payload: { departamento: string; nombre: string; email: string }): Observable<RegistroDestinatario> {
+  getRegistroResponsables(): Observable<{ responsables: RegistroResponsable[] }> {
+    return this.http.get<{ responsables: RegistroResponsable[] }>(`${this.apiUrl.secretariaBasePath}/registros/responsables`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearRegistroDestinatario(payload: { departamento: string; responsableId: number; email: string }): Observable<RegistroDestinatario> {
     return this.http.post<RegistroDestinatario>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, payload, {
       headers: this.authHeaders()
     });

@@ -271,11 +271,20 @@ export interface RegistroSecretaria {
 
 export interface RegistroDestinatario {
   id: number;
+  responsableId?: number | null;
   nombre: string;
   email?: string | null;
   departamentoId: number;
   departamentoCodigo: string;
   departamentoNombre: string;
+}
+
+export interface RegistroResponsable {
+  id: number;
+  nombre: string;
+  apellidos: string;
+  nombreCompleto: string;
+  imagen?: string | null;
 }
 
 export interface RegistroEventoSecretaria {
