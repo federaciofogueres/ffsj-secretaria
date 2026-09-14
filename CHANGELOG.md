@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.29.13#ESMERALDA - 2026-09-14
+
+### Corregido
+
+- Hotfix de 0.29.10–0.29.12: Registro muestra y conserva responsables habilitados, y permite eliminar destinatarios de forma persistente.
+- El formulario de alta conserva representantes legales que la solicitud usa para el documento descargable.
+- Cupos y cargos consulta la API con la asociación y el ejercicio; la API determina su tipo real y filtra los cargos aplicables.
+- El editor permite crear el primer formulario sin reutilizar un identificador de edición ni bloquear la carga.
+
 ## 0.29.12#ESMERALDA - 2026-09-14
 
 ### Corregido

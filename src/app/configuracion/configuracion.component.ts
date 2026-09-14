@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { EjerciciosComponent } from '../ejercicios/ejercicios.component';
 import { RegistroDestinatario, RegistroResponsable } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
+import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 
 @Component({
   selector: 'app-configuracion', standalone: true,
-  imports: [CommonModule, FormsModule, EjerciciosComponent],
+  imports: [CommonModule, FormsModule, EjerciciosComponent, ConfirmDialogComponent],
   templateUrl: './configuracion.component.html', styleUrls: ['./configuracion.component.scss']
 })
 export class ConfiguracionComponent implements OnInit {
@@ -19,6 +20,7 @@ export class ConfiguracionComponent implements OnInit {
   email = '';
   loading = false;
   error = '';
+  destinatarioPendienteDeEliminar: RegistroDestinatario | null = null;
 
   constructor(private readonly secretaria: SecretariaService) {}
 
@@ -45,6 +47,33 @@ export class ConfiguracionComponent implements OnInit {
     this.secretaria.actualizarRegistroDestinatario(item.id, { responsableId: item.responsableId, email: item.email }).subscribe({
       next: actualizado => { this.destinatarios = this.destinatarios.map(actual => actual.id === actualizado.id ? actualizado : actual); this.loading = false; },
       error: response => { this.error = response?.error?.message || 'No se ha podido actualizar el destinatario.'; this.loading = false; }
+    });
+  }
+
+  solicitarEliminarDestinatario(item: RegistroDestinatario): void {
+    if (!this.loading) this.destinatarioPendienteDeEliminar = item;
+  }
+
+  cancelarEliminarDestinatario(): void {
+    this.destinatarioPendienteDeEliminar = null;
+  }
+
+  confirmarEliminarDestinatario(): void {
+    const item = this.destinatarioPendienteDeEliminar;
+    if (!item || this.loading) return;
+    this.loading = true;
+    this.error = '';
+    this.secretaria.eliminarRegistroDestinatario(item.id).subscribe({
+      next: () => {
+        this.destinatarioPendienteDeEliminar = null;
+        // Recargar desde la API comprueba el estado persistido y evita una baja
+        // únicamente visual si el servidor aplica reglas adicionales.
+        this.secretaria.getRegistroDestinatarios().subscribe({
+          next: response => { this.destinatarios = response.destinatarios; this.loading = false; },
+          error: response => { this.error = response?.error?.message || 'El destinatario se ha eliminado, pero no se ha podido actualizar el listado.'; this.loading = false; }
+        });
+      },
+      error: response => { this.error = response?.error?.message || 'No se ha podido eliminar el destinatario.'; this.loading = false; }
     });
   }
 }

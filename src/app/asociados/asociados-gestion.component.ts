@@ -195,7 +195,7 @@ export class AsociadosGestionComponent implements OnInit {
   cargarCupos(): void {
     const ejercicio = Number(this.ejercicioService.selectedSnapshot?.ejercicio || new Date().getFullYear());
     if (!this.asociacionId || !ejercicio || !this.tipoAsociacion) return;
-    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio, this.tipoAsociacion).subscribe({
+    this.secretariaService.getCargosCupos(this.asociacionId, ejercicio).subscribe({
       next: response => {
         this.cuposCargos = response.cargos;
         this.errorCupos = '';
