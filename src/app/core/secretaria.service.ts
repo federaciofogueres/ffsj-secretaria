@@ -355,6 +355,10 @@ export class SecretariaService {
     });
   }
 
+  eliminarRegistroDestinatario(id: number): Observable<{ ok: boolean }> {
+    return this.http.delete<{ ok: boolean }>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios/${id}`, { headers: this.authHeaders() });
+  }
+
   crearRegistro(payload: unknown): Observable<RegistroSecretaria> {
     return this.http.post<RegistroSecretaria>(`${this.apiUrl.secretariaBasePath}/registros`, payload, {
       headers: this.authHeaders()
