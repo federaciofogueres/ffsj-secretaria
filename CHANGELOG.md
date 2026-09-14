@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.5#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- Registro separa documentación y comunicaciones recibidas, enviadas, nuevas, contestadas y archivadas según corresponda.
+- Los listados y detalles identifican la entidad y persona emisora.
+
 ## 0.29.4#ESMERALDA - 2026-09-13
 
 ### Añadido
