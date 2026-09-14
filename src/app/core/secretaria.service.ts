@@ -22,6 +22,7 @@ import {
   JustificanteSecretaria,
   RegistroMensajeSecretaria,
   RegistroDestinatario,
+  RegistroResponsable,
   RegistroPendiente,
   RegistroSecretaria,
   ResponsableInscripcion,
@@ -336,7 +337,13 @@ export class SecretariaService {
     });
   }
 
-  crearRegistroDestinatario(payload: { departamento: string; nombre: string; email: string }): Observable<RegistroDestinatario> {
+  getRegistroResponsables(): Observable<{ responsables: RegistroResponsable[] }> {
+    return this.http.get<{ responsables: RegistroResponsable[] }>(`${this.apiUrl.secretariaBasePath}/registros/responsables`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearRegistroDestinatario(payload: { departamento: string; responsableId: number; email: string }): Observable<RegistroDestinatario> {
     return this.http.post<RegistroDestinatario>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, payload, {
       headers: this.authHeaders()
     });
@@ -468,10 +475,20 @@ export class SecretariaService {
     });
   }
 
-  getFormularios(includeInactive = false): Observable<{ formularios: FormularioInscripcion[] }> {
-    const params = includeInactive ? new HttpParams().set('includeInactive', 'true') : undefined;
-    return this.http.get<{ formularios: FormularioInscripcion[] }>(`${this.apiUrl.secretariaBasePath}/formularios`, {
+  getFormularios(includeInactive = false, filtros: { page?: number; pageSize?: number; busqueda?: string; estado?: string; orden?: string } = {}): Observable<{ formularios: FormularioInscripcion[]; paginacion: PaginacionSecretaria }> {
+    let params = new HttpParams().set('page', String(filtros.page || 1)).set('pageSize', String(filtros.pageSize || 20));
+    if (includeInactive) params = params.set('includeInactive', 'true');
+    if (filtros.busqueda) params = params.set('busqueda', filtros.busqueda);
+    if (filtros.estado) params = params.set('estado', filtros.estado);
+    if (filtros.orden) params = params.set('orden', filtros.orden);
+    return this.http.get<{ formularios: FormularioInscripcion[]; paginacion: PaginacionSecretaria }>(`${this.apiUrl.secretariaBasePath}/formularios`, {
       params,
+      headers: this.authHeaders()
+    });
+  }
+
+  getInscripcionesFormulario(id: string): Observable<{ inscripciones: InscripcionSecretaria[] }> {
+    return this.http.get<{ inscripciones: InscripcionSecretaria[] }>(`${this.apiUrl.secretariaBasePath}/formularios/${id}/inscripciones`, {
       headers: this.authHeaders()
     });
   }

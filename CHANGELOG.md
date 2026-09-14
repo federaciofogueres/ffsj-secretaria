@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.29.9#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- El listado administrativo de Solicitudes abre filtrado por estado Enviada; el filtro sigue pudiendo modificarse o eliminarse.
+
+## 0.29.8#ESMERALDA - 2026-09-14
+
+### Añadido
+
+- El alta de menores incluye representantes legales, que se conservan en la solicitud.
+
+## 0.29.7#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- Los cambios de Datos de asociación se envían ahora como solicitud de validación, conservando los datos oficiales hasta la decisión administrativa.
+
+## 0.29.6#ESMERALDA - 2026-09-14
+
+### Añadido
+
+- Nueva sección administrativa de Configuración con Ejercicios y Registro.
+- Los destinatarios de Registro se asignan a responsables habilitados de Federación.
+
+## 0.29.5#ESMERALDA - 2026-09-14
+
+### Modificado
+
+- Registro separa documentación y comunicaciones recibidas, enviadas, nuevas, contestadas y archivadas según corresponda.
+- Los listados y detalles identifican la entidad y persona emisora.
+
+## 0.29.4#ESMERALDA - 2026-09-13
+
+### Añadido
+
+- El listado de formularios permite buscar, filtrar, ordenar y paginar plantillas.
+- La edición de una plantilla muestra sus inscripciones asociadas y permite abrirlas directamente.
+
 ## 0.29.3#ESMERALDA - 2026-09-13
 
 ### AÃ±adido

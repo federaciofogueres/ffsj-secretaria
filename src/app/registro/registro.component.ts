@@ -16,8 +16,8 @@ import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component
 import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
-type DocumentacionBandeja = 'presentada' | 'solicitada' | 'nuevas' | 'archivadas';
-type ComunicacionBandeja = 'realizadas' | 'recibidas' | 'nuevas';
+type DocumentacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas' | 'archivadas';
+type ComunicacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas';
 type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
 
 @Component({
@@ -31,13 +31,9 @@ export class RegistroComponent implements OnInit {
   mode: RegistroMode = null;
   formMode: Exclude<RegistroMode, null> | null = null;
   detailMode: Exclude<RegistroMode, null> | null = null;
-  docBandeja: DocumentacionBandeja = 'presentada';
+  docBandeja: DocumentacionBandeja = 'recibidas';
 
   destinatarios: RegistroDestinatario[] = [];
-  nuevoDepartamento = '';
-  nuevoDestinatario = '';
-  nuevoDestinatarioEmail = '';
-  guardandoDestinatario = false;
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -68,7 +64,7 @@ export class RegistroComponent implements OnInit {
   paginacion: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
   autorizacionesAlta: AutorizacionAlta[] = [];
   autorizacionDetalle: AutorizacionAlta | null = null;
-  commBandeja: ComunicacionBandeja = 'realizadas';
+  commBandeja: ComunicacionBandeja = 'recibidas';
   asociaciones: Asociacion[] = [];
   respuestaComunicacion = '';
   loadingRegistros = false;
@@ -94,7 +90,7 @@ export class RegistroComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.commBandeja = this.isAdminMode ? 'recibidas' : 'realizadas';
+    this.commBandeja = 'recibidas';
     this.applyRouteState();
     this.cargarRegistros();
     this.secretariaService.getRegistroDestinatarios().subscribe({
@@ -114,33 +110,6 @@ export class RegistroComponent implements OnInit {
 
   setMode(mode: Exclude<RegistroMode, null>): void {
     this.router.navigate(['/registro', mode]);
-  }
-
-  crearDestinatario(): void {
-    if (!this.isAdminMode || !this.permissions.hasPermission('registro:write')) return;
-    const departamento = this.nuevoDepartamento.trim();
-    const nombre = this.nuevoDestinatario.trim();
-    const email = this.nuevoDestinatarioEmail.trim();
-    if (!departamento || !nombre || !email) {
-      this.errorRegistros = 'Indica el departamento, la persona responsable y su correo.';
-      return;
-    }
-    this.guardandoDestinatario = true;
-    this.errorRegistros = '';
-    this.secretariaService.crearRegistroDestinatario({ departamento, nombre, email }).subscribe({
-      next: destinatario => {
-        this.destinatarios = [...this.destinatarios, destinatario]
-          .sort((a, b) => `${a.departamentoNombre} ${a.nombre}`.localeCompare(`${b.departamentoNombre} ${b.nombre}`, 'es'));
-        this.nuevoDepartamento = '';
-        this.nuevoDestinatario = '';
-        this.nuevoDestinatarioEmail = '';
-        this.guardandoDestinatario = false;
-      },
-      error: response => {
-        this.errorRegistros = response?.error?.message || 'No se ha podido crear el destinatario.';
-        this.guardandoDestinatario = false;
-      }
-    });
   }
 
   resetMode(): void {
@@ -252,8 +221,9 @@ export class RegistroComponent implements OnInit {
       if (this.docBandeja === 'archivadas') return registro.estado === 'archivada';
       if (registro.estado === 'archivada') return false;
       if (this.docBandeja === 'nuevas') return this.esRegistroNuevo(registro);
-      if (this.docBandeja === 'presentada') return registro.origen === this.actorActual;
-      return registro.origen !== this.actorActual && registro.estado !== 'enviada';
+      if (this.docBandeja === 'recibidas') return registro.origen !== this.actorActual;
+      if (this.docBandeja === 'enviadas') return registro.origen === this.actorActual;
+      return registro.origen === this.actorActual && registro.estado !== 'enviada';
     });
   }
 
@@ -261,8 +231,9 @@ export class RegistroComponent implements OnInit {
     return this.registros.filter(registro => {
       if (registro.tipo !== 'comunicacion') return false;
       if (this.commBandeja === 'nuevas') return this.esRegistroNuevo(registro);
-      if (this.commBandeja === 'realizadas') return registro.origen === this.actorActual;
-      return registro.origen !== this.actorActual && registro.estado !== 'enviada';
+      if (this.commBandeja === 'recibidas') return registro.origen !== this.actorActual;
+      if (this.commBandeja === 'enviadas') return registro.origen === this.actorActual;
+      return registro.origen === this.actorActual && registro.estado !== 'enviada';
     });
   }
 
@@ -273,16 +244,16 @@ export class RegistroComponent implements OnInit {
     if (this.docBandeja === 'archivadas') {
       return 'No hay documentacion archivada.';
     }
-    return this.docBandeja === 'presentada'
-      ? 'No hay documentacion presentada.'
-      : 'No hay documentacion solicitada.';
+    if (this.docBandeja === 'enviadas') return 'No hay documentacion enviada.';
+    if (this.docBandeja === 'contestadas') return 'No hay documentacion contestada.';
+    return 'No hay documentacion recibida.';
   }
 
   get autorizacionesFirmaVisibles(): AutorizacionAlta[] {
     if (this.isAdminMode || this.mode !== 'documentacion') {
       return [];
     }
-    if (!['nuevas', 'solicitada', 'archivadas'].includes(this.docBandeja)) {
+    if (!['nuevas', 'recibidas', 'archivadas'].includes(this.docBandeja)) {
       return [];
     }
     return this.docBandeja === 'archivadas'
@@ -301,9 +272,9 @@ export class RegistroComponent implements OnInit {
     if (this.commBandeja === 'nuevas') {
       return 'No hay comunicaciones nuevas.';
     }
-    return this.commBandeja === 'realizadas'
-      ? 'No hay comunicaciones realizadas.'
-      : 'No hay comunicaciones recibidas.';
+    if (this.commBandeja === 'enviadas') return 'No hay comunicaciones enviadas.';
+    if (this.commBandeja === 'contestadas') return 'No hay comunicaciones contestadas.';
+    return 'No hay comunicaciones recibidas.';
   }
 
   submitDoc(): void {
@@ -328,7 +299,7 @@ export class RegistroComponent implements OnInit {
       switchMap(registro => this.secretariaService.getRegistro(registro.id))
     ).subscribe({
       next: registro => {
-        this.docBandeja = 'presentada';
+        this.docBandeja = 'enviadas';
         this.docResultado = registro;
         this.formMode = null;
         this.detailMode = 'documentacion';
@@ -369,7 +340,7 @@ export class RegistroComponent implements OnInit {
       switchMap(registro => this.secretariaService.getRegistro(registro.id))
     ).subscribe({
       next: registro => {
-        this.commBandeja = 'realizadas';
+        this.commBandeja = 'enviadas';
         this.commResultado = registro;
         this.formMode = null;
         this.detailMode = 'comunicacion';
@@ -514,6 +485,14 @@ export class RegistroComponent implements OnInit {
       return 'Administracion';
     }
     return this.asociacionNombreById(registro.asociacionId);
+  }
+
+  emisorCompleto(registro: RegistroSecretaria): string {
+    return `${this.emisorRegistro(registro)} · ${registro.emisorPersona || 'Usuario no disponible'}`;
+  }
+
+  emisorMensaje(actor: 'asociacion' | 'administracion', persona?: string | null): string {
+    return `${actor === 'administracion' ? 'Administracion / FFSJ' : 'Asociacion'} · ${persona || 'Usuario no disponible'}`;
   }
 
   fechaCreacionRegistro(registro: RegistroSecretaria): string {
@@ -790,26 +769,35 @@ export class RegistroComponent implements OnInit {
     const origenEntrante = this.actorActual === 'administracion' ? 'asociacion' : 'administracion';
     filters.tipo = this.mode;
     if (this.mode === 'documentacion') {
-      if (this.docBandeja === 'presentada') filters.origen = this.actorActual;
-      if (this.docBandeja === 'solicitada') {
+      if (this.docBandeja === 'recibidas') {
         filters.origen = origenEntrante;
-        filters.estadosExcluidos = 'enviada,archivada';
       }
       if (this.docBandeja === 'nuevas') {
         filters.origen = origenEntrante;
         filters.estado = 'enviada';
       }
       if (this.docBandeja === 'archivadas') filters.estado = 'archivada';
+      if (this.docBandeja === 'enviadas') {
+        filters.origen = this.actorActual;
+        filters.estadosExcluidos = 'archivada';
+      }
+      if (this.docBandeja === 'contestadas') {
+        filters.origen = this.actorActual;
+        filters.estadosExcluidos = 'enviada,archivada';
+      }
       return;
     }
-    if (this.commBandeja === 'realizadas') filters.origen = this.actorActual;
+    if (this.commBandeja === 'enviadas') filters.origen = this.actorActual;
     if (this.commBandeja === 'recibidas') {
       filters.origen = origenEntrante;
-      filters.estadosExcluidos = 'enviada';
     }
     if (this.commBandeja === 'nuevas') {
       filters.origen = origenEntrante;
       filters.estado = 'enviada';
+    }
+    if (this.commBandeja === 'contestadas') {
+      filters.origen = this.actorActual;
+      filters.estadosExcluidos = 'enviada';
     }
   }
 
@@ -856,10 +844,10 @@ export class RegistroComponent implements OnInit {
     }
 
     const bandeja = this.route.snapshot.queryParamMap.get('bandeja');
-    if (bandeja === 'solicitada' || bandeja === 'presentada' || bandeja === 'nuevas' || bandeja === 'archivadas') {
+    if (bandeja === 'recibidas' || bandeja === 'enviadas' || bandeja === 'nuevas' || bandeja === 'contestadas' || bandeja === 'archivadas') {
       this.docBandeja = bandeja;
     }
-    if (bandeja === 'recibidas' || bandeja === 'realizadas' || bandeja === 'nuevas') {
+    if (bandeja === 'recibidas' || bandeja === 'enviadas' || bandeja === 'nuevas' || bandeja === 'contestadas') {
       this.commBandeja = bandeja;
     }
     if (this.route.snapshot.queryParamMap.get('filtro') === 'nuevas') {
