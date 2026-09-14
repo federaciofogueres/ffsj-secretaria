@@ -38,4 +38,13 @@ export class ConfiguracionComponent implements OnInit {
       error: response => { this.error = response?.error?.message || 'No se ha podido guardar el destinatario.'; this.loading = false; }
     });
   }
+
+  actualizarDestinatario(item: RegistroDestinatario): void {
+    if (!item.responsableId || !item.email) { this.error = 'Indica responsable y correo.'; return; }
+    this.loading = true; this.error = '';
+    this.secretaria.actualizarRegistroDestinatario(item.id, { responsableId: item.responsableId, email: item.email }).subscribe({
+      next: actualizado => { this.destinatarios = this.destinatarios.map(actual => actual.id === actualizado.id ? actualizado : actual); this.loading = false; },
+      error: response => { this.error = response?.error?.message || 'No se ha podido actualizar el destinatario.'; this.loading = false; }
+    });
+  }
 }
