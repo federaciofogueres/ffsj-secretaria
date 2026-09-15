@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.17#ESMERALDA - 2026-09-15
+
+### Corregido
+
+- Inscripciones conserva un borrador global con el `FormGroup` canónico, participantes y búsquedas por inscripción al navegar entre pestañas o volver a cargar el detalle.
+- La cobertura de regresión valida creación, edición, guardado y recuperación de todos los tipos de campo dinámico, incluidos selectores, responsable y asociados.
+
 ## 0.29.16#ESMERALDA - 2026-09-15
 
 ### Corregido
