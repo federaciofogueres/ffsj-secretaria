@@ -27,6 +27,7 @@ import {
   RegistroSecretaria,
   ResponsableInscripcion,
   PaginacionSecretaria,
+  SolicitudModificacionAsociacion,
   SolicitudSecretaria,
   SolicitudTipo,
   SoporteCategoria,
@@ -126,6 +127,17 @@ export class SecretariaService {
     return this.http.post<RegistroPendiente>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, this.withEjercicio(payload), {
       headers: this.authHeaders()
     });
+  }
+
+  crearSolicitudModificacionAsociacion(payload: {
+    datosActuales: Record<string, unknown>;
+    datosPropuestos: Record<string, unknown>;
+  }): Observable<SolicitudModificacionAsociacion> {
+    return this.http.post<SolicitudModificacionAsociacion>(
+      `${this.apiUrl.secretariaBasePath}/solicitudes-modificacion-asociacion`,
+      payload,
+      { headers: this.authHeaders() }
+    );
   }
 
   descartarRegistroPendiente(id: number, asociacionId: number): Observable<unknown> {
