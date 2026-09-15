@@ -4,6 +4,7 @@ import { AuthService } from 'ffsj-web-components';
 import { Subject } from 'rxjs';
 
 import { LoginComponent } from './login.component';
+import { CensoService } from '../core/censo.service';
 
 describe('LoginComponent', () => {
   it('redirige al inicio cuando el login de asociacion es correcto', () => {
@@ -12,7 +13,8 @@ describe('LoginComponent', () => {
       loginStatusObservable: new Subject<boolean>().asObservable()
     });
     const zone = { run: (work: () => void) => work() } as NgZone;
-    const component = new LoginComponent(router, auth, zone);
+    const censo = jasmine.createSpyObj<CensoService>('CensoService', ['loginAsociacionQr']);
+    const component = new LoginComponent(router, auth, censo, zone);
 
     component.onLogStatus(true);
 
@@ -25,7 +27,8 @@ describe('LoginComponent', () => {
       loginStatusObservable: new Subject<boolean>().asObservable()
     });
     const zone = { run: (work: () => void) => work() } as NgZone;
-    const component = new LoginComponent(router, auth, zone);
+    const censo = jasmine.createSpyObj<CensoService>('CensoService', ['loginAsociacionQr']);
+    const component = new LoginComponent(router, auth, censo, zone);
 
     component.onLogStatus(false);
 
@@ -39,7 +42,8 @@ describe('LoginComponent', () => {
       loginStatusObservable: loginStatus.asObservable()
     });
     const zone = { run: (work: () => void) => work() } as NgZone;
-    const component = new LoginComponent(router, auth, zone);
+    const censo = jasmine.createSpyObj<CensoService>('CensoService', ['loginAsociacionQr']);
+    const component = new LoginComponent(router, auth, censo, zone);
 
     component.ngOnInit();
     loginStatus.next(true);
@@ -55,7 +59,8 @@ describe('LoginComponent', () => {
       loginStatusObservable: loginStatus.asObservable()
     });
     const zone = { run: (work: () => void) => work() } as NgZone;
-    const component = new LoginComponent(router, auth, zone);
+    const censo = jasmine.createSpyObj<CensoService>('CensoService', ['loginAsociacionQr']);
+    const component = new LoginComponent(router, auth, censo, zone);
 
     component.ngOnInit();
     component.onLogStatus(true);
