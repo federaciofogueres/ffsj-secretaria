@@ -312,7 +312,7 @@
             <div *ngIf="!loading && solicitudes.length === 0" class="text-muted">
               {{ filtroSolicitudes === 'incidencias' ? 'No hay solicitudes con incidencias.' : 'No hay solicitudes registradas.' }}
             </div>
-            <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
+            <lib-ffsj-spinner *ngIf="loading" [fullscreen]="true"></lib-ffsj-spinner>
           </div>
           <div class="list-pager" *ngIf="totalSolicitudes > 0">
             <span>{{ totalSolicitudes }} solicitudes · Página {{ paginaSolicitudes }} de {{ totalPaginasSolicitudes }}</span>

@@ -1,16 +1,17 @@
-<section class="card border-0 shadow-sm solicitudes-modificacion">
+<lib-ffsj-spinner *ngIf="loading || resolving" [fullscreen]="true"></lib-ffsj-spinner>
+
+<section class="card border-0 shadow-sm solicitudes-modificacion" *ngIf="!loading && !resolving">
   <div class="card-body p-4 p-md-5">
     <header class="d-flex justify-content-between align-items-start gap-3 mb-4">
       <div><p class="ux-overline mb-1">Administración</p><h1 class="h4 mb-1">Cambios de datos de asociación</h1><p class="text-muted mb-0">Revisa valores oficiales y propuestos antes de resolver.</p></div>
       <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cargar()">Actualizar</button>
     </header>
     <p *ngIf="error" class="alert alert-danger">{{ error }}</p>
-    <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
-    <div class="table-responsive" *ngIf="!loading"><table class="table align-middle"><thead><tr><th>Asociación</th><th>Solicitante</th><th>Fecha</th><th></th></tr></thead><tbody><tr *ngFor="let solicitud of solicitudes"><td>{{ asociacionNombres[solicitud.asociacionId] || ('Asociación #' + solicitud.asociacionId) }}</td><td>{{ solicitud.solicitante.nombre }}</td><td>{{ solicitud.fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</td><td class="text-end"><button class="btn btn-outline-secondary btn-sm" (click)="seleccionar(solicitud)">Revisar</button></td></tr><tr *ngIf="!solicitudes.length"><td colspan="4" class="text-center text-muted py-4">No hay solicitudes pendientes.</td></tr></tbody></table></div>
+    <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Asociación</th><th>Solicitante</th><th>Fecha</th><th></th></tr></thead><tbody><tr *ngFor="let solicitud of solicitudes"><td>{{ asociacionNombres[solicitud.asociacionId] || ('Asociación #' + solicitud.asociacionId) }}</td><td>{{ solicitud.solicitante.nombre }}</td><td>{{ solicitud.fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</td><td class="text-end"><button class="btn btn-outline-secondary btn-sm" (click)="seleccionar(solicitud)">Revisar</button></td></tr><tr *ngIf="!solicitudes.length"><td colspan="4" class="text-center text-muted py-4">No hay solicitudes pendientes.</td></tr></tbody></table></div>
   </div>
 </section>
 
-<section *ngIf="seleccionada" class="card border-0 shadow-sm mt-4 solicitudes-modificacion">
+<section *ngIf="seleccionada && !loading && !resolving" class="card border-0 shadow-sm mt-4 solicitudes-modificacion">
   <div class="card-body p-4"><header class="d-flex justify-content-between gap-3"><div><p class="ux-overline mb-1">Solicitud #{{ seleccionada.id }}</p><h2 class="h5">Asociación #{{ seleccionada.asociacionId }} · {{ seleccionada.solicitante.nombre }}</h2></div><span class="badge text-bg-warning">Pendiente</span></header>
     <div class="table-responsive mt-3"><table class="table table-sm comparison"><thead><tr><th>Campo</th><th>Valor actual</th><th>Valor propuesto</th></tr></thead><tbody><tr *ngFor="let cambio of cambios()"><th>{{ cambio.campo }}</th><td>{{ cambio.actual }}</td><td>{{ cambio.propuesto }}</td></tr><tr *ngIf="!cambios().length"><td colspan="3" class="text-muted">No hay diferencias.</td></tr></tbody></table></div>
     <footer class="d-flex gap-2 justify-content-end"><button class="btn btn-outline-danger" type="button" [disabled]="resolving" (click)="resolver('rechazada')">Rechazar</button><button class="btn btn-success" type="button" [disabled]="resolving" (click)="resolver('aprobada')">Aprobar y aplicar cambios</button></footer>

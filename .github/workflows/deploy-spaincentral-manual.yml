@@ -1,4 +1,4 @@
-name: Deploy Secretaria frontend to Spain Central APIs
+name: Deploy frontend manually
 
 on:
   workflow_dispatch:
@@ -7,6 +7,18 @@ on:
         description: Rama, tag o SHA a desplegar
         required: true
         type: string
+      target:
+        description: Entorno de destino
+        required: true
+        default: prod
+        type: choice
+        options: [dev, prod]
+      api_environment:
+        description: Perfil de APIs en Spain Central
+        required: true
+        default: PROD-spain-central
+        type: choice
+        options: [DEV-spain-central, PROD-spain-central]
 
 permissions:
   contents: write
@@ -14,7 +26,7 @@ permissions:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    environment: frontend-spaincentral
+    environment: ${{ inputs.api_environment }}
     steps:
       - name: Checkout selected revision
         uses: actions/checkout@v5
@@ -29,7 +41,7 @@ jobs:
         run: npm ci
       - name: Build Angular
         run: npm run build:prod -- --base-href /
-      - name: Configure Spain Central API URLs
+      - name: Configure API URLs
         env:
           FFSJ_CENSO_API_BASE_PATH: ${{ vars.FFSJ_CENSO_API_BASE_PATH }}
           FFSJ_SECRETARIA_API_BASE_PATH: ${{ vars.FFSJ_SECRETARIA_API_BASE_PATH }}
@@ -48,10 +60,10 @@ jobs:
             'RewriteRule . /index.html [L]' \
             '</IfModule>' \
             > ./dist/ffsj-secretaria/browser/.htaccess
-      - name: Deploy to production branch
+      - name: Deploy selected target
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_branch: deploy
+          publish_branch: ${{ inputs.target == 'prod' && 'deploy' || 'deploy-develop' }}
           publish_dir: ./dist/ffsj-secretaria/browser
           force_orphan: true
