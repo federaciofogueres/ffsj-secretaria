@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.18#ESMERALDA - 2026-09-15
+
+### Modificado
+
+- La versión mostrada por Secretaría se deriva durante el build de `package.json`; la metadata de release `0.29.18+esmeralda` se presenta como `0.29.18#ESMERALDA` sin valores hardcodeados en componentes.
+
 ## 0.29.17#ESMERALDA - 2026-09-15
 
 ### Corregido
