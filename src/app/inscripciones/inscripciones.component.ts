@@ -245,6 +245,14 @@ export class InscripcionesComponent implements OnInit {
     return Boolean(field.required);
   }
 
+  fieldControl(field: CampoInscripcion): FormControl {
+    const control = this.form.get(field.key);
+    if (!(control instanceof FormControl)) {
+      throw new Error(`No existe el control del campo de inscripcion ${field.key}`);
+    }
+    return control;
+  }
+
   fieldInputId(field: CampoInscripcion): string {
     return `inscripcion-campo-${String(field.key).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
   }

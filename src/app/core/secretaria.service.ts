@@ -143,7 +143,10 @@ export class SecretariaService {
   getSolicitudesModificacionAsociacionAdmin(estado: 'pendiente' | 'aprobada' | 'rechazada' = 'pendiente'): Observable<{ solicitudes: SolicitudModificacionAsociacion[] }> {
     return this.http.get<{ solicitudes: SolicitudModificacionAsociacion[] }>(
       `${this.apiUrl.secretariaBasePath}/admin/solicitudes-modificacion-asociacion`,
-      { params: new HttpParams().set('estado', estado), headers: this.authHeaders() }
+      {
+        params: new HttpParams().set('estado', estado).set('_refresh', String(Date.now())),
+        headers: this.authHeaders()
+      }
     );
   }
 
