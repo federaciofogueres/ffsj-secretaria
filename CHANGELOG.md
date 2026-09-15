@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.29.15#ESMERALDA - 2026-09-15
+
+### Corregido
+
+- Datos de asociación envía cambios para validación mediante una solicitud independiente; no actualiza los datos oficiales ni usa el flujo de asociados.
+- Administración dispone de la bandeja de cambios de asociación para comparar valores actuales y propuestos, aprobar o rechazar.
+
+
 ## 0.29.13#ESMERALDA - 2026-09-14
 
 ### Corregido

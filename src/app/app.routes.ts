@@ -13,6 +13,7 @@ import { InscripcionesComponent } from './inscripciones/inscripciones.component'
 import { LoginComponent } from './login/login.component';
 import { RegistroComponent } from './registro/registro.component';
 import { SolicitudesComponent } from './solicitudes/solicitudes.component';
+import { SolicitudesModificacionAsociacionComponent } from './solicitudes-modificacion-asociacion/solicitudes-modificacion-asociacion.component';
 import { SoporteComponent } from './soporte/soporte.component';
 import { SoporteAdminComponent } from './soporte/soporte-admin.component';
 import { adminGuard } from './core/admin.guard';
@@ -207,6 +208,17 @@ export const routes: Routes = [
       permission: 'solicitudes:validate',
       moduleName: 'Solicitudes',
       moduleDescription: 'Revision y validacion de solicitudes enviadas por las asociaciones.'
+    }
+  },
+  {
+    path: 'solicitudes-modificacion-asociacion',
+    component: SolicitudesModificacionAsociacionComponent,
+    title: 'Cambios de asociacion',
+    canActivate: [AuthGuard, permissionGuard, adminGuard],
+    data: {
+      permission: 'admin:access',
+      moduleName: 'Cambios de asociacion',
+      moduleDescription: 'Revision administrativa de cambios propuestos por asociaciones.'
     }
   },
   {

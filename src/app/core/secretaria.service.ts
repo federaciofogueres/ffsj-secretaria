@@ -27,6 +27,7 @@ import {
   RegistroSecretaria,
   ResponsableInscripcion,
   PaginacionSecretaria,
+  SolicitudModificacionAsociacion,
   SolicitudSecretaria,
   SolicitudTipo,
   SoporteCategoria,
@@ -126,6 +127,32 @@ export class SecretariaService {
     return this.http.post<RegistroPendiente>(`${this.apiUrl.secretariaBasePath}/registro-pendiente`, this.withEjercicio(payload), {
       headers: this.authHeaders()
     });
+  }
+
+  crearSolicitudModificacionAsociacion(payload: {
+    datosActuales: Record<string, unknown>;
+    datosPropuestos: Record<string, unknown>;
+  }): Observable<SolicitudModificacionAsociacion> {
+    return this.http.post<SolicitudModificacionAsociacion>(
+      `${this.apiUrl.secretariaBasePath}/solicitudes-modificacion-asociacion`,
+      payload,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  getSolicitudesModificacionAsociacionAdmin(estado: 'pendiente' | 'aprobada' | 'rechazada' = 'pendiente'): Observable<{ solicitudes: SolicitudModificacionAsociacion[] }> {
+    return this.http.get<{ solicitudes: SolicitudModificacionAsociacion[] }>(
+      `${this.apiUrl.secretariaBasePath}/admin/solicitudes-modificacion-asociacion`,
+      { params: new HttpParams().set('estado', estado), headers: this.authHeaders() }
+    );
+  }
+
+  resolverSolicitudModificacionAsociacion(id: number, decision: 'aprobada' | 'rechazada'): Observable<SolicitudModificacionAsociacion> {
+    return this.http.post<SolicitudModificacionAsociacion>(
+      `${this.apiUrl.secretariaBasePath}/admin/solicitudes-modificacion-asociacion/${id}/resolver`,
+      { decision },
+      { headers: this.authHeaders() }
+    );
   }
 
   descartarRegistroPendiente(id: number, asociacionId: number): Observable<unknown> {

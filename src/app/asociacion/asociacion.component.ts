@@ -119,27 +119,17 @@ export class AsociacionComponent implements OnInit {
     const payload = this.mapFormToPayload(formValue);
 
     this.saving = true;
-    this.secretariaService.crearRegistroPendiente({
-      asociacionId: payload.id,
-      tipo: 'cambio',
-      datos: { tipoCambio: 'asociacion', propuestos: payload, solicitante: 'Asociación' },
-      datosOriginales: this.rawAssociation as Record<string, any>,
-      observaciones: 'Solicitud de modificación de datos de asociación'
+    this.secretariaService.crearSolicitudModificacionAsociacion({
+      datosActuales: this.associationSnapshot(this.rawAssociation),
+      datosPropuestos: this.associationSnapshot(payload)
     }).subscribe({
-      next: pendiente => this.secretariaService.crearSolicitud({ asociacionId: payload.id, tipo: 'cambio', registroPendienteIds: [pendiente.id] }).subscribe({
-        next: () => {
+      next: () => {
         this.form.reset(this.association);
         this.form.disable({ emitEvent: false });
         this.isEditing = false;
         this.saving = false;
         this.errorService.show('Los cambios se han enviado a Secretaría para su validación. Los datos oficiales no se modificarán hasta su aprobación.');
       },
-      error: response => {
-        this.saving = false;
-        this.error = this.saveErrorMessage(response);
-        this.errorService.show(this.error);
-      }
-      }),
       error: response => {
         this.saving = false;
         this.error = this.saveErrorMessage(response);
@@ -326,6 +316,11 @@ export class AsociacionComponent implements OnInit {
       sede_latitud: data.headquarters.latitud, sede_longitud: data.headquarters.longitud,
       ...(data.publicInfo.foundationYear ? { anyo_fundacion: Number(data.publicInfo.foundationYear) } : {})
     } as Asociacion;
+  }
+
+  private associationSnapshot(asociacion: Asociacion): Record<string, unknown> {
+    const { password: _password, ...datos } = asociacion;
+    return JSON.parse(JSON.stringify(datos)) as Record<string, unknown>;
   }
 
   private saveErrorMessage(response: any): string {

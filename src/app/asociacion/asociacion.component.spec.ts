@@ -1,9 +1,11 @@
 import { FormBuilder } from '@angular/forms';
+import { of } from 'rxjs';
 
 import { AsociacionComponent } from './asociacion.component';
 import { CensoService } from '../core/censo.service';
 import { ErrorService } from '../core/error.service';
 import { PermissionsService } from '../core/permissions.service';
+import { SecretariaService } from '../core/secretaria.service';
 
 describe('AsociacionComponent', () => {
   let component: AsociacionComponent;
@@ -12,6 +14,7 @@ describe('AsociacionComponent', () => {
     component = new AsociacionComponent(
       new FormBuilder(),
       jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion', 'updateAsociacion']),
+      jasmine.createSpyObj<SecretariaService>('SecretariaService', ['crearSolicitudModificacionAsociacion', 'crearRegistroPendiente', 'crearSolicitud']),
       jasmine.createSpyObj<ErrorService>('ErrorService', ['show']),
       jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission'])
     );
@@ -87,5 +90,30 @@ describe('AsociacionComponent', () => {
   it('conserva el mensaje funcional seguro devuelto por Censo API al guardar', () => {
     expect((component as any).saveErrorMessage({ error: { status: { message: 'El campo nombre de la asociación es obligatorio.' } } }))
       .toBe('El campo nombre de la asociación es obligatorio.');
+  });
+
+  it('envia una solicitud independiente y mantiene intactos los datos oficiales', () => {
+    const censo = (component as any).censoService as jasmine.SpyObj<CensoService>;
+    const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+    const permisos = (component as any).permissions as jasmine.SpyObj<PermissionsService>;
+    const oficial = { id: 25, nombre: 'Asociación oficial', cif: 'G03628971', telefono: '960000001', email: 'oficial@example.test', tipo_asociacion: 2 };
+
+    (component as any).rawAssociation = oficial;
+    (component as any).association = (component as any).mapAssociation(oficial);
+    component.form = (component as any).buildForm((component as any).association);
+    component.form.patchValue({ basic: { name: 'Asociación propuesta' }, contact: { phone: '960000002', email: 'propuesta@example.test' } });
+    permisos.hasPermission.and.returnValue(true);
+    secretaria.crearSolicitudModificacionAsociacion.and.returnValue(of({} as any));
+
+    component.save();
+
+    expect(secretaria.crearSolicitudModificacionAsociacion).toHaveBeenCalledWith(jasmine.objectContaining({
+      datosActuales: jasmine.objectContaining({ nombre: 'Asociación oficial', telefono: '960000001' }),
+      datosPropuestos: jasmine.objectContaining({ nombre: 'Asociación propuesta', telefono: '960000002', email: 'propuesta@example.test' })
+    }));
+    expect(censo.updateAsociacion).not.toHaveBeenCalled();
+    expect(secretaria.crearRegistroPendiente).not.toHaveBeenCalled();
+    expect(secretaria.crearSolicitud).not.toHaveBeenCalled();
+    expect((component as any).rawAssociation).toEqual(oficial);
   });
 });
