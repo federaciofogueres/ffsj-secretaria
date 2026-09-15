@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.16#ESMERALDA - 2026-09-15
+
+### Corregido
+
+- Datos de asociación cifra las credenciales de cambio de contraseña con el protocolo de Censo API, valida la confirmación antes de enviar y limpia el formulario tras una actualización correcta.
+
 ## 0.29.15#ESMERALDA - 2026-09-15
 
 ### Corregido
