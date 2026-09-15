@@ -54,9 +54,15 @@ export class SolicitudesModificacionAsociacionComponent implements OnInit {
     this.error = '';
     this.secretariaService.resolverSolicitudModificacionAsociacion(this.seleccionada.id, decision).subscribe({
       next: actualizada => {
+        if (actualizada.estado !== decision) {
+          this.error = 'La solicitud no ha quedado resuelta correctamente.';
+          this.resolving = false;
+          return;
+        }
         this.solicitudes = this.solicitudes.filter(item => item.id !== actualizada.id);
-        this.seleccionada = actualizada;
+        this.seleccionada = null;
         this.resolving = false;
+        this.cargar();
       },
       error: error => { this.error = error?.error?.message || 'No se ha podido resolver la solicitud.'; this.resolving = false; }
     });

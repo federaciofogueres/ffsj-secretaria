@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.29.20#ESMERALDA - 2026-09-15
+
+### Corregido
+
+- Al resolver una solicitud de modificación de asociación, Administración cierra el detalle y recarga las pendientes; las solicitudes ya aprobadas o rechazadas no vuelven a mostrarse como pendientes.
+- Inscripciones mantiene el formulario dinámico montado entre pestañas y todos sus controles, incluidas las plantillas de responsable y asociados, pertenecen al `FormGroup` persistente.
+
 ## 0.29.19#ESMERALDA - 2026-09-15
 
 ### Modificado

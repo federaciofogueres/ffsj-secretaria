@@ -414,7 +414,7 @@
               <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
             </section>
 
-            <form [formGroup]="form" class="form-grid mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'edit'">
+            <form [formGroup]="form" class="form-grid mt-3" [hidden]="isAdminMode || associationTab !== 'formulario' || associationMode !== 'edit'">
               <h3 class="section-title">Formulario</h3>
               <div class="field-grid">
                 <ng-container *ngFor="let field of inscription.campos">
@@ -442,8 +442,6 @@
                   </div>
                 </ng-container>
               </div>
-            </form>
-
             <ng-template #asociadoSearch let-field="field" let-placeholder="placeholder">
               <ng-container *ngIf="isMultipleAsociado(field); else associatedSingleSearch">
                 <div class="asociado-multiple">
@@ -465,6 +463,8 @@
                 <datalist [id]="fieldInputId(field) + '-options'"><option *ngFor="let person of asociadosForField(field)" [value]="asociadoLabel(person)" [label]="person.dni || ''"></option></datalist>
               </ng-template>
             </ng-template>
+
+            </form>
 
             <section class="summary-panel mt-3" *ngIf="requiresParticipants && !isAdminMode && associationTab === 'asociados' && associationMode !== 'edit' && miEntrada as entrada">
               <h3 class="section-title">Asociados inscritos</h3>
