@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { AdjuntoSecretaria, AutorizacionAlta, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
@@ -14,7 +15,7 @@ type PestanaDetalleSolicitud = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos
 @Component({
   selector: 'app-solicitudes',
   standalone: true,
-  imports: [CommonModule, FormsModule, IncidenciasPanelComponent],
+  imports: [CommonModule, FormsModule, IncidenciasPanelComponent, FfsjSpinnerComponent],
   templateUrl: './solicitudes.component.html',
   styleUrls: ['./solicitudes.component.scss']
 })

@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, AdjuntoSecretaria, InscripcionSecretaria } from '../core/models';
@@ -22,7 +23,7 @@ type CalendarTab = 'calendario' | 'crear' | 'propuestas';
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })

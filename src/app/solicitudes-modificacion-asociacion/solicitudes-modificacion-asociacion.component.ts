@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { catchError, forkJoin, map, of } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { SolicitudModificacionAsociacion } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
@@ -9,7 +10,7 @@ import { CensoService } from '../core/censo.service';
 @Component({
   selector: 'app-solicitudes-modificacion-asociacion',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FfsjSpinnerComponent],
   templateUrl: './solicitudes-modificacion-asociacion.component.html',
   styleUrls: ['./solicitudes-modificacion-asociacion.component.scss']
 })
