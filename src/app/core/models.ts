@@ -189,6 +189,18 @@ export interface SolicitudSecretaria {
   adjuntos?: AdjuntoSecretaria[];
 }
 
+export interface SolicitudModificacionAsociacion {
+  id: number;
+  asociacionId: number;
+  solicitante: { id: string | null; nombre: string; email: string | null };
+  fechaSolicitud: string;
+  datosActuales: Record<string, unknown>;
+  datosPropuestos: Record<string, unknown>;
+  estado: 'pendiente' | 'aprobada' | 'rechazada';
+  resueltoPor: { id: string | null; nombre: string | null } | null;
+  fechaResolucion: string | null;
+}
+
 export interface PaginacionSecretaria {
   page: number;
   pageSize: number;
