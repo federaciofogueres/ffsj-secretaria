@@ -1,5 +1,5 @@
 <section class="association ux-card" [attr.data-active-tab]="activeTab">
-  <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
+  <lib-ffsj-spinner *ngIf="loading" [fullscreen]="true"></lib-ffsj-spinner>
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
   <header class="page-head">
