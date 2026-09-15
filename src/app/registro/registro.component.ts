@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
@@ -23,7 +24,7 @@ type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent, FfsjSpinnerComponent],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })

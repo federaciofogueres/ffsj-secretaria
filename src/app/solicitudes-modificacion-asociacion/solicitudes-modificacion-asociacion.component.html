@@ -5,7 +5,7 @@
       <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cargar()">Actualizar</button>
     </header>
     <p *ngIf="error" class="alert alert-danger">{{ error }}</p>
-    <p *ngIf="loading" class="text-muted">Cargando solicitudes…</p>
+    <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
     <div class="table-responsive" *ngIf="!loading"><table class="table align-middle"><thead><tr><th>Asociación</th><th>Solicitante</th><th>Fecha</th><th></th></tr></thead><tbody><tr *ngFor="let solicitud of solicitudes"><td>{{ asociacionNombres[solicitud.asociacionId] || ('Asociación #' + solicitud.asociacionId) }}</td><td>{{ solicitud.solicitante.nombre }}</td><td>{{ solicitud.fechaSolicitud | date:'dd/MM/yyyy HH:mm' }}</td><td class="text-end"><button class="btn btn-outline-secondary btn-sm" (click)="seleccionar(solicitud)">Revisar</button></td></tr><tr *ngIf="!solicitudes.length"><td colspan="4" class="text-center text-muted py-4">No hay solicitudes pendientes.</td></tr></tbody></table></div>
   </div>
 </section>

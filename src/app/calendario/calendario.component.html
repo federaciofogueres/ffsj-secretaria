@@ -14,7 +14,7 @@
 
     <div class="alert alert-danger mt-3" *ngIf="error">{{ error }}</div>
     <div class="alert alert-success mt-3" *ngIf="success">{{ success }}</div>
-    <div class="text-muted mt-3 d-flex align-items-center gap-2" *ngIf="loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span>Cargando calendario...</div>
+    <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
 
     <nav class="calendar-tabs" aria-label="Secciones del calendario">
       <button type="button" [class.active]="activeTab === 'calendario'" (click)="activarTab('calendario')">Calendario</button>

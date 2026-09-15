@@ -3,6 +3,7 @@ import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angu
 import { FormArray, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { CampoInscripcion, FormularioAuditoria, FormularioInscripcion, InscripcionSecretaria, PaginacionSecretaria } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
@@ -14,7 +15,7 @@ type FieldType = CampoInscripcion['type'];
 @Component({
   selector: 'app-formularios',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent, EstadoBadgeComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent],
   templateUrl: './formularios.component.html',
   styleUrls: ['./formularios.component.scss']
 })

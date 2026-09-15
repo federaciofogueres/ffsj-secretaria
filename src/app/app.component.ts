@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService, FfsjAlertComponent } from 'ffsj-web-components';
+import { AuthService, FfsjAlertComponent, FfsjSpinnerComponent } from 'ffsj-web-components';
 import { Subscription, distinctUntilChanged, filter } from 'rxjs';
 import { AdminAccessService } from './core/admin-access.service';
 import { PermissionsService } from './core/permissions.service';
@@ -25,7 +25,7 @@ interface PendingTask {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, FfsjSpinnerComponent, TranslatePipe],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
