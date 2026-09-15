@@ -12,6 +12,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatRippleModule } from '@angular/material/core';
 import { MatMenuModule } from '@angular/material/menu';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
@@ -37,7 +38,8 @@ type DetailTabKey = 'informacion' | 'historico';
     MatIconModule,
     MatRippleModule,
     MatMenuModule,
-    MatTooltipModule
+    MatTooltipModule,
+    FfsjSpinnerComponent
   ],
   templateUrl: './asociados.component.html',
   styleUrls: ['./asociados.component.scss']

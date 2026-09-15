@@ -5,6 +5,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { AdminAccessService } from '../core/admin-access.service';
 import { ApiUrlService } from '../core/api-url.service';
@@ -27,7 +28,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent, FfsjSpinnerComponent],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })

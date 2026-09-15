@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 import { EjercicioService } from '../core/ejercicio.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { AdjuntoSecretaria, SoporteCategoria, SoporteIncidencia } from '../core/models';
@@ -25,7 +26,7 @@ function trimmedLength(minimum: number, maximum: number) {
   };
 }
 
-@Component({ selector: 'app-soporte', standalone: true, imports: [CommonModule, ReactiveFormsModule, FormsModule, AdjuntosSelectorComponent], templateUrl: './soporte.component.html', styleUrls: ['./soporte.component.scss'] })
+@Component({ selector: 'app-soporte', standalone: true, imports: [CommonModule, ReactiveFormsModule, FormsModule, AdjuntosSelectorComponent, FfsjSpinnerComponent], templateUrl: './soporte.component.html', styleUrls: ['./soporte.component.scss'] })
 export class SoporteComponent implements OnInit {
   categorias: SoporteCategoria[] = [];
   incidencias: SoporteIncidencia[] = [];

@@ -63,7 +63,7 @@
                 <span><i class="bi bi-bell-fill"></i> Tareas pendientes</span>
                 <strong *ngIf="!tareasLoading && tareasPendientes">{{ tareasPendientes }}</strong>
               </div>
-              <p *ngIf="tareasLoading" class="mb-0 ux-muted">Cargando tareas pendientes...</p>
+              <lib-ffsj-spinner *ngIf="tareasLoading"></lib-ffsj-spinner>
               <p *ngIf="!tareasLoading && tareasError" class="mb-0 text-danger">No se ha podido cargar el resumen.</p>
               <p *ngIf="!tareasLoading && !tareasError && !tareasPendientes" class="mb-0 ux-muted">No hay tareas pendientes.</p>
               <div class="selector-task-list" *ngIf="!tareasLoading && !tareasError && tareasPendientes">
@@ -140,7 +140,7 @@
               </div>
               <button class="popover-close" type="button" (click)="closeTareas()" aria-label="Cerrar tareas"><i class="bi bi-x-lg"></i></button>
             </div>
-            <p *ngIf="tareasLoading" class="mb-0 ux-muted">Cargando tareas pendientes...</p>
+            <lib-ffsj-spinner *ngIf="tareasLoading"></lib-ffsj-spinner>
             <p *ngIf="!tareasLoading && tareasError" class="mb-0 text-danger">No se ha podido cargar el resumen de tareas.</p>
             <p *ngIf="!tareasLoading && !tareasError && !tareasPendientes" class="mb-0 ux-muted">No hay tareas pendientes.</p>
             <div class="task-list" *ngIf="!tareasLoading && !tareasError && tareasPendientes">

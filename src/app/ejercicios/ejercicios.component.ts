@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { EjercicioSecretaria } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
@@ -8,7 +9,7 @@ import { SecretariaService } from '../core/secretaria.service';
 @Component({
   selector: 'app-ejercicios',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FfsjSpinnerComponent],
   templateUrl: './ejercicios.component.html',
   styleUrls: ['./ejercicios.component.scss']
 })

@@ -13,7 +13,7 @@
     </button>
   </header>
 
-  <div *ngIf="loading" class="alert alert-info">Cargando ejercicios...</div>
+  <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
   <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
   <div class="section-panel exercise-panel">
     <div class="role-header">

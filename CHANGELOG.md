@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.29.19#ESMERALDA - 2026-09-15
+
+### Modificado
+
+- Las cargas asíncronas de Secretaría usan `lib-ffsj-spinner` en pantallas, listados, formularios y paneles. Los tres indicadores compactos de envío dentro de botones se mantienen documentados como excepción técnica.
+
 ## 0.29.18#ESMERALDA - 2026-09-15
 
 ### Modificado

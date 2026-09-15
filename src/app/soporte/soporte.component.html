@@ -67,7 +67,7 @@
           Actualizar
         </button>
       </div>
-      <p *ngIf="loading">Cargando incidencias...</p>
+      <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
       <div class="support-list" *ngIf="!loading">
         <button
           *ngFor="let incidencia of incidencias"

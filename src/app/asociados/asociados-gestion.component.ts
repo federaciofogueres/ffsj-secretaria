@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AlertButtonType, FfsjDialogAlertService } from 'ffsj-web-components';
+import { AlertButtonType, FfsjDialogAlertService, FfsjSpinnerComponent } from 'ffsj-web-components';
 import { forkJoin, map, of, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
@@ -61,7 +61,7 @@ interface ConflictoCargoExclusivo {
 @Component({
   selector: 'app-asociados-gestion',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, FfsjSpinnerComponent],
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })

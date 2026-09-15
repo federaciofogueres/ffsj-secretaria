@@ -74,7 +74,7 @@
       </div>
     </div>
 
-    <div *ngIf="loading" class="alert alert-info">Cargando solicitudes...</div>
+    <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
     <div *ngIf="success" class="alert alert-success validation-toast" role="status">{{ success }}</div>
     <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
