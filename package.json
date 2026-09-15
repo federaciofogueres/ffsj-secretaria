@@ -1,6 +1,6 @@
 {
   "name": "ffsj-secretaria",
-  "version": "0.29.19+esmeralda",
+  "version": "0.29.20+esmeralda",
   "private": true,
   "scripts": {
     "ng": "ng",

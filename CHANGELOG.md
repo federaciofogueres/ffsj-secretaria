@@ -6,6 +6,9 @@
 
 - Al resolver una solicitud de modificación de asociación, Administración cierra el detalle y recarga las pendientes; las solicitudes ya aprobadas o rechazadas no vuelven a mostrarse como pendientes.
 - Inscripciones mantiene el formulario dinámico montado entre pestañas y todos sus controles, incluidas las plantillas de responsable y asociados, pertenecen al `FormGroup` persistente.
+- Los campos dinámicos de Inscripciones se enlazan directamente al `FormControl` persistente, evitando errores de `addControl` al recrear pestañas.
+- Los loaders de pantalla usan el spinner común en modo fullscreen y bloquean la interacción durante las cargas; los indicadores compactos de tareas permanecen no bloqueantes.
+- El listado de cambios de asociación fuerza una lectura fresca tras resolver una solicitud y la etiqueta visible se actualiza a `0.29.20#ESMERALDA`.
 
 ## 0.29.19#ESMERALDA - 2026-09-15
 

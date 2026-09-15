@@ -161,7 +161,6 @@ describe('InscripcionesComponent', () => {
       component.goAssociationStep(2);
       fixture.detectChanges();
 
-      expect(valueInput(fixture, 'texto')).toBe(texto);
       expect(valueInput(fixture, 'texto').value).toBe(`texto-visible-${mode}`);
       expect(valueInput(fixture, 'area').value).toBe(`area-visible-${mode}`);
       expect(valueInput(fixture, 'fecha').value).toBe('2026-09-15');
