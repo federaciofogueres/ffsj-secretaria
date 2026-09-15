@@ -140,6 +140,21 @@ export class SecretariaService {
     );
   }
 
+  getSolicitudesModificacionAsociacionAdmin(estado: 'pendiente' | 'aprobada' | 'rechazada' = 'pendiente'): Observable<{ solicitudes: SolicitudModificacionAsociacion[] }> {
+    return this.http.get<{ solicitudes: SolicitudModificacionAsociacion[] }>(
+      `${this.apiUrl.secretariaBasePath}/admin/solicitudes-modificacion-asociacion`,
+      { params: new HttpParams().set('estado', estado), headers: this.authHeaders() }
+    );
+  }
+
+  resolverSolicitudModificacionAsociacion(id: number, decision: 'aprobada' | 'rechazada'): Observable<SolicitudModificacionAsociacion> {
+    return this.http.post<SolicitudModificacionAsociacion>(
+      `${this.apiUrl.secretariaBasePath}/admin/solicitudes-modificacion-asociacion/${id}/resolver`,
+      { decision },
+      { headers: this.authHeaders() }
+    );
+  }
+
   descartarRegistroPendiente(id: number, asociacionId: number): Observable<unknown> {
     return this.http.delete(`${this.apiUrl.secretariaBasePath}/registro-pendiente/${id}`, {
       params: new HttpParams().set('asociacionId', asociacionId),
