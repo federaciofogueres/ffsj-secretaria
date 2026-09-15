@@ -13,7 +13,7 @@ describe('AsociacionComponent', () => {
   beforeEach(() => {
     component = new AsociacionComponent(
       new FormBuilder(),
-      jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion', 'updateAsociacion']),
+      jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion', 'updateAsociacion', 'cambiarPasswordAsociacion']),
       jasmine.createSpyObj<SecretariaService>('SecretariaService', ['crearSolicitudModificacionAsociacion', 'crearRegistroPendiente', 'crearSolicitud']),
       jasmine.createSpyObj<ErrorService>('ErrorService', ['show']),
       jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission'])
@@ -115,5 +115,31 @@ describe('AsociacionComponent', () => {
     expect(secretaria.crearRegistroPendiente).not.toHaveBeenCalled();
     expect(secretaria.crearSolicitud).not.toHaveBeenCalled();
     expect((component as any).rawAssociation).toEqual(oficial);
+  });
+
+  it('no envia el cambio de contraseña si la confirmación no coincide', () => {
+    const censo = (component as any).censoService as jasmine.SpyObj<CensoService>;
+    const permisos = (component as any).permissions as jasmine.SpyObj<PermissionsService>;
+    permisos.hasPermission.and.returnValue(true);
+    component.passwordForm.setValue({ actual: 'actual-segura', nueva: 'nueva-segura', confirmacion: 'otra-segura' });
+
+    component.cambiarPassword();
+
+    expect(censo.cambiarPasswordAsociacion).not.toHaveBeenCalled();
+    expect(component.passwordError).toBe('La nueva contraseña y su confirmación no coinciden.');
+  });
+
+  it('envia al endpoint las contraseñas validadas y no conserva los valores tras actualizar', () => {
+    const censo = (component as any).censoService as jasmine.SpyObj<CensoService>;
+    const permisos = (component as any).permissions as jasmine.SpyObj<PermissionsService>;
+    permisos.hasPermission.and.returnValue(true);
+    censo.cambiarPasswordAsociacion.and.returnValue(of(void 0));
+    component.passwordForm.setValue({ actual: 'actual-segura', nueva: 'nueva-segura', confirmacion: 'nueva-segura' });
+
+    component.cambiarPassword();
+
+    expect(censo.cambiarPasswordAsociacion).toHaveBeenCalledWith('actual-segura', 'nueva-segura');
+    expect(component.passwordForm.getRawValue()).toEqual({ actual: null, nueva: null, confirmacion: null });
+    expect(component.passwordSuccess).toBe('Contraseña actualizada correctamente.');
   });
 });
