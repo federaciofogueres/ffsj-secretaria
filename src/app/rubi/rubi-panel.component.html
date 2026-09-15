@@ -1,0 +1,32 @@
+<button #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
+  <span class="rubi-avatar" aria-hidden="true">R</span><span>Rubi</span>
+</button>
+
+<div *ngIf="open" class="rubi-backdrop" (click)="close()" aria-hidden="true"></div>
+<aside *ngIf="open" id="rubi-panel" class="rubi-panel" role="dialog" aria-modal="true" aria-labelledby="rubi-title">
+  <header class="rubi-header">
+    <div class="rubi-identity"><span class="rubi-avatar" aria-hidden="true">R</span><div><h2 id="rubi-title">Rubi</h2><p>{{ 'rubi.subtitle' | t }}</p></div></div>
+    <button class="rubi-icon-button" type="button" (click)="close()" [attr.aria-label]="'rubi.close' | t"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  </header>
+
+  <p *ngIf="unavailable" class="rubi-status rubi-status-error" role="status">{{ 'rubi.disabled' | t }}</p>
+  <section class="rubi-messages" aria-label="Rubi" aria-live="polite">
+    <article *ngFor="let item of messages" class="rubi-message" [class.rubi-user]="item.author === 'user'" [class.rubi-system]="item.author === 'system'">
+      <span class="rubi-message-author">{{ (item.author === 'user' ? 'rubi.you' : item.author === 'system' ? 'rubi.status' : 'rubi.name') | t }}</span>
+      <p>{{ item.text }}</p>
+      <div *ngIf="item.actions?.length" class="rubi-actions">
+        <button *ngFor="let action of item.actions" type="button" class="btn btn-outline-secondary btn-sm" [disabled]="loading" (click)="executeAction(action)">{{ ('rubi.action.' + (action.destination || action.flow)) | t }}</button>
+      </div>
+    </article>
+    <p *ngIf="loading" class="rubi-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
+  </section>
+
+  <section class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
+    <button *ngFor="let key of ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support']" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>
+  </section>
+  <form class="rubi-composer" (ngSubmit)="send()">
+    <label class="visually-hidden" for="rubi-message">{{ 'rubi.inputLabel' | t }}</label>
+    <textarea #messageInput id="rubi-message" name="message" [(ngModel)]="draft" [disabled]="loading || unavailable" [placeholder]="'rubi.placeholder' | t" rows="2" maxlength="1200" (keydown)="onMessageKeydown($event)"></textarea>
+    <button class="ux-btn" type="submit" [disabled]="!draft.trim() || loading || unavailable">{{ 'rubi.send' | t }}</button>
+  </form>
+</aside>
