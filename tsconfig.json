@@ -20,7 +20,8 @@
     "strict": true,
     "typeRoots": ["node_modules/@types"],
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true
   },
   "files": [],
   "include": [],
