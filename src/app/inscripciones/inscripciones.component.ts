@@ -17,17 +17,12 @@ import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 import { FormulariosComponent } from '../formularios/formularios.component';
+import { InscripcionDraftState, InscripcionDraftStateService } from './inscripcion-draft-state.service';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
 type AssociationTab = 'documentacion' | 'formulario' | 'asociados';
 type AssociationMode = 'edit' | 'view' | 'summary';
-
-interface InscripcionDraft {
-  datos: Record<string, unknown>;
-  participantes: string[];
-  busquedasAsociados: Record<string, string>;
-}
 
 @Component({
   selector: 'app-inscripciones',
@@ -55,7 +50,6 @@ export class InscripcionesComponent implements OnInit {
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   asociadoSearchTerms: Record<string, string> = {};
-  private readonly drafts: Record<string, InscripcionDraft> = {};
   private asociadosCargados = false;
   loading = false;
   error = '';
@@ -101,7 +95,8 @@ export class InscripcionesComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     readonly permissions: PermissionsService,
-    readonly ejercicioService: EjercicioService
+    readonly ejercicioService: EjercicioService,
+    private readonly draftState: InscripcionDraftStateService
   ) {}
 
   ngOnInit(): void {
@@ -216,16 +211,10 @@ export class InscripcionesComponent implements OnInit {
     this.associationMode = this.isAdminMode ? 'edit' : 'edit';
     this.success = '';
     this.error = '';
-    const group: Record<string, FormControl> = {};
-    inscription.campos.forEach(field => {
-      const validators: ValidatorFn[] = [];
-      if (this.isRequiredField(field)) validators.push(Validators.required);
-      if (this.isMultipleChoice(field)) validators.push(this.maxSelectionsValidator(field));
-      group[field.key] = this.fb.control(this.isMultipleValueField(field) ? [] : '', validators.length ? validators : undefined);
-    });
-    this.form = this.fb.group(group);
-    this.asociadoSearchTerms = {};
-    this.restaurarBorrador(inscription.id);
+    const draft = this.draftState.getOrCreate(inscription.id, () => this.createDraft(inscription));
+    this.form = draft.form;
+    this.selectedParticipants = draft.participantes;
+    this.asociadoSearchTerms = draft.busquedasAsociados;
     this.cargarAdjuntos(inscription.id);
     if (this.isAdminMode) {
       this.cargarEntradas(inscription.id);
@@ -352,6 +341,7 @@ export class InscripcionesComponent implements OnInit {
   }
 
   volverAlListado(): void {
+    this.borrarBorrador(this.selectedInscription?.id);
     this.router.navigate(['/inscripciones'], { queryParams: this.contextoListadoInscripciones() });
   }
 
@@ -786,6 +776,21 @@ export class InscripcionesComponent implements OnInit {
     this.error = '';
   }
 
+  cancelarEdicionAsociacion(): void {
+    if (!this.selectedInscription) return;
+    this.borrarBorrador(this.selectedInscription.id);
+    const draft = this.draftState.getOrCreate(this.selectedInscription.id, () => this.createDraft(this.selectedInscription!));
+    this.form = draft.form;
+    this.selectedParticipants = draft.participantes;
+    this.asociadoSearchTerms = draft.busquedasAsociados;
+    if (this.miEntrada) {
+      this.patchEntradaForm(this.miEntrada);
+      this.associationMode = 'view';
+      return;
+    }
+    this.associationMode = 'edit';
+  }
+
   puedeModificarMiEntrada(): boolean {
     return Boolean(this.miEntrada && this.selectedInscription && this.miEntrada.estado !== 'validada' && this.miEntrada.estado !== 'retirada_solicitada' && this.miEntrada.estado !== 'retirada' && this.isWithinDeadline(this.selectedInscription));
   }
@@ -1032,38 +1037,38 @@ export class InscripcionesComponent implements OnInit {
     });
     this.form.patchValue(values);
     this.selectedParticipants = new Set((entrada.participantes || []).map(id => String(id)));
+    this.guardarBorradorActual();
   }
 
   private guardarBorradorActual(): void {
     if (this.isAdminMode || !this.selectedInscription || this.associationMode !== 'edit') {
       return;
     }
-    const datos = this.form.getRawValue() as Record<string, unknown>;
-    if (!this.form.dirty && !this.selectedParticipants.size && !Object.values(this.asociadoSearchTerms).some(Boolean)) {
-      return;
-    }
-    this.drafts[this.selectedInscription.id] = {
-      datos: { ...datos },
-      participantes: [...this.selectedParticipants],
-      busquedasAsociados: { ...this.asociadoSearchTerms }
-    };
-  }
-
-  private restaurarBorrador(inscripcionId: string): void {
-    const draft = this.drafts[inscripcionId];
-    if (!draft) {
-      return;
-    }
-    this.form.patchValue(draft.datos);
-    this.form.markAsDirty();
-    this.selectedParticipants = new Set(draft.participantes);
-    this.asociadoSearchTerms = { ...draft.busquedasAsociados };
+    this.draftState.save(this.selectedInscription.id, {
+      form: this.form,
+      participantes: this.selectedParticipants,
+      busquedasAsociados: this.asociadoSearchTerms
+    });
   }
 
   private borrarBorrador(inscripcionId?: string): void {
-    if (inscripcionId) {
-      delete this.drafts[inscripcionId];
-    }
+    this.draftState.clear(inscripcionId);
+  }
+
+  private createDraft(inscription: InscripcionSecretaria): InscripcionDraftState {
+    const group: Record<string, FormControl> = {};
+    inscription.campos.forEach(field => {
+      const validators: ValidatorFn[] = [];
+      if (this.isRequiredField(field)) validators.push(Validators.required);
+      if (this.isMultipleChoice(field)) validators.push(this.maxSelectionsValidator(field));
+      group[field.key] = this.fb.control(this.isMultipleValueField(field) ? [] : '', validators.length ? validators : undefined);
+    });
+
+    return {
+      form: this.fb.group(group),
+      participantes: new Set<string>(),
+      busquedasAsociados: {}
+    };
   }
 
   private cargarEntradas(inscripcionId: string): void {
