@@ -1,6 +1,6 @@
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { AuthService } from 'ffsj-web-components';
+import { AuthService, EncoderService } from 'ffsj-web-components';
 import { Observable, map } from 'rxjs';
 
 import { ApiUrlService } from './api-url.service';
@@ -8,6 +8,8 @@ import { Asociacion, Asociado, CargoResumen, HistoricoAsociado } from './models'
 
 @Injectable({ providedIn: 'root' })
 export class CensoService {
+  private readonly passwordEncoder = new EncoderService();
+
   constructor(
     private readonly http: HttpClient,
     private readonly apiUrl: ApiUrlService,
@@ -47,7 +49,10 @@ export class CensoService {
   cambiarPasswordAsociacion(passwordActual: string, passwordNueva: string): Observable<void> {
     return this.http.post<void>(
       `${this.apiUrl.censoBasePath}/asociaciones/password`,
-      { passwordActual, passwordNueva },
+      {
+        passwordActual: this.passwordEncoder.encrypt(passwordActual),
+        passwordNueva: this.passwordEncoder.encrypt(passwordNueva)
+      },
       this.authOptions()
     );
   }
