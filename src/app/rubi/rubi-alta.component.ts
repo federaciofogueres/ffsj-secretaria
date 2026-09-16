@@ -230,6 +230,12 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     if (error.status === 401 || error.status === 403) return 'rubi.alta.error.permission';
     if (code === 'REGISTRO_ALTA_DUPLICADO' || code === 'SOLICITUD_ALTA_DUPLICADA') return 'rubi.alta.error.duplicate';
     if (code === 'ASOCIADO_YA_ACTIVO_EN_ASOCIACION') return 'rubi.alta.error.active';
+    if (code === 'ALTA_REPRESENTACION_REQUERIDA') return 'rubi.alta.error.representative';
+    if (code === 'ALTA_CARGO_NO_DISPONIBLE') return 'rubi.alta.error.cargo';
+    if (code === 'ALTA_REQUIERE_FLUJO_NORMAL') return 'rubi.alta.error.normalFlow';
+    if (code === 'CONFIRMACION_CADUCADA' || code === 'CONFIRMACION_SUSTITUIDA') return 'rubi.alta.error.expired';
+    if (code === 'ALTA_EJERCICIO_NO_DISPONIBLE') return 'rubi.alta.error.exercise';
+    if (code === 'ALTA_DATOS_INVALIDOS') return 'rubi.alta.error.validation';
     if (error.status === 409) return 'rubi.alta.error.contextChanged';
     if (error.status === 400) return 'rubi.alta.error.validation';
     return 'rubi.alta.error.prepare';

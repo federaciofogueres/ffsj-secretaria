@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed, fakeAsync, tick } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { HttpErrorResponse } from '@angular/common/http';
+import { of, throwError } from 'rxjs';
 
 import { EjercicioService } from '../core/ejercicio.service';
 import { I18nService } from '../core/i18n.service';
@@ -92,6 +93,23 @@ describe('RubiAltaComponent', () => {
     component.prepare();
     expect(component.prepared?.estado).toBe('requiere_flujo_normal');
     expect(api.cancelarPreparacionAlta).not.toHaveBeenCalled();
+  });
+
+  it('shows safe functional messages from backend codes and a generic technical error', () => {
+    fillValidAdult();
+    const cases = [
+      ['ASOCIADO_YA_ACTIVO_EN_ASOCIACION', 409, 'rubi.alta.error.active'],
+      ['REGISTRO_ALTA_DUPLICADO', 409, 'rubi.alta.error.duplicate'],
+      ['ALTA_REPRESENTACION_REQUERIDA', 400, 'rubi.alta.error.representative'],
+      ['ALTA_EJERCICIO_NO_DISPONIBLE', 409, 'rubi.alta.error.exercise'],
+      ['ALTA_CARGO_NO_DISPONIBLE', 400, 'rubi.alta.error.cargo'],
+      ['ALTA_PREPARATION_STORE_UNAVAILABLE', 503, 'rubi.alta.error.prepare']
+    ] as const;
+    for (const [code, status, key] of cases) {
+      api.prepararAlta.and.returnValue(throwError(() => new HttpErrorResponse({ status, error: { details: { code } } })));
+      component.prepare();
+      expect(component.errorKey).withContext(code).toBe(key);
+    }
   });
 
   it('invalidates and clears a prepared draft when editing or cancelling', () => {

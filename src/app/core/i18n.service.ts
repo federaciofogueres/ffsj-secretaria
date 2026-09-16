@@ -33,6 +33,22 @@ const translations: Record<AppLanguage, Record<string, string>> = {
   }
 };
 
+Object.assign(translations.es, {
+  'rubi.alta.error.cargo': 'El cargo seleccionado no está disponible. Revisa la selección o utiliza el flujo normal.',
+  'rubi.alta.error.normalFlow': 'Este caso requiere revisión mediante el flujo normal de altas.',
+  'rubi.alta.error.expired': 'La preparación ya no está vigente. Vuelve a preparar el alta.'
+});
+Object.assign(translations.va, {
+  'rubi.alta.error.cargo': 'El càrrec seleccionat no està disponible. Revisa la selecció o utilitza el flux normal.',
+  'rubi.alta.error.normalFlow': "Este cas requerix revisió mitjançant el flux normal d'altes.",
+  'rubi.alta.error.expired': "La preparació ja no està vigent. Torna a preparar l'alta."
+});
+Object.assign(translations.en, {
+  'rubi.alta.error.cargo': 'The selected role is unavailable. Review the selection or use the standard flow.',
+  'rubi.alta.error.normalFlow': 'This case requires review through the standard registration flow.',
+  'rubi.alta.error.expired': 'The preparation is no longer valid. Prepare the registration again.'
+});
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   private readonly storageKey = 'ffsj-secretaria.language';
