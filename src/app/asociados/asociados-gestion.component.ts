@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
@@ -13,6 +13,7 @@ import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
@@ -65,7 +66,7 @@ interface ConflictoCargoExclusivo {
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })
-export class AsociadosGestionComponent implements OnInit {
+export class AsociadosGestionComponent implements OnInit, OnDestroy {
   activeTab: GestionTab = 'altas';
 
   adultos: Asociado[] = [];
@@ -155,7 +156,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
     readonly permissions: PermissionsService,
-    readonly ejercicioService: EjercicioService
+    readonly ejercicioService: EjercicioService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -165,6 +167,7 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = requestedTab === 'altas';
     }
     this.filtroSolicitudes = this.route.snapshot.queryParamMap.get('filtro') === 'incidencias' ? 'incidencias' : null;
+    this.updateRubiScreenContext();
 
     if (this.asociacionId) {
       this.censoService.getAsociacion(this.asociacionId).subscribe({
@@ -186,6 +189,10 @@ export class AsociadosGestionComponent implements OnInit {
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
     this.cargarCupos();
+  }
+
+  ngOnDestroy(): void {
+    this.rubiScreenContext.clear('asociados');
   }
 
   get asociacionId(): number {
@@ -256,6 +263,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   setTab(tab: GestionTab): void {
     this.activeTab = tab;
+    this.updateRubiScreenContext();
     this.filtroSolicitudes = null;
     this.pendingViewTipo = null;
     this.resetFormulario();
@@ -269,6 +277,15 @@ export class AsociadosGestionComponent implements OnInit {
     } else {
       this.cargarRegistroPendiente();
     }
+  }
+
+  private updateRubiScreenContext(): void {
+    this.rubiScreenContext.set({
+      version: 1,
+      module: 'asociados',
+      view: 'gestion',
+      tab: this.activeTab
+    });
   }
 
   abrirPendientes(tipo: SolicitudTipo): void {

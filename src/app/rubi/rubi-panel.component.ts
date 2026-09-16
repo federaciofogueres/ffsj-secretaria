@@ -7,8 +7,9 @@ import { Subscription } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { RubiAction, RubiApiService, RubiRouteKey, RubiResponse } from './rubi-api.service';
+import { RubiAction, RubiApiService, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
 import { RubiConversationService, RubiMessage } from './rubi-conversation.service';
+import { RubiScreenContextService } from './rubi-screen-context.service';
 
 const ROUTE_KEYS: Array<[string, RubiRouteKey]> = [
   ['/asociados/gestion', 'alta'], ['/asociados', 'personas'], ['/registro', 'registro'],
@@ -44,7 +45,8 @@ export class RubiPanelComponent implements OnDestroy {
     private readonly api: RubiApiService,
     private readonly conversation: RubiConversationService,
     readonly i18n: I18nService,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly screenContext: RubiScreenContextService
   ) {
     this.subscription = this.conversation.messagesChanges.subscribe(messages => this.messages = messages);
   }
@@ -80,8 +82,10 @@ export class RubiPanelComponent implements OnDestroy {
     if (!trimmed || this.loading || this.unavailable) return;
 
     this.loading = true;
+    const history = this.conversation.recentHistory();
     this.conversation.add({ author: 'user', text: trimmed });
-    this.api.message(trimmed, this.i18n.language, this.currentRouteKey()).subscribe({
+    const routeKey = this.currentRouteKey();
+    this.api.message(trimmed, this.i18n.language, routeKey, history, this.currentScreenContext(routeKey)).subscribe({
       next: response => this.handleResponse(response),
       error: error => this.handleError(error)
     });
@@ -114,7 +118,7 @@ export class RubiPanelComponent implements OnDestroy {
     this.draft = '';
     this.conversation.add({
       author: 'rubi', text: response.message, intent: response.intent,
-      actions: response.actions.filter(action => this.isSafeAction(action))
+      actions: response.actions.filter(action => this.isSafeAction(action)), tool: response.tool?.name
     });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
@@ -140,6 +144,18 @@ export class RubiPanelComponent implements OnDestroy {
   private currentRouteKey(): RubiRouteKey | undefined {
     const path = this.router.url.split(/[?#]/, 1)[0];
     return ROUTE_KEYS.find(([prefix]) => prefix === '/' ? path === '/' : path.startsWith(prefix))?.[1];
+  }
+
+  private currentScreenContext(routeKey?: RubiRouteKey): RubiScreenContext | undefined {
+    if (!routeKey) return undefined;
+    const moduleByRoute: Record<RubiRouteKey, RubiModule> = {
+      home: 'home', personas: 'asociados', alta: 'asociados', registro: 'registro',
+      inscripciones: 'inscripciones', soporte: 'soporte', calendario: 'calendario', solicitudes: 'solicitudes'
+    };
+    const module = moduleByRoute[routeKey];
+    const current = this.screenContext.current;
+    if (current?.module === module) return current;
+    return { version: 1, module, view: routeKey === 'alta' ? 'gestion' : routeKey === 'home' ? 'inicio' : routeKey };
   }
 
   private isValidResponse(response: RubiResponse): boolean {

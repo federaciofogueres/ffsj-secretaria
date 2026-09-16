@@ -25,10 +25,10 @@ describe('RubiApiService', () => {
   afterEach(() => http.verify());
 
   it('sends only the allowed Rubi payload and current auth token', () => {
-    service.message('Necesito ayuda', 'va', 'personas').subscribe();
+    service.message('Necesito ayuda', 'va', 'personas', [{ role: 'user', text: 'Una consulta anterior' }], { version: 1, module: 'asociados', view: 'listado' }).subscribe();
     const request = http.expectOne('/emjf1/Secretaria/1.0.0/asistente/mensaje');
     expect(request.request.method).toBe('POST');
-    expect(request.request.body).toEqual({ message: 'Necesito ayuda', idioma: 'va', routeKey: 'personas' });
+    expect(request.request.body).toEqual({ message: 'Necesito ayuda', idioma: 'va', routeKey: 'personas', history: [{ role: 'user', text: 'Una consulta anterior' }], screenContext: { version: 1, module: 'asociados', view: 'listado' } });
     expect(request.request.headers.get('Authorization')).toBe('Bearer test-token');
     request.flush({ message: 'Resposta', intent: 'help', actions: [], errors: [], metadata: { success: true } });
   });

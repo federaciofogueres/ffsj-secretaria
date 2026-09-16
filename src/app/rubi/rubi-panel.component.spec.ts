@@ -45,7 +45,7 @@ describe('RubiPanelComponent', () => {
     api.message.and.returnValue(of(response));
     component.show();
     component.sendQuickAction('rubi.quick.documents');
-    expect(api.message).toHaveBeenCalledWith('Enviar documentacion', 'es', 'home');
+    expect(api.message).toHaveBeenCalledWith('Enviar documentacion', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' });
     expect(component.messages[component.messages.length - 1].actions).toEqual(response.actions);
   });
 
@@ -83,7 +83,7 @@ describe('RubiPanelComponent', () => {
     TestBed.inject(I18nService).setLanguage('en');
     component.draft = 'Help';
     component.send();
-    expect(api.message).toHaveBeenCalledWith('Help', 'en', 'home');
+    expect(api.message).toHaveBeenCalledWith('Help', 'en', 'home', [], { version: 1, module: 'home', view: 'inicio' });
   });
 
   it('renders Gateway text as text rather than HTML', () => {
