@@ -32,4 +32,19 @@ describe('RubiApiService', () => {
     expect(request.request.headers.get('Authorization')).toBe('Bearer test-token');
     request.flush({ message: 'Resposta', intent: 'help', actions: [], errors: [], metadata: { success: true } });
   });
+
+  it('uses the existing prepare endpoint and exposes only cancellation, never confirmation', () => {
+    service.prepararAlta(7, { nif: 'TEST1234Z' }).subscribe();
+    const prepare = http.expectOne('/emjf1/Secretaria/1.0.0/altas/preparar');
+    expect(prepare.request.method).toBe('POST');
+    expect(prepare.request.body).toEqual({ ejercicioId: 7, datos: { nif: 'TEST1234Z' } });
+    prepare.flush({ estado: 'preparada' });
+
+    service.cancelarPreparacionAlta('x'.repeat(43)).subscribe();
+    const cancel = http.expectOne('/emjf1/Secretaria/1.0.0/altas/preparacion/cancelar');
+    expect(cancel.request.method).toBe('POST');
+    expect(cancel.request.body).toEqual({ confirmacion: 'x'.repeat(43) });
+    cancel.flush({ cancelada: true });
+    expect((service as any).confirmarAlta).toBeUndefined();
+  });
 });

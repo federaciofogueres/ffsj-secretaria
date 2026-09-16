@@ -1,0 +1,108 @@
+<section class="rubi-alta" aria-labelledby="rubi-alta-title">
+  <header>
+    <h3 id="rubi-alta-title">{{ 'rubi.alta.title' | t }}</h3>
+    <p>{{ 'rubi.alta.privacy' | t }}</p>
+  </header>
+
+  <p *ngIf="loadingOptions" class="rubi-alta-status" role="status">{{ 'common.loading' | t }}</p>
+  <p *ngIf="errorKey" class="rubi-alta-error" role="alert">{{ errorKey | t }}</p>
+
+  <ng-container *ngIf="prepared as result; else altaForm">
+    <div *ngIf="result.estado === 'preparada'; else normalFlow" class="rubi-alta-summary" role="status">
+      <h4>{{ 'rubi.alta.prepared.title' | t }}</h4>
+      <p class="rubi-alta-stop">{{ 'rubi.alta.prepared.stop' | t }}</p>
+      <dl>
+        <div><dt>{{ 'rubi.alta.field.person' | t }}</dt><dd>{{ form.value.nombre }} {{ form.value.apellidos }}</dd></div>
+        <div><dt>{{ 'rubi.alta.field.identification' | t }}</dt><dd>{{ form.value.identificacion }}</dd></div>
+        <div><dt>{{ 'rubi.alta.field.birthDate' | t }}</dt><dd>{{ form.value.nacimiento }}</dd></div>
+        <div><dt>{{ 'rubi.alta.field.type' | t }}</dt><dd>{{ ('rubi.alta.type.' + (form.value.tipo === 'Hoguera infantil' ? 'child' : 'adult')) | t }}</dd></div>
+        <div><dt>{{ 'rubi.alta.field.roles' | t }}</dt><dd>{{ result.cargos.length ? result.cargos[0].nombre : '—' }}<ng-container *ngFor="let cargo of result.cargos.slice(1)">, {{ cargo.nombre }}</ng-container></dd></div>
+        <div><dt>{{ 'rubi.alta.field.exercise' | t }}</dt><dd>{{ result.ejercicio.ejercicio }}</dd></div>
+      </dl>
+      <p *ngIf="result.persona" class="rubi-alta-notice">{{ 'rubi.alta.prepared.history' | t }}</p>
+      <p *ngIf="result.antecedentes.requiereCertificacion" class="rubi-alta-notice">{{ 'rubi.alta.prepared.certification' | t }}</p>
+      <p>{{ 'rubi.alta.prepared.noEffects' | t }}</p>
+      <div class="rubi-alta-buttons">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="edit()">{{ 'rubi.alta.edit' | t }}</button>
+        <button type="button" class="btn btn-outline-danger btn-sm" (click)="cancel()">{{ 'common.cancel' | t }}</button>
+      </div>
+    </div>
+
+    <ng-template #normalFlow>
+      <div class="rubi-alta-summary rubi-alta-warning" role="status">
+        <h4>{{ 'rubi.alta.normal.title' | t }}</h4>
+        <p>{{ 'rubi.alta.normal.description' | t }}</p>
+        <ul *ngIf="result.conflictosComplejos.length">
+          <li *ngFor="let conflict of result.conflictosComplejos">{{ conflict.cargoNombre || ('rubi.alta.normal.conflict' | t) }}</li>
+        </ul>
+        <p>{{ 'rubi.alta.prepared.noEffects' | t }}</p>
+        <div class="rubi-alta-buttons">
+          <button type="button" class="btn btn-primary btn-sm" (click)="continueInNormalFlow()">{{ 'rubi.alta.normal.open' | t }}</button>
+          <button type="button" class="btn btn-outline-secondary btn-sm" (click)="edit()">{{ 'rubi.alta.edit' | t }}</button>
+          <button type="button" class="btn btn-outline-danger btn-sm" (click)="cancel()">{{ 'common.cancel' | t }}</button>
+        </div>
+      </div>
+    </ng-template>
+  </ng-container>
+
+  <ng-template #altaForm>
+    <form *ngIf="!loadingOptions && !unavailable" [formGroup]="form" (ngSubmit)="prepare()" novalidate>
+      <label for="rubi-alta-type">{{ 'rubi.alta.field.type' | t }}</label>
+      <select id="rubi-alta-type" formControlName="tipo" (change)="onTypeChanged()">
+        <option value="Hoguera adulta">{{ 'rubi.alta.type.adult' | t }}</option>
+        <option value="Hoguera infantil">{{ 'rubi.alta.type.child' | t }}</option>
+      </select>
+
+      <label for="rubi-alta-identification">{{ 'rubi.alta.field.identification' | t }} *</label>
+      <input #identificationInput id="rubi-alta-identification" formControlName="identificacion" autocomplete="off" maxlength="30" [attr.aria-invalid]="controlInvalid('identificacion')" />
+      <small *ngIf="controlInvalid('identificacion')">{{ 'rubi.alta.validation.identification' | t }}</small>
+
+      <label for="rubi-alta-birth">{{ 'rubi.alta.field.birthDate' | t }} *</label>
+      <input id="rubi-alta-birth" type="date" formControlName="nacimiento" autocomplete="bday" [attr.aria-invalid]="controlInvalid('nacimiento')" />
+      <small *ngIf="controlInvalid('nacimiento')">{{ 'rubi.alta.validation.birthDate' | t }}</small>
+
+      <div class="rubi-alta-grid">
+        <div><label for="rubi-alta-name">{{ 'rubi.alta.field.name' | t }} *</label><input id="rubi-alta-name" formControlName="nombre" autocomplete="given-name" maxlength="100" [attr.aria-invalid]="controlInvalid('nombre')" /></div>
+        <div><label for="rubi-alta-surname">{{ 'rubi.alta.field.surnames' | t }} *</label><input id="rubi-alta-surname" formControlName="apellidos" autocomplete="family-name" maxlength="150" [attr.aria-invalid]="controlInvalid('apellidos')" /></div>
+      </div>
+
+      <fieldset>
+        <legend>{{ 'rubi.alta.field.roles' | t }} *</legend>
+        <label *ngFor="let cargo of filteredCargos" class="rubi-alta-check">
+          <input type="checkbox" [checked]="selectedCargoIds.has(cargo.id)" (change)="toggleCargo(cargo.id, $any($event.target).checked)" />
+          <span>{{ cargo.nombre }}<small *ngIf="cargo.plazasDisponibles === 0">{{ 'rubi.alta.role.full' | t }}</small></span>
+        </label>
+        <small *ngIf="submitted && !selectedCargoIds.size">{{ 'rubi.alta.validation.roles' | t }}</small>
+      </fieldset>
+
+      <details>
+        <summary>{{ 'rubi.alta.contact.title' | t }}</summary>
+        <label for="rubi-alta-address">{{ 'rubi.alta.field.address' | t }}</label><input id="rubi-alta-address" formControlName="direccion" autocomplete="street-address" maxlength="200" />
+        <div class="rubi-alta-grid">
+          <div><label for="rubi-alta-cp">{{ 'rubi.alta.field.postcode' | t }}</label><input id="rubi-alta-cp" formControlName="cp" inputmode="numeric" autocomplete="postal-code" maxlength="5" /></div>
+          <div><label for="rubi-alta-city">{{ 'rubi.alta.field.city' | t }}</label><input id="rubi-alta-city" formControlName="localidad" autocomplete="address-level2" maxlength="100" /></div>
+        </div>
+        <label for="rubi-alta-province">{{ 'rubi.alta.field.province' | t }}</label><input id="rubi-alta-province" formControlName="provincia" autocomplete="address-level1" maxlength="100" />
+        <div class="rubi-alta-grid">
+          <div><label for="rubi-alta-phone">{{ 'rubi.alta.field.phone' | t }}</label><input id="rubi-alta-phone" formControlName="telefono" type="tel" autocomplete="tel" maxlength="20" /></div>
+          <div><label for="rubi-alta-email">{{ 'rubi.alta.field.email' | t }}</label><input id="rubi-alta-email" formControlName="email" type="email" autocomplete="email" /></div>
+        </div>
+      </details>
+
+      <fieldset *ngIf="isMinor">
+        <legend>{{ 'rubi.alta.representation.title' | t }}</legend>
+        <p>{{ 'rubi.alta.representation.help' | t }}</p>
+        <label for="rubi-alta-rep1-name">{{ 'rubi.alta.field.representativeName' | t }} *</label><input id="rubi-alta-rep1-name" formControlName="representante1Nombre" autocomplete="off" maxlength="150" />
+        <label for="rubi-alta-rep1-phone">{{ 'rubi.alta.field.representativePhone' | t }} *</label><input id="rubi-alta-rep1-phone" formControlName="representante1Telefono" type="tel" autocomplete="off" maxlength="20" />
+        <label for="rubi-alta-rep2-name">{{ 'rubi.alta.field.secondRepresentativeName' | t }}</label><input id="rubi-alta-rep2-name" formControlName="representante2Nombre" autocomplete="off" maxlength="150" />
+        <label for="rubi-alta-rep2-phone">{{ 'rubi.alta.field.secondRepresentativePhone' | t }}</label><input id="rubi-alta-rep2-phone" formControlName="representante2Telefono" type="tel" autocomplete="off" maxlength="20" />
+      </fieldset>
+
+      <p class="rubi-alta-boundary">{{ 'rubi.alta.boundary' | t }}</p>
+      <div class="rubi-alta-buttons">
+        <button class="ux-btn" type="submit" [disabled]="loading">{{ (loading ? 'rubi.alta.preparing' : 'rubi.alta.prepare') | t }}</button>
+        <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cancel()">{{ 'common.cancel' | t }}</button>
+      </div>
+    </form>
+  </ng-template>
+</section>

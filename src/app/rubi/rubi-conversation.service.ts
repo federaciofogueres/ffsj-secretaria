@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Subject } from 'rxjs';
 
 import { RubiAction, RubiHistoryEntry, RubiModule } from './rubi-api.service';
 
@@ -10,14 +10,18 @@ export interface RubiMessage {
   intent?: string | null;
   actions?: RubiAction[];
   tool?: string;
+  destination?: string;
   topic?: string;
   module?: RubiModule;
+  excludeFromHistory?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
 export class RubiConversationService {
   private readonly messagesSubject = new BehaviorSubject<RubiMessage[]>([]);
   readonly messagesChanges = this.messagesSubject.asObservable();
+  private readonly clearedSubject = new Subject<void>();
+  readonly clearedChanges = this.clearedSubject.asObservable();
   private nextId = 1;
   private expiresAt = 0;
   private readonly ttlMs = 30 * 60 * 1000;
@@ -34,12 +38,12 @@ export class RubiConversationService {
 
   recentHistory(maxTurns = 6): RubiHistoryEntry[] {
     return this.messages
-      .filter(message => message.author === 'user' || (message.author === 'rubi' && (!!message.intent || !!message.tool)))
+      .filter(message => !message.excludeFromHistory && (message.author === 'user' || (message.author === 'rubi' && (!!message.intent || !!message.tool))))
       .slice(-maxTurns)
       .map(message => ({
         role: message.author === 'user' ? 'user' : 'assistant', text: message.text,
         ...(message.intent ? { intent: message.intent } : {}), ...(message.tool ? { tool: message.tool } : {}),
-        ...(message.actions?.[0]?.destination ? { destination: message.actions[0].destination } : {}),
+        ...(message.destination || message.actions?.[0]?.destination ? { destination: message.destination || message.actions?.[0]?.destination } : {}),
         ...(message.topic ? { topic: message.topic } : {}), ...(message.module ? { module: message.module } : {})
       }));
   }
@@ -48,5 +52,17 @@ export class RubiConversationService {
     this.nextId = 1;
     this.expiresAt = 0;
     this.messagesSubject.next([]);
+    this.clearedSubject.next();
+  }
+
+  excludeLastUserFromHistory(): void {
+    const messages = [...this.messages];
+    for (let index = messages.length - 1; index >= 0; index--) {
+      if (messages[index].author === 'user') {
+        messages[index] = { ...messages[index], excludeFromHistory: true };
+        this.messagesSubject.next(messages);
+        return;
+      }
+    }
   }
 }

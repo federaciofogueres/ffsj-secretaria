@@ -19,12 +19,13 @@
       </div>
     </article>
     <p *ngIf="loading" class="rubi-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
+    <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()"></app-rubi-alta>
   </section>
 
-  <section class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
+  <section *ngIf="!altaActive" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
     <button *ngFor="let key of ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support']" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>
   </section>
-  <form class="rubi-composer" (ngSubmit)="send()">
+  <form *ngIf="!altaActive" class="rubi-composer" (ngSubmit)="send()">
     <label class="visually-hidden" for="rubi-message">{{ 'rubi.inputLabel' | t }}</label>
     <textarea #messageInput id="rubi-message" name="message" [(ngModel)]="draft" [disabled]="loading || unavailable" [placeholder]="'rubi.placeholder' | t" rows="2" maxlength="1200" (keydown)="onMessageKeydown($event)"></textarea>
     <button class="ux-btn" type="submit" [disabled]="!draft.trim() || loading || unavailable">{{ 'rubi.send' | t }}</button>

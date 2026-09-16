@@ -41,12 +41,13 @@ describe('RubiPanelComponent', () => {
   });
 
   it('sends a quick action and renders a safe response action', () => {
-    const response: RubiResponse = { message: 'Puedes abrir el registro.', intent: 'navigate', actions: [{ type: 'navigate', destination: 'registro', route: '/registro' }], errors: [], metadata: { success: true } };
+    const response: RubiResponse = { message: 'Puedes abrir el registro.', intent: 'navigate', actions: [{ type: 'navigate', destination: 'registro', route: '/registro' }], conversation: { intent: 'navigate', tool: 'navigate_to', destination: 'registro', topic: 'registro', module: 'registro' }, errors: [], metadata: { success: true } };
     api.message.and.returnValue(of(response));
     component.show();
     component.sendQuickAction('rubi.quick.documents');
     expect(api.message).toHaveBeenCalledWith('Enviar documentacion', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' });
     expect(component.messages[component.messages.length - 1].actions).toEqual(response.actions);
+    expect(component.messages[component.messages.length - 1].topic).toBe('registro');
   });
 
   it('prevents duplicate sends while a request is in progress', () => {
@@ -72,10 +73,22 @@ describe('RubiPanelComponent', () => {
     expect(component.unavailable).toBeTrue();
   });
 
-  it('uses only the approved route for start_alta', () => {
+  it('opens the structured alta inside Rubi and does not navigate to an untrusted route', () => {
     spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
     component.executeAction({ type: 'start_flow', flow: 'alta', route: 'https://invalid.example' });
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/asociados/gestion');
+    expect(component.altaActive).toBeTrue();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('excludes the message that starts a sensitive alta flow from later provider history', () => {
+    api.message.and.returnValue(of({
+      message: 'Formulario seguro', intent: 'start_alta',
+      actions: [{ type: 'start_flow', flow: 'alta', destination: 'alta' }],
+      conversation: { intent: 'start_alta', tool: 'start_alta', sensitiveFlow: 'alta' },
+      errors: [], metadata: { success: true }
+    }));
+    component.send('Quiero dar de alta a Persona Privada TEST1234Z');
+    expect(TestBed.inject(RubiConversationService).recentHistory().some(item => item.text.includes('Persona Privada'))).toBeFalse();
   });
 
   it('uses the current language for subsequent Gateway calls', () => {

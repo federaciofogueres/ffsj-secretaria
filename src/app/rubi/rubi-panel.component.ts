@@ -8,6 +8,7 @@ import { Subscription } from 'rxjs';
 import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
 import { RubiAction, RubiApiService, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
+import { RubiAltaComponent } from './rubi-alta.component';
 import { RubiConversationService, RubiMessage } from './rubi-conversation.service';
 import { RubiScreenContextService } from './rubi-screen-context.service';
 
@@ -25,7 +26,7 @@ const SAFE_DESTINATIONS: Record<string, string> = {
 @Component({
   selector: 'app-rubi-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe],
+  imports: [CommonModule, FormsModule, TranslatePipe, RubiAltaComponent],
   templateUrl: './rubi-panel.component.html',
   styleUrls: ['./rubi-panel.component.scss']
 })
@@ -38,8 +39,9 @@ export class RubiPanelComponent implements OnDestroy {
   unavailable = false;
   draft = '';
   messages: RubiMessage[] = [];
+  altaActive = false;
   private opener: HTMLElement | null = null;
-  private readonly subscription: Subscription;
+  private readonly subscriptions = new Subscription();
 
   constructor(
     private readonly api: RubiApiService,
@@ -48,11 +50,12 @@ export class RubiPanelComponent implements OnDestroy {
     private readonly router: Router,
     private readonly screenContext: RubiScreenContextService
   ) {
-    this.subscription = this.conversation.messagesChanges.subscribe(messages => this.messages = messages);
+    this.subscriptions.add(this.conversation.messagesChanges.subscribe(messages => this.messages = messages));
+    this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => this.altaActive = false));
   }
 
   ngOnDestroy(): void {
-    this.subscription.unsubscribe();
+    this.subscriptions.unsubscribe();
   }
 
   toggle(): void {
@@ -102,11 +105,28 @@ export class RubiPanelComponent implements OnDestroy {
   }
 
   executeAction(action: RubiAction): void {
-    const route = action.type === 'start_flow' && action.flow === 'alta'
-      ? SAFE_DESTINATIONS.alta
-      : action.type === 'navigate' ? SAFE_DESTINATIONS[action.destination] : undefined;
+    if (action.type === 'start_flow' && action.flow === 'alta') {
+      this.conversation.excludeLastUserFromHistory();
+      this.altaActive = true;
+      return;
+    }
+    const route = action.type === 'navigate' ? SAFE_DESTINATIONS[action.destination] : undefined;
     if (!route) return;
     this.router.navigateByUrl(route).then(() => this.close());
+  }
+
+  onAltaClosed(reason: 'cancelled' | 'expired'): void {
+    this.altaActive = false;
+    this.conversation.add({
+      author: 'rubi',
+      text: this.i18n.t(reason === 'expired' ? 'rubi.alta.expired' : 'rubi.alta.cancelled')
+    });
+    setTimeout(() => this.messageInput?.nativeElement.focus());
+  }
+
+  openNormalAltaFlow(): void {
+    this.altaActive = false;
+    this.router.navigateByUrl(SAFE_DESTINATIONS.alta).then(() => this.close());
   }
 
   private handleResponse(response: RubiResponse): void {
@@ -116,9 +136,13 @@ export class RubiPanelComponent implements OnDestroy {
       return;
     }
     this.draft = '';
+    if (response.conversation?.sensitiveFlow === 'alta') this.conversation.excludeLastUserFromHistory();
     this.conversation.add({
       author: 'rubi', text: response.message, intent: response.intent,
-      actions: response.actions.filter(action => this.isSafeAction(action)), tool: response.tool?.name
+      actions: response.actions.filter(action => this.isSafeAction(action)), tool: response.tool?.name,
+      destination: response.conversation?.destination,
+      topic: response.conversation?.topic,
+      module: response.conversation?.module
     });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }

@@ -26,6 +26,15 @@ describe('RubiConversationService', () => {
     expect(service.recentHistory(4).map(item => item.text)).toEqual(['turno 4', 'turno 5', 'turno 6', 'turno 7']);
   });
 
+  it('returns the structured state supplied by the Gateway without deriving it from response text', () => {
+    const service = new RubiConversationService();
+    service.add({ author: 'rubi', text: 'Respuesta sin nombres funcionales', intent: 'help', tool: 'search_help', destination: 'registro', topic: 'documentacion', module: 'registro' });
+    expect(service.recentHistory()).toEqual([{
+      role: 'assistant', text: 'Respuesta sin nombres funcionales', intent: 'help', tool: 'search_help',
+      destination: 'registro', topic: 'documentacion', module: 'registro'
+    }]);
+  });
+
   it('expires the session conversation after inactivity', () => {
     let now = 1_000;
     spyOn(Date, 'now').and.callFake(() => now);

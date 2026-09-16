@@ -1,0 +1,26 @@
+:host { display: block; }
+.rubi-alta { margin: .25rem 0 1rem; padding: .85rem; border: 1px solid #d7c9ea; border-radius: .75rem; background: #fbf9fe; color: #29232f; }
+.rubi-alta header h3, .rubi-alta-summary h4 { margin: 0 0 .35rem; font-size: 1rem; }
+.rubi-alta header p, .rubi-alta-summary p, .rubi-alta fieldset p { margin: .25rem 0 .65rem; font-size: .82rem; }
+.rubi-alta form { display: grid; gap: .35rem; }
+.rubi-alta label, .rubi-alta legend { font-size: .8rem; font-weight: 700; }
+.rubi-alta input, .rubi-alta select { width: 100%; min-width: 0; border: 1px solid #bcb4c5; border-radius: .4rem; padding: .42rem; background: #fff; }
+.rubi-alta input:focus, .rubi-alta select:focus { border-color: #6f42c1; outline: 2px solid rgba(111, 66, 193, .2); }
+.rubi-alta input[aria-invalid="true"] { border-color: #b42318; }
+.rubi-alta small { display: block; color: #b42318; font-size: .72rem; }
+.rubi-alta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .55rem; }
+.rubi-alta fieldset { display: grid; gap: .35rem; margin: .45rem 0; padding: .65rem; border: 1px solid #ddd5e5; border-radius: .5rem; }
+.rubi-alta-check { display: flex; align-items: flex-start; gap: .45rem; font-weight: 500 !important; }
+.rubi-alta-check input { width: auto; margin-top: .15rem; }
+.rubi-alta-check small { color: #8a4b08; }
+.rubi-alta details { margin: .35rem 0; padding: .55rem; border-radius: .45rem; background: #f1edf6; }
+.rubi-alta details[open] { display: grid; gap: .35rem; }
+.rubi-alta summary { cursor: pointer; font-size: .82rem; font-weight: 700; }
+.rubi-alta-buttons { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: .65rem; }
+.rubi-alta-error, .rubi-alta-warning, .rubi-alta-notice { padding: .55rem; border-radius: .4rem; background: #fff3cd; color: #664d03; }
+.rubi-alta-stop { font-weight: 700; color: #5b2d82; }
+.rubi-alta-boundary { margin: .5rem 0 0; color: #5c5564; font-size: .76rem; }
+.rubi-alta-summary dl { margin: .5rem 0; }
+.rubi-alta-summary dl div { display: grid; grid-template-columns: 7rem 1fr; gap: .4rem; padding: .25rem 0; border-bottom: 1px solid #e6dfec; }
+.rubi-alta-summary dt { font-size: .76rem; font-weight: 700; }.rubi-alta-summary dd { margin: 0; overflow-wrap: anywhere; font-size: .8rem; }
+@media (max-width: 420px) { .rubi-alta-grid { grid-template-columns: 1fr; }.rubi-alta-summary dl div { grid-template-columns: 1fr; gap: .05rem; } }
