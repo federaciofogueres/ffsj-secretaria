@@ -7,6 +7,19 @@
   <p *ngIf="loadingOptions" class="rubi-alta-status" role="status">{{ 'common.loading' | t }}</p>
   <p *ngIf="errorKey" class="rubi-alta-error" role="alert">{{ errorKey | t }}</p>
 
+  <ng-container *ngIf="confirmed as result; else pendingFlow">
+    <div class="rubi-alta-summary rubi-alta-success" role="status" aria-live="polite">
+      <h4>{{ 'rubi.alta.confirmed.title' | t }}</h4>
+      <p>{{ 'rubi.alta.confirmed.description' | t }}</p>
+      <dl>
+        <div><dt>{{ 'rubi.alta.confirmed.reference' | t }}</dt><dd>{{ result.numero || result.solicitudId }}</dd></div>
+        <div *ngIf="result.estado"><dt>{{ 'rubi.status' | t }}</dt><dd>{{ result.estado }}</dd></div>
+      </dl>
+      <p>{{ (result.requiereCertificacion ? 'rubi.alta.confirmed.certifications' : 'rubi.alta.confirmed.signature') | t }}</p>
+    </div>
+  </ng-container>
+
+  <ng-template #pendingFlow>
   <ng-container *ngIf="prepared as result; else altaForm">
     <div *ngIf="result.estado === 'preparada'; else normalFlow" class="rubi-alta-summary" role="status">
       <h4>{{ 'rubi.alta.prepared.title' | t }}</h4>
@@ -22,9 +35,23 @@
       <p *ngIf="result.persona" class="rubi-alta-notice">{{ 'rubi.alta.prepared.history' | t }}</p>
       <p *ngIf="result.antecedentes.requiereCertificacion" class="rubi-alta-notice">{{ 'rubi.alta.prepared.certification' | t }}</p>
       <p>{{ 'rubi.alta.prepared.noEffects' | t }}</p>
+      <fieldset *ngIf="result.confirmacion?.confirmacionHumanaHabilitada; else confirmationDisabled" class="rubi-alta-confirmation">
+        <legend>{{ 'rubi.alta.confirm.title' | t }}</legend>
+        <p>{{ 'rubi.alta.confirm.warning' | t }}</p>
+        <label class="rubi-alta-check">
+          <input type="checkbox" [checked]="confirmationAccepted" [disabled]="confirming" (change)="confirmationAccepted = $any($event.target).checked" />
+          <span>{{ 'rubi.alta.confirm.accept' | t }}</span>
+        </label>
+        <button type="button" class="btn btn-danger btn-sm" [disabled]="!confirmationAccepted || confirming" (click)="confirm()">
+          {{ (confirming ? 'rubi.alta.confirming' : 'rubi.alta.confirm.action') | t }}
+        </button>
+      </fieldset>
+      <ng-template #confirmationDisabled>
+        <p class="rubi-alta-notice">{{ 'rubi.alta.confirm.disabled' | t }}</p>
+      </ng-template>
       <div class="rubi-alta-buttons">
-        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="edit()">{{ 'rubi.alta.edit' | t }}</button>
-        <button type="button" class="btn btn-outline-danger btn-sm" (click)="cancel()">{{ 'common.cancel' | t }}</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" [disabled]="confirming" (click)="edit()">{{ 'rubi.alta.edit' | t }}</button>
+        <button type="button" class="btn btn-outline-danger btn-sm" [disabled]="confirming" (click)="cancel()">{{ 'common.cancel' | t }}</button>
       </div>
     </div>
 
@@ -104,5 +131,6 @@
         <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading" (click)="cancel()">{{ 'common.cancel' | t }}</button>
       </div>
     </form>
+  </ng-template>
   </ng-template>
 </section>

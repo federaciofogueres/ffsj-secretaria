@@ -36,17 +36,56 @@ const translations: Record<AppLanguage, Record<string, string>> = {
 Object.assign(translations.es, {
   'rubi.alta.error.cargo': 'El cargo seleccionado no está disponible. Revisa la selección o utiliza el flujo normal.',
   'rubi.alta.error.normalFlow': 'Este caso requiere revisión mediante el flujo normal de altas.',
-  'rubi.alta.error.expired': 'La preparación ya no está vigente. Vuelve a preparar el alta.'
+  'rubi.alta.error.expired': 'La preparación ya no está vigente. Vuelve a preparar el alta.',
+  'rubi.alta.confirm.title': 'Confirmación administrativa',
+  'rubi.alta.confirm.warning': 'Esta acción registrará un trámite real de alta en Secretaría. Se volverán a validar los datos y no se escribirá directamente en Censo.',
+  'rubi.alta.confirm.accept': 'He revisado el resumen y quiero registrar el trámite de alta.',
+  'rubi.alta.confirm.action': 'Confirmar alta y registrar trámite',
+  'rubi.alta.confirming': 'Registrando trámite...',
+  'rubi.alta.confirm.disabled': 'La confirmación transaccional no está habilitada. La preparación puede revisarse, editarse o cancelarse.',
+  'rubi.alta.confirmed.title': 'Trámite de alta registrado',
+  'rubi.alta.confirmed.description': 'Secretaría ha registrado el trámite administrativo. La persona no se incorpora directamente a Censo.',
+  'rubi.alta.confirmed.reference': 'Referencia del trámite',
+  'rubi.alta.confirmed.signature': 'El siguiente paso corresponde a la firma y validación administrativa de la solicitud.',
+  'rubi.alta.confirmed.certifications': 'El trámite continúa por el circuito de certificaciones previo a su validación administrativa.',
+  'rubi.alta.error.confirm': 'No se ha podido confirmar el alta. Si la respuesta se perdió, puedes reintentarlo con seguridad.',
+  'rubi.alta.error.transactionDisabled': 'La confirmación transaccional no está habilitada.'
 });
 Object.assign(translations.va, {
   'rubi.alta.error.cargo': 'El càrrec seleccionat no està disponible. Revisa la selecció o utilitza el flux normal.',
   'rubi.alta.error.normalFlow': "Este cas requerix revisió mitjançant el flux normal d'altes.",
-  'rubi.alta.error.expired': "La preparació ja no està vigent. Torna a preparar l'alta."
+  'rubi.alta.error.expired': "La preparació ja no està vigent. Torna a preparar l'alta.",
+  'rubi.alta.confirm.title': 'Confirmació administrativa',
+  'rubi.alta.confirm.warning': "Esta acció registrarà un tràmit real d'alta en Secretaria. Es tornaran a validar les dades i no s'escriurà directament en Cens.",
+  'rubi.alta.confirm.accept': "He revisat el resum i vull registrar el tràmit d'alta.",
+  'rubi.alta.confirm.action': "Confirmar l'alta i registrar el tràmit",
+  'rubi.alta.confirming': 'Registrant el tràmit...',
+  'rubi.alta.confirm.disabled': 'La confirmació transaccional no està habilitada. La preparació es pot revisar, editar o cancel·lar.',
+  'rubi.alta.confirmed.title': "Tràmit d'alta registrat",
+  'rubi.alta.confirmed.description': "Secretaria ha registrat el tràmit administratiu. La persona no s'incorpora directament a Cens.",
+  'rubi.alta.confirmed.reference': 'Referència del tràmit',
+  'rubi.alta.confirmed.signature': 'El pas següent correspon a la firma i validació administrativa de la sol·licitud.',
+  'rubi.alta.confirmed.certifications': 'El tràmit continua pel circuit de certificacions previ a la validació administrativa.',
+  'rubi.alta.error.confirm': "No s'ha pogut confirmar l'alta. Si la resposta s'ha perdut, pots tornar-ho a intentar amb seguretat.",
+  'rubi.alta.error.transactionDisabled': 'La confirmació transaccional no està habilitada.'
 });
 Object.assign(translations.en, {
   'rubi.alta.error.cargo': 'The selected role is unavailable. Review the selection or use the standard flow.',
   'rubi.alta.error.normalFlow': 'This case requires review through the standard registration flow.',
-  'rubi.alta.error.expired': 'The preparation is no longer valid. Prepare the registration again.'
+  'rubi.alta.error.expired': 'The preparation is no longer valid. Prepare the registration again.',
+  'rubi.alta.confirm.title': 'Administrative confirmation',
+  'rubi.alta.confirm.warning': 'This action will register a real administrative process in the Secretariat. The details will be validated again and no direct write will be made to Census.',
+  'rubi.alta.confirm.accept': 'I have reviewed the summary and want to register the process.',
+  'rubi.alta.confirm.action': 'Confirm registration and register process',
+  'rubi.alta.confirming': 'Registering process...',
+  'rubi.alta.confirm.disabled': 'Transactional confirmation is not enabled. You can review, edit or cancel the preparation.',
+  'rubi.alta.confirmed.title': 'Registration process recorded',
+  'rubi.alta.confirmed.description': 'The Secretariat recorded the administrative process. The person is not added directly to Census.',
+  'rubi.alta.confirmed.reference': 'Process reference',
+  'rubi.alta.confirmed.signature': 'The next step is the signature and administrative validation of the request.',
+  'rubi.alta.confirmed.certifications': 'The process continues through the certification circuit before administrative validation.',
+  'rubi.alta.error.confirm': 'The registration could not be confirmed. If the response was lost, you can retry safely.',
+  'rubi.alta.error.transactionDisabled': 'Transactional confirmation is not enabled.'
 });
 
 @Injectable({ providedIn: 'root' })

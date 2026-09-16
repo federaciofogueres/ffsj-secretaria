@@ -40,6 +40,7 @@ export class RubiPanelComponent implements OnDestroy {
   draft = '';
   messages: RubiMessage[] = [];
   altaActive = false;
+  altaPrepared = false;
   private opener: HTMLElement | null = null;
   private readonly subscriptions = new Subscription();
 
@@ -51,7 +52,10 @@ export class RubiPanelComponent implements OnDestroy {
     private readonly screenContext: RubiScreenContextService
   ) {
     this.subscriptions.add(this.conversation.messagesChanges.subscribe(messages => this.messages = messages));
-    this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => this.altaActive = false));
+    this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => {
+      this.altaActive = false;
+      this.altaPrepared = false;
+    }));
   }
 
   ngOnDestroy(): void {
@@ -108,6 +112,7 @@ export class RubiPanelComponent implements OnDestroy {
     if (action.type === 'start_flow' && action.flow === 'alta') {
       this.conversation.excludeLastUserFromHistory();
       this.altaActive = true;
+      this.altaPrepared = false;
       return;
     }
     const route = action.type === 'navigate' ? SAFE_DESTINATIONS[action.destination] : undefined;
@@ -117,6 +122,7 @@ export class RubiPanelComponent implements OnDestroy {
 
   onAltaClosed(reason: 'cancelled' | 'expired'): void {
     this.altaActive = false;
+    this.altaPrepared = false;
     this.conversation.add({
       author: 'rubi',
       text: this.i18n.t(reason === 'expired' ? 'rubi.alta.expired' : 'rubi.alta.cancelled')
@@ -126,7 +132,12 @@ export class RubiPanelComponent implements OnDestroy {
 
   openNormalAltaFlow(): void {
     this.altaActive = false;
+    this.altaPrepared = false;
     this.router.navigateByUrl(SAFE_DESTINATIONS.alta).then(() => this.close());
+  }
+
+  onAltaPreparationStateChanged(prepared: boolean): void {
+    this.altaPrepared = prepared;
   }
 
   private handleResponse(response: RubiResponse): void {
@@ -178,8 +189,10 @@ export class RubiPanelComponent implements OnDestroy {
     };
     const module = moduleByRoute[routeKey];
     const current = this.screenContext.current;
-    if (current?.module === module) return current;
-    return { version: 1, module, view: routeKey === 'alta' ? 'gestion' : routeKey === 'home' ? 'inicio' : routeKey };
+    const state = this.altaActive ? { hasOpenRegistration: this.altaPrepared } : undefined;
+    if (current?.module === module) return { ...current, ...(state ? { state: { ...(current.state || {}), ...state } } : {}) };
+    return { version: 1, module, view: routeKey === 'alta' ? 'gestion' : routeKey === 'home' ? 'inicio' : routeKey,
+      ...(state ? { state } : {}) };
   }
 
   private isValidResponse(response: RubiResponse): boolean {

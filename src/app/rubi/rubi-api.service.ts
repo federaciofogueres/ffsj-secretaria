@@ -54,7 +54,23 @@ export interface AltaPreparacion {
     requiereCertificacion: boolean;
     circuito: 'ordinario' | 'antecedentes';
   };
-  confirmacion?: { referencia: string; expiraAt: string };
+  confirmacion?: {
+    referencia: string;
+    expiraAt: string;
+    confirmacionHumanaHabilitada: boolean;
+  };
+}
+
+export interface AltaConfirmacionResultado {
+  solicitudId: number;
+  numero?: string | null;
+  estado?: string | null;
+  tipo?: 'alta';
+  asociacionId?: number;
+  ejercicio?: number;
+  requiereCertificacion?: boolean;
+  siguientePaso?: 'firma_solicitud' | 'certificaciones';
+  idempotentReplay: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -86,5 +102,14 @@ export class RubiApiService {
     return this.http.post<{ cancelada: boolean }>(`${this.apiUrl.secretariaBasePath}/altas/preparacion/cancelar`, { confirmacion }, {
       headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
     }).pipe(timeout(10000));
+  }
+
+  confirmarAlta(confirmacion: string): Observable<AltaConfirmacionResultado> {
+    return this.http.post<AltaConfirmacionResultado>(`${this.apiUrl.secretariaBasePath}/altas/confirmar`, {
+      confirmacion,
+      confirmar: true
+    }, {
+      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
+    }).pipe(timeout(20000));
   }
 }

@@ -80,6 +80,17 @@ describe('RubiPanelComponent', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
+  it('sends only abstract preparation state when chat is used during human confirmation', () => {
+    api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    component.executeAction({ type: 'start_flow', flow: 'alta' });
+    component.onAltaPreparationStateChanged(true);
+    component.draft = 'Confírmala';
+    component.send();
+    const args = api.message.calls.mostRecent().args;
+    expect(args[4]?.state).toEqual({ hasOpenRegistration: true });
+    expect(JSON.stringify(args[4])).not.toContain('Persona');
+  });
+
   it('excludes the message that starts a sensitive alta flow from later provider history', () => {
     api.message.and.returnValue(of({
       message: 'Formulario seguro', intent: 'start_alta',

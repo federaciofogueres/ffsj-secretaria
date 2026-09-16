@@ -17,7 +17,7 @@ import { CargoCupoSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { AltaPreparacion, RubiApiService } from './rubi-api.service';
+import { AltaConfirmacionResultado, AltaPreparacion, RubiApiService } from './rubi-api.service';
 
 @Component({
   selector: 'app-rubi-alta',
@@ -30,6 +30,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
   @ViewChild('identificationInput') private identificationInput?: ElementRef<HTMLInputElement>;
   @Output() closed = new EventEmitter<'cancelled' | 'expired'>();
   @Output() openNormalFlow = new EventEmitter<void>();
+  @Output() preparationStateChanged = new EventEmitter<boolean>();
 
   readonly form = this.fb.group({
     tipo: ['Hoguera adulta', Validators.required],
@@ -52,11 +53,14 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
   cargos: CargoCupoSecretaria[] = [];
   selectedCargoIds = new Set<number>();
   loading = false;
+  confirming = false;
   loadingOptions = true;
   unavailable = false;
   submitted = false;
   errorKey = '';
   prepared: AltaPreparacion | null = null;
+  confirmed: AltaConfirmacionResultado | null = null;
+  confirmationAccepted = false;
   expired = false;
   private expiryTimer?: ReturnType<typeof setTimeout>;
   private readonly discardedReferences = new Set<string>();
@@ -86,6 +90,14 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
       this.loadingOptions = false;
       return;
     }
+    const associationId = Number(context.asociacionId);
+    const exerciseId = Number(exercise.id);
+    this.subscriptions.add(this.permissions.contextChanges.subscribe(current => {
+      if (this.prepared && Number(current?.asociacionId || 0) !== associationId) this.invalidateForContextChange();
+    }));
+    this.subscriptions.add(this.ejercicios.selectedChanges.subscribe(current => {
+      if (this.prepared && Number(current?.id || 0) !== exerciseId) this.invalidateForContextChange();
+    }));
     this.subscriptions.add(this.secretaria.getCargosCupos(context.asociacionId, exercise.ejercicio).subscribe({
       next: response => {
         this.cargos = response.cargos;
@@ -180,11 +192,16 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     }
 
     this.loading = true;
+    this.confirmed = null;
     this.subscriptions.add(this.api.prepararAlta(exercise.id, datos).pipe(finalize(() => this.loading = false)).subscribe({
       next: preparation => {
         this.prepared = preparation;
+        this.confirmationAccepted = false;
         this.submitted = false;
-        if (preparation.confirmacion) this.scheduleExpiry(preparation.confirmacion.expiraAt);
+        if (preparation.confirmacion) {
+          this.scheduleExpiry(preparation.confirmacion.expiraAt);
+          this.preparationStateChanged.emit(true);
+        }
       },
       error: error => this.errorKey = this.errorFor(error)
     }));
@@ -194,6 +211,8 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     this.discardPrepared();
     this.clearExpiryTimer();
     this.prepared = null;
+    this.confirmationAccepted = false;
+    this.preparationStateChanged.emit(false);
     this.expired = false;
     this.submitted = false;
     this.errorKey = '';
@@ -203,6 +222,26 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     this.discardPrepared();
     this.clearSensitiveState();
     this.closed.emit('cancelled');
+  }
+
+  confirm(): void {
+    const confirmation = this.prepared?.confirmacion;
+    if (!confirmation || !confirmation.confirmacionHumanaHabilitada || !this.confirmationAccepted || this.confirming) return;
+    this.errorKey = '';
+    this.confirming = true;
+    this.subscriptions.add(this.api.confirmarAlta(confirmation.referencia).pipe(
+      finalize(() => this.confirming = false)
+    ).subscribe({
+      next: result => {
+        this.confirmed = result;
+        this.prepared = null;
+        this.confirmationAccepted = false;
+        this.clearExpiryTimer();
+        this.clearSensitiveInputs();
+        this.preparationStateChanged.emit(false);
+      },
+      error: error => this.handleConfirmationError(error)
+    }));
   }
 
   continueInNormalFlow(): void {
@@ -241,6 +280,46 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     return 'rubi.alta.error.prepare';
   }
 
+  private confirmationErrorFor(error: unknown): string {
+    if (!(error instanceof HttpErrorResponse)) return 'rubi.alta.error.confirm';
+    const code = String(error.error?.details?.code || '');
+    if (code === 'RUBI_TRANSACTIONAL_DISABLED') return 'rubi.alta.error.transactionDisabled';
+    if (code === 'CONFIRMACION_CADUCADA' || code === 'CONFIRMACION_SUSTITUIDA' || code === 'CONFIRMACION_NO_ENCONTRADA') {
+      return 'rubi.alta.error.expired';
+    }
+    if (code === 'CONFIRMACION_OTRO_ACTOR' || code === 'CONFIRMACION_OTRA_ASOCIACION' || error.status === 401 || error.status === 403) {
+      return 'rubi.alta.error.permission';
+    }
+    if (code === 'REGISTRO_ALTA_DUPLICADO' || code === 'SOLICITUD_ALTA_DUPLICADA') return 'rubi.alta.error.duplicate';
+    if (code === 'ASOCIADO_YA_ACTIVO_EN_ASOCIACION') return 'rubi.alta.error.active';
+    if (code === 'ALTA_CARGO_NO_DISPONIBLE') return 'rubi.alta.error.cargo';
+    if (code === 'ALTA_REQUIERE_FLUJO_NORMAL') return 'rubi.alta.error.normalFlow';
+    if (code === 'ALTA_EJERCICIO_NO_DISPONIBLE') return 'rubi.alta.error.exercise';
+    if (code === 'ALTA_PREPARACION_CAMBIADA') return 'rubi.alta.error.contextChanged';
+    return 'rubi.alta.error.confirm';
+  }
+
+  private handleConfirmationError(error: unknown): void {
+    this.errorKey = this.confirmationErrorFor(error);
+    this.confirmationAccepted = false;
+    if (!(error instanceof HttpErrorResponse) || error.status === 0 || error.status >= 500) return;
+    const code = String(error.error?.details?.code || '');
+    if (code === 'RUBI_TRANSACTIONAL_DISABLED') {
+      if (this.prepared?.confirmacion) {
+        this.prepared = {
+          ...this.prepared,
+          confirmacion: { ...this.prepared.confirmacion, confirmacionHumanaHabilitada: false }
+        };
+      }
+      return;
+    }
+    this.discardPrepared();
+    this.prepared = null;
+    this.clearExpiryTimer();
+    this.clearSensitiveInputs();
+    this.preparationStateChanged.emit(false);
+  }
+
   private scheduleExpiry(expiresAt: string): void {
     this.clearExpiryTimer();
     const delay = Math.max(0, new Date(expiresAt).getTime() - Date.now());
@@ -261,10 +340,26 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
   }
 
   private clearSensitiveState(): void {
+    this.clearSensitiveInputs();
+    this.confirmed = null;
+    this.confirmationAccepted = false;
+    this.preparationStateChanged.emit(false);
+    this.clearExpiryTimer();
+  }
+
+  private clearSensitiveInputs(): void {
     this.form.reset({ tipo: 'Hoguera adulta' });
     this.selectedCargoIds.clear();
     this.prepared = null;
+  }
+
+  private invalidateForContextChange(): void {
+    this.discardPrepared();
     this.clearExpiryTimer();
+    this.clearSensitiveInputs();
+    this.confirmationAccepted = false;
+    this.errorKey = 'rubi.alta.error.contextChanged';
+    this.preparationStateChanged.emit(false);
   }
 
   private clearExpiryTimer(): void {

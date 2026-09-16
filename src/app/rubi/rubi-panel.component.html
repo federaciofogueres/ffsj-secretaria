@@ -19,7 +19,7 @@
       </div>
     </article>
     <p *ngIf="loading" class="rubi-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
-    <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()"></app-rubi-alta>
+    <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
   </section>
 
   <section *ngIf="!altaActive" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">

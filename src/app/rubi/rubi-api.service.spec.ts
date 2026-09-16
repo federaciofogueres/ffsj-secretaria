@@ -33,7 +33,7 @@ describe('RubiApiService', () => {
     request.flush({ message: 'Resposta', intent: 'help', actions: [], errors: [], metadata: { success: true } });
   });
 
-  it('uses the existing prepare endpoint and exposes only cancellation, never confirmation', () => {
+  it('uses direct deterministic endpoints for preparation, cancellation and human confirmation', () => {
     service.prepararAlta(7, { nif: 'TEST1234Z' }).subscribe();
     const prepare = http.expectOne('/emjf1/Secretaria/1.0.0/altas/preparar');
     expect(prepare.request.method).toBe('POST');
@@ -45,6 +45,11 @@ describe('RubiApiService', () => {
     expect(cancel.request.method).toBe('POST');
     expect(cancel.request.body).toEqual({ confirmacion: 'x'.repeat(43) });
     cancel.flush({ cancelada: true });
-    expect((service as any).confirmarAlta).toBeUndefined();
+
+    service.confirmarAlta('y'.repeat(43)).subscribe();
+    const confirm = http.expectOne('/emjf1/Secretaria/1.0.0/altas/confirmar');
+    expect(confirm.request.method).toBe('POST');
+    expect(confirm.request.body).toEqual({ confirmacion: 'y'.repeat(43), confirmar: true });
+    confirm.flush({ solicitudId: 501, numero: 'SOL-501', idempotentReplay: false });
   });
 });
