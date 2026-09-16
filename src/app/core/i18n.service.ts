@@ -88,6 +88,31 @@ Object.assign(translations.en, {
   'rubi.alta.error.transactionDisabled': 'Transactional confirmation is not enabled.'
 });
 
+Object.assign(translations.es, {
+  'rubi.minimize': 'Minimizar Rubi', 'rubi.ready': 'Disponible', 'rubi.launcher.help': '¿Te ayudo?',
+  'rubi.welcome.eyebrow': 'Asistente de Secretaría', 'rubi.welcome.title': '¿En qué puedo ayudarte?', 'rubi.welcome.description': 'Te ayudo a encontrar información, navegar y preparar trámites de forma segura.',
+  'rubi.quick.registro': 'Abrir Registro', 'rubi.quick.calendario': 'Consultar calendario', 'rubi.quick.help': '¿Qué puedes hacer?',
+  'rubi.alta.guided': 'Trámite guiado', 'rubi.alta.progress': 'Progreso del alta', 'rubi.alta.step.details': 'Datos', 'rubi.alta.step.review': 'Revisión', 'rubi.alta.step.record': 'Trámite',
+  'rubi.alta.section.person': 'Datos de la persona', 'rubi.alta.section.person.help': 'Identificación y datos básicos.', 'rubi.alta.section.roles': 'Cargo en la asociación', 'rubi.alta.section.roles.help': 'Selecciona el cargo que corresponde.', 'rubi.alta.section.optional': 'Opcional',
+  'rubi.alta.prepared.badge': 'Preparación completada', 'rubi.alta.prepared.pending': 'Pendiente de confirmación', 'rubi.alta.registered.badge': 'Trámite registrado', 'rubi.alta.normal.badge': 'Revisión necesaria'
+});
+Object.assign(translations.va, {
+  'rubi.minimize': 'Minimitzar Rubi', 'rubi.ready': 'Disponible', 'rubi.launcher.help': 'T’ajude?',
+  'rubi.welcome.eyebrow': 'Assistent de Secretaria', 'rubi.welcome.title': 'En què puc ajudar-te?', 'rubi.welcome.description': 'T’ajude a trobar informació, navegar i preparar tràmits de manera segura.',
+  'rubi.quick.registro': 'Obrir Registre', 'rubi.quick.calendario': 'Consultar calendari', 'rubi.quick.help': 'Què pots fer?',
+  'rubi.alta.guided': 'Tràmit guiat', 'rubi.alta.progress': 'Progrés de l’alta', 'rubi.alta.step.details': 'Dades', 'rubi.alta.step.review': 'Revisió', 'rubi.alta.step.record': 'Tràmit',
+  'rubi.alta.section.person': 'Dades de la persona', 'rubi.alta.section.person.help': 'Identificació i dades bàsiques.', 'rubi.alta.section.roles': 'Càrrec en l’associació', 'rubi.alta.section.roles.help': 'Selecciona el càrrec que correspon.', 'rubi.alta.section.optional': 'Opcional',
+  'rubi.alta.prepared.badge': 'Preparació completada', 'rubi.alta.prepared.pending': 'Pendent de confirmació', 'rubi.alta.registered.badge': 'Tràmit registrat', 'rubi.alta.normal.badge': 'Revisió necessària'
+});
+Object.assign(translations.en, {
+  'rubi.minimize': 'Minimize Rubi', 'rubi.ready': 'Available', 'rubi.launcher.help': 'Can I help?',
+  'rubi.welcome.eyebrow': 'Secretariat assistant', 'rubi.welcome.title': 'How can I help you?', 'rubi.welcome.description': 'I can help you find information, navigate and prepare processes safely.',
+  'rubi.quick.registro': 'Open records', 'rubi.quick.calendario': 'Check calendar', 'rubi.quick.help': 'What can you do?',
+  'rubi.alta.guided': 'Guided process', 'rubi.alta.progress': 'Registration progress', 'rubi.alta.step.details': 'Details', 'rubi.alta.step.review': 'Review', 'rubi.alta.step.record': 'Process',
+  'rubi.alta.section.person': 'Person details', 'rubi.alta.section.person.help': 'Identification and essential details.', 'rubi.alta.section.roles': 'Association role', 'rubi.alta.section.roles.help': 'Choose the applicable role.', 'rubi.alta.section.optional': 'Optional',
+  'rubi.alta.prepared.badge': 'Preparation completed', 'rubi.alta.prepared.pending': 'Awaiting confirmation', 'rubi.alta.registered.badge': 'Process recorded', 'rubi.alta.normal.badge': 'Review required'
+});
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   private readonly storageKey = 'ffsj-secretaria.language';

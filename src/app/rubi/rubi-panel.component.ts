@@ -41,6 +41,8 @@ export class RubiPanelComponent implements OnDestroy {
   messages: RubiMessage[] = [];
   altaActive = false;
   altaPrepared = false;
+  readonly welcomeSuggestions = ['rubi.quick.alta', 'rubi.quick.registro', 'rubi.quick.calendario', 'rubi.quick.help'];
+  readonly quickActions = ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support'];
   private opener: HTMLElement | null = null;
   private readonly subscriptions = new Subscription();
 
@@ -77,6 +79,14 @@ export class RubiPanelComponent implements OnDestroy {
     if (!this.open) return;
     this.open = false;
     setTimeout(() => (this.opener || this.launcher?.nativeElement)?.focus());
+  }
+
+  minimize(): void {
+    this.close();
+  }
+
+  get isInitialState(): boolean {
+    return this.messages.length === 1 && this.messages[0]?.author === 'rubi';
   }
 
   @HostListener('document:keydown.escape')

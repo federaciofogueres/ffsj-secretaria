@@ -1,33 +1,55 @@
 <button #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
-  <span class="rubi-avatar" aria-hidden="true">R</span><span>Rubi</span>
+  <span class="rubi-avatar rubi-avatar--launcher" aria-hidden="true"></span>
+  <span class="rubi-launcher-copy"><strong>Rubi</strong><small>{{ 'rubi.launcher.help' | t }}</small></span>
 </button>
 
 <div *ngIf="open" class="rubi-backdrop" (click)="close()" aria-hidden="true"></div>
-<aside *ngIf="open" id="rubi-panel" class="rubi-panel" role="dialog" aria-modal="true" aria-labelledby="rubi-title">
+<aside *ngIf="open" id="rubi-panel" class="rubi-panel" role="dialog" aria-modal="true" aria-labelledby="rubi-title" [attr.aria-busy]="loading">
   <header class="rubi-header">
-    <div class="rubi-identity"><span class="rubi-avatar" aria-hidden="true">R</span><div><h2 id="rubi-title">Rubi</h2><p>{{ 'rubi.subtitle' | t }}</p></div></div>
-    <button class="rubi-icon-button" type="button" (click)="close()" [attr.aria-label]="'rubi.close' | t"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    <div class="rubi-identity">
+      <span class="rubi-avatar rubi-avatar--header" aria-hidden="true"></span>
+      <div><h2 id="rubi-title">Rubi</h2><p>{{ 'rubi.subtitle' | t }}</p><span class="rubi-ready"><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ 'rubi.ready' | t }}</span></div>
+    </div>
+    <div class="rubi-header-actions">
+      <button class="rubi-icon-button" type="button" (click)="minimize()" [attr.aria-label]="'rubi.minimize' | t"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
+      <button class="rubi-icon-button" type="button" (click)="close()" [attr.aria-label]="'rubi.close' | t"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
   </header>
 
   <p *ngIf="unavailable" class="rubi-status rubi-status-error" role="status">{{ 'rubi.disabled' | t }}</p>
   <section class="rubi-messages" aria-label="Rubi" aria-live="polite">
-    <article *ngFor="let item of messages" class="rubi-message" [class.rubi-user]="item.author === 'user'" [class.rubi-system]="item.author === 'system'">
-      <span class="rubi-message-author">{{ (item.author === 'user' ? 'rubi.you' : item.author === 'system' ? 'rubi.status' : 'rubi.name') | t }}</span>
-      <p>{{ item.text }}</p>
-      <div *ngIf="item.actions?.length" class="rubi-actions">
-        <button *ngFor="let action of item.actions" type="button" class="btn btn-outline-secondary btn-sm" [disabled]="loading" (click)="executeAction(action)">{{ ('rubi.action.' + (action.destination || action.flow)) | t }}</button>
+    <section *ngIf="isInitialState && !altaActive" class="rubi-welcome-card" aria-labelledby="rubi-welcome-title">
+      <span class="rubi-avatar rubi-avatar--welcome" aria-hidden="true"></span>
+      <div>
+        <p class="rubi-eyebrow">{{ 'rubi.welcome.eyebrow' | t }}</p>
+        <h3 id="rubi-welcome-title">{{ 'rubi.welcome.title' | t }}</h3>
+        <p>{{ 'rubi.welcome.description' | t }}</p>
+      </div>
+      <div class="rubi-suggestions" [attr.aria-label]="'rubi.quickActions' | t">
+        <button *ngFor="let key of welcomeSuggestions" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}<i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
+      </div>
+    </section>
+
+    <article *ngFor="let item of messages" class="rubi-message" [class.rubi-user]="item.author === 'user'" [class.rubi-system]="item.author === 'system'" [class.rubi-message--initial]="isInitialState && item.author === 'rubi'">
+      <span *ngIf="item.author === 'rubi'" class="rubi-message-avatar rubi-avatar" aria-hidden="true"></span>
+      <div class="rubi-message-content">
+        <span class="rubi-message-author">{{ (item.author === 'user' ? 'rubi.you' : item.author === 'system' ? 'rubi.status' : 'rubi.name') | t }}</span>
+        <p>{{ item.text }}</p>
+        <div *ngIf="item.actions?.length" class="rubi-actions">
+          <button *ngFor="let action of item.actions" type="button" [disabled]="loading" (click)="executeAction(action)">{{ ('rubi.action.' + (action.destination || action.flow)) | t }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
       </div>
     </article>
-    <p *ngIf="loading" class="rubi-status" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
+    <p *ngIf="loading" class="rubi-status rubi-status-loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
     <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
   </section>
 
-  <section *ngIf="!altaActive" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
-    <button *ngFor="let key of ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support']" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>
+  <section *ngIf="!altaActive && !isInitialState" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
+    <button *ngFor="let key of quickActions" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>
   </section>
   <form *ngIf="!altaActive" class="rubi-composer" (ngSubmit)="send()">
     <label class="visually-hidden" for="rubi-message">{{ 'rubi.inputLabel' | t }}</label>
     <textarea #messageInput id="rubi-message" name="message" [(ngModel)]="draft" [disabled]="loading || unavailable" [placeholder]="'rubi.placeholder' | t" rows="2" maxlength="1200" (keydown)="onMessageKeydown($event)"></textarea>
-    <button class="ux-btn" type="submit" [disabled]="!draft.trim() || loading || unavailable">{{ 'rubi.send' | t }}</button>
+    <button class="rubi-send" type="submit" [disabled]="!draft.trim() || loading || unavailable"><i class="bi bi-send-fill" aria-hidden="true"></i><span class="visually-hidden">{{ 'rubi.send' | t }}</span></button>
   </form>
 </aside>
