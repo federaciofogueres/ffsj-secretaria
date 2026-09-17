@@ -23,13 +23,16 @@ El flujo real es:
 - Permisos, scope de asociación y capabilities se calculan en backend a partir de la sesión autenticada.
 - La PII sensible permanece fuera del provider. Los mensajes se sanean y un alta con datos personales usa el flujo determinista y estructurado.
 - No se guardan datos sensibles en history, telemetría, logs ni almacenamiento web. La conversación vive en memoria, tiene TTL y se limpia al cambiar de contexto o cerrar sesión.
-- Las tools son cerradas, tipadas, allowlisted y se vuelven a autorizar al ejecutarse.
+- Las tools son cerradas, tipadas y se vuelven a autorizar al ejecutarse. Las capabilities (derivadas de permisos reales) son la única puerta de disponibilidad por defecto: una tool nueva y su capability están disponibles sin tocar configuración. Una lista de bloqueo de infraestructura (`RUBI_BLOCKED_TOOLS`), vacía por defecto, puede restringir puntualmente una tool concreta como kill switch extraordinario, pero nunca al revés: una lista de tools *permitidas* que haya que mantener actualizada manualmente queda descartada como patrón, precisamente porque quedar desactualizada hace desaparecer funcionalidades nuevas sin ningún error visible.
 - Toda operación persistente requiere revisión y confirmación humana explícita.
 - Gemini no ejecuta altas. `start_alta` solo abre el workflow local; la confirmación llama a backend sin pasar por el provider.
 - Registrar un alta administrativa crea el trámite/solicitud correspondiente; no equivale a escribir directamente en Censo.
 - Se reutilizan los workflows y reglas existentes de Secretaría, sin crear una vía administrativa paralela.
 - Las operaciones persistentes preservan idempotencia, bloqueo y revalidación para soportar concurrencia y reintentos.
 - Rubi es opcional: `RUBI_ENABLED`, los flags transaccional/provider y la allowlist del piloto permiten desactivarla o limitarla.
+- La operación ordinaria de Rubi (habilitarla globalmente, o el uso del provider real) se administra desde Secretaría (Configuración → RUBI), sin necesidad de tocar variables de entorno. Esa configuración administrada es siempre subordinada a los kill switches de infraestructura (`RUBI_ENABLED`, `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_TRANSACTIONAL_ENABLED`): si la infraestructura deshabilita algo, ninguna configuración administrada puede reactivarlo.
+- `enabled` y `authorized` son conceptos distintos y nunca se usan indistintamente. `enabled` es el estado funcional global de Rubi (infraestructura + configuración global de Secretaría). `authorized` es la autorización explícita de una asociación concreta para usar Rubi, administrada por asociación desde Secretaría. Una asociación sin fila de configuración explícita, o ante cualquier fallo al leerla, NO está autorizada (deny-by-default): autorizar es siempre un acto explícito del panel admin. En cambio, un fallo al leer el estado global (`enabled`) es fail-open y nunca bloquea un acceso ya autorizado por las capas superiores, para no depender de que una migración ya se haya ejecutado.
+- La regla de acceso en modo operativo normal es `RUBI_ENABLED (infraestructura) && enabled (configuración global) && authorized (asociación)`. La allowlist del piloto (RUBI-13) no forma parte del modo normal y nunca lo restringe: solo se aplica cuando el modo piloto está activado explícitamente por infraestructura (`RUBI_PILOT_MODE_ENABLED`), añadiendo el requisito adicional de que el actor esté en la allowlist. Toda ruta protegida de Rubi (`/asistente/acceso`, conversación, alta, modificación, baja) resuelve el acceso mediante la misma función única, para que no pueda ocurrir que `/asistente/acceso` informe autorizado y un workflow deniegue después.
 - Producción es intocable sin autorización explícita del usuario en el prompt vigente.
 
 ## Provider
@@ -43,6 +46,8 @@ El frontend envía solo mensaje, idioma, ruta, historial reciente saneable y con
 ## Evolución
 
 La infraestructura de piloto (acceso, feedback y telemetría) puede existir en el código sin constituir una apertura del producto: debe permanecer desactivada/no configurada hasta una autorización explícita.
+
+Alta, modificación y baja son intenciones mutuamente excluyentes y se resuelven mediante una única clasificación (no una cascada de comprobaciones independientes en la que la primera evaluada "gana" por orden): se calculan los tres marcadores de tema, se descarta el que aparezca dentro de una negación explícita del usuario, y si queda más de un dominio activo se pide una aclaración concreta en lugar de adivinar. Ningún marcador de tema puede basarse en palabras compartidas por varios trámites (persona, asociado, hacer); cada dominio exige una palabra o combinación propia. Cualquier workflow nuevo que añada su propio tema determinista debe integrarse en esta misma clasificación, no en una comprobación aparte evaluada antes o después de las demás.
 
 Cada workflow nuevo debe demostrar y repetir el patrón ya validado:
 

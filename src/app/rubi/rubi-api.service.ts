@@ -14,15 +14,15 @@ export interface RubiHistoryEntry {
 }
 export interface RubiScreenContext {
   version: 1; module: RubiModule; view?: string; tab?: string;
-  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; missingRequiredFields?: string[] };
+  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; missingRequiredFields?: string[] };
 }
 export interface RubiConversationState {
   intent: string; tool: string; destination?: string; topic?: string; module?: RubiModule;
-  sensitiveFlow?: 'alta' | 'modificacion';
+  sensitiveFlow?: 'alta' | 'modificacion' | 'baja';
 }
 export type RubiAction =
   | { type: 'navigate'; destination: string; route?: string }
-  | { type: 'start_flow'; flow: 'alta' | 'modificacion'; destination?: string; route?: string };
+  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja'; destination?: string; route?: string };
 
 export interface RubiResponse {
   message: string;
@@ -36,7 +36,7 @@ export interface RubiResponse {
 
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export interface AltaPreparacion {
@@ -91,6 +91,23 @@ export interface ModificacionPreparacion {
 
 export interface ModificacionConfirmacionResultado {
   solicitudId: number; numero?: string | null; estado?: string | null; tipo?: 'cambio';
+  asociacionId?: number; ejercicio?: number; siguientePaso?: 'firma_solicitud'; idempotentReplay: boolean;
+}
+
+export interface BajaPreparacion {
+  estado: 'preparada' | 'requiere_flujo_normal';
+  asociacionId: number;
+  ejercicio: { id: number; ejercicio: number };
+  persona: { id: number; nombre: string; apellidos: string };
+  cargos?: { ids: number[]; nombres: string[]; obligatorios: number[] };
+  conflictosComplejos: Array<{ code: string; cargoIds?: number[] }>;
+  siguientePaso: 'confirmar' | 'derivar_flujo_normal';
+  efectos: { creaSolicitud: boolean; escribeEnCenso: false; requiereFirma: boolean; circuito: string };
+  confirmacion?: { referencia: string; expiraAt: string; confirmacionHumanaHabilitada: boolean };
+}
+
+export interface BajaConfirmacionResultado {
+  solicitudId: number; numero?: string | null; estado?: string | null; tipo?: 'baja';
   asociacionId?: number; ejercicio?: number; siguientePaso?: 'firma_solicitud'; idempotentReplay: boolean;
 }
 
@@ -178,6 +195,25 @@ export class RubiApiService {
 
   confirmarModificacion(confirmacion: string): Observable<ModificacionConfirmacionResultado> {
     return this.http.post<ModificacionConfirmacionResultado>(`${this.apiUrl.secretariaBasePath}/modificaciones/confirmar`, {
+      confirmacion, confirmar: true
+    }, { headers: this.authHeaders() }).pipe(timeout(20000));
+  }
+
+  prepararBaja(ejercicioId: number, asociadoId: number, motivo?: string): Observable<BajaPreparacion> {
+    this.startSession();
+    return this.http.post<BajaPreparacion>(`${this.apiUrl.secretariaBasePath}/bajas/preparar`, {
+      ejercicioId, asociadoId, ...(motivo ? { motivo } : {})
+    }, { headers: this.authHeaders() }).pipe(timeout(15000));
+  }
+
+  cancelarPreparacionBaja(confirmacion: string): Observable<{ cancelada: boolean }> {
+    return this.http.post<{ cancelada: boolean }>(`${this.apiUrl.secretariaBasePath}/bajas/preparacion/cancelar`, {
+      confirmacion
+    }, { headers: this.authHeaders() }).pipe(timeout(10000));
+  }
+
+  confirmarBaja(confirmacion: string): Observable<BajaConfirmacionResultado> {
+    return this.http.post<BajaConfirmacionResultado>(`${this.apiUrl.secretariaBasePath}/bajas/confirmar`, {
       confirmacion, confirmar: true
     }, { headers: this.authHeaders() }).pipe(timeout(20000));
   }

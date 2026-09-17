@@ -5,10 +5,12 @@
 ## Versión y alcance
 
 - Rama de frontend y API: `1.1.0#RUBI`.
-- Último hito funcional: RUBI-14 — Modificaciones asistidas, implementado y validado en código/local.
-- Último estado desplegado conocido: RUBI-12 validado en DEV. RUBI-13 y RUBI-14 no se han desplegado ni activado en ningún entorno.
-- Workflows administrativos asistidos: altas y modificaciones de personas. Las bajas asistidas no están implementadas.
-- La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente.
+- Estado de la versión: **CERRADA**. RUBI-14, RUBI-15 y RUBI-15.1 están completos y validados funcionalmente en DEV por el usuario (acceso, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales).
+- Último hito funcional: cierre formal de `1.1.0#RUBI` tras la validación manual en DEV, que incluyó dos correcciones conversacionales sucesivas (estabilización de routing/tools y, después, el bloqueante de modificación secuestrada por alta — ver secciones dedicadas más abajo).
+- Plan de la versión: RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi, junto con la separación `enabled`/`authorized`, el modo piloto opcional y la estabilización conversacional, quedan todos incluidos y cerrados en `1.1.0#RUBI`.
+- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. No se ha desplegado ni activado nada en producción; el despliegue a producción, si procede, lo decide y ejecuta el usuario en un momento posterior.
+- Workflows administrativos asistidos: altas, modificaciones y bajas de personas.
+- La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y ahora convive con la configuración administrada de RUBI-15.1 (ver más abajo).
 
 ## Disponible hoy
 
@@ -18,23 +20,40 @@
 - Gemini como provider actual seleccionable por configuración, con fallback determinista, límites, presupuesto, timeout, retry acotado y telemetría de consumo.
 - Alta asistida estructurada: recopilación local de PII, preparación determinista, revisión, confirmación humana, idempotencia, revalidación y registro de la solicitud administrativa real.
 - Modificación asistida de una persona activa: selección estructurada, estado actual, edición de campos permitidos, resumen antes/después, preparación, confirmación humana, revalidación y creación del trámite administrativo ordinario de cambio.
-- Los cambios complejos de cargos —sustituciones obligatorias, transferencias o falta de plazas— se derivan al flujo normal existente.
-- La confirmación de altas y modificaciones se realiza desde Angular contra la API. Gemini solo puede proponer abrir el formulario seguro; no prepara, confirma, registra ni escribe en Censo.
+- Baja asistida de una persona activa: selección estructurada, carga del estado real desde Censo (incluidos cargos), motivo opcional, resumen previo a confirmar, confirmación humana, revalidación y creación del trámite administrativo ordinario de baja.
+- Los cambios complejos de cargos —sustituciones obligatorias, transferencias o falta de plazas— se derivan al flujo normal existente. Una baja de una persona que ocupa un cargo obligatorio también se deriva al flujo normal.
+- La confirmación de altas, modificaciones y bajas se realiza desde Angular contra la API. Gemini solo puede proponer abrir el formulario seguro; no prepara, confirma, registra ni escribe en Censo.
 - Privacidad: PII fuera del provider, historial efímero en memoria y logs/telemetría sin texto sensible ni payloads administrativos completos.
-- Infraestructura de piloto: allowlist seudonimizada, kill switch, feedback estructurado y funnel agregable para conversación, navegación, altas y modificaciones.
+- Infraestructura de piloto: allowlist seudonimizada, kill switch, feedback estructurado y funnel agregable para conversación, navegación, altas, modificaciones y bajas.
+- Centro de administración de Rubi (Configuración → RUBI, RUBI-15.1): habilitar/deshabilitar Rubi globalmente (`enabled`), el uso del provider real y las operaciones transaccionales; autorizar/retirar la autorización de Rubi por asociación (`authorized`) con búsqueda y filtro; estado del provider (proveedor, modelo, kill switch, si la credencial está configurada, sin revelarla nunca); estado del presupuesto diario/mensual y porcentaje consumido; una primera vista de analíticas (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas) filtrable por periodo y asociación.
 
 ## Configuración relevante
 
 Los valores efectivos pertenecen al entorno y no deben copiarse a documentación:
 
-- Acceso: `RUBI_ENABLED`, `RUBI_PILOT_ACCESS_MODE`, `RUBI_PILOT_ACTOR_HASHES`.
+- Acceso: `RUBI_ENABLED`, `RUBI_PILOT_MODE_ENABLED` (activa el modo piloto explícito; `false` por defecto, el modo normal no usa la allowlist), `RUBI_PILOT_ACCESS_MODE`, `RUBI_PILOT_ACTOR_HASHES`.
 - Persistencia: `RUBI_TRANSACTIONAL_ENABLED`.
 - Provider: `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_PROVIDER`, `RUBI_MODEL` y la credencial del provider.
-- Tools y contexto: `RUBI_ALLOWED_TOOLS`, máximos de mensaje, entrada, salida, historial y contexto.
+- Tools y contexto: `RUBI_BLOCKED_TOOLS` (kill switch extraordinario, vacío por defecto), máximos de mensaje, entrada, salida, historial y contexto.
 - Resiliencia: timeout, llamadas máximas, retries y demora base.
 - Protección de uso: límites por minuto/día/concurrencia y presupuestos diario/mensual.
 
-El modo de piloto por defecto es `allowlist` y una lista vacía no autoriza a nadie. `admin:access` no concede acceso al piloto. Los elementos de la allowlist son claves seudonimizadas, nunca nombres, documentos, emails o tokens.
+El modo piloto explícito está desactivado por defecto (`RUBI_PILOT_MODE_ENABLED=false`): en modo normal, el acceso depende solo de `RUBI_ENABLED && enabled (global) && authorized (asociación)` y la allowlist nunca lo restringe. Si se activa el modo piloto, se exige además que el actor esté en la allowlist; su modo por defecto es `allowlist` y una lista vacía no autoriza a nadie. `admin:access` no concede acceso al piloto. Los elementos de la allowlist son claves seudonimizadas, nunca nombres, documentos, emails o tokens.
+
+## Centro de administración de Rubi (RUBI-15.1, corregido)
+
+- Nuevo permiso `admin:rubi` gobierna quién puede leer/modificar la configuración administrada; es independiente de `admin:access` y `admin:permissions`.
+- **Corrección de diseño**: `enabled` (estado funcional global de Rubi) y `authorized` (autorización explícita de una asociación concreta) son conceptos distintos y ya no se usan indistintamente. La columna física `secretaria_rubi_asociacion_config.enabled` se renombra semánticamente a `authorized` en la migración `059_rubi_asociacion_authorized.sql` (preserva los valores existentes; no modifica la migración `057` ya aplicada).
+- Modelo de autorización ordinario: `RUBI_ENABLED` (infraestructura) → `enabled` (configuración global administrada desde Secretaría) → `authorized` (autorización explícita de la asociación). Que una asociación esté autorizada no concede por sí sola capabilities transaccionales; siguen dependiendo de `solicitudes:write`.
+- La allowlist de RUBI-13 **no forma parte del modo normal** y nunca lo restringe. Solo se aplica cuando el modo piloto se activa explícitamente por infraestructura con `RUBI_PILOT_MODE_ENABLED=true` (nueva variable, `false` por defecto), añadiendo el requisito de que el actor esté en la allowlist además de `enabled && authorized`. Con `RUBI_PILOT_MODE_ENABLED=false` (comportamiento por defecto) la allowlist no bloquea el acceso ordinario.
+- Persistencia (migraciones `057_rubi_admin_config.sql`, `058_rubi_usage_asociacion.sql` y `059_rubi_asociacion_authorized.sql`, todas ejecutadas manualmente por el usuario en DEV):
+  - `secretaria_rubi_config`: fila única con el estado operativo global (`enabled`, `real_provider_enabled`, `transactional_enabled`), todos `true` por defecto para no desactivar Rubi de forma implícita.
+  - `secretaria_rubi_asociacion_config`: autorización explícita por asociación (`authorized` tras la migración `059`); una asociación sin fila, o cualquier fallo al leerla, se considera **no autorizada** por defecto (deny-by-default: autorizar es un acto explícito del panel admin).
+  - `secretaria_rubi_usage` gana la columna `asociacion_id` para poder atribuir consumo a la asociación autenticada; los registros anteriores a esta migración quedan sin asociación.
+- La API key del provider y el resto de secretos permanecen exclusivamente en variables de entorno; el panel solo expone si la credencial está configurada, nunca su valor.
+- La lectura del estado global (`enabled`) es *fail-open*: si la tabla o la base de datos no están disponibles, se asume `enabled=true` para no depender de que la migración ya se haya ejecutado. La lectura de la autorización por asociación (`authorized`) es *fail-closed*: cualquier fallo o ausencia de fila se resuelve como no autorizada. Una única función de resolución (`resolveEffectiveAccess`/`assertEffectiveAccess`) se usa en `/asistente/acceso`, la conversación, altas, modificaciones y bajas, de modo que no puede ocurrir que `/asistente/acceso` informe autorizado y un workflow deniegue después.
+- Endpoints administrativos, protegidos por `admin:rubi`: `GET/PUT /admin/rubi/config` (campo `enabled` a nivel global), `GET /admin/rubi/asociaciones` (filtro `all|authorized|unauthorized`), `PUT /admin/rubi/asociaciones/{asociacionId}` (campo `authorized`), `GET /admin/rubi/analiticas`.
+- Analíticas: se calculan exclusivamente a partir de `secretaria_rubi_usage` (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas), sin contenido conversacional ni PII. Los contadores de conversaciones iniciadas por workflow (altas/modificaciones/bajas), cancelaciones y feedback útil/no útil **no** están disponibles todavía como analítica consultable: `RubiPilotTelemetry` sigue siendo solo de log (no persistido en tabla alguna), así que esa información no se inventa ni se expone en el panel; queda como deuda pendiente si se necesita en el futuro.
 
 ## Garantías del workflow de modificaciones
 
@@ -45,24 +64,65 @@ El modo de piloto por defecto es `allowlist` y una lista vacía no autoriza a na
 - Reintentos y confirmaciones concurrentes son idempotentes.
 - No se ha creado ninguna migración ni un sistema paralelo de permisos, persistencia o telemetría.
 
+## Garantías del workflow de bajas (RUBI-15)
+
+- El backend obtiene de Censo el estado actual de la persona (datos y cargos) y valida asociación, persona, ejercicio y duplicados con las mismas funciones reutilizadas de altas/modificaciones (`resolveEjercicioOperativoAlta`, `getAsociadoParaModificacion`, `findDuplicatedRegistroPendiente`, `findOpenSolicitudByAsociado`).
+- Si la persona ocupa un cargo obligatorio, la preparación se deriva al flujo normal (`CARGO_OBLIGATORIO_REQUIERE_SUSTITUCION`) en lugar de resolver automáticamente una sustitución coordinada.
+- La preparación reutiliza íntegramente `AltaConfirmationStore` (misma tabla, TTL, opacidad, vinculación a actor/asociación y protección ante manipulación que altas y modificaciones); no se ha creado un almacén ni una tabla nuevos.
+- La confirmación exige permiso `solicitudes:write`, flag transaccional, control humano explícito desde Angular y una revalidación completa bajo bloqueo (incluye recomprobar cargos obligatorios y el hash de contenido).
+- El registro crea un `registro pendiente` de tipo `baja` y una solicitud administrativa real mediante el circuito ordinario (`createBajaTramite`, análogo a `createCambioTramite`). La escritura final en Censo (desactivar el histórico) sigue dependiendo exclusivamente de la validación administrativa existente; Rubi no escribe en Censo.
+- Reintentos y confirmaciones concurrentes son idempotentes (mismo mecanismo de bloqueo y replay que altas/modificaciones).
+- La capability `baja.start` y la tool `start_baja` siguen el mismo patrón de permisos y allowlist que `alta.start`/`modificacion.start`.
+- No se ha creado ninguna migración ni un sistema paralelo de permisos, persistencia o telemetría.
+
+## Estabilización conversacional y de routing
+
+Corrige una regresión funcional detectada manualmente en DEV: Rubi aparecía autorizada correctamente pero respondía con un fallback genérico ante preguntas de capacidades ("¿Qué puedes ayudarme a hacer?") y no iniciaba baja/modificación ante frases naturales como "Ayúdame a dar de baja a una persona" o "Dar de baja un asociado", limitándose a explicar el procedimiento.
+
+- **Causa raíz principal — `RUBI_ALLOWED_TOOLS` obsoleta como allowlist silenciosa**: el mecanismo hacía `capabilities → tools.namesFor(...) → interseccion con RUBI_ALLOWED_TOOLS`. El valor por defecto en `.env.template` (`search_help,navigate_to,start_alta,start_modificacion`, escrito antes de que existiera `start_baja`) nunca se actualizó al añadir bajas, de modo que aunque el código, las capabilities y los permisos ya soportaban `start_baja`, una variable de entorno desincronizada la hacía desaparecer sin ningún error visible. Se sustituye por **`RUBI_BLOCKED_TOOLS`**: una lista de bloqueo, vacía por defecto (nada bloqueado), que invierte la semántica — cualquier tool nueva compatible con capabilities está disponible sin tocar esta variable; solo un valor explícito bloquea un nombre de tool concreto como restricción extraordinaria (kill switch puntual). `RUBI_ALLOWED_TOOLS` deja de leerse.
+- **Causa raíz secundaria — routing determinista demasiado literal**: `ACTION_ALTA`/`ACTION_MODIFICACION`/`ACTION_BAJA` exigían un verbo de petición explícito ("quiero", "necesito", "ayúdame") y no reconocían órdenes directas ("Dar de baja un asociado", "Modificar un asociado"), que quedaban tratadas como información. Se sustituye por una regla común: si el tema se menciona (alta/modificación/baja) y el mensaje **no** tiene forma de pregunta/explicación (como/dónde/qué necesito/qué pasos/qué ocurre/explica...), se entiende como petición de acción; si la tiene, como información. La detección de "¿qué puedes hacer/en qué me puedes ayudar/para qué sirves?" deja de depender de una lista cerrada de frases exactas y pasa a exigir un término de capacidad (puedes/pots/sirves/can you) combinado con un término de acción (hacer/ayudar/help/do), o una formulación directa de propósito.
+- **Causa raíz terciaria — búsqueda de ayuda demasiado literal**: `RubiKnowledgeBase.searchHelp()` solo puntuaba una keyword si aparecía como substring exacto o como token idéntico; "modificar un asociado" no encontraba la keyword "modificar asociado" por la palabra intermedia "un", y "en qué puedes ayudarme" no encontraba "en qué me puedes ayudar" por el orden/forma distintos. Se añade una coincidencia por raíz común determinista y barata (sin diccionario ni búsqueda semántica): dos palabras casan si son idénticas o si una es prefijo casi completo de la otra (con más tolerancia para raíces largas), lo que reconoce conjugaciones y plurales (modificar/modificación, ayudar/ayudarme, alta/altas) sin arriesgar falsos positivos entre palabras cortas no relacionadas. La puntuación por entrada toma el máximo (no la suma) de sus keywords, ponderado por cobertura, para que varias formulaciones sinónimas de una misma entrada no acumulen puntos frente a consultas ajenas ni desplacen a una coincidencia más específica.
+- **Texto de capacidades desactualizado**: la entrada `rubi-capacidades` de la base de conocimiento (ES/VA/EN) afirmaba "no ejecuto altas, cambios o bajas", redactada antes de RUBI-14/15. Se actualiza para reflejar que Rubi puede abrir de forma segura el alta, la modificación o la baja (con permiso), siempre con confirmación humana obligatoria en el formulario y sin ejecutar la operación directamente desde el chat.
+- **Trazabilidad añadida (sin PII)**: los eventos `rubi_request_completed` incluyen ahora `capabilities` resueltas, `toolsAvailable` (tools efectivamente disponibles tras capabilities y `blockedTools`), y cuando una acción reconocida no puede ejecutarse, `toolWanted` y `toolUnavailableReason`, para diagnosticar en desarrollo por qué una tool esperada no estuvo disponible sin loguear mensajes ni datos personales.
+- **Compatibilidad**: no se ha modificado el modelo de permisos/capabilities (`solicitudes:write` sigue siendo obligatorio para iniciar alta/modificación/baja), ni el acceso `enabled`/`authorized`, ni el centro de administración, ni la idempotencia, presupuestos, analíticas, modo piloto, i18n o navegación existentes.
+
+## Bloqueante de RUBI-14 corregido: modificación secuestrada por alta
+
+Un segundo problema, más grave, sobrevivió a la estabilización anterior y **bloqueó el cierre de `1.1.0#RUBI`** hasta corregirse: en DEV, "Necesito hacer una modificación de un asociado" iniciaba un ALTA, la corrección explícita del usuario ("Lo que necesito es hacer una modificación, no un alta") volvía a iniciar un ALTA, y "Necesito hacer un cambio" caía al fallback genérico. Corregido y validado funcionalmente por el usuario en DEV; ver "Siguiente hito" para el resultado final.
+
+- **Causa raíz**: `ALTA_TOPIC` usaba un patrón genérico "verbo (dar/hacer/crear/iniciar/preparar...) + persona/asociado", y `resolveDeterministicConversation` evaluaba alta **antes** que modificación. "Necesito **hacer** una modificación de un **asociado**" activaba ese patrón genérico de alta (verbo "hacer" cerca de "asociado") antes de que el router llegara siquiera a mirar la palabra "modificación". No era solo un problema de orden: "hacer", "persona" y "asociado" son palabras compartidas por alta, modificación y baja, así que cualquier orden de evaluación en cascada dejaba el sistema igual de frágil ante la siguiente frase no prevista.
+- **Corrección arquitectónica** (no un simple reordenado de `if`): se sustituye la cascada por una clasificación única (`classifyTopic`) que calcula los tres marcadores de tema de forma independiente y solo entonces decide. `ALTA_TOPIC` deja de reconocer el patrón genérico "verbo + persona/asociado" y pasa a exigir una palabra propia del trámite de alta (la palabra "alta", "nuevo asociado/miembro", "incorporar persona", "new member"...). `MODIFICACION_TOPIC` amplía su reconocimiento a "cambio"/"canvi"/"change" como sustantivo (no solo "cambiar datos"), cubriendo "necesito hacer un cambio"/"quiero hacer una modificación". Si más de un dominio queda activo a la vez se pide una aclaración concreta en vez de adivinar o caer en el fallback genérico; si ninguno queda activo, no hay tema.
+- **Negaciones y correcciones**: se añade detección de negación por dominio (`no ... alta`, `no ... modific*/cambio`, `no ... baja`, sin cruzar una coma) para que una mención negada ("no quiero un alta, quiero una modificación", "no quiero darlo de alta, quiero modificarlo") no cuente como intención positiva de ese dominio; la intención positiva y explícita prevalece siempre sobre la negada.
+- **Información vs acción, refinado**: "que necesito" ya no se interpreta como pregunta informativa cuando va seguido de "es" ("lo que necesito **es** hacer una modificación..." es una declaración de intención, no una pregunta sobre requisitos como "¿qué necesito **para** un alta?"). Se añade reconocimiento de preguntas del tipo "¿qué datos **puedo** modificar?" como información.
+- **Saludos**: `GREETING` solo reconocía el saludo exacto ("Hola!"); "Hola Rubi!", "Buenos días Rubi" o "Hello Rubi" caían al fallback. Ahora se admite opcionalmente el vocativo "Rubi" tras el saludo.
+- **Prompt de Gemini**: se añaden dos instrucciones explícitas para cuando el router determinista no resuelve la frase y la clasificación recae en el provider: alta/modificación/baja son mutuamente excluyentes y palabras genéricas (persona/asociado/hacer) nunca bastan para elegir entre ellas; una corrección o negación del usuario hace prevalecer la intención positiva más reciente.
+- **Frontend**: se auditó el recorrido completo `start_flow → executeAction → rubi-modificacion.component`; no había ningún mapeo incorrecto — `RubiToolRegistry.start_modificacion` ya devolvía `{ flow: 'modificacion', destination: 'personas', route: '/asociados/gestion' }` y `RubiPanelComponent.executeAction` ya abría `modificationActive` (componente "Modificación asistida", distinto de `altaActive`/"Alta asistida") de forma independiente. El bloqueante era exclusivamente de clasificación en el backend; no se ha modificado ningún archivo de frontend en esta corrección.
+- **Compatibilidad**: los casos complejos (sustitución obligatoria de cargo, transferencia coordinada) se siguen derivando siempre al flujo normal; no se ha relajado ninguna regla de permisos, idempotencia ni privacidad.
+
 ## Limitaciones y deuda conocida
 
 - La primera versión asistida cubre cambios simples de identificación, nombre, apellidos, nacimiento, teléfono, email, dirección, código postal y cargos compatibles con las reglas actuales.
-- Los cambios de cargo que requieren coordinación entre varias personas continúan en el flujo normal.
-- El almacén temporal y algunos nombres internos se originaron en el workflow de altas; se reutilizan deliberadamente para evitar una migración, aunque convendrá generalizar su nomenclatura si aparecen más workflows.
+- Los cambios de cargo que requieren coordinación entre varias personas continúan en el flujo normal, igual que las bajas de personas con un cargo obligatorio.
+- El almacén temporal y algunos nombres internos se originaron en el workflow de altas; se reutilizan deliberadamente para evitar una migración y ahora los comparten altas, modificaciones y bajas, aunque convendrá generalizar su nomenclatura si aparecen más workflows.
 - La telemetría se emite como eventos estructurados; no incluye dashboard propio y su explotación depende de la retención/consulta de logs del entorno.
 - El feedback no ofrece texto libre para evitar una vía accidental de PII.
-- La allowlist no tiene interfaz administrativa y el piloto real sigue pendiente de una decisión posterior.
+- La allowlist no tiene interfaz administrativa propia (se mantiene por variables de entorno) y, tras la corrección de diseño, no forma parte del modo normal: solo actúa cuando `RUBI_PILOT_MODE_ENABLED=true`.
+- La migración `059_rubi_asociacion_authorized.sql` fue ejecutada por el usuario en DEV; el código ya asume el esquema posterior a `059` (columna `authorized`) en todos los entornos.
+- El flujo normal de bajas admite cesión coordinada de un cargo obligatorio a otra persona en el mismo trámite; la baja asistida por Rubi no reproduce esa coordinación y deriva siempre esos casos al flujo normal.
+- El presupuesto diario/mensual sigue siendo global (por despliegue), configurado por variable de entorno; el panel muestra su consumo y porcentaje pero no permite todavía definir un presupuesto o hard cap distinto por asociación (solo el acceso on/off por asociación).
+- Las analíticas administrativas se limitan a lo que `secretaria_rubi_usage` puede responder hoy (llamadas, tokens, coste, fallidas, actores/asociaciones únicas). Conversaciones iniciadas, workflows por tipo, cancelaciones y feedback útil/no útil siguen sin persistirse de forma consultable (solo como logs de `RubiPilotTelemetry`); ampliarlo requeriría una tabla de eventos nueva, deliberadamente no creada en este hito para no inventar métricas no soportadas.
+- El consumo por asociación solo puede atribuirse a partir de la fecha de esta migración; los registros históricos de `secretaria_rubi_usage` anteriores no tienen `asociacion_id`.
 
-## Validación local de RUBI-14
+## Validación de cierre de `1.1.0#RUBI`
 
-- Frontend: 93 pruebas en ChromeHeadless correctas.
-- Frontend: build `development` correcto.
-- API: 186 pruebas correctas.
-- Contrato OpenAPI y `git diff --check` correctos.
-- No se usó Gemini real, no se ejecutaron migraciones y no se modificó ningún entorno.
+- Validación funcional manual en DEV por el usuario: acceso de Rubi, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales. En base a esa validación, RUBI-14 y RUBI-15 se consideran validados funcionalmente junto con RUBI-15.1.
+- Frontend: 113 pruebas en ChromeHeadless correctas y build `development` correcto.
+- API: 261 pruebas correctas.
+- Eval determinista de Rubi (`npm run rubi:eval`, provider `mock`): 100/100 casos, sin usar Gemini real.
+- Contrato OpenAPI sin cambios en el último hito de esta versión (no se añaden ni modifican endpoints); `git diff --check` correcto en ambos repositorios.
+- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV. No se ejecuta ninguna migración, ni se toca Azure/producción, como parte de este cierre.
 
 ## Siguiente hito
 
-- Siguiente hito previsto: `RUBI-15 — Bajas asistidas`.
-- RUBI-15 no está iniciado.
+- `1.1.0#RUBI` queda **CERRADA**. RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi están completos y validados funcionalmente.
+- `RUBI.md` no fija todavía un número de hito o versión siguiente concreto (solo el patrón general que debe repetir cualquier workflow nuevo); no se inicia RUBI-15.2, RUBI-16, `1.2.0#RUBI` ni ninguna otra versión en este cierre. El siguiente hito se definirá en un prompt posterior.
