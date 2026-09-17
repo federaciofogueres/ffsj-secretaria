@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.1.0#RUBI - 2026-09-17
+
+### Añadido
+
+- Se incorpora el workflow de modificaciones asistidas de personas: selección estructurada, edición de campos permitidos, preparación y revisión antes/después.
+- La confirmación humana registra el trámite administrativo mediante la API, con revalidación, cancelación, idempotencia y derivación segura de cambios complejos de cargos al flujo normal.
+- Rubi mantiene la privacidad de la PII fuera del provider y amplía la conversación, capabilities, telemetría y traducciones ES/VA/EN para el nuevo workflow.
+
+### Documentación
+
+- `docs/rubi/STATUS.md` refleja el cierre de RUBI-14 y deja RUBI-15 como siguiente hito sin iniciar.
+
+## 1.0.0#RUBI - 2026-09-17
+
+### Cerrado
+
+- Se cierra la base funcional de Rubi: Gateway, provider Gemini, conversación contextual multi-turn, contexto de pantalla, navegación, Knowledge Base, scopes/capabilities, límites, budgets, retries y observabilidad.
+- Se completa el primer workflow asistido de alta con preparación, confirmación humana, revalidación, idempotencia y registro administrativo real, manteniendo la PII fuera del provider.
+- Se incorpora documentación de continuidad entre agentes en `docs/rubi/`.
+- La infraestructura segura de piloto queda disponible en código, pero desactivada y sin configuración remota; el piloto se realizará en una fase posterior.
+
 ## 0.29.20#ESMERALDA - 2026-09-15
 
 ### Corregido

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService, FfsjSpinnerComponent } from 'ffsj-web-components';
@@ -13,32 +13,13 @@ import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
+import { ALTA_TELEFONO_PATTERN, esMenorDeEdad, fechaHoyLocal, fechaNacimientoValidator, identificacionValidator } from './alta-form.utils';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
 type PestanaSolicitudAsociacion = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
 
-function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | null {
-  const value = String(control.value || '').trim();
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= fechaHoyLocal()
-    ? null : { fechaNacimientoInvalida: true };
-}
-
-function identificacionValidator(control: AbstractControl): ValidationErrors | null {
-  const value = String(control.value || '').trim().replace(/\s+/g, '').toUpperCase();
-  if (!value) return { required: true };
-  const documento = /^(?:\d{8}|[XYZ]\d{7})[A-Z]$/.test(value)
-    || /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{5,20}$/.test(value);
-  const sip = /^(?=.*\d)[A-Z0-9-]{5,30}$/.test(value);
-  return documento || sip ? null : { identificacionInvalida: true };
-}
-
-function fechaHoyLocal(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-}
 type ListadoContexto = 'modificaciones' | 'bajas';
 
 interface SustitucionCargoRequerido {
@@ -65,7 +46,7 @@ interface ConflictoCargoExclusivo {
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })
-export class AsociadosGestionComponent implements OnInit {
+export class AsociadosGestionComponent implements OnInit, OnDestroy {
   activeTab: GestionTab = 'altas';
 
   adultos: Asociado[] = [];
@@ -155,7 +136,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
     readonly permissions: PermissionsService,
-    readonly ejercicioService: EjercicioService
+    readonly ejercicioService: EjercicioService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -165,6 +147,7 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = requestedTab === 'altas';
     }
     this.filtroSolicitudes = this.route.snapshot.queryParamMap.get('filtro') === 'incidencias' ? 'incidencias' : null;
+    this.updateRubiScreenContext();
 
     if (this.asociacionId) {
       this.censoService.getAsociacion(this.asociacionId).subscribe({
@@ -186,6 +169,10 @@ export class AsociadosGestionComponent implements OnInit {
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
     this.cargarCupos();
+  }
+
+  ngOnDestroy(): void {
+    this.rubiScreenContext.clear('asociados');
   }
 
   get asociacionId(): number {
@@ -256,6 +243,7 @@ export class AsociadosGestionComponent implements OnInit {
 
   setTab(tab: GestionTab): void {
     this.activeTab = tab;
+    this.updateRubiScreenContext();
     this.filtroSolicitudes = null;
     this.pendingViewTipo = null;
     this.resetFormulario();
@@ -269,6 +257,15 @@ export class AsociadosGestionComponent implements OnInit {
     } else {
       this.cargarRegistroPendiente();
     }
+  }
+
+  private updateRubiScreenContext(): void {
+    this.rubiScreenContext.set({
+      version: 1,
+      module: 'asociados',
+      view: 'gestion',
+      tab: this.activeTab
+    });
   }
 
   abrirPendientes(tipo: SolicitudTipo): void {
@@ -386,7 +383,7 @@ export class AsociadosGestionComponent implements OnInit {
     if (tipo === 'alta' && this.esMenorEdad) {
       const representante1Nombre = String(this.altaForm.value.representante1Nombre || '').trim();
       const representante1Telefono = String(this.altaForm.value.representante1Telefono || '').trim();
-      if (!representante1Nombre || !/^[+0-9][0-9\s-]{7,19}$/.test(representante1Telefono)) {
+      if (!representante1Nombre || !ALTA_TELEFONO_PATTERN.test(representante1Telefono)) {
         this.showError('Indica nombre y teléfono válidos para la representación legal 1.');
         return;
       }
@@ -1953,12 +1950,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   get esMenorEdad(): boolean {
-    const nacimiento = new Date(`${this.altaForm.value.nacimiento || ''}T00:00:00`);
-    if (Number.isNaN(nacimiento.getTime())) return false;
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    if (hoy.getMonth() < nacimiento.getMonth() || (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate())) edad--;
-    return edad < 18;
+    return esMenorDeEdad(this.altaForm.value.nacimiento);
   }
 
   private fechaNacimientoValida(): boolean {
