@@ -47,6 +47,8 @@ El frontend envía solo mensaje, idioma, ruta, historial reciente saneable y con
 
 La infraestructura de piloto (acceso, feedback y telemetría) puede existir en el código sin constituir una apertura del producto: debe permanecer desactivada/no configurada hasta una autorización explícita.
 
+Alta, modificación y baja son intenciones mutuamente excluyentes y se resuelven mediante una única clasificación (no una cascada de comprobaciones independientes en la que la primera evaluada "gana" por orden): se calculan los tres marcadores de tema, se descarta el que aparezca dentro de una negación explícita del usuario, y si queda más de un dominio activo se pide una aclaración concreta en lugar de adivinar. Ningún marcador de tema puede basarse en palabras compartidas por varios trámites (persona, asociado, hacer); cada dominio exige una palabra o combinación propia. Cualquier workflow nuevo que añada su propio tema determinista debe integrarse en esta misma clasificación, no en una comprobación aparte evaluada antes o después de las demás.
+
 Cada workflow nuevo debe demostrar y repetir el patrón ya validado:
 
 `entender → recopilar de forma segura → preparar → revisión humana → confirmación → backend determinista`

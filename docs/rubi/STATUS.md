@@ -6,9 +6,9 @@
 
 - Rama de frontend y API: `1.1.0#RUBI`.
 - Estado de la versión: **EN DESARROLLO**. `1.1.0#RUBI` no está cerrada.
-- Último hito funcional: estabilización conversacional y de routing (post RUBI-15.1), implementada y validada en código/local, corrigiendo una regresión funcional detectada manualmente en DEV.
-- Plan de la versión: RUBI-14, RUBI-15 y RUBI-15.1 completados. La versión se cerrará mediante la skill de cierre de versión en un prompt posterior.
-- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos en DEV (el usuario los desplegó y ejecutó las migraciones `057`-`059` manualmente); es en esa validación manual en DEV donde se detectó la regresión conversacional que corrige este hito. No se ha desplegado ni activado nada en producción.
+- Último hito funcional: corrección de un **bloqueante funcional** de RUBI-14 — la modificación asistida no se iniciaba de forma fiable desde conversación natural (ver sección dedicada más abajo). Implementada y validada en código/local; pendiente de una nueva validación manual del usuario en DEV.
+- Plan de la versión: RUBI-14, RUBI-15 y RUBI-15.1 completados en código, pero **RUBI-14 NO está validado en DEV**: el bloqueante descrito abajo impedía considerarlo cerrado. La versión se cerrará mediante la skill de cierre de versión en un prompt posterior, una vez el usuario confirme la corrección en DEV.
+- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos en DEV (el usuario los desplegó y ejecutó las migraciones `057`-`059` manualmente); en esa validación manual en DEV se detectaron dos regresiones conversacionales sucesivas (routing/tools genérico y, después, el secuestro de modificación por alta) que se corrigen en este repositorio. Ninguna corrección de este hito se ha desplegado todavía; no se ha desplegado ni activado nada en producción.
 - Workflows administrativos asistidos: altas, modificaciones y bajas de personas.
 - La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y ahora convive con la configuración administrada de RUBI-15.1 (ver más abajo).
 
@@ -86,6 +86,19 @@ Corrige una regresión funcional detectada manualmente en DEV: Rubi aparecía au
 - **Trazabilidad añadida (sin PII)**: los eventos `rubi_request_completed` incluyen ahora `capabilities` resueltas, `toolsAvailable` (tools efectivamente disponibles tras capabilities y `blockedTools`), y cuando una acción reconocida no puede ejecutarse, `toolWanted` y `toolUnavailableReason`, para diagnosticar en desarrollo por qué una tool esperada no estuvo disponible sin loguear mensajes ni datos personales.
 - **Compatibilidad**: no se ha modificado el modelo de permisos/capabilities (`solicitudes:write` sigue siendo obligatorio para iniciar alta/modificación/baja), ni el acceso `enabled`/`authorized`, ni el centro de administración, ni la idempotencia, presupuestos, analíticas, modo piloto, i18n o navegación existentes.
 
+## Bloqueante de RUBI-14 corregido: modificación secuestrada por alta
+
+Un segundo problema, más grave, sobrevivió a la estabilización anterior y **bloqueaba el cierre de `1.1.0#RUBI`**: en DEV, "Necesito hacer una modificación de un asociado" iniciaba un ALTA, la corrección explícita del usuario ("Lo que necesito es hacer una modificación, no un alta") volvía a iniciar un ALTA, y "Necesito hacer un cambio" caía al fallback genérico.
+
+- **Causa raíz**: `ALTA_TOPIC` usaba un patrón genérico "verbo (dar/hacer/crear/iniciar/preparar...) + persona/asociado", y `resolveDeterministicConversation` evaluaba alta **antes** que modificación. "Necesito **hacer** una modificación de un **asociado**" activaba ese patrón genérico de alta (verbo "hacer" cerca de "asociado") antes de que el router llegara siquiera a mirar la palabra "modificación". No era solo un problema de orden: "hacer", "persona" y "asociado" son palabras compartidas por alta, modificación y baja, así que cualquier orden de evaluación en cascada dejaba el sistema igual de frágil ante la siguiente frase no prevista.
+- **Corrección arquitectónica** (no un simple reordenado de `if`): se sustituye la cascada por una clasificación única (`classifyTopic`) que calcula los tres marcadores de tema de forma independiente y solo entonces decide. `ALTA_TOPIC` deja de reconocer el patrón genérico "verbo + persona/asociado" y pasa a exigir una palabra propia del trámite de alta (la palabra "alta", "nuevo asociado/miembro", "incorporar persona", "new member"...). `MODIFICACION_TOPIC` amplía su reconocimiento a "cambio"/"canvi"/"change" como sustantivo (no solo "cambiar datos"), cubriendo "necesito hacer un cambio"/"quiero hacer una modificación". Si más de un dominio queda activo a la vez se pide una aclaración concreta en vez de adivinar o caer en el fallback genérico; si ninguno queda activo, no hay tema.
+- **Negaciones y correcciones**: se añade detección de negación por dominio (`no ... alta`, `no ... modific*/cambio`, `no ... baja`, sin cruzar una coma) para que una mención negada ("no quiero un alta, quiero una modificación", "no quiero darlo de alta, quiero modificarlo") no cuente como intención positiva de ese dominio; la intención positiva y explícita prevalece siempre sobre la negada.
+- **Información vs acción, refinado**: "que necesito" ya no se interpreta como pregunta informativa cuando va seguido de "es" ("lo que necesito **es** hacer una modificación..." es una declaración de intención, no una pregunta sobre requisitos como "¿qué necesito **para** un alta?"). Se añade reconocimiento de preguntas del tipo "¿qué datos **puedo** modificar?" como información.
+- **Saludos**: `GREETING` solo reconocía el saludo exacto ("Hola!"); "Hola Rubi!", "Buenos días Rubi" o "Hello Rubi" caían al fallback. Ahora se admite opcionalmente el vocativo "Rubi" tras el saludo.
+- **Prompt de Gemini**: se añaden dos instrucciones explícitas para cuando el router determinista no resuelve la frase y la clasificación recae en el provider: alta/modificación/baja son mutuamente excluyentes y palabras genéricas (persona/asociado/hacer) nunca bastan para elegir entre ellas; una corrección o negación del usuario hace prevalecer la intención positiva más reciente.
+- **Frontend**: se auditó el recorrido completo `start_flow → executeAction → rubi-modificacion.component`; no había ningún mapeo incorrecto — `RubiToolRegistry.start_modificacion` ya devolvía `{ flow: 'modificacion', destination: 'personas', route: '/asociados/gestion' }` y `RubiPanelComponent.executeAction` ya abría `modificationActive` (componente "Modificación asistida", distinto de `altaActive`/"Alta asistida") de forma independiente. El bloqueante era exclusivamente de clasificación en el backend; no se ha modificado ningún archivo de frontend en esta corrección.
+- **Compatibilidad**: los casos complejos (sustitución obligatoria de cargo, transferencia coordinada) se siguen derivando siempre al flujo normal; no se ha relajado ninguna regla de permisos, idempotencia ni privacidad.
+
 ## Limitaciones y deuda conocida
 
 - La primera versión asistida cubre cambios simples de identificación, nombre, apellidos, nacimiento, teléfono, email, dirección, código postal y cargos compatibles con las reglas actuales.
@@ -100,17 +113,18 @@ Corrige una regresión funcional detectada manualmente en DEV: Rubi aparecía au
 - Las analíticas administrativas se limitan a lo que `secretaria_rubi_usage` puede responder hoy (llamadas, tokens, coste, fallidas, actores/asociaciones únicas). Conversaciones iniciadas, workflows por tipo, cancelaciones y feedback útil/no útil siguen sin persistirse de forma consultable (solo como logs de `RubiPilotTelemetry`); ampliarlo requeriría una tabla de eventos nueva, deliberadamente no creada en este hito para no inventar métricas no soportadas.
 - El consumo por asociación solo puede atribuirse a partir de la fecha de esta migración; los registros históricos de `secretaria_rubi_usage` anteriores no tienen `asociacion_id`.
 
-## Validación local de RUBI-15.1 (incluye la corrección `enabled`/`authorized` y la estabilización de routing)
+## Validación local (corrección `enabled`/`authorized`, estabilización de routing y bloqueante de RUBI-14)
 
-- Frontend: 113 pruebas en ChromeHeadless correctas (sin nuevas specs; las existentes de `rubi-admin.*` se actualizaron al contrato `authorized`). Sin cambios de frontend en la estabilización conversacional (es puramente backend).
+- Frontend: 113 pruebas en ChromeHeadless correctas (sin nuevas specs; las existentes de `rubi-admin.*` se actualizaron al contrato `authorized`). Sin cambios de frontend en ninguna de las dos correcciones conversacionales (son puramente backend); se auditó el recorrido `start_flow → rubi-modificacion.component` sin encontrar defectos.
 - Frontend: build `development` correcto.
-- API: 244 pruebas correctas (213 previas de la corrección `enabled`/`authorized` + 31 nuevas: 1 test de `RubiKnowledgeBase`/`RubiConfig` ajustado y 30 en el nuevo banco de regresión conversacional `test/rubi.routing.regression.test.js`).
+- API: 261 pruebas correctas (244 previas + 17 nuevas del banco de regresión específico del bloqueante de RUBI-14: modificación secuestrada por alta, negaciones/correcciones, saludos con vocativo, permiso ausente).
 - Eval determinista de Rubi (`npm run rubi:eval`, provider `mock`): 100/100 casos, sin usar Gemini real.
 - Contrato OpenAPI sin cambios en este hito (no se añaden ni modifican endpoints); `git diff --check` correcto en ambos repositorios.
-- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV. No se ha ejecutado ninguna migración nueva ni se ha tocado Azure/producción en esta estabilización.
+- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV con anterioridad. No se ha ejecutado ninguna migración nueva ni se ha tocado Azure/producción en esta corrección.
 
 ## Siguiente hito
 
-- RUBI-14, RUBI-15 y RUBI-15.1 están completados en código; la corrección `enabled`/`authorized` y la estabilización conversacional/de routing están validadas localmente y pendientes de que el usuario las despliegue en DEV para una nueva validación manual.
-- `1.1.0#RUBI` permanece abierta; su cierre formal se realizará mediante la skill de cierre de versión en un prompt posterior.
+- RUBI-14, RUBI-15 y RUBI-15.1 están completados en código; **RUBI-14 no puede marcarse como validado en DEV hasta que el usuario despliegue esta corrección y repita la prueba manual** con las frases que fallaban ("Necesito hacer una modificación de un asociado", su corrección, y "Necesito hacer un cambio").
+- La corrección `enabled`/`authorized`, la estabilización conversacional/de routing y este bloqueante de RUBI-14 están validados localmente y pendientes de que el usuario los despliegue en DEV para una nueva validación manual.
+- `1.1.0#RUBI` permanece abierta; su cierre formal se realizará mediante la skill de cierre de versión en un prompt posterior, una vez confirmada la validación manual de RUBI-14.
 - No corresponde iniciar RUBI-15.2, RUBI-16 ni ninguna versión posterior todavía.
