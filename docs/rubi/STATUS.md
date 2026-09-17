@@ -5,7 +5,9 @@
 ## Versión y alcance
 
 - Rama de frontend y API: `1.1.0#RUBI`.
+- Estado de la versión: **EN DESARROLLO**. `1.1.0#RUBI` no está cerrada.
 - Último hito funcional: RUBI-14 — Modificaciones asistidas, implementado y validado en código/local.
+- Plan de la versión: RUBI-14 completado; RUBI-15 — Bajas asistidas pendiente. La versión solo se cerrará cuando RUBI-15 esté terminado y validado.
 - Último estado desplegado conocido: RUBI-12 validado en DEV. RUBI-13 y RUBI-14 no se han desplegado ni activado en ningún entorno.
 - Workflows administrativos asistidos: altas y modificaciones de personas. Las bajas asistidas no están implementadas.
 - La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente.
@@ -66,3 +68,4 @@ El modo de piloto por defecto es `allowlist` y una lista vacía no autoriza a na
 
 - Siguiente hito previsto: `RUBI-15 — Bajas asistidas`.
 - RUBI-15 no está iniciado.
+- El próximo trabajo debe continuar en `1.1.0#RUBI`; no corresponde iniciar otra versión ni cerrar esta antes de completar RUBI-15.

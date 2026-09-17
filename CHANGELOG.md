@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.1.0#RUBI - 2026-09-17
+## 1.1.0#RUBI — EN DESARROLLO
+
+> RUBI-14 está completado. La versión permanece abierta hasta completar RUBI-15 — Bajas asistidas.
 
 ### Añadido
 
@@ -10,7 +12,7 @@
 
 ### Documentación
 
-- `docs/rubi/STATUS.md` refleja el cierre de RUBI-14 y deja RUBI-15 como siguiente hito sin iniciar.
+- `docs/rubi/STATUS.md` refleja la finalización de RUBI-14 y deja RUBI-15 como siguiente hito sin iniciar.
 
 ## 1.0.0#RUBI - 2026-09-17
 
