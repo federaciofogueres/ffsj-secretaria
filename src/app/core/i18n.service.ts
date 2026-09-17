@@ -141,6 +141,29 @@ Object.assign(translations.es, {
   'rubi.mod.field.nacimiento': 'Fecha de nacimiento', 'rubi.mod.field.telefono': 'Telefono', 'rubi.mod.field.email': 'Correo electronico',
   'rubi.mod.field.direccion': 'Direccion', 'rubi.mod.field.codigo_postal': 'Codigo postal', 'rubi.mod.field.cargos': 'Cargos'
 });
+Object.assign(translations.es, {
+  'rubi.action.baja': 'Preparar baja con Rubi', 'rubi.baja.guided': 'Tramite guiado', 'rubi.baja.title': 'Baja asistida',
+  'rubi.baja.privacy': 'Selecciona la persona en este formulario seguro. Sus datos no se envian al proveedor de IA.',
+  'rubi.baja.step.person': 'Persona', 'rubi.baja.step.motivo': 'Motivo', 'rubi.baja.step.review': 'Revision',
+  'rubi.baja.select.title': 'Selecciona la persona', 'rubi.baja.select.help': 'Solo se muestran personas de la asociacion y ejercicio actuales.', 'rubi.baja.select.placeholder': 'Selecciona una persona',
+  'rubi.baja.motivo.title': 'Motivo (opcional)', 'rubi.baja.motivo.help': 'Puedes indicar brevemente el motivo de la baja.', 'rubi.baja.field.motivo': 'Motivo',
+  'rubi.baja.boundary': 'Preparar valida el caso y genera un resumen. No registra ni aplica la baja.',
+  'rubi.baja.prepare': 'Preparar baja', 'rubi.baja.prepared.badge': 'PREPARADA', 'rubi.baja.prepared.title': 'Baja preparada',
+  'rubi.baja.prepared.pending': 'Pendiente de confirmacion', 'rubi.baja.prepared.stop': 'Revisa exactamente lo que ocurrira antes de confirmar.',
+  'rubi.baja.prepared.noEffects': 'La preparacion no crea solicitudes ni escribe en Censo.',
+  'rubi.baja.summary.person': 'Persona', 'rubi.baja.summary.association': 'Asociacion', 'rubi.baja.summary.exercise': 'Ejercicio',
+  'rubi.baja.confirm.title': 'Confirmacion humana', 'rubi.baja.confirm.warning': 'Confirmar registrara el tramite administrativo de baja.',
+  'rubi.baja.confirm.accept': 'He revisado el resumen y quiero registrar el tramite.', 'rubi.baja.confirm.action': 'Confirmar y registrar', 'rubi.baja.confirming': 'Registrando...',
+  'rubi.baja.edit': 'Volver a revisar', 'rubi.baja.registered.badge': 'REGISTRADA', 'rubi.baja.confirmed.title': 'Baja registrada',
+  'rubi.baja.confirmed.description': 'La solicitud administrativa se ha registrado. No se ha escrito directamente en Censo.', 'rubi.baja.reference': 'Solicitud',
+  'rubi.baja.normal.title': 'Este caso requiere el flujo normal', 'rubi.baja.normal.description': 'La persona ocupa un cargo obligatorio y requiere sustitucion o una revision especial.', 'rubi.baja.normal.open': 'Abrir flujo normal',
+  'rubi.baja.cancelled': 'He cancelado la baja asistida y limpiado sus datos.', 'rubi.baja.expired': 'La preparacion ha caducado y sus datos se han limpiado.',
+  'rubi.baja.error.permission': 'No tienes permiso para preparar bajas.', 'rubi.baja.error.exercise': 'Selecciona el ejercicio activo e iniciado.',
+  'rubi.baja.error.options': 'No se han podido cargar las personas.', 'rubi.baja.error.form': 'Selecciona una persona valida.',
+  'rubi.baja.error.duplicate': 'Ya existe una baja pendiente para esta persona.', 'rubi.baja.error.person': 'La persona ya no esta disponible en esta asociacion y ejercicio.',
+  'rubi.baja.error.expired': 'La preparacion ya no esta vigente.', 'rubi.baja.error.contextChanged': 'El contexto ha cambiado. Prepara la baja de nuevo.',
+  'rubi.baja.error.transactionDisabled': 'La confirmacion transaccional no esta habilitada.', 'rubi.baja.error.prepare': 'No se ha podido preparar o registrar la baja.'
+});
 Object.assign(translations.va, {
   'rubi.action.modificacion': 'Preparar modificacio amb Rubi', 'rubi.mod.guided': 'Tramit guiat', 'rubi.mod.title': 'Modificacio assistida',
   'rubi.mod.privacy': "Selecciona i edita la persona en este formulari segur. Les dades no s'envien al proveidor d'IA.",
@@ -164,6 +187,29 @@ Object.assign(translations.va, {
   'rubi.mod.field.identificacion': 'Identificacio', 'rubi.mod.field.nombre': 'Nom', 'rubi.mod.field.apellidos': 'Cognoms', 'rubi.mod.field.nacimiento': 'Data de naixement',
   'rubi.mod.field.telefono': 'Telefon', 'rubi.mod.field.email': 'Correu electronic', 'rubi.mod.field.direccion': 'Adreca', 'rubi.mod.field.codigo_postal': 'Codi postal', 'rubi.mod.field.cargos': 'Carrecs'
 });
+Object.assign(translations.va, {
+  'rubi.action.baja': 'Preparar baixa amb Rubi', 'rubi.baja.guided': 'Tramit guiat', 'rubi.baja.title': 'Baixa assistida',
+  'rubi.baja.privacy': "Selecciona la persona en este formulari segur. Les dades no s'envien al proveidor d'IA.",
+  'rubi.baja.step.person': 'Persona', 'rubi.baja.step.motivo': 'Motiu', 'rubi.baja.step.review': 'Revisio',
+  'rubi.baja.select.title': 'Selecciona la persona', 'rubi.baja.select.help': "Nomes es mostren persones de l'associacio i exercici actuals.", 'rubi.baja.select.placeholder': 'Selecciona una persona',
+  'rubi.baja.motivo.title': 'Motiu (opcional)', 'rubi.baja.motivo.help': 'Pots indicar breument el motiu de la baixa.', 'rubi.baja.field.motivo': 'Motiu',
+  'rubi.baja.boundary': 'Preparar valida el cas i genera un resum. No registra ni aplica la baixa.',
+  'rubi.baja.prepare': 'Preparar baixa', 'rubi.baja.prepared.badge': 'PREPARADA', 'rubi.baja.prepared.title': 'Baixa preparada',
+  'rubi.baja.prepared.pending': 'Pendent de confirmacio', 'rubi.baja.prepared.stop': 'Revisa exactament el que ocorrera abans de confirmar.',
+  'rubi.baja.prepared.noEffects': 'La preparacio no crea sollicituds ni escriu en Cens.',
+  'rubi.baja.summary.person': 'Persona', 'rubi.baja.summary.association': 'Associacio', 'rubi.baja.summary.exercise': 'Exercici',
+  'rubi.baja.confirm.title': 'Confirmacio humana', 'rubi.baja.confirm.warning': 'Confirmar registrara el tramit administratiu de baixa.',
+  'rubi.baja.confirm.accept': 'He revisat el resum i vull registrar el tramit.', 'rubi.baja.confirm.action': 'Confirmar i registrar', 'rubi.baja.confirming': 'Registrant...',
+  'rubi.baja.edit': 'Tornar a revisar', 'rubi.baja.registered.badge': 'REGISTRADA', 'rubi.baja.confirmed.title': 'Baixa registrada',
+  'rubi.baja.confirmed.description': "La sollicitud administrativa s'ha registrat. No s'ha escrit directament en Cens.", 'rubi.baja.reference': 'Sollicitud',
+  'rubi.baja.normal.title': 'Este cas requerix el flux normal', 'rubi.baja.normal.description': 'La persona ocupa un carrec obligatori i requerix substitucio o una revisio especial.', 'rubi.baja.normal.open': 'Obrir flux normal',
+  'rubi.baja.cancelled': 'He cancellat la baixa assistida i netejat les dades.', 'rubi.baja.expired': 'La preparacio ha caducat i les dades s han netejat.',
+  'rubi.baja.error.permission': 'No tens permis per a preparar baixes.', 'rubi.baja.error.exercise': "Selecciona l'exercici actiu i iniciat.",
+  'rubi.baja.error.options': 'No s han pogut carregar les persones.', 'rubi.baja.error.form': 'Selecciona una persona valida.',
+  'rubi.baja.error.duplicate': 'Ja existix una baixa pendent per a esta persona.', 'rubi.baja.error.person': 'La persona ja no esta disponible en esta associacio i exercici.',
+  'rubi.baja.error.expired': 'La preparacio ja no esta vigent.', 'rubi.baja.error.contextChanged': 'El context ha canviat. Prepara la baixa de nou.',
+  'rubi.baja.error.transactionDisabled': 'La confirmacio transaccional no esta habilitada.', 'rubi.baja.error.prepare': 'No s ha pogut preparar o registrar la baixa.'
+});
 Object.assign(translations.en, {
   'rubi.action.modificacion': 'Prepare modification with Rubi', 'rubi.mod.guided': 'Guided process', 'rubi.mod.title': 'Assisted modification',
   'rubi.mod.privacy': 'Select and edit the person in this secure form. Their details are not sent to the AI provider.',
@@ -186,6 +232,83 @@ Object.assign(translations.en, {
   'rubi.mod.error.transactionDisabled': 'Transactional confirmation is not enabled.', 'rubi.mod.error.prepare': 'The modification could not be prepared or registered.',
   'rubi.mod.field.identificacion': 'Identification', 'rubi.mod.field.nombre': 'First name', 'rubi.mod.field.apellidos': 'Surnames', 'rubi.mod.field.nacimiento': 'Date of birth',
   'rubi.mod.field.telefono': 'Telephone', 'rubi.mod.field.email': 'Email', 'rubi.mod.field.direccion': 'Address', 'rubi.mod.field.codigo_postal': 'Postcode', 'rubi.mod.field.cargos': 'Roles'
+});
+Object.assign(translations.en, {
+  'rubi.action.baja': 'Prepare removal with Rubi', 'rubi.baja.guided': 'Guided process', 'rubi.baja.title': 'Assisted removal',
+  'rubi.baja.privacy': 'Select the person in this secure form. Their details are not sent to the AI provider.',
+  'rubi.baja.step.person': 'Person', 'rubi.baja.step.motivo': 'Reason', 'rubi.baja.step.review': 'Review',
+  'rubi.baja.select.title': 'Select the person', 'rubi.baja.select.help': 'Only people in the current association and financial year are shown.', 'rubi.baja.select.placeholder': 'Select a person',
+  'rubi.baja.motivo.title': 'Reason (optional)', 'rubi.baja.motivo.help': 'You can briefly note the reason for the removal.', 'rubi.baja.field.motivo': 'Reason',
+  'rubi.baja.boundary': 'Prepare validates the case and creates a summary. It does not register or apply the removal.',
+  'rubi.baja.prepare': 'Prepare removal', 'rubi.baja.prepared.badge': 'PREPARED', 'rubi.baja.prepared.title': 'Removal prepared',
+  'rubi.baja.prepared.pending': 'Awaiting confirmation', 'rubi.baja.prepared.stop': 'Review exactly what will happen before confirming.',
+  'rubi.baja.prepared.noEffects': 'Preparation does not create a request or write to Census.',
+  'rubi.baja.summary.person': 'Person', 'rubi.baja.summary.association': 'Association', 'rubi.baja.summary.exercise': 'Financial year',
+  'rubi.baja.confirm.title': 'Human confirmation', 'rubi.baja.confirm.warning': 'Confirmation will register the administrative removal process.',
+  'rubi.baja.confirm.accept': 'I reviewed the summary and want to register the process.', 'rubi.baja.confirm.action': 'Confirm and register', 'rubi.baja.confirming': 'Registering...',
+  'rubi.baja.edit': 'Review again', 'rubi.baja.registered.badge': 'REGISTERED', 'rubi.baja.confirmed.title': 'Removal registered',
+  'rubi.baja.confirmed.description': 'The administrative request was registered. Census was not updated directly.', 'rubi.baja.reference': 'Request',
+  'rubi.baja.normal.title': 'This case requires the standard flow', 'rubi.baja.normal.description': 'The person holds a mandatory role and requires a replacement or special review.', 'rubi.baja.normal.open': 'Open standard flow',
+  'rubi.baja.cancelled': 'I cancelled the assisted removal and cleared its details.', 'rubi.baja.expired': 'The preparation expired and its details were cleared.',
+  'rubi.baja.error.permission': 'You do not have permission to prepare removals.', 'rubi.baja.error.exercise': 'Select the active, started financial year.',
+  'rubi.baja.error.options': 'People could not be loaded.', 'rubi.baja.error.form': 'Select a valid person.',
+  'rubi.baja.error.duplicate': 'A pending removal already exists for this person.', 'rubi.baja.error.person': 'The person is no longer available in this association and financial year.',
+  'rubi.baja.error.expired': 'The preparation is no longer valid.', 'rubi.baja.error.contextChanged': 'The context changed. Prepare the removal again.',
+  'rubi.baja.error.transactionDisabled': 'Transactional confirmation is not enabled.', 'rubi.baja.error.prepare': 'The removal could not be prepared or registered.'
+});
+Object.assign(translations.es, {
+  'rubi.admin.noAccess': 'No tienes permiso para administrar la configuracion de Rubi.',
+  'rubi.admin.error.load': 'No se ha podido cargar la configuracion de Rubi.', 'rubi.admin.error.save': 'No se ha podido guardar el cambio.',
+  'rubi.admin.error.associations': 'No se han podido cargar las asociaciones.', 'rubi.admin.error.associationSave': 'No se ha podido actualizar el acceso de la asociacion.',
+  'rubi.admin.error.analytics': 'No se ha podido cargar la analitica.',
+  'rubi.admin.status.title': 'Estado general', 'rubi.admin.status.hint': 'El kill switch de infraestructura sigue teniendo prioridad sobre estas opciones.',
+  'rubi.admin.toggle.enabled': 'Rubi habilitada', 'rubi.admin.toggle.realProvider': 'Proveedor real habilitado', 'rubi.admin.toggle.transactional': 'Operaciones transaccionales habilitadas',
+  'rubi.admin.provider.title': 'Proveedor', 'rubi.admin.provider.name': 'Proveedor', 'rubi.admin.provider.model': 'Modelo',
+  'rubi.admin.provider.killSwitch': 'Kill switch de infraestructura', 'rubi.admin.provider.credential': 'Credencial',
+  'rubi.admin.state.active': 'Activo', 'rubi.admin.state.inactive': 'Inactivo', 'rubi.admin.state.configured': 'Configurada', 'rubi.admin.state.notConfigured': 'No configurada',
+  'rubi.admin.budget.title': 'Consumo y presupuesto', 'rubi.admin.budget.daily': 'Presupuesto diario', 'rubi.admin.budget.monthly': 'Presupuesto mensual', 'rubi.admin.budget.limitReached': 'Limite alcanzado',
+  'rubi.admin.associations.title': 'Asociaciones', 'rubi.admin.associations.search': 'Buscar asociacion', 'rubi.admin.associations.refresh': 'Actualizar',
+  'rubi.admin.associations.filter.all': 'Todas', 'rubi.admin.associations.filter.enabled': 'Habilitadas', 'rubi.admin.associations.filter.disabled': 'Deshabilitadas',
+  'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Asociacion', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No se han encontrado asociaciones.',
+  'rubi.admin.analytics.title': 'Analiticas', 'rubi.admin.analytics.last7': 'Ultimos 7 dias', 'rubi.admin.analytics.last30': 'Ultimos 30 dias',
+  'rubi.admin.analytics.calls': 'Llamadas', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Coste estimado',
+  'rubi.admin.analytics.failures': 'Fallidas', 'rubi.admin.analytics.actors': 'Actores unicos', 'rubi.admin.analytics.associations': 'Asociaciones unicas'
+});
+Object.assign(translations.va, {
+  'rubi.admin.noAccess': 'No tens permis per a administrar la configuracio de Rubi.',
+  'rubi.admin.error.load': 'No s ha pogut carregar la configuracio de Rubi.', 'rubi.admin.error.save': 'No s ha pogut guardar el canvi.',
+  'rubi.admin.error.associations': 'No s han pogut carregar les associacions.', 'rubi.admin.error.associationSave': 'No s ha pogut actualitzar l acces de l associacio.',
+  'rubi.admin.error.analytics': 'No s ha pogut carregar l analitica.',
+  'rubi.admin.status.title': 'Estat general', 'rubi.admin.status.hint': 'El kill switch d infraestructura continua tenint prioritat sobre estes opcions.',
+  'rubi.admin.toggle.enabled': 'Rubi habilitada', 'rubi.admin.toggle.realProvider': 'Proveidor real habilitat', 'rubi.admin.toggle.transactional': 'Operacions transaccionals habilitades',
+  'rubi.admin.provider.title': 'Proveidor', 'rubi.admin.provider.name': 'Proveidor', 'rubi.admin.provider.model': 'Model',
+  'rubi.admin.provider.killSwitch': 'Kill switch d infraestructura', 'rubi.admin.provider.credential': 'Credencial',
+  'rubi.admin.state.active': 'Actiu', 'rubi.admin.state.inactive': 'Inactiu', 'rubi.admin.state.configured': 'Configurada', 'rubi.admin.state.notConfigured': 'No configurada',
+  'rubi.admin.budget.title': 'Consum i pressupost', 'rubi.admin.budget.daily': 'Pressupost diari', 'rubi.admin.budget.monthly': 'Pressupost mensual', 'rubi.admin.budget.limitReached': 'Limit assolit',
+  'rubi.admin.associations.title': 'Associacions', 'rubi.admin.associations.search': 'Cercar associacio', 'rubi.admin.associations.refresh': 'Actualitzar',
+  'rubi.admin.associations.filter.all': 'Totes', 'rubi.admin.associations.filter.enabled': 'Habilitades', 'rubi.admin.associations.filter.disabled': 'Deshabilitades',
+  'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Associacio', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No s han trobat associacions.',
+  'rubi.admin.analytics.title': 'Analitiques', 'rubi.admin.analytics.last7': 'Ultims 7 dies', 'rubi.admin.analytics.last30': 'Ultims 30 dies',
+  'rubi.admin.analytics.calls': 'Crides', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Cost estimat',
+  'rubi.admin.analytics.failures': 'Fallides', 'rubi.admin.analytics.actors': 'Actors unics', 'rubi.admin.analytics.associations': 'Associacions uniques'
+});
+Object.assign(translations.en, {
+  'rubi.admin.noAccess': 'You do not have permission to manage Rubi configuration.',
+  'rubi.admin.error.load': 'Rubi configuration could not be loaded.', 'rubi.admin.error.save': 'The change could not be saved.',
+  'rubi.admin.error.associations': 'Associations could not be loaded.', 'rubi.admin.error.associationSave': 'The association access could not be updated.',
+  'rubi.admin.error.analytics': 'Analytics could not be loaded.',
+  'rubi.admin.status.title': 'Overall status', 'rubi.admin.status.hint': 'The infrastructure kill switch still takes priority over these options.',
+  'rubi.admin.toggle.enabled': 'Rubi enabled', 'rubi.admin.toggle.realProvider': 'Real provider enabled', 'rubi.admin.toggle.transactional': 'Transactional operations enabled',
+  'rubi.admin.provider.title': 'Provider', 'rubi.admin.provider.name': 'Provider', 'rubi.admin.provider.model': 'Model',
+  'rubi.admin.provider.killSwitch': 'Infrastructure kill switch', 'rubi.admin.provider.credential': 'Credential',
+  'rubi.admin.state.active': 'Active', 'rubi.admin.state.inactive': 'Inactive', 'rubi.admin.state.configured': 'Configured', 'rubi.admin.state.notConfigured': 'Not configured',
+  'rubi.admin.budget.title': 'Consumption and budget', 'rubi.admin.budget.daily': 'Daily budget', 'rubi.admin.budget.monthly': 'Monthly budget', 'rubi.admin.budget.limitReached': 'Limit reached',
+  'rubi.admin.associations.title': 'Associations', 'rubi.admin.associations.search': 'Search association', 'rubi.admin.associations.refresh': 'Refresh',
+  'rubi.admin.associations.filter.all': 'All', 'rubi.admin.associations.filter.enabled': 'Enabled', 'rubi.admin.associations.filter.disabled': 'Disabled',
+  'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Association', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No associations found.',
+  'rubi.admin.analytics.title': 'Analytics', 'rubi.admin.analytics.last7': 'Last 7 days', 'rubi.admin.analytics.last30': 'Last 30 days',
+  'rubi.admin.analytics.calls': 'Calls', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Estimated cost',
+  'rubi.admin.analytics.failures': 'Failures', 'rubi.admin.analytics.actors': 'Unique actors', 'rubi.admin.analytics.associations': 'Unique associations'
 });
 
 @Injectable({ providedIn: 'root' })

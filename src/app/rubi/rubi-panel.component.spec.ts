@@ -100,6 +100,14 @@ describe('RubiPanelComponent', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
+  it('opens the structured baja flow without executing it through chat', () => {
+    spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'baja', route: 'https://invalid.example' });
+    expect(component.bajaActive).toBeTrue();
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'baja' });
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
   it('sends only abstract preparation state when chat is used during human confirmation', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'alta' });
@@ -108,6 +116,17 @@ describe('RubiPanelComponent', () => {
     component.send();
     const args = api.message.calls.mostRecent().args;
     expect(args[4]?.state).toEqual({ hasOpenRegistration: true });
+    expect(JSON.stringify(args[4])).not.toContain('Persona');
+  });
+
+  it('sends only abstract baja preparation state to the screen context', () => {
+    api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    component.executeAction({ type: 'start_flow', flow: 'baja' });
+    component.onBajaPreparationStateChanged(true);
+    component.draft = 'Confirma la baja';
+    component.send();
+    const args = api.message.calls.mostRecent().args;
+    expect(args[4]?.state).toEqual({ hasOpenBaja: true });
     expect(JSON.stringify(args[4])).not.toContain('Persona');
   });
 

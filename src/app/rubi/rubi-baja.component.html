@@ -1,0 +1,30 @@
+<section class="rubi-alta rubi-baja" aria-labelledby="rubi-baja-title">
+  <header class="rubi-alta-header"><div><p class="rubi-alta-kicker">{{ 'rubi.baja.guided' | t }}</p><h3 id="rubi-baja-title">{{ 'rubi.baja.title' | t }}</h3><p>{{ 'rubi.baja.privacy' | t }}</p></div><i class="bi bi-person-dash" aria-hidden="true"></i></header>
+  <ol class="rubi-alta-progress"><li [class.is-active]="!selected"><span>1</span>{{ 'rubi.baja.step.person' | t }}</li><li [class.is-active]="selected && !prepared && !confirmed" [class.is-complete]="!!prepared || !!confirmed"><span>2</span>{{ 'rubi.baja.step.motivo' | t }}</li><li [class.is-active]="!!prepared" [class.is-complete]="!!confirmed"><span>3</span>{{ 'rubi.baja.step.review' | t }}</li></ol>
+  <p *ngIf="loading" class="rubi-alta-status" role="status"><span class="spinner-border spinner-border-sm"></span>{{ 'common.loading' | t }}</p>
+  <p *ngIf="errorKey" class="rubi-alta-error" role="alert">{{ errorKey | t }}</p>
+
+  <section *ngIf="confirmed as result" class="rubi-alta-state rubi-alta-success" role="status"><span class="rubi-alta-state-icon"><i class="bi bi-check-lg"></i></span><div><p class="rubi-alta-state-kicker">{{ 'rubi.baja.registered.badge' | t }}</p><h4>{{ 'rubi.baja.confirmed.title' | t }}</h4><p>{{ 'rubi.baja.confirmed.description' | t }}</p></div><dl class="rubi-alta-result"><div><dt>{{ 'rubi.baja.reference' | t }}</dt><dd>{{ result.numero || result.solicitudId }}</dd></div></dl></section>
+
+  <ng-container *ngIf="!confirmed">
+    <ng-container *ngIf="prepared as result; else editForm">
+      <section *ngIf="result.estado === 'preparada'; else normalFlow" class="rubi-alta-state rubi-alta-prepared">
+        <div class="rubi-alta-prepared-head"><div><p class="rubi-alta-state-kicker">{{ 'rubi.baja.prepared.badge' | t }}</p><h4>{{ 'rubi.baja.prepared.title' | t }}</h4></div><span class="rubi-state-pill">{{ 'rubi.baja.prepared.pending' | t }}</span></div>
+        <p class="rubi-alta-stop">{{ 'rubi.baja.prepared.stop' | t }}</p>
+        <div class="rubi-baja-summary"><dl><div><dt>{{ 'rubi.baja.summary.person' | t }}</dt><dd>{{ result.persona.nombre }} {{ result.persona.apellidos }}</dd></div><div><dt>{{ 'rubi.baja.summary.association' | t }}</dt><dd>{{ result.asociacionId }}</dd></div><div><dt>{{ 'rubi.baja.summary.exercise' | t }}</dt><dd>{{ result.ejercicio.ejercicio }}</dd></div></dl></div>
+        <p class="rubi-alta-boundary">{{ 'rubi.baja.prepared.noEffects' | t }}</p>
+        <fieldset *ngIf="result.confirmacion?.confirmacionHumanaHabilitada" class="rubi-alta-confirmation"><legend>{{ 'rubi.baja.confirm.title' | t }}</legend><p>{{ 'rubi.baja.confirm.warning' | t }}</p><label class="rubi-alta-check"><input type="checkbox" [checked]="confirmationAccepted" (change)="confirmationAccepted = $any($event.target).checked" /><span>{{ 'rubi.baja.confirm.accept' | t }}</span></label><button class="rubi-alta-confirm-button" type="button" [disabled]="!confirmationAccepted || confirming" (click)="confirm()">{{ (confirming ? 'rubi.baja.confirming' : 'rubi.baja.confirm.action') | t }}</button></fieldset>
+        <div class="rubi-alta-buttons"><button class="rubi-alta-secondary" type="button" (click)="edit()">{{ 'rubi.baja.edit' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+      </section>
+      <ng-template #normalFlow><section class="rubi-alta-state rubi-alta-warning"><h4>{{ 'rubi.baja.normal.title' | t }}</h4><p>{{ 'rubi.baja.normal.description' | t }}</p><ul><li *ngFor="let conflict of result.conflictosComplejos">{{ conflict.code }}</li></ul><div class="rubi-alta-buttons"><button class="ux-btn" type="button" (click)="continueInNormalFlow()">{{ 'rubi.baja.normal.open' | t }}</button><button class="rubi-alta-secondary" type="button" (click)="edit()">{{ 'rubi.baja.edit' | t }}</button></div></section></ng-template>
+    </ng-container>
+
+    <ng-template #editForm><form [formGroup]="form" (ngSubmit)="prepare()" novalidate>
+      <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>1</span><div><h4>{{ 'rubi.baja.select.title' | t }}</h4><p>{{ 'rubi.baja.select.help' | t }}</p></div></div><select formControlName="asociadoId" (change)="selectPerson()"><option [ngValue]="null">{{ 'rubi.baja.select.placeholder' | t }}</option><option *ngFor="let person of personas" [ngValue]="person.id">{{ person.nombre }} {{ person.apellidos }}</option></select></section>
+      <ng-container *ngIf="selected">
+        <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>2</span><div><h4>{{ 'rubi.baja.motivo.title' | t }}</h4><p>{{ 'rubi.baja.motivo.help' | t }}</p></div></div><label>{{ 'rubi.baja.field.motivo' | t }}</label><textarea formControlName="motivo" maxlength="250" rows="3"></textarea></section>
+        <p class="rubi-alta-boundary">{{ 'rubi.baja.boundary' | t }}</p><div class="rubi-alta-buttons"><button class="ux-btn" type="submit" [disabled]="loading">{{ 'rubi.baja.prepare' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+      </ng-container>
+    </form></ng-template>
+  </ng-container>
+</section>

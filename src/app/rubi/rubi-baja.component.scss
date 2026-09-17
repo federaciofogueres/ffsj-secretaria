@@ -1,0 +1,5 @@
+.rubi-baja-summary { display: grid; gap: .5rem; padding: .7rem; border: 1px solid var(--alta-line); border-radius: .65rem; background: #fff; }
+.rubi-baja-summary dl { display: grid; gap: .4rem; margin: 0; }
+.rubi-baja-summary dl > div { display: flex; justify-content: space-between; gap: .5rem; }
+.rubi-baja-summary dt { color: var(--alta-muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
+.rubi-baja-summary dd { margin: 0; color: var(--alta-navy); font-size: .78rem; overflow-wrap: anywhere; }

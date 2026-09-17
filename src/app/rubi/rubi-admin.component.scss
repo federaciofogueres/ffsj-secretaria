@@ -1,0 +1,9 @@
+.rubi-admin .section-panel { border: 1px solid var(--alta-line, #dee2e6); border-radius: .65rem; padding: 1rem 1.25rem; margin-bottom: 1rem; background: #fff; }
+.rubi-admin-summary { display: grid; gap: .5rem; margin: 0; }
+.rubi-admin-summary > div { display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.rubi-admin-summary dt { color: var(--alta-muted, #6c757d); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+.rubi-admin-summary dd { margin: 0; }
+.rubi-admin-stat { display: flex; flex-direction: column; gap: .2rem; padding: .75rem; border-radius: .5rem; background: #f8f9fa; }
+.rubi-admin-stat span { font-size: .7rem; font-weight: 800; text-transform: uppercase; color: var(--alta-muted, #6c757d); }
+.rubi-admin-stat strong { font-size: 1.1rem; }
+.rubi-admin-status { display: flex; align-items: center; gap: .5rem; }

@@ -1,0 +1,107 @@
+<section class="rubi-admin" aria-labelledby="rubi-admin-title">
+  <p class="text-muted" *ngIf="!allowed">{{ 'rubi.admin.noAccess' | t }}</p>
+
+  <ng-container *ngIf="allowed">
+    <p *ngIf="loading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+    <div class="alert alert-danger" *ngIf="error">{{ error | t }}</div>
+
+    <ng-container *ngIf="!loading">
+      <section class="section-panel">
+        <h2 id="rubi-admin-title" class="h5">{{ 'rubi.admin.status.title' | t }}</h2>
+        <div class="row g-3" *ngIf="global as g">
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.enabled" (change)="toggleGlobal('enabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.enabled' | t }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.realProviderEnabled" (change)="toggleGlobal('realProviderEnabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.realProvider' | t }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.transactionalEnabled" (change)="toggleGlobal('transactionalEnabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.transactional' | t }}</span>
+            </label>
+          </div>
+        </div>
+        <p class="text-muted small mt-2">{{ 'rubi.admin.status.hint' | t }}</p>
+      </section>
+
+      <section class="section-panel" *ngIf="provider as p">
+        <h2 class="h5">{{ 'rubi.admin.provider.title' | t }}</h2>
+        <dl class="rubi-admin-summary">
+          <div><dt>{{ 'rubi.admin.provider.name' | t }}</dt><dd>{{ p.provider }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.model' | t }}</dt><dd>{{ p.model }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.killSwitch' | t }}</dt><dd>{{ (p.killSwitchEnabled ? 'rubi.admin.state.active' : 'rubi.admin.state.inactive') | t }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.credential' | t }}</dt><dd>{{ (p.credentialConfigured ? 'rubi.admin.state.configured' : 'rubi.admin.state.notConfigured') | t }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="section-panel" *ngIf="budget as b">
+        <h2 class="h5">{{ 'rubi.admin.budget.title' | t }}</h2>
+        <dl class="rubi-admin-summary">
+          <div><dt>{{ 'rubi.admin.budget.daily' | t }}</dt><dd>{{ b.dailyUsedUsd | number: '1.2-4' }} / {{ b.dailyBudgetUsd | number: '1.2-4' }} USD<span class="badge bg-light text-dark ms-2" *ngIf="b.dailyPercent !== null">{{ b.dailyPercent }}%</span><span class="badge bg-danger ms-2" *ngIf="b.dailyLimitReached">{{ 'rubi.admin.budget.limitReached' | t }}</span></dd></div>
+          <div><dt>{{ 'rubi.admin.budget.monthly' | t }}</dt><dd>{{ b.monthlyUsedUsd | number: '1.2-4' }} / {{ b.monthlyBudgetUsd | number: '1.2-4' }} USD<span class="badge bg-light text-dark ms-2" *ngIf="b.monthlyPercent !== null">{{ b.monthlyPercent }}%</span><span class="badge bg-danger ms-2" *ngIf="b.monthlyLimitReached">{{ 'rubi.admin.budget.limitReached' | t }}</span></dd></div>
+        </dl>
+      </section>
+
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.associations.title' | t }}</h2>
+        <div class="row g-2 align-items-end mb-2">
+          <div class="col-md-5">
+            <label class="form-label">{{ 'rubi.admin.associations.search' | t }}</label>
+            <input class="form-control" type="search" [(ngModel)]="busqueda" (keyup.enter)="loadAsociaciones()" />
+          </div>
+          <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'all'" [class.btn-outline-secondary]="filtro !== 'all'" (click)="setFiltro('all')">{{ 'rubi.admin.associations.filter.all' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'enabled'" [class.btn-outline-secondary]="filtro !== 'enabled'" (click)="setFiltro('enabled')">{{ 'rubi.admin.associations.filter.enabled' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'disabled'" [class.btn-outline-secondary]="filtro !== 'disabled'" (click)="setFiltro('disabled')">{{ 'rubi.admin.associations.filter.disabled' | t }}</button>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button class="btn btn-outline-secondary" type="button" (click)="loadAsociaciones()">{{ 'rubi.admin.associations.refresh' | t }}</button>
+          </div>
+        </div>
+        <p *ngIf="asociacionesLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="asociacionesError">{{ asociacionesError | t }}</div>
+        <p class="text-muted small">{{ 'rubi.admin.associations.total' | t }}: {{ asociacionesTotal }}</p>
+        <table class="table table-sm" *ngIf="!asociacionesLoading && asociaciones.length">
+          <thead><tr><th>{{ 'rubi.admin.associations.name' | t }}</th><th>{{ 'rubi.admin.associations.status' | t }}</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let asociacion of asociaciones">
+              <td>{{ asociacion.nombre }}</td>
+              <td>
+                <label class="form-check">
+                  <input class="form-check-input" type="checkbox" [checked]="asociacion.enabled" [disabled]="isSavingAsociacion(asociacion.id)" (change)="toggleAsociacion(asociacion, $any($event.target).checked)" />
+                  <span class="form-check-label">{{ (asociacion.enabled ? 'rubi.admin.state.active' : 'rubi.admin.state.inactive') | t }}</span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-muted" *ngIf="!asociacionesLoading && !asociaciones.length">{{ 'rubi.admin.associations.empty' | t }}</p>
+      </section>
+
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.analytics.title' | t }}</h2>
+        <div class="d-flex gap-2 mb-2">
+          <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 7" [class.btn-outline-secondary]="analyticsDias !== 7" (click)="setAnalyticsDias(7)">{{ 'rubi.admin.analytics.last7' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 30" [class.btn-outline-secondary]="analyticsDias !== 30" (click)="setAnalyticsDias(30)">{{ 'rubi.admin.analytics.last30' | t }}</button>
+        </div>
+        <p *ngIf="analyticsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="analyticsError">{{ analyticsError | t }}</div>
+        <div class="row g-3" *ngIf="!analyticsLoading && analytics as a">
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.calls' | t }}</span><strong>{{ a.llamadas }}</strong></div></div>
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.tokens' | t }}</span><strong>{{ a.inputTokens + a.outputTokens }}</strong></div></div>
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.cost' | t }}</span><strong>{{ a.costeUsd | number: '1.2-4' }} USD</strong></div></div>
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.failures' | t }}</span><strong>{{ a.fallidas }}</strong></div></div>
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.actors' | t }}</span><strong>{{ a.actoresUnicos }}</strong></div></div>
+          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.associations' | t }}</span><strong>{{ a.asociacionesUnicas }}</strong></div></div>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+</section>
