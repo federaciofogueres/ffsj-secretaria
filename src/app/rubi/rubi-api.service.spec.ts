@@ -30,7 +30,30 @@ describe('RubiApiService', () => {
     expect(request.request.method).toBe('POST');
     expect(request.request.body).toEqual({ message: 'Necesito ayuda', idioma: 'va', routeKey: 'personas', history: [{ role: 'user', text: 'Una consulta anterior' }], screenContext: { version: 1, module: 'asociados', view: 'listado' } });
     expect(request.request.headers.get('Authorization')).toBe('Bearer test-token');
+    expect(request.request.headers.get('X-Rubi-Session-Id')).toBeTruthy();
     request.flush({ message: 'Resposta', intent: 'help', actions: [], errors: [], metadata: { success: true } });
+  });
+
+  it('checks pilot access without starting a tracked session', () => {
+    service.access().subscribe();
+    const request = http.expectOne('/emjf1/Secretaria/1.0.0/asistente/acceso');
+    expect(request.request.method).toBe('GET');
+    expect(request.request.headers.has('X-Rubi-Session-Id')).toBeFalse();
+    request.flush({ enabled: true, authorized: true });
+  });
+
+  it('sends only closed pilot events and structured feedback', () => {
+    service.trackEvent({ event: 'flow_started', stage: 'alta' }).subscribe();
+    const event = http.expectOne('/emjf1/Secretaria/1.0.0/asistente/eventos');
+    expect(event.request.body).toEqual({ event: 'flow_started', stage: 'alta' });
+    expect(event.request.headers.get('X-Rubi-Session-Id')).toBeTruthy();
+    event.flush({ accepted: true });
+
+    service.feedback('not_helpful', { intent: 'help', tool: 'search_help' }).subscribe();
+    const feedback = http.expectOne('/emjf1/Secretaria/1.0.0/asistente/feedback');
+    expect(feedback.request.body).toEqual({ rating: 'not_helpful', reason: 'not_useful', intent: 'help', tool: 'search_help' });
+    expect(JSON.stringify(feedback.request.body)).not.toContain('message');
+    feedback.flush({ accepted: true });
   });
 
   it('uses direct deterministic endpoints for preparation, cancellation and human confirmation', () => {

@@ -14,6 +14,8 @@ export interface RubiMessage {
   topic?: string;
   module?: RubiModule;
   excludeFromHistory?: boolean;
+  feedback?: 'helpful' | 'not_helpful';
+  feedbackPending?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,5 +66,9 @@ export class RubiConversationService {
         return;
       }
     }
+  }
+
+  setFeedback(id: number, feedback: 'helpful' | 'not_helpful' | undefined, pending = false): void {
+    this.messagesSubject.next(this.messages.map(message => message.id === id ? { ...message, feedback, feedbackPending: pending } : message));
   }
 }

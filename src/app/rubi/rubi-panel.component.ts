@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Component, ElementRef, HostListener, OnDestroy, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -30,7 +30,7 @@ const SAFE_DESTINATIONS: Record<string, string> = {
   templateUrl: './rubi-panel.component.html',
   styleUrls: ['./rubi-panel.component.scss']
 })
-export class RubiPanelComponent implements OnDestroy {
+export class RubiPanelComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') private messageInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('launcher') private launcher?: ElementRef<HTMLButtonElement>;
 
@@ -41,9 +41,11 @@ export class RubiPanelComponent implements OnDestroy {
   messages: RubiMessage[] = [];
   altaActive = false;
   altaPrepared = false;
+  accessGranted = false;
   readonly welcomeSuggestions = ['rubi.quick.alta', 'rubi.quick.registro', 'rubi.quick.calendario', 'rubi.quick.help'];
   readonly quickActions = ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support'];
   private opener: HTMLElement | null = null;
+  private sessionOpened = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -57,7 +59,16 @@ export class RubiPanelComponent implements OnDestroy {
     this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => {
       this.altaActive = false;
       this.altaPrepared = false;
+      this.sessionOpened = false;
+      this.api.resetSession();
     }));
+  }
+
+  ngOnInit(): void {
+    this.api.access().subscribe({
+      next: access => this.accessGranted = access.enabled && access.authorized,
+      error: () => this.accessGranted = false
+    });
   }
 
   ngOnDestroy(): void {
@@ -69,8 +80,14 @@ export class RubiPanelComponent implements OnDestroy {
   }
 
   show(): void {
+    if (!this.accessGranted) return;
     this.opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     this.open = true;
+    if (!this.sessionOpened) {
+      this.sessionOpened = true;
+      this.api.startSession();
+      this.api.trackEvent({ event: 'session_opened', stage: 'conversation' }).subscribe({ error: () => {} });
+    }
     this.addWelcomeIfNeeded();
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
@@ -123,16 +140,21 @@ export class RubiPanelComponent implements OnDestroy {
       this.conversation.excludeLastUserFromHistory();
       this.altaActive = true;
       this.altaPrepared = false;
+      this.api.trackEvent({ event: 'flow_started', stage: 'alta' }).subscribe({ error: () => {} });
       return;
     }
-    const route = action.type === 'navigate' ? SAFE_DESTINATIONS[action.destination] : undefined;
+    if (action.type !== 'navigate') return;
+    const destination = action.destination;
+    const route = SAFE_DESTINATIONS[destination];
     if (!route) return;
+    this.api.trackEvent({ event: 'navigation', stage: 'conversation', destination }).subscribe({ error: () => {} });
     this.router.navigateByUrl(route).then(() => this.close());
   }
 
   onAltaClosed(reason: 'cancelled' | 'expired'): void {
     this.altaActive = false;
     this.altaPrepared = false;
+    this.api.trackEvent({ event: 'flow_cancelled', stage: 'alta' }).subscribe({ error: () => {} });
     this.conversation.add({
       author: 'rubi',
       text: this.i18n.t(reason === 'expired' ? 'rubi.alta.expired' : 'rubi.alta.cancelled')
@@ -148,6 +170,17 @@ export class RubiPanelComponent implements OnDestroy {
 
   onAltaPreparationStateChanged(prepared: boolean): void {
     this.altaPrepared = prepared;
+  }
+
+  sendFeedback(message: RubiMessage, rating: 'helpful' | 'not_helpful'): void {
+    if (message.feedbackPending || message.feedback) return;
+    this.conversation.setFeedback(message.id, undefined, true);
+    this.api.feedback(rating, {
+      ...(message.intent ? { intent: message.intent } : {}), ...(message.tool ? { tool: message.tool } : {})
+    }).subscribe({
+      next: () => this.conversation.setFeedback(message.id, rating),
+      error: () => this.conversation.setFeedback(message.id, undefined)
+    });
   }
 
   private handleResponse(response: RubiResponse): void {
@@ -171,8 +204,12 @@ export class RubiPanelComponent implements OnDestroy {
   private handleError(error: unknown): void {
     this.loading = false;
     const status = error instanceof HttpErrorResponse ? error.status : 0;
-    const code = error instanceof HttpErrorResponse ? error.error?.errors?.[0]?.code : undefined;
+    const code = error instanceof HttpErrorResponse ? (error.error?.errors?.[0]?.code || error.error?.code) : undefined;
     if (code === 'RUBI_DISABLED') this.unavailable = true;
+    if (code === 'RUBI_PILOT_ACCESS_DENIED') {
+      this.accessGranted = false;
+      this.close();
+    }
     const key = status === 401 || status === 403 ? 'rubi.error.auth'
       : status === 429 ? 'rubi.error.limit'
       : code === 'RUBI_DISABLED' ? 'rubi.error.disabled'

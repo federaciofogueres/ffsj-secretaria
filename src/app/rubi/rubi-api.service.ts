@@ -34,6 +34,11 @@ export interface RubiResponse {
   conversation?: RubiConversationState | null;
 }
 
+export type RubiPilotEvent =
+  | { event: 'session_opened'; stage: 'conversation' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' }
+  | { event: 'navigation'; stage: 'conversation'; destination: string };
+
 export interface AltaPreparacion {
   estado: 'preparada' | 'requiere_flujo_normal';
   asociacionId: number;
@@ -75,32 +80,61 @@ export interface AltaConfirmacionResultado {
 
 @Injectable({ providedIn: 'root' })
 export class RubiApiService {
+  private sessionId = '';
   constructor(
     private readonly http: HttpClient,
     private readonly apiUrl: ApiUrlService,
     private readonly auth: AuthService
   ) {}
 
+  access(): Observable<{ enabled: boolean; authorized: boolean }> {
+    return this.http.get<{ enabled: boolean; authorized: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/acceso`, {
+      headers: this.authHeaders(false)
+    }).pipe(timeout(10000));
+  }
+
+  startSession(): void {
+    if (!this.sessionId) this.sessionId = globalThis.crypto?.randomUUID?.() || `rubi-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
+  resetSession(): void { this.sessionId = ''; }
+
+  trackEvent(event: RubiPilotEvent): Observable<{ accepted: boolean }> {
+    this.startSession();
+    return this.http.post<{ accepted: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/eventos`, event, {
+      headers: this.authHeaders()
+    }).pipe(timeout(10000));
+  }
+
+  feedback(rating: 'helpful' | 'not_helpful', context: { intent?: string; tool?: string } = {}): Observable<{ accepted: boolean }> {
+    this.startSession();
+    return this.http.post<{ accepted: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/feedback`, {
+      rating, ...(rating === 'not_helpful' ? { reason: 'not_useful' } : {}), ...context
+    }, { headers: this.authHeaders() }).pipe(timeout(10000));
+  }
+
   message(message: string, idioma: AppLanguage, routeKey?: RubiRouteKey, history?: RubiHistoryEntry[], screenContext?: RubiScreenContext): Observable<RubiResponse> {
+    this.startSession();
     const payload: { message: string; idioma: AppLanguage; routeKey?: RubiRouteKey; history?: RubiHistoryEntry[]; screenContext?: RubiScreenContext } = { message, idioma };
     if (routeKey) payload.routeKey = routeKey;
     if (history?.length) payload.history = history;
     if (screenContext) payload.screenContext = screenContext;
 
     return this.http.post<RubiResponse>(`${this.apiUrl.secretariaBasePath}/asistente/mensaje`, payload, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
+      headers: this.authHeaders()
     }).pipe(timeout(15000));
   }
 
   prepararAlta(ejercicioId: number, datos: Record<string, unknown>): Observable<AltaPreparacion> {
+    this.startSession();
     return this.http.post<AltaPreparacion>(`${this.apiUrl.secretariaBasePath}/altas/preparar`, { ejercicioId, datos }, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
+      headers: this.authHeaders()
     }).pipe(timeout(15000));
   }
 
   cancelarPreparacionAlta(confirmacion: string): Observable<{ cancelada: boolean }> {
     return this.http.post<{ cancelada: boolean }>(`${this.apiUrl.secretariaBasePath}/altas/preparacion/cancelar`, { confirmacion }, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
+      headers: this.authHeaders()
     }).pipe(timeout(10000));
   }
 
@@ -109,7 +143,13 @@ export class RubiApiService {
       confirmacion,
       confirmar: true
     }, {
-      headers: new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` })
+      headers: this.authHeaders()
     }).pipe(timeout(20000));
+  }
+
+  private authHeaders(includeSession = true): HttpHeaders {
+    let headers = new HttpHeaders({ Authorization: `Bearer ${this.auth.getToken()}` });
+    if (includeSession && this.sessionId) headers = headers.set('X-Rubi-Session-Id', this.sessionId);
+    return headers;
   }
 }

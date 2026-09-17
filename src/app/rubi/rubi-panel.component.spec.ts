@@ -16,7 +16,10 @@ describe('RubiPanelComponent', () => {
   let router: Router;
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj<RubiApiService>('RubiApiService', ['message']);
+    api = jasmine.createSpyObj<RubiApiService>('RubiApiService', ['access', 'message', 'startSession', 'resetSession', 'trackEvent', 'feedback']);
+    api.access.and.returnValue(of({ enabled: true, authorized: true }));
+    api.trackEvent.and.returnValue(of({ accepted: true }));
+    api.feedback.and.returnValue(of({ accepted: true }));
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, RubiPanelComponent],
       providers: [
@@ -38,6 +41,15 @@ describe('RubiPanelComponent', () => {
     component.close();
     expect(component.open).toBeFalse();
     expect(component.messages.length).toBe(1);
+  });
+
+  it('keeps the launcher unavailable for a user outside the pilot', () => {
+    api.access.and.returnValue(of({ enabled: true, authorized: false }));
+    const deniedFixture = TestBed.createComponent(RubiPanelComponent);
+    deniedFixture.detectChanges();
+    expect(deniedFixture.componentInstance.accessGranted).toBeFalse();
+    deniedFixture.componentInstance.show();
+    expect(deniedFixture.componentInstance.open).toBeFalse();
   });
 
   it('sends a quick action and renders a safe response action', () => {
@@ -110,6 +122,18 @@ describe('RubiPanelComponent', () => {
     expect(api.message).toHaveBeenCalledWith('Help', 'en', 'home', [], { version: 1, module: 'home', view: 'inicio' });
   });
 
+  it('provides the new pilot and feedback labels in ES, VA and EN', () => {
+    const i18n = TestBed.inject(I18nService);
+    for (const language of ['es', 'va', 'en'] as const) {
+      i18n.setLanguage(language);
+      expect(i18n.t('rubi.pilot')).not.toBe('rubi.pilot');
+      expect(i18n.t('rubi.feedback.question')).not.toBe('rubi.feedback.question');
+      expect(i18n.t('rubi.feedback.helpful')).not.toBe('rubi.feedback.helpful');
+      expect(i18n.t('rubi.feedback.notHelpful')).not.toBe('rubi.feedback.notHelpful');
+      expect(i18n.t('rubi.feedback.thanks')).not.toBe('rubi.feedback.thanks');
+    }
+  });
+
   it('renders Gateway text as text rather than HTML', () => {
     api.message.and.returnValue(of({ message: '<img src=x onerror=alert(1)>', intent: null, actions: [], errors: [], metadata: { success: true } }));
     component.show();
@@ -118,5 +142,15 @@ describe('RubiPanelComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.rubi-message img')).toBeNull();
     expect(fixture.nativeElement.textContent).toContain('<img src=x onerror=alert(1)>');
+  });
+
+  it('records structured feedback without conversation text', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta segura', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
+    component.send('Pregunta con datos que no deben ir en feedback');
+    const answer = component.messages[component.messages.length - 1];
+    component.sendFeedback(answer, 'helpful');
+    expect(api.feedback).toHaveBeenCalledWith('helpful', { intent: 'help', tool: 'search_help' });
+    expect(JSON.stringify(api.feedback.calls.mostRecent().args)).not.toContain('Pregunta con datos');
+    expect(answer.text).toBe('Respuesta segura');
   });
 });

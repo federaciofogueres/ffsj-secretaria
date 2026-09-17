@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.0#RUBI - 2026-09-17
+
+### Cerrado
+
+- Se cierra la base funcional de Rubi: Gateway, provider Gemini, conversación contextual multi-turn, contexto de pantalla, navegación, Knowledge Base, scopes/capabilities, límites, budgets, retries y observabilidad.
+- Se completa el primer workflow asistido de alta con preparación, confirmación humana, revalidación, idempotencia y registro administrativo real, manteniendo la PII fuera del provider.
+- Se incorpora documentación de continuidad entre agentes en `docs/rubi/`.
+- La infraestructura segura de piloto queda disponible en código, pero desactivada y sin configuración remota; el piloto se realizará en una fase posterior.
+
 ## 0.29.20#ESMERALDA - 2026-09-15
 
 ### Corregido

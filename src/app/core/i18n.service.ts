@@ -34,6 +34,7 @@ const translations: Record<AppLanguage, Record<string, string>> = {
 };
 
 Object.assign(translations.es, {
+  'rubi.pilot': 'Piloto interno', 'rubi.feedback.question': '¿Te ha resultado útil?', 'rubi.feedback.helpful': 'Útil', 'rubi.feedback.notHelpful': 'No útil', 'rubi.feedback.thanks': 'Gracias por tu feedback',
   'rubi.alta.error.cargo': 'El cargo seleccionado no está disponible. Revisa la selección o utiliza el flujo normal.',
   'rubi.alta.error.normalFlow': 'Este caso requiere revisión mediante el flujo normal de altas.',
   'rubi.alta.error.expired': 'La preparación ya no está vigente. Vuelve a preparar el alta.',
@@ -52,6 +53,7 @@ Object.assign(translations.es, {
   'rubi.alta.error.transactionDisabled': 'La confirmación transaccional no está habilitada.'
 });
 Object.assign(translations.va, {
+  'rubi.pilot': 'Pilot intern', 'rubi.feedback.question': 'T’ha resultat útil?', 'rubi.feedback.helpful': 'Útil', 'rubi.feedback.notHelpful': 'No útil', 'rubi.feedback.thanks': 'Gràcies pel teu feedback',
   'rubi.alta.error.cargo': 'El càrrec seleccionat no està disponible. Revisa la selecció o utilitza el flux normal.',
   'rubi.alta.error.normalFlow': "Este cas requerix revisió mitjançant el flux normal d'altes.",
   'rubi.alta.error.expired': "La preparació ja no està vigent. Torna a preparar l'alta.",
@@ -70,6 +72,7 @@ Object.assign(translations.va, {
   'rubi.alta.error.transactionDisabled': 'La confirmació transaccional no està habilitada.'
 });
 Object.assign(translations.en, {
+  'rubi.pilot': 'Internal pilot', 'rubi.feedback.question': 'Was this helpful?', 'rubi.feedback.helpful': 'Helpful', 'rubi.feedback.notHelpful': 'Not helpful', 'rubi.feedback.thanks': 'Thank you for your feedback',
   'rubi.alta.error.cargo': 'The selected role is unavailable. Review the selection or use the standard flow.',
   'rubi.alta.error.normalFlow': 'This case requires review through the standard registration flow.',
   'rubi.alta.error.expired': 'The preparation is no longer valid. Prepare the registration again.',

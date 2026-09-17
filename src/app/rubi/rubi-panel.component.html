@@ -1,4 +1,4 @@
-<button #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
+<button *ngIf="accessGranted" #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
   <span class="rubi-avatar rubi-avatar--launcher" aria-hidden="true"></span>
   <span class="rubi-launcher-copy"><strong>Rubi</strong><small>{{ 'rubi.launcher.help' | t }}</small></span>
 </button>
@@ -8,7 +8,7 @@
   <header class="rubi-header">
     <div class="rubi-identity">
       <span class="rubi-avatar rubi-avatar--header" aria-hidden="true"></span>
-      <div><h2 id="rubi-title">Rubi</h2><p>{{ 'rubi.subtitle' | t }}</p><span class="rubi-ready"><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ 'rubi.ready' | t }}</span></div>
+      <div><h2 id="rubi-title">Rubi</h2><p>{{ 'rubi.subtitle' | t }}</p><span class="rubi-ready"><i class="bi bi-circle-fill" aria-hidden="true"></i>{{ 'rubi.ready' | t }}</span><span class="rubi-pilot-label">{{ 'rubi.pilot' | t }}</span></div>
     </div>
     <div class="rubi-header-actions">
       <button class="rubi-icon-button" type="button" (click)="minimize()" [attr.aria-label]="'rubi.minimize' | t"><i class="bi bi-dash-lg" aria-hidden="true"></i></button>
@@ -37,6 +37,12 @@
         <p>{{ item.text }}</p>
         <div *ngIf="item.actions?.length" class="rubi-actions">
           <button *ngFor="let action of item.actions" type="button" [disabled]="loading" (click)="executeAction(action)">{{ ('rubi.action.' + (action.destination || action.flow)) | t }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </div>
+        <div *ngIf="item.author === 'rubi' && (item.intent || item.tool)" class="rubi-feedback" [attr.aria-label]="'rubi.feedback.question' | t">
+          <span *ngIf="!item.feedback">{{ 'rubi.feedback.question' | t }}</span>
+          <button type="button" [disabled]="item.feedbackPending || !!item.feedback" [class.is-selected]="item.feedback === 'helpful'" (click)="sendFeedback(item, 'helpful')" [attr.aria-label]="'rubi.feedback.helpful' | t"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i></button>
+          <button type="button" [disabled]="item.feedbackPending || !!item.feedback" [class.is-selected]="item.feedback === 'not_helpful'" (click)="sendFeedback(item, 'not_helpful')" [attr.aria-label]="'rubi.feedback.notHelpful' | t"><i class="bi bi-hand-thumbs-down" aria-hidden="true"></i></button>
+          <span *ngIf="item.feedback">{{ 'rubi.feedback.thanks' | t }}</span>
         </div>
       </div>
     </article>
