@@ -50,6 +50,7 @@
     <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
     <app-rubi-modificacion *ngIf="modificationActive" (closed)="onModificationClosed($event)" (openNormalFlow)="openNormalModificationFlow()" (preparationStateChanged)="onModificationPreparationStateChanged($event)"></app-rubi-modificacion>
     <app-rubi-baja *ngIf="bajaActive" (closed)="onBajaClosed($event)" (openNormalFlow)="openNormalBajaFlow()" (preparationStateChanged)="onBajaPreparationStateChanged($event)"></app-rubi-baja>
+    <app-rubi-registro *ngIf="registroActive" [tipo]="registroTipo" (closed)="onRegistroClosed($event)" (openNormalFlow)="openNormalRegistroFlow()" (preparationStateChanged)="onRegistroPreparationStateChanged($event)"></app-rubi-registro>
   </section>
 
   <section *ngIf="!altaActive && !modificationActive && !bajaActive && !isInitialState" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">

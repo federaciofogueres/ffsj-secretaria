@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0#RUBI — EN DESARROLLO
+
+> RUBI-16 — Registro General y documentación asistidos, en desarrollo.
+
 ## 1.1.0#RUBI - 2026-09-17
 
 ### Añadido — Modificaciones asistidas (RUBI-14)

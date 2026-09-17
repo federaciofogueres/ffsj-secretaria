@@ -4,13 +4,13 @@
 
 ## Versión y alcance
 
-- Rama de frontend y API: `1.1.0#RUBI`.
-- Estado de la versión: **CERRADA**. RUBI-14, RUBI-15 y RUBI-15.1 están completos y validados funcionalmente en DEV por el usuario (acceso, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales).
-- Último hito funcional: cierre formal de `1.1.0#RUBI` tras la validación manual en DEV, que incluyó dos correcciones conversacionales sucesivas (estabilización de routing/tools y, después, el bloqueante de modificación secuestrada por alta — ver secciones dedicadas más abajo).
-- Plan de la versión: RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi, junto con la separación `enabled`/`authorized`, el modo piloto opcional y la estabilización conversacional, quedan todos incluidos y cerrados en `1.1.0#RUBI`.
-- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. No se ha desplegado ni activado nada en producción; el despliegue a producción, si procede, lo decide y ejecuta el usuario en un momento posterior.
-- Workflows administrativos asistidos: altas, modificaciones y bajas de personas.
-- La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y ahora convive con la configuración administrada de RUBI-15.1 (ver más abajo).
+- Rama de frontend y API: `1.2.0#RUBI` (abierta desde el `develop` que contiene el cierre de `1.1.0#RUBI`).
+- Estado de la versión: **EN DESARROLLO**. `1.2.0#RUBI` no está cerrada.
+- Hito en curso: **RUBI-16 — Registro General y documentación asistidos — implementado en código, pendiente de validación manual en DEV**.
+- `1.1.0#RUBI` está CERRADA y validada funcionalmente en DEV por el usuario (RUBI-14, RUBI-15, RUBI-15.1 y la estabilización posterior); ver el histórico más abajo para el detalle de ese hito.
+- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. RUBI-16 todavía no se ha desplegado ni validado en ningún entorno; no se ha marcado como validado por el propio trabajo de implementación. No se ha desplegado ni activado nada en producción.
+- Workflows administrativos asistidos: altas, modificaciones y bajas de personas; Registro (documentación y comunicación) implementado en código durante RUBI-16, pendiente de validación manual.
+- La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y convive con la configuración administrada de RUBI-15.1 (ver más abajo).
 
 ## Disponible hoy
 
@@ -26,6 +26,7 @@
 - Privacidad: PII fuera del provider, historial efímero en memoria y logs/telemetría sin texto sensible ni payloads administrativos completos.
 - Infraestructura de piloto: allowlist seudonimizada, kill switch, feedback estructurado y funnel agregable para conversación, navegación, altas, modificaciones y bajas.
 - Centro de administración de Rubi (Configuración → RUBI, RUBI-15.1): habilitar/deshabilitar Rubi globalmente (`enabled`), el uso del provider real y las operaciones transaccionales; autorizar/retirar la autorización de Rubi por asociación (`authorized`) con búsqueda y filtro; estado del provider (proveedor, modelo, kill switch, si la credencial está configurada, sin revelarla nunca); estado del presupuesto diario/mensual y porcentaje consumido; una primera vista de analíticas (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas) filtrable por periodo y asociación.
+- Registro asistido (RUBI-16, implementado en código, ver sección dedicada): un actor de asociación con permiso `registro:write` puede pedir a Rubi presentar documentación o enviar una comunicación a la Federación en lenguaje natural; Rubi abre el formulario estructurado correspondiente, prepara y confirma mediante backend real, y los adjuntos se suben aparte, directamente desde Angular, nunca a través del provider.
 
 ## Configuración relevante
 
@@ -75,6 +76,21 @@ El modo piloto explícito está desactivado por defecto (`RUBI_PILOT_MODE_ENABLE
 - La capability `baja.start` y la tool `start_baja` siguen el mismo patrón de permisos y allowlist que `alta.start`/`modificacion.start`.
 - No se ha creado ninguna migración ni un sistema paralelo de permisos, persistencia o telemetría.
 
+## Registro asistido: documentación y comunicación (RUBI-16, implementado en código)
+
+Rubi puede ayudar a un actor de asociación con permiso `registro:write` a presentar documentación o enviar una comunicación a la Federación mediante lenguaje natural, reutilizando íntegramente el Registro real (`secretaria_registros`, `tipo` `documentacion`/`comunicacion`); no existe una vía administrativa paralela.
+
+- **Clasificación**: documentación y comunicación se integran en la misma clasificación única y mutuamente excluyente que alta/modificación/baja (`classifyTopic`/`activeDomains`), con marcadores propios (`document*` para documentación, `comunica*`/`escribir a la Federación` para comunicación) que no colisionan entre sí ni con los tres dominios de personas. Negaciones/correcciones ("no quiero presentar documentación, quiero enviar una comunicación") resuelven al dominio positivo explícito. Si el usuario solo dice "quiero registrar algo" o "enviar algo a Federación" sin más, Rubi pide una única aclaración (documentación o comunicación) en vez de adivinar o caer al fallback genérico; si la pregunta es puramente informativa y menciona ambos a la vez ("¿qué diferencia hay entre documentación y comunicación?"), no se pide aclaración: se responde directamente desde la KB.
+- **Capabilities/tools**: `registro.documentacion.start` y `registro.comunicacion.start`, ambas derivadas del permiso real `registro:write` (verificado en código, no asumido — `registro:read` por sí solo no las concede). Las tools `start_documentacion`/`start_comunicacion` solo abren la UI (`/registro/documentacion`, `/registro/comunicacion`); nunca crean el registro, suben archivos ni confirman.
+- **Permisos y alcance de actor**: RUBI-16 se limita al actor de asociación. Un actor de administración/federación recibe `REGISTRO_ACTOR_NO_SOPORTADO` si intenta preparar o confirmar por esta vía (no se ha implementado ese caso: ampliarlo queda fuera de alcance, ver limitaciones).
+- **Ejercicio**: a diferencia de alta/modificación/baja, el Registro real no exige un ejercicio activo para crear un registro (se verificó en código: `resolveEjercicioByIdOrYear` cae a `getEjercicioActivo()` sin lanzar error, incluso sin ejercicio). Por eso el workflow de Rubi tampoco lo exige. La comunicación sí respeta, solo en el frontend, el mismo aviso que ya existe en el Registro real cuando se consulta un ejercicio histórico no activo (`EjercicioService.isSelectedActive`); no es una regla nueva de backend.
+- **Preparar/confirmar**: nuevo almacén dedicado `RegistroConfirmationStore`/`secretaria_registro_confirmaciones` (migración `060`, no ejecutada), con el mismo patrón opaco/TTL/actor+asociación/idempotente que `AltaConfirmationStore`, pero sin las columnas de ejercicio (que ese dominio no necesita) y sin bytes de adjuntos en el borrador (solo metadatos: nombre, tipo, tamaño). Se evaluó reutilizar `AltaConfirmationStore` y se descartó: sus columnas `ejercicio_id`/`ejercicio` son `NOT NULL` y la comparten alta/modificación/baja; forzarlas a admitir Registro habría exigido relajar esa tabla compartida o inventar un ejercicio ficticio, y no había ningún concepto de adjunto en ese almacén.
+- **Adjuntos**: los ficheros nunca llegan a Rubi ni al backend de preparación/confirmación. Se seleccionan en Angular (`app-adjuntos-selector`, ya existente) y, tras confirmar, se suben directamente desde Angular al endpoint genérico ya existente (`POST /adjuntos/registro/:registroId`, el mismo que usa el Registro normal), con la deduplicación por hash de contenido que ese endpoint ya tenía. Documentación exige al menos un adjunto (igual que hoy exige el formulario real, solo en cliente); Rubi lo respeta también en el backend de preparación. Comunicación no lo exige.
+- **Atomicidad honesta**: `SecretariaService.createRegistro` no admite una conexión compartida (a diferencia de `createAltaTramite`/`createCambioTramite`/`createBajaTramite`), así que crear el registro y marcar la confirmación como consumida no son estrictamente una única transacción; generalizar `createRegistro` para aceptarla habría exigido tocar varias funciones internas (numeración, eventos, mensajes) para un beneficio marginal, así que no se ha hecho. El riesgo residual iguala al que ya existe hoy dentro del propio `createRegistro` (tampoco es una única transacción); no es una regresión. La subida de adjuntos ya era, y sigue siendo, una operación separada y no transaccional en el Registro real; Rubi no inventa una atomicidad que no existe. Un reintento con la misma referencia nunca crea un segundo registro (replay idempotente del almacén); si algún adjunto falla al subir, el registro ya creado no se pierde y el formulario ofrece reintentar solo los adjuntos pendientes.
+- **Privacidad**: Gemini nunca recibe contenido de documentos, nombres de archivo, ni el payload final del registro; toda la recopilación ocurre en Angular y la confirmación es una llamada Angular → API directa. La KB ya no dice que Rubi "no ejecuta" estas operaciones: ahora explica que puede abrirlas de forma segura con confirmación humana, sin leer ni analizar adjuntos.
+- **Navegación**: "llévame a documentación/comunicación" reutiliza las rutas reales `/registro/documentacion` y `/registro/comunicacion`; no se han inventado destinos nuevos.
+- **Analíticas/telemetría**: se reutiliza `RubiPilotTelemetry` con nuevas categorías abstractas (`documentacion`, `comunicacion` como `stage`); no se registra título, mensaje, destinatario nominal, nombres de fichero ni el registro completo.
+
 ## Estabilización conversacional y de routing
 
 Corrige una regresión funcional detectada manualmente en DEV: Rubi aparecía autorizada correctamente pero respondía con un fallback genérico ante preguntas de capacidades ("¿Qué puedes ayudarme a hacer?") y no iniciaba baja/modificación ante frases naturales como "Ayúdame a dar de baja a una persona" o "Dar de baja un asociado", limitándose a explicar el procedimiento.
@@ -112,17 +128,24 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - El presupuesto diario/mensual sigue siendo global (por despliegue), configurado por variable de entorno; el panel muestra su consumo y porcentaje pero no permite todavía definir un presupuesto o hard cap distinto por asociación (solo el acceso on/off por asociación).
 - Las analíticas administrativas se limitan a lo que `secretaria_rubi_usage` puede responder hoy (llamadas, tokens, coste, fallidas, actores/asociaciones únicas). Conversaciones iniciadas, workflows por tipo, cancelaciones y feedback útil/no útil siguen sin persistirse de forma consultable (solo como logs de `RubiPilotTelemetry`); ampliarlo requeriría una tabla de eventos nueva, deliberadamente no creada en este hito para no inventar métricas no soportadas.
 - El consumo por asociación solo puede atribuirse a partir de la fecha de esta migración; los registros históricos de `secretaria_rubi_usage` anteriores no tienen `asociacion_id`.
+- RUBI-16 se limita al actor de asociación: administración/federación no puede iniciar ni confirmar documentación/comunicación asistida por Rubi (recibe `REGISTRO_ACTOR_NO_SOPORTADO`); no estaba contemplado en `RUBI.md` como necesario para este hito y ampliarlo queda para un hito posterior si se decide explícitamente.
+- Responder comunicaciones existentes (el hilo de mensajes) queda fuera de RUBI-16 a propósito: el hito se centra en crear/enviar correctamente la documentación o la comunicación inicial, tal como se pidió.
+- Si un adjunto falla al subirse tras confirmar, el registro ya creado no se pierde ni se duplica, pero no hay recuperación automática: el formulario ofrece un botón para reintentar solo los adjuntos pendientes; si el usuario cierra el panel antes de reintentar, deberá adjuntarlos desde el Registro normal (mismo registro ya creado, con su número real).
+- La migración `060_registro_confirmaciones.sql` está creada y documentada pero **no se ha ejecutado** en ningún entorno; el workflow de Registro asistido no funcionará hasta que se ejecute.
 
-## Validación de cierre de `1.1.0#RUBI`
+## Histórico: cierre de `1.1.0#RUBI`
 
-- Validación funcional manual en DEV por el usuario: acceso de Rubi, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales. En base a esa validación, RUBI-14 y RUBI-15 se consideran validados funcionalmente junto con RUBI-15.1.
-- Frontend: 113 pruebas en ChromeHeadless correctas y build `development` correcto.
-- API: 261 pruebas correctas.
+- Validación funcional manual en DEV por el usuario: acceso de Rubi, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales. En base a esa validación, RUBI-14 y RUBI-15 se consideraron validados funcionalmente junto con RUBI-15.1, y `1.1.0#RUBI` se cerró con 113 pruebas de frontend y 261 de API correctas.
+
+## Validación local de RUBI-16
+
+- Frontend: 125 pruebas en ChromeHeadless correctas (113 previas + 12 nuevas: `rubi-registro.component` y wiring de `rubi-panel`) y build `development` correcto.
+- API: 301 pruebas correctas (261 previas + 40 nuevas: `RegistroWorkflow`, `RegistroConfirmationStore` y banco de regresión conversacional de documentación/comunicación, colisiones y permisos).
 - Eval determinista de Rubi (`npm run rubi:eval`, provider `mock`): 100/100 casos, sin usar Gemini real.
-- Contrato OpenAPI sin cambios en el último hito de esta versión (no se añaden ni modifican endpoints); `git diff --check` correcto en ambos repositorios.
-- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV. No se ejecuta ninguna migración, ni se toca Azure/producción, como parte de este cierre.
+- Contrato OpenAPI actualizado: `/registro-asistido/preparar`, `/registro-asistido/preparacion/cancelar`, `/registro-asistido/confirmar` (83 rutas en total); `git diff --check` correcto en ambos repositorios.
+- No se ha ejecutado ninguna migración (`060` incluida), ni se ha tocado DEV/Azure/producción, como parte de esta implementación.
 
 ## Siguiente hito
 
-- `1.1.0#RUBI` queda **CERRADA**. RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi están completos y validados funcionalmente.
-- `RUBI.md` no fija todavía un número de hito o versión siguiente concreto (solo el patrón general que debe repetir cualquier workflow nuevo); no se inicia RUBI-15.2, RUBI-16, `1.2.0#RUBI` ni ninguna otra versión en este cierre. El siguiente hito se definirá en un prompt posterior.
+- `1.2.0#RUBI` permanece **EN DESARROLLO**. RUBI-16 — Registro General y documentación asistidos está implementado en código y validado localmente (tests/evals/build), pero **no se marca como validado en DEV**: esa validación la hace el usuario tras desplegar.
+- No se inicia RUBI-17 ni `1.3.0#RUBI` en este hito.

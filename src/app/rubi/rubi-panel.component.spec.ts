@@ -130,6 +130,47 @@ describe('RubiPanelComponent', () => {
     expect(JSON.stringify(args[4])).not.toContain('Persona');
   });
 
+  it('opens the structured documentacion flow without executing it through chat (RUBI-16)', () => {
+    spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'documentacion', route: 'https://invalid.example' });
+    expect(component.registroActive).toBeTrue();
+    expect(component.registroTipo).toBe('documentacion');
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'documentacion' });
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  it('opens the structured comunicacion flow and navigates to the real route when handed off (RUBI-16)', () => {
+    spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'comunicacion' });
+    expect(component.registroActive).toBeTrue();
+    expect(component.registroTipo).toBe('comunicacion');
+    component.openNormalRegistroFlow();
+    expect(component.registroActive).toBeFalse();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/registro/comunicacion');
+  });
+
+  it('sends only abstract documentacion preparation state to the screen context', () => {
+    api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    component.executeAction({ type: 'start_flow', flow: 'documentacion' });
+    component.onRegistroPreparationStateChanged(true);
+    component.draft = 'Presentalo';
+    component.send();
+    const args = api.message.calls.mostRecent().args;
+    expect(args[4]?.state).toEqual({ hasOpenDocumentacion: true });
+    expect(JSON.stringify(args[4])).not.toContain('titulo');
+  });
+
+  it('excludes the message that starts a sensitive documentacion flow from later provider history (RUBI-16)', () => {
+    api.message.and.returnValue(of({
+      message: 'Formulario seguro', intent: 'start_documentacion',
+      actions: [{ type: 'start_flow', flow: 'documentacion', destination: 'registro' }],
+      conversation: { intent: 'start_documentacion', tool: 'start_documentacion', sensitiveFlow: 'documentacion' },
+      errors: [], metadata: { success: true }
+    }));
+    component.send('Quiero presentar documentación sobre Persona Privada TEST1234Z');
+    expect(TestBed.inject(RubiConversationService).recentHistory().some(item => item.text.includes('Persona Privada'))).toBeFalse();
+  });
+
   it('excludes the message that starts a sensitive alta flow from later provider history', () => {
     api.message.and.returnValue(of({
       message: 'Formulario seguro', intent: 'start_alta',

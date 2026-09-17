@@ -103,4 +103,23 @@ describe('RubiApiService', () => {
     expect(confirm.request.body).toEqual({ confirmacion: 'y'.repeat(43), confirmar: true });
     confirm.flush({ solicitudId: 501, idempotentReplay: false });
   });
+
+  it('uses direct deterministic endpoints for assisted Registro (documentacion/comunicacion), sin bytes de adjuntos', () => {
+    service.prepararRegistro('documentacion', 3, 'Un titulo', 'Un mensaje de al menos diez caracteres', [{ fileName: 'a.pdf', mimeType: 'application/pdf', size: 100 }]).subscribe();
+    const prepare = http.expectOne('/emjf1/Secretaria/1.0.0/registro-asistido/preparar');
+    expect(prepare.request.method).toBe('POST');
+    expect(prepare.request.body).toEqual({ tipo: 'documentacion', destinatarioId: 3, titulo: 'Un titulo', mensaje: 'Un mensaje de al menos diez caracteres', adjuntos: [{ fileName: 'a.pdf', mimeType: 'application/pdf', size: 100 }] });
+    expect(JSON.stringify(prepare.request.body)).not.toContain('base64');
+    prepare.flush({ estado: 'preparada' });
+
+    service.cancelarPreparacionRegistro('x'.repeat(43)).subscribe();
+    const cancel = http.expectOne('/emjf1/Secretaria/1.0.0/registro-asistido/preparacion/cancelar');
+    expect(cancel.request.body).toEqual({ confirmacion: 'x'.repeat(43) });
+    cancel.flush({ cancelada: true });
+
+    service.confirmarRegistro('y'.repeat(43)).subscribe();
+    const confirm = http.expectOne('/emjf1/Secretaria/1.0.0/registro-asistido/confirmar');
+    expect(confirm.request.body).toEqual({ confirmacion: 'y'.repeat(43), confirmar: true });
+    confirm.flush({ registroId: 501, numero: 'REG-2026-000501', tipo: 'documentacion', estado: 'enviada', fechaEntrada: '2026-01-01T00:00:00Z', idempotentReplay: false });
+  });
 });
