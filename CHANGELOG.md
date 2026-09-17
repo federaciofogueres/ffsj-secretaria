@@ -8,7 +8,13 @@
 
 - Se incorpora el workflow de modificaciones asistidas de personas: selección estructurada, edición de campos permitidos, preparación y revisión antes/después.
 - La confirmación humana registra el trámite administrativo mediante la API, con revalidación, cancelación, idempotencia y derivación segura de cambios complejos de cargos al flujo normal.
+- Se incorpora la baja asistida de personas activas, con preparación, resumen, confirmación humana y derivación de cargos obligatorios al flujo normal.
+- Se añade el centro de administración y control de Rubi, con permiso `admin:rubi`, configuración global y por asociación y analíticas agregadas.
 - Rubi mantiene la privacidad de la PII fuera del provider y amplía la conversación, capabilities, telemetría y traducciones ES/VA/EN para el nuevo workflow.
+
+### Persistencia
+
+- Se incorporan las migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql`, ejecutadas manualmente por el usuario en DEV.
 
 ### Documentación
 

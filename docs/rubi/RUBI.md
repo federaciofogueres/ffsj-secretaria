@@ -30,6 +30,7 @@ El flujo real es:
 - Se reutilizan los workflows y reglas existentes de Secretaría, sin crear una vía administrativa paralela.
 - Las operaciones persistentes preservan idempotencia, bloqueo y revalidación para soportar concurrencia y reintentos.
 - Rubi es opcional: `RUBI_ENABLED`, los flags transaccional/provider y la allowlist del piloto permiten desactivarla o limitarla.
+- La operación ordinaria de Rubi (habilitarla globalmente, por asociación, o el uso del provider real) se administra desde Secretaría (Configuración → RUBI), sin necesidad de tocar variables de entorno. Esa configuración administrada es siempre subordinada a los kill switches de infraestructura (`RUBI_ENABLED`, `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_TRANSACTIONAL_ENABLED`): si la infraestructura deshabilita algo, ninguna configuración administrada puede reactivarlo. Un fallo al leer esa configuración administrada nunca bloquea un acceso ya autorizado por las capas superiores (fail-open), para no depender de que una migración ya se haya ejecutado.
 - Producción es intocable sin autorización explícita del usuario en el prompt vigente.
 
 ## Provider
