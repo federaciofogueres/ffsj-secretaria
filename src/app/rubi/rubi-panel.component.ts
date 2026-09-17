@@ -261,8 +261,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     this.loading = false;
     const status = error instanceof HttpErrorResponse ? error.status : 0;
     const code = error instanceof HttpErrorResponse ? (error.error?.errors?.[0]?.code || error.error?.code) : undefined;
-    if (code === 'RUBI_DISABLED') this.unavailable = true;
-    if (code === 'RUBI_PILOT_ACCESS_DENIED') {
+    if (code === 'RUBI_DISABLED' || code === 'RUBI_ADMIN_DISABLED') this.unavailable = true;
+    if (code === 'RUBI_PILOT_ACCESS_DENIED' || code === 'RUBI_ASOCIACION_NO_AUTORIZADA') {
       this.accessGranted = false;
       this.close();
     }

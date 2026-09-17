@@ -45,19 +45,19 @@ describe('RubiAdminService', () => {
   });
 
   it('lists associations with search and filter query params', () => {
-    service.listAssociations({ search: 'Florida', filter: 'enabled' }).subscribe();
+    service.listAssociations({ search: 'Florida', filter: 'authorized' }).subscribe();
     const request = http.expectOne(r => r.url === '/emjf1/Secretaria/1.0.0/admin/rubi/asociaciones');
     expect(request.request.params.get('search')).toBe('Florida');
-    expect(request.request.params.get('filter')).toBe('enabled');
-    request.flush({ total: 1, items: [{ id: 3, nombre: 'Florida - Plaza de la Vina', enabled: true }] });
+    expect(request.request.params.get('filter')).toBe('authorized');
+    request.flush({ total: 1, items: [{ id: 3, nombre: 'Florida - Plaza de la Vina', authorized: true }] });
   });
 
-  it('toggles a single association access', () => {
-    service.setAssociationEnabled(12, false).subscribe();
+  it('toggles a single association authorization', () => {
+    service.setAssociationAuthorized(12, false).subscribe();
     const request = http.expectOne('/emjf1/Secretaria/1.0.0/admin/rubi/asociaciones/12');
     expect(request.request.method).toBe('PUT');
-    expect(request.request.body).toEqual({ enabled: false });
-    request.flush({ id: 12, nombre: 'Asociacion', enabled: false } as any);
+    expect(request.request.body).toEqual({ authorized: false });
+    request.flush({ id: 12, nombre: 'Asociacion', authorized: false } as any);
   });
 
   it('requests analytics for the given period', () => {

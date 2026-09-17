@@ -25,33 +25,34 @@
 - La confirmación de altas, modificaciones y bajas se realiza desde Angular contra la API. Gemini solo puede proponer abrir el formulario seguro; no prepara, confirma, registra ni escribe en Censo.
 - Privacidad: PII fuera del provider, historial efímero en memoria y logs/telemetría sin texto sensible ni payloads administrativos completos.
 - Infraestructura de piloto: allowlist seudonimizada, kill switch, feedback estructurado y funnel agregable para conversación, navegación, altas, modificaciones y bajas.
-- Centro de administración de Rubi (Configuración → RUBI, RUBI-15.1): habilitar/deshabilitar Rubi globalmente, el uso del provider real y las operaciones transaccionales; habilitar/deshabilitar Rubi por asociación con búsqueda y filtro; estado del provider (proveedor, modelo, kill switch, si la credencial está configurada, sin revelarla nunca); estado del presupuesto diario/mensual y porcentaje consumido; una primera vista de analíticas (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas) filtrable por periodo y asociación.
+- Centro de administración de Rubi (Configuración → RUBI, RUBI-15.1): habilitar/deshabilitar Rubi globalmente (`enabled`), el uso del provider real y las operaciones transaccionales; autorizar/retirar la autorización de Rubi por asociación (`authorized`) con búsqueda y filtro; estado del provider (proveedor, modelo, kill switch, si la credencial está configurada, sin revelarla nunca); estado del presupuesto diario/mensual y porcentaje consumido; una primera vista de analíticas (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas) filtrable por periodo y asociación.
 
 ## Configuración relevante
 
 Los valores efectivos pertenecen al entorno y no deben copiarse a documentación:
 
-- Acceso: `RUBI_ENABLED`, `RUBI_PILOT_ACCESS_MODE`, `RUBI_PILOT_ACTOR_HASHES`.
+- Acceso: `RUBI_ENABLED`, `RUBI_PILOT_MODE_ENABLED` (activa el modo piloto explícito; `false` por defecto, el modo normal no usa la allowlist), `RUBI_PILOT_ACCESS_MODE`, `RUBI_PILOT_ACTOR_HASHES`.
 - Persistencia: `RUBI_TRANSACTIONAL_ENABLED`.
 - Provider: `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_PROVIDER`, `RUBI_MODEL` y la credencial del provider.
 - Tools y contexto: `RUBI_ALLOWED_TOOLS`, máximos de mensaje, entrada, salida, historial y contexto.
 - Resiliencia: timeout, llamadas máximas, retries y demora base.
 - Protección de uso: límites por minuto/día/concurrencia y presupuestos diario/mensual.
 
-El modo de piloto por defecto es `allowlist` y una lista vacía no autoriza a nadie. `admin:access` no concede acceso al piloto. Los elementos de la allowlist son claves seudonimizadas, nunca nombres, documentos, emails o tokens.
+El modo piloto explícito está desactivado por defecto (`RUBI_PILOT_MODE_ENABLED=false`): en modo normal, el acceso depende solo de `RUBI_ENABLED && enabled (global) && authorized (asociación)` y la allowlist nunca lo restringe. Si se activa el modo piloto, se exige además que el actor esté en la allowlist; su modo por defecto es `allowlist` y una lista vacía no autoriza a nadie. `admin:access` no concede acceso al piloto. Los elementos de la allowlist son claves seudonimizadas, nunca nombres, documentos, emails o tokens.
 
-## Centro de administración de Rubi (RUBI-15.1)
+## Centro de administración de Rubi (RUBI-15.1, corregido)
 
 - Nuevo permiso `admin:rubi` gobierna quién puede leer/modificar la configuración administrada; es independiente de `admin:access` y `admin:permissions`.
-- Modelo de autorización ordinario: kill switch de infraestructura (`RUBI_ENABLED`, `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_TRANSACTIONAL_ENABLED`) → configuración global administrada → asociación con acceso → allowlist del piloto (si sigue activa) → permisos/scope/capabilities reales del usuario. Que una asociación tenga Rubi activada no concede por sí sola capabilities transaccionales; siguen dependiendo de `solicitudes:write`.
-- Persistencia nueva (migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql`, ejecutadas manualmente por el usuario en DEV):
+- **Corrección de diseño**: `enabled` (estado funcional global de Rubi) y `authorized` (autorización explícita de una asociación concreta) son conceptos distintos y ya no se usan indistintamente. La columna física `secretaria_rubi_asociacion_config.enabled` se renombra semánticamente a `authorized` en la migración `059_rubi_asociacion_authorized.sql` (preserva los valores existentes; no modifica la migración `057` ya aplicada).
+- Modelo de autorización ordinario: `RUBI_ENABLED` (infraestructura) → `enabled` (configuración global administrada desde Secretaría) → `authorized` (autorización explícita de la asociación). Que una asociación esté autorizada no concede por sí sola capabilities transaccionales; siguen dependiendo de `solicitudes:write`.
+- La allowlist de RUBI-13 **no forma parte del modo normal** y nunca lo restringe. Solo se aplica cuando el modo piloto se activa explícitamente por infraestructura con `RUBI_PILOT_MODE_ENABLED=true` (nueva variable, `false` por defecto), añadiendo el requisito de que el actor esté en la allowlist además de `enabled && authorized`. Con `RUBI_PILOT_MODE_ENABLED=false` (comportamiento por defecto) la allowlist no bloquea el acceso ordinario.
+- Persistencia (migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql`, ejecutadas manualmente por el usuario en DEV; `059_rubi_asociacion_authorized.sql` creada en este hito y **no ejecutada** en ningún entorno):
   - `secretaria_rubi_config`: fila única con el estado operativo global (`enabled`, `real_provider_enabled`, `transactional_enabled`), todos `true` por defecto para no desactivar Rubi de forma implícita.
-  - `secretaria_rubi_asociacion_config`: acceso por asociación (`enabled`); una asociación sin fila se considera habilitada por defecto (no desaparece por no estar configurada explícitamente).
+  - `secretaria_rubi_asociacion_config`: autorización explícita por asociación (`authorized` tras la migración `059`); una asociación sin fila, o cualquier fallo al leerla, se considera **no autorizada** por defecto (deny-by-default: autorizar es un acto explícito del panel admin).
   - `secretaria_rubi_usage` gana la columna `asociacion_id` para poder atribuir consumo a la asociación autenticada; los registros anteriores a esta migración quedan sin asociación.
 - La API key del provider y el resto de secretos permanecen exclusivamente en variables de entorno; el panel solo expone si la credencial está configurada, nunca su valor.
-- La allowlist de RUBI-13 (`RUBI_PILOT_ACCESS_MODE`/`RUBI_PILOT_ACTOR_HASHES`) se conserva como mecanismo adicional/alternativo de piloto o emergencia; no se ha eliminado. El acceso ordinario recomendado a partir de RUBI-15.1 combina esta allowlist (o `RUBI_PILOT_ACCESS_MODE=all` si se decide abrir el acceso a todos los actores autenticados) con el nuevo control global/por asociación administrado desde Secretaría.
-- La lectura de la configuración administrada (`/asistente/acceso` y el middleware que protege los endpoints de Rubi) es *fail-open*: si la tabla o la base de datos no están disponibles (por ejemplo, si la migración aún no se ha ejecutado en un entorno), Rubi se comporta exactamente igual que antes de RUBI-15.1, sin bloquear accesos ya autorizados por el kill switch y la allowlist.
-- Endpoints administrativos nuevos, protegidos por `admin:rubi`: `GET/PUT /admin/rubi/config`, `GET /admin/rubi/asociaciones`, `PUT /admin/rubi/asociaciones/{asociacionId}`, `GET /admin/rubi/analiticas`.
+- La lectura del estado global (`enabled`) es *fail-open*: si la tabla o la base de datos no están disponibles, se asume `enabled=true` para no depender de que la migración ya se haya ejecutado. La lectura de la autorización por asociación (`authorized`) es *fail-closed*: cualquier fallo o ausencia de fila se resuelve como no autorizada. Una única función de resolución (`resolveEffectiveAccess`/`assertEffectiveAccess`) se usa en `/asistente/acceso`, la conversación, altas, modificaciones y bajas, de modo que no puede ocurrir que `/asistente/acceso` informe autorizado y un workflow deniegue después.
+- Endpoints administrativos, protegidos por `admin:rubi`: `GET/PUT /admin/rubi/config` (campo `enabled` a nivel global), `GET /admin/rubi/asociaciones` (filtro `all|authorized|unauthorized`), `PUT /admin/rubi/asociaciones/{asociacionId}` (campo `authorized`), `GET /admin/rubi/analiticas`.
 - Analíticas: se calculan exclusivamente a partir de `secretaria_rubi_usage` (llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas), sin contenido conversacional ni PII. Los contadores de conversaciones iniciadas por workflow (altas/modificaciones/bajas), cancelaciones y feedback útil/no útil **no** están disponibles todavía como analítica consultable: `RubiPilotTelemetry` sigue siendo solo de log (no persistido en tabla alguna), así que esa información no se inventa ni se expone en el panel; queda como deuda pendiente si se necesita en el futuro.
 
 ## Garantías del workflow de modificaciones
@@ -81,19 +82,20 @@ El modo de piloto por defecto es `allowlist` y una lista vacía no autoriza a na
 - El almacén temporal y algunos nombres internos se originaron en el workflow de altas; se reutilizan deliberadamente para evitar una migración y ahora los comparten altas, modificaciones y bajas, aunque convendrá generalizar su nomenclatura si aparecen más workflows.
 - La telemetría se emite como eventos estructurados; no incluye dashboard propio y su explotación depende de la retención/consulta de logs del entorno.
 - El feedback no ofrece texto libre para evitar una vía accidental de PII.
-- La allowlist no tiene interfaz administrativa propia (se mantiene por variables de entorno), aunque el acceso ordinario ya no depende exclusivamente de ella gracias al centro de administración de RUBI-15.1.
+- La allowlist no tiene interfaz administrativa propia (se mantiene por variables de entorno) y, tras la corrección de diseño, no forma parte del modo normal: solo actúa cuando `RUBI_PILOT_MODE_ENABLED=true`.
+- La migración `059_rubi_asociacion_authorized.sql` está creada y documentada pero no ejecutada en ningún entorno; hasta que se ejecute, el código asume el esquema posterior a `059` (columna `authorized`).
 - El flujo normal de bajas admite cesión coordinada de un cargo obligatorio a otra persona en el mismo trámite; la baja asistida por Rubi no reproduce esa coordinación y deriva siempre esos casos al flujo normal.
 - El presupuesto diario/mensual sigue siendo global (por despliegue), configurado por variable de entorno; el panel muestra su consumo y porcentaje pero no permite todavía definir un presupuesto o hard cap distinto por asociación (solo el acceso on/off por asociación).
 - Las analíticas administrativas se limitan a lo que `secretaria_rubi_usage` puede responder hoy (llamadas, tokens, coste, fallidas, actores/asociaciones únicas). Conversaciones iniciadas, workflows por tipo, cancelaciones y feedback útil/no útil siguen sin persistirse de forma consultable (solo como logs de `RubiPilotTelemetry`); ampliarlo requeriría una tabla de eventos nueva, deliberadamente no creada en este hito para no inventar métricas no soportadas.
 - El consumo por asociación solo puede atribuirse a partir de la fecha de esta migración; los registros históricos de `secretaria_rubi_usage` anteriores no tienen `asociacion_id`.
 
-## Validación local de RUBI-15.1
+## Validación local de RUBI-15.1 (incluye la corrección `enabled`/`authorized`)
 
-- Frontend: 113 pruebas en ChromeHeadless correctas (101 previas + 12 nuevas del centro de administración de Rubi).
+- Frontend: 113 pruebas en ChromeHeadless correctas (sin nuevas specs; las existentes de `rubi-admin.*` se actualizaron al contrato `authorized`).
 - Frontend: build `development` correcto.
-- API: 206 pruebas correctas (195 previas + 11 nuevas del centro de administración de Rubi).
-- Contrato OpenAPI (`/admin/rubi/config`, `/admin/rubi/asociaciones`, `/admin/rubi/asociaciones/{asociacionId}`, `/admin/rubi/analiticas`) y `git diff --check` correctos en ambos repositorios.
-- No se usó Gemini real; las migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql` están incluidas en Git y fueron ejecutadas manualmente por el usuario en DEV. No se ejecutaron migraciones desde este trabajo.
+- API: 213 pruebas correctas (206 previas + 7 nuevas casos esenciales de la política unificada `enabled`/`authorized`/allowlist de piloto).
+- Contrato OpenAPI (`/admin/rubi/config`, `/admin/rubi/asociaciones` con filtro `all|authorized|unauthorized`, `/admin/rubi/asociaciones/{asociacionId}` con campo `authorized`, `/admin/rubi/analiticas`) y `git diff --check` correctos en ambos repositorios.
+- No se usó Gemini real. Las migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql` fueron ejecutadas manualmente por el usuario en DEV antes de esta corrección. La migración `059_rubi_asociacion_authorized.sql`, creada en esta corrección, está incluida en Git pero **no se ha ejecutado** en ningún entorno.
 
 ## Siguiente hito
 

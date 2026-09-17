@@ -10,7 +10,7 @@ import {
   RubiAdminProviderStatus, RubiAdminService
 } from './rubi-admin.service';
 
-type AsociacionFiltro = 'all' | 'enabled' | 'disabled';
+type AsociacionFiltro = 'all' | 'authorized' | 'unauthorized';
 
 @Component({
   selector: 'app-rubi-admin',
@@ -93,14 +93,14 @@ export class RubiAdminComponent implements OnInit {
   }
 
   toggleAsociacion(asociacion: RubiAdminAsociacion, checked: boolean): void {
-    const previous = asociacion.enabled;
-    asociacion.enabled = checked;
+    const previous = asociacion.authorized;
+    asociacion.authorized = checked;
     this.savingAsociacionIds.add(asociacion.id);
-    this.api.setAssociationEnabled(asociacion.id, checked)
+    this.api.setAssociationAuthorized(asociacion.id, checked)
       .pipe(finalize(() => this.savingAsociacionIds.delete(asociacion.id)))
       .subscribe({
-        next: result => { asociacion.enabled = result.enabled; },
-        error: () => { asociacion.enabled = previous; this.asociacionesError = 'rubi.admin.error.associationSave'; }
+        next: result => { asociacion.authorized = result.authorized; },
+        error: () => { asociacion.authorized = previous; this.asociacionesError = 'rubi.admin.error.associationSave'; }
       });
   }
 

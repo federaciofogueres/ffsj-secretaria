@@ -40,7 +40,7 @@ export interface RubiAdminConfigResponse {
 export interface RubiAdminAsociacion {
   id: number;
   nombre: string;
-  enabled: boolean;
+  authorized: boolean;
 }
 
 export interface RubiAdminAsociacionesResponse {
@@ -79,7 +79,7 @@ export class RubiAdminService {
     });
   }
 
-  listAssociations(params: { search?: string; filter?: 'all' | 'enabled' | 'disabled' } = {}): Observable<RubiAdminAsociacionesResponse> {
+  listAssociations(params: { search?: string; filter?: 'all' | 'authorized' | 'unauthorized' } = {}): Observable<RubiAdminAsociacionesResponse> {
     const query: Record<string, string> = {};
     if (params.search) query['search'] = params.search;
     if (params.filter) query['filter'] = params.filter;
@@ -88,8 +88,8 @@ export class RubiAdminService {
     });
   }
 
-  setAssociationEnabled(asociacionId: number, enabled: boolean): Observable<RubiAdminAsociacion> {
-    return this.http.put<RubiAdminAsociacion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/asociaciones/${asociacionId}`, { enabled }, {
+  setAssociationAuthorized(asociacionId: number, authorized: boolean): Observable<RubiAdminAsociacion> {
+    return this.http.put<RubiAdminAsociacion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/asociaciones/${asociacionId}`, { authorized }, {
       headers: this.adminHeaders()
     });
   }

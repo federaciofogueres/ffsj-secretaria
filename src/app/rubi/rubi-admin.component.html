@@ -58,8 +58,8 @@
           </div>
           <div class="col-md-4 d-flex gap-2">
             <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'all'" [class.btn-outline-secondary]="filtro !== 'all'" (click)="setFiltro('all')">{{ 'rubi.admin.associations.filter.all' | t }}</button>
-            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'enabled'" [class.btn-outline-secondary]="filtro !== 'enabled'" (click)="setFiltro('enabled')">{{ 'rubi.admin.associations.filter.enabled' | t }}</button>
-            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'disabled'" [class.btn-outline-secondary]="filtro !== 'disabled'" (click)="setFiltro('disabled')">{{ 'rubi.admin.associations.filter.disabled' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'authorized'" [class.btn-outline-secondary]="filtro !== 'authorized'" (click)="setFiltro('authorized')">{{ 'rubi.admin.associations.filter.authorized' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'unauthorized'" [class.btn-outline-secondary]="filtro !== 'unauthorized'" (click)="setFiltro('unauthorized')">{{ 'rubi.admin.associations.filter.unauthorized' | t }}</button>
           </div>
           <div class="col-md-3 d-grid">
             <button class="btn btn-outline-secondary" type="button" (click)="loadAsociaciones()">{{ 'rubi.admin.associations.refresh' | t }}</button>
@@ -75,8 +75,8 @@
               <td>{{ asociacion.nombre }}</td>
               <td>
                 <label class="form-check">
-                  <input class="form-check-input" type="checkbox" [checked]="asociacion.enabled" [disabled]="isSavingAsociacion(asociacion.id)" (change)="toggleAsociacion(asociacion, $any($event.target).checked)" />
-                  <span class="form-check-label">{{ (asociacion.enabled ? 'rubi.admin.state.active' : 'rubi.admin.state.inactive') | t }}</span>
+                  <input class="form-check-input" type="checkbox" [checked]="asociacion.authorized" [disabled]="isSavingAsociacion(asociacion.id)" (change)="toggleAsociacion(asociacion, $any($event.target).checked)" />
+                  <span class="form-check-label">{{ (asociacion.authorized ? 'rubi.admin.state.authorized' : 'rubi.admin.state.notAuthorized') | t }}</span>
                 </label>
               </td>
             </tr>

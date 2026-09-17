@@ -19,9 +19,9 @@ describe('RubiAdminComponent', () => {
   };
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationEnabled', 'getAnalytics']);
+    api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics']);
     api.getConfig.and.returnValue(of(configResponse));
-    api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', enabled: true }, { id: 2, nombre: 'Pio XII', enabled: false }] }));
+    api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
     api.getAnalytics.and.returnValue(of({ periodo: { desde: '', hasta: '' }, llamadas: 3, inputTokens: 10, outputTokens: 5, costeUsd: 0.01, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1 }));
     permissions = jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission']);
     permissions.hasPermission.and.returnValue(true);
@@ -69,9 +69,9 @@ describe('RubiAdminComponent', () => {
   it('toggles a single association and rolls back on error', () => {
     fixture.detectChanges();
     const asociacion = component.asociaciones[0];
-    api.setAssociationEnabled.and.returnValue(throwError(() => new Error('fail')));
+    api.setAssociationAuthorized.and.returnValue(throwError(() => new Error('fail')));
     component.toggleAsociacion(asociacion, false);
-    expect(asociacion.enabled).toBe(true);
+    expect(asociacion.authorized).toBe(true);
     expect(component.asociacionesError).toBe('rubi.admin.error.associationSave');
   });
 
