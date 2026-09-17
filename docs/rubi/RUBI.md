@@ -23,7 +23,7 @@ El flujo real es:
 - Permisos, scope de asociación y capabilities se calculan en backend a partir de la sesión autenticada.
 - La PII sensible permanece fuera del provider. Los mensajes se sanean y un alta con datos personales usa el flujo determinista y estructurado.
 - No se guardan datos sensibles en history, telemetría, logs ni almacenamiento web. La conversación vive en memoria, tiene TTL y se limpia al cambiar de contexto o cerrar sesión.
-- Las tools son cerradas, tipadas, allowlisted y se vuelven a autorizar al ejecutarse.
+- Las tools son cerradas, tipadas y se vuelven a autorizar al ejecutarse. Las capabilities (derivadas de permisos reales) son la única puerta de disponibilidad por defecto: una tool nueva y su capability están disponibles sin tocar configuración. Una lista de bloqueo de infraestructura (`RUBI_BLOCKED_TOOLS`), vacía por defecto, puede restringir puntualmente una tool concreta como kill switch extraordinario, pero nunca al revés: una lista de tools *permitidas* que haya que mantener actualizada manualmente queda descartada como patrón, precisamente porque quedar desactualizada hace desaparecer funcionalidades nuevas sin ningún error visible.
 - Toda operación persistente requiere revisión y confirmación humana explícita.
 - Gemini no ejecuta altas. `start_alta` solo abre el workflow local; la confirmación llama a backend sin pasar por el provider.
 - Registrar un alta administrativa crea el trámite/solicitud correspondiente; no equivale a escribir directamente en Censo.
