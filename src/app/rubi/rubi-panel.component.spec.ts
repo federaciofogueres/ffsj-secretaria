@@ -92,6 +92,14 @@ describe('RubiPanelComponent', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
+  it('opens the structured modification flow without executing it through chat', () => {
+    spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'modificacion', route: 'https://invalid.example' });
+    expect(component.modificationActive).toBeTrue();
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'modificacion' });
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
+  });
+
   it('sends only abstract preparation state when chat is used during human confirmation', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'alta' });

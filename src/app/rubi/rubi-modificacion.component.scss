@@ -1,0 +1,6 @@
+.rubi-mod-diff { display: grid; grid-template-columns: 1fr auto 1fr; gap: .5rem; align-items: center; padding: .7rem; border: 1px solid var(--alta-line); border-radius: .65rem; background: #fff; }
+.rubi-mod-diff > strong { grid-column: 1 / -1; color: var(--alta-navy); font-size: .78rem; }
+.rubi-mod-diff span { color: var(--alta-muted); font-size: .66rem; font-weight: 800; text-transform: uppercase; }
+.rubi-mod-diff p { margin: .15rem 0 0; overflow-wrap: anywhere; color: var(--alta-navy); font-size: .78rem; }
+.rubi-mod-diff > i { color: var(--alta-red); }
+@media (max-width: 420px) { .rubi-mod-diff { grid-template-columns: 1fr; }.rubi-mod-diff > i { transform: rotate(90deg); } }

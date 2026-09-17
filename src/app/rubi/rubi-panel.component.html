@@ -18,7 +18,7 @@
 
   <p *ngIf="unavailable" class="rubi-status rubi-status-error" role="status">{{ 'rubi.disabled' | t }}</p>
   <section class="rubi-messages" aria-label="Rubi" aria-live="polite">
-    <section *ngIf="isInitialState && !altaActive" class="rubi-welcome-card" aria-labelledby="rubi-welcome-title">
+    <section *ngIf="isInitialState && !altaActive && !modificationActive" class="rubi-welcome-card" aria-labelledby="rubi-welcome-title">
       <span class="rubi-avatar rubi-avatar--welcome" aria-hidden="true"></span>
       <div>
         <p class="rubi-eyebrow">{{ 'rubi.welcome.eyebrow' | t }}</p>
@@ -48,12 +48,13 @@
     </article>
     <p *ngIf="loading" class="rubi-status rubi-status-loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
     <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
+    <app-rubi-modificacion *ngIf="modificationActive" (closed)="onModificationClosed($event)" (openNormalFlow)="openNormalModificationFlow()" (preparationStateChanged)="onModificationPreparationStateChanged($event)"></app-rubi-modificacion>
   </section>
 
-  <section *ngIf="!altaActive && !isInitialState" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
+  <section *ngIf="!altaActive && !modificationActive && !isInitialState" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
     <button *ngFor="let key of quickActions" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>
   </section>
-  <form *ngIf="!altaActive" class="rubi-composer" (ngSubmit)="send()">
+  <form *ngIf="!altaActive && !modificationActive" class="rubi-composer" (ngSubmit)="send()">
     <label class="visually-hidden" for="rubi-message">{{ 'rubi.inputLabel' | t }}</label>
     <textarea #messageInput id="rubi-message" name="message" [(ngModel)]="draft" [disabled]="loading || unavailable" [placeholder]="'rubi.placeholder' | t" rows="2" maxlength="1200" (keydown)="onMessageKeydown($event)"></textarea>
     <button class="rubi-send" type="submit" [disabled]="!draft.trim() || loading || unavailable"><i class="bi bi-send-fill" aria-hidden="true"></i><span class="visually-hidden">{{ 'rubi.send' | t }}</span></button>

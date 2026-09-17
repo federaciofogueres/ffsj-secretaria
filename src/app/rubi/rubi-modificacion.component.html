@@ -1,0 +1,31 @@
+<section class="rubi-alta rubi-mod" aria-labelledby="rubi-mod-title">
+  <header class="rubi-alta-header"><div><p class="rubi-alta-kicker">{{ 'rubi.mod.guided' | t }}</p><h3 id="rubi-mod-title">{{ 'rubi.mod.title' | t }}</h3><p>{{ 'rubi.mod.privacy' | t }}</p></div><i class="bi bi-pencil-square" aria-hidden="true"></i></header>
+  <ol class="rubi-alta-progress"><li [class.is-active]="!selected"><span>1</span>{{ 'rubi.mod.step.person' | t }}</li><li [class.is-active]="selected && !prepared && !confirmed" [class.is-complete]="!!prepared || !!confirmed"><span>2</span>{{ 'rubi.mod.step.details' | t }}</li><li [class.is-active]="!!prepared" [class.is-complete]="!!confirmed"><span>3</span>{{ 'rubi.mod.step.review' | t }}</li></ol>
+  <p *ngIf="loading" class="rubi-alta-status" role="status"><span class="spinner-border spinner-border-sm"></span>{{ 'common.loading' | t }}</p>
+  <p *ngIf="errorKey" class="rubi-alta-error" role="alert">{{ errorKey | t }}</p>
+
+  <section *ngIf="confirmed as result" class="rubi-alta-state rubi-alta-success" role="status"><span class="rubi-alta-state-icon"><i class="bi bi-check-lg"></i></span><div><p class="rubi-alta-state-kicker">{{ 'rubi.mod.registered.badge' | t }}</p><h4>{{ 'rubi.mod.confirmed.title' | t }}</h4><p>{{ 'rubi.mod.confirmed.description' | t }}</p></div><dl class="rubi-alta-result"><div><dt>{{ 'rubi.mod.reference' | t }}</dt><dd>{{ result.numero || result.solicitudId }}</dd></div></dl></section>
+
+  <ng-container *ngIf="!confirmed">
+    <ng-container *ngIf="prepared as result; else editForm">
+      <section *ngIf="result.estado === 'preparada'; else normalFlow" class="rubi-alta-state rubi-alta-prepared">
+        <div class="rubi-alta-prepared-head"><div><p class="rubi-alta-state-kicker">{{ 'rubi.mod.prepared.badge' | t }}</p><h4>{{ 'rubi.mod.prepared.title' | t }}</h4></div><span class="rubi-state-pill">{{ 'rubi.mod.prepared.pending' | t }}</span></div>
+        <p class="rubi-alta-stop">{{ 'rubi.mod.prepared.stop' | t }}</p>
+        <div class="rubi-mod-diff" *ngFor="let change of result.cambios"><strong>{{ ('rubi.mod.field.' + change.campo) | t }}</strong><div><span>{{ 'rubi.mod.before' | t }}</span><p>{{ display(change.antes) }}</p></div><i class="bi bi-arrow-right"></i><div><span>{{ 'rubi.mod.after' | t }}</span><p>{{ display(change.despues) }}</p></div></div>
+        <p class="rubi-alta-boundary">{{ 'rubi.mod.prepared.noEffects' | t }}</p>
+        <fieldset *ngIf="result.confirmacion?.confirmacionHumanaHabilitada" class="rubi-alta-confirmation"><legend>{{ 'rubi.mod.confirm.title' | t }}</legend><p>{{ 'rubi.mod.confirm.warning' | t }}</p><label class="rubi-alta-check"><input type="checkbox" [checked]="confirmationAccepted" (change)="confirmationAccepted = $any($event.target).checked" /><span>{{ 'rubi.mod.confirm.accept' | t }}</span></label><button class="rubi-alta-confirm-button" type="button" [disabled]="!confirmationAccepted || confirming" (click)="confirm()">{{ (confirming ? 'rubi.mod.confirming' : 'rubi.mod.confirm.action') | t }}</button></fieldset>
+        <div class="rubi-alta-buttons"><button class="rubi-alta-secondary" type="button" (click)="edit()">{{ 'rubi.mod.edit' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+      </section>
+      <ng-template #normalFlow><section class="rubi-alta-state rubi-alta-warning"><h4>{{ 'rubi.mod.normal.title' | t }}</h4><p>{{ 'rubi.mod.normal.description' | t }}</p><ul><li *ngFor="let conflict of result.conflictosComplejos">{{ conflict.cargoNombre || conflict.code }}</li></ul><div class="rubi-alta-buttons"><button class="ux-btn" type="button" (click)="continueInNormalFlow()">{{ 'rubi.mod.normal.open' | t }}</button><button class="rubi-alta-secondary" type="button" (click)="edit()">{{ 'rubi.mod.edit' | t }}</button></div></section></ng-template>
+    </ng-container>
+
+    <ng-template #editForm><form [formGroup]="form" (ngSubmit)="prepare()" novalidate>
+      <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>1</span><div><h4>{{ 'rubi.mod.select.title' | t }}</h4><p>{{ 'rubi.mod.select.help' | t }}</p></div></div><select formControlName="asociadoId" (change)="selectPerson()"><option [ngValue]="null">{{ 'rubi.mod.select.placeholder' | t }}</option><option *ngFor="let person of personas" [ngValue]="person.id">{{ person.nombre }} {{ person.apellidos }}</option></select></section>
+      <ng-container *ngIf="selected">
+        <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>2</span><div><h4>{{ 'rubi.mod.data.title' | t }}</h4></div></div><label>{{ 'rubi.alta.field.identification' | t }}</label><input formControlName="identificacion" autocomplete="off" /><label>{{ 'rubi.alta.field.birthDate' | t }}</label><input type="date" formControlName="nacimiento" /><div class="rubi-alta-grid"><div><label>{{ 'rubi.alta.field.name' | t }}</label><input formControlName="nombre" /></div><div><label>{{ 'rubi.alta.field.surnames' | t }}</label><input formControlName="apellidos" /></div></div><label>{{ 'rubi.alta.field.address' | t }}</label><input formControlName="direccion" /><div class="rubi-alta-grid"><div><label>{{ 'rubi.alta.field.postcode' | t }}</label><input formControlName="cp" /></div><div><label>{{ 'rubi.alta.field.phone' | t }}</label><input formControlName="telefono" /></div></div><label>{{ 'rubi.alta.field.email' | t }}</label><input formControlName="email" /></section>
+        <fieldset class="rubi-alta-form-section"><legend>{{ 'rubi.alta.field.roles' | t }}</legend><label *ngFor="let cargo of cargos" class="rubi-alta-check"><input type="checkbox" [checked]="selectedCargoIds.has(cargo.id)" (change)="toggleCargo(cargo.id, $any($event.target).checked)" /><span>{{ cargo.nombre }}</span></label></fieldset>
+        <p class="rubi-alta-boundary">{{ 'rubi.mod.boundary' | t }}</p><div class="rubi-alta-buttons"><button class="ux-btn" type="submit" [disabled]="loading">{{ 'rubi.mod.prepare' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+      </ng-container>
+    </form></ng-template>
+  </ng-container>
+</section>

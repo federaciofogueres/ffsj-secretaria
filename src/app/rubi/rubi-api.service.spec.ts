@@ -75,4 +75,18 @@ describe('RubiApiService', () => {
     expect(confirm.request.body).toEqual({ confirmacion: 'y'.repeat(43), confirmar: true });
     confirm.flush({ solicitudId: 501, numero: 'SOL-501', idempotentReplay: false });
   });
+
+  it('uses direct deterministic endpoints for assisted modifications', () => {
+    service.prepararModificacion(7, 91, { telefono: '611111111' }).subscribe();
+    const prepare = http.expectOne('/emjf1/Secretaria/1.0.0/modificaciones/preparar');
+    expect(prepare.request.body).toEqual({ ejercicioId: 7, asociadoId: 91, cambios: { telefono: '611111111' } });
+    prepare.flush({ estado: 'preparada' });
+    service.cancelarPreparacionModificacion('x'.repeat(43)).subscribe();
+    const cancel = http.expectOne('/emjf1/Secretaria/1.0.0/modificaciones/preparacion/cancelar');
+    expect(cancel.request.body).toEqual({ confirmacion: 'x'.repeat(43) }); cancel.flush({ cancelada: true });
+    service.confirmarModificacion('y'.repeat(43)).subscribe();
+    const confirm = http.expectOne('/emjf1/Secretaria/1.0.0/modificaciones/confirmar');
+    expect(confirm.request.body).toEqual({ confirmacion: 'y'.repeat(43), confirmar: true });
+    confirm.flush({ solicitudId: 501, idempotentReplay: false });
+  });
 });

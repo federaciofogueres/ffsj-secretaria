@@ -116,6 +116,78 @@ Object.assign(translations.en, {
   'rubi.alta.prepared.badge': 'Preparation completed', 'rubi.alta.prepared.pending': 'Awaiting confirmation', 'rubi.alta.registered.badge': 'Process recorded', 'rubi.alta.normal.badge': 'Review required'
 });
 
+Object.assign(translations.es, {
+  'rubi.action.modificacion': 'Preparar modificacion con Rubi', 'rubi.mod.guided': 'Tramite guiado',
+  'rubi.mod.title': 'Modificacion asistida', 'rubi.mod.privacy': 'Selecciona y edita la persona en este formulario seguro. Sus datos no se envian al proveedor de IA.',
+  'rubi.mod.step.person': 'Persona', 'rubi.mod.step.details': 'Cambios', 'rubi.mod.step.review': 'Revision',
+  'rubi.mod.select.title': 'Selecciona la persona', 'rubi.mod.select.help': 'Solo se muestran personas de la asociacion y ejercicio actuales.', 'rubi.mod.select.placeholder': 'Selecciona una persona',
+  'rubi.mod.data.title': 'Datos permitidos', 'rubi.mod.boundary': 'Preparar valida y muestra el antes y despues. No registra ni aplica la modificacion.',
+  'rubi.mod.prepare': 'Preparar modificacion', 'rubi.mod.prepared.badge': 'PREPARADA', 'rubi.mod.prepared.title': 'Modificacion preparada',
+  'rubi.mod.prepared.pending': 'Pendiente de confirmacion', 'rubi.mod.prepared.stop': 'Revisa exactamente los cambios antes de confirmar.',
+  'rubi.mod.prepared.noEffects': 'La preparacion no crea solicitudes ni escribe en Censo.', 'rubi.mod.before': 'Antes', 'rubi.mod.after': 'Despues',
+  'rubi.mod.confirm.title': 'Confirmacion humana', 'rubi.mod.confirm.warning': 'Confirmar registrara el tramite administrativo de modificacion.',
+  'rubi.mod.confirm.accept': 'He revisado el antes y despues y quiero registrar el tramite.', 'rubi.mod.confirm.action': 'Confirmar y registrar', 'rubi.mod.confirming': 'Registrando...',
+  'rubi.mod.edit': 'Editar cambios', 'rubi.mod.registered.badge': 'REGISTRADA', 'rubi.mod.confirmed.title': 'Modificacion registrada',
+  'rubi.mod.confirmed.description': 'La solicitud administrativa se ha registrado. No se ha escrito directamente en Censo.', 'rubi.mod.reference': 'Solicitud',
+  'rubi.mod.normal.title': 'Este caso requiere el flujo normal', 'rubi.mod.normal.description': 'El cambio de cargo requiere sustitucion, cupo o una revision especial.', 'rubi.mod.normal.open': 'Abrir flujo normal',
+  'rubi.mod.cancelled': 'He cancelado la modificacion asistida y limpiado sus datos.', 'rubi.mod.expired': 'La preparacion ha caducado y sus datos se han limpiado.',
+  'rubi.mod.error.permission': 'No tienes permiso para preparar modificaciones.', 'rubi.mod.error.exercise': 'Selecciona el ejercicio activo e iniciado.',
+  'rubi.mod.error.options': 'No se han podido cargar las personas o cargos.', 'rubi.mod.error.form': 'Revisa los campos y formatos.',
+  'rubi.mod.error.noChanges': 'No has realizado ningun cambio.', 'rubi.mod.error.duplicate': 'Ya existe una modificacion pendiente para esta persona.',
+  'rubi.mod.error.person': 'La persona ya no esta disponible en esta asociacion y ejercicio.', 'rubi.mod.error.expired': 'La preparacion ya no esta vigente.',
+  'rubi.mod.error.contextChanged': 'El contexto ha cambiado. Prepara la modificacion de nuevo.', 'rubi.mod.error.transactionDisabled': 'La confirmacion transaccional no esta habilitada.',
+  'rubi.mod.error.prepare': 'No se ha podido preparar o registrar la modificacion.',
+  'rubi.mod.field.identificacion': 'Identificacion', 'rubi.mod.field.nombre': 'Nombre', 'rubi.mod.field.apellidos': 'Apellidos',
+  'rubi.mod.field.nacimiento': 'Fecha de nacimiento', 'rubi.mod.field.telefono': 'Telefono', 'rubi.mod.field.email': 'Correo electronico',
+  'rubi.mod.field.direccion': 'Direccion', 'rubi.mod.field.codigo_postal': 'Codigo postal', 'rubi.mod.field.cargos': 'Cargos'
+});
+Object.assign(translations.va, {
+  'rubi.action.modificacion': 'Preparar modificacio amb Rubi', 'rubi.mod.guided': 'Tramit guiat', 'rubi.mod.title': 'Modificacio assistida',
+  'rubi.mod.privacy': "Selecciona i edita la persona en este formulari segur. Les dades no s'envien al proveidor d'IA.",
+  'rubi.mod.step.person': 'Persona', 'rubi.mod.step.details': 'Canvis', 'rubi.mod.step.review': 'Revisio', 'rubi.mod.select.title': 'Selecciona la persona',
+  'rubi.mod.select.help': "Nomes es mostren persones de l'associacio i exercici actuals.", 'rubi.mod.select.placeholder': 'Selecciona una persona',
+  'rubi.mod.data.title': 'Dades permeses', 'rubi.mod.boundary': "Preparar valida i mostra l'abans i el despres. No registra ni aplica la modificacio.",
+  'rubi.mod.prepare': 'Preparar modificacio', 'rubi.mod.prepared.badge': 'PREPARADA', 'rubi.mod.prepared.title': 'Modificacio preparada',
+  'rubi.mod.prepared.pending': 'Pendent de confirmacio', 'rubi.mod.prepared.stop': 'Revisa exactament els canvis abans de confirmar.',
+  'rubi.mod.prepared.noEffects': 'La preparacio no crea sollicituds ni escriu en Cens.', 'rubi.mod.before': 'Abans', 'rubi.mod.after': 'Despres',
+  'rubi.mod.confirm.title': 'Confirmacio humana', 'rubi.mod.confirm.warning': 'Confirmar registrara el tramit administratiu de modificacio.',
+  'rubi.mod.confirm.accept': "He revisat l'abans i el despres i vull registrar el tramit.", 'rubi.mod.confirm.action': 'Confirmar i registrar', 'rubi.mod.confirming': 'Registrant...',
+  'rubi.mod.edit': 'Editar canvis', 'rubi.mod.registered.badge': 'REGISTRADA', 'rubi.mod.confirmed.title': 'Modificacio registrada',
+  'rubi.mod.confirmed.description': "La sollicitud administrativa s'ha registrat. No s'ha escrit directament en Cens.", 'rubi.mod.reference': 'Sollicitud',
+  'rubi.mod.normal.title': 'Este cas requerix el flux normal', 'rubi.mod.normal.description': 'El canvi de carrec requerix substitucio, cupo o una revisio especial.', 'rubi.mod.normal.open': 'Obrir flux normal',
+  'rubi.mod.cancelled': 'He cancellat la modificacio assistida i netejat les dades.', 'rubi.mod.expired': 'La preparacio ha caducat i les dades s han netejat.',
+  'rubi.mod.error.permission': 'No tens permis per a preparar modificacions.', 'rubi.mod.error.exercise': "Selecciona l'exercici actiu i iniciat.",
+  'rubi.mod.error.options': 'No s han pogut carregar les persones o carrecs.', 'rubi.mod.error.form': 'Revisa els camps i formats.', 'rubi.mod.error.noChanges': 'No has fet cap canvi.',
+  'rubi.mod.error.duplicate': 'Ja existix una modificacio pendent per a esta persona.', 'rubi.mod.error.person': 'La persona ja no esta disponible en esta associacio i exercici.',
+  'rubi.mod.error.expired': 'La preparacio ja no esta vigent.', 'rubi.mod.error.contextChanged': 'El context ha canviat. Prepara la modificacio de nou.',
+  'rubi.mod.error.transactionDisabled': 'La confirmacio transaccional no esta habilitada.', 'rubi.mod.error.prepare': 'No s ha pogut preparar o registrar la modificacio.',
+  'rubi.mod.field.identificacion': 'Identificacio', 'rubi.mod.field.nombre': 'Nom', 'rubi.mod.field.apellidos': 'Cognoms', 'rubi.mod.field.nacimiento': 'Data de naixement',
+  'rubi.mod.field.telefono': 'Telefon', 'rubi.mod.field.email': 'Correu electronic', 'rubi.mod.field.direccion': 'Adreca', 'rubi.mod.field.codigo_postal': 'Codi postal', 'rubi.mod.field.cargos': 'Carrecs'
+});
+Object.assign(translations.en, {
+  'rubi.action.modificacion': 'Prepare modification with Rubi', 'rubi.mod.guided': 'Guided process', 'rubi.mod.title': 'Assisted modification',
+  'rubi.mod.privacy': 'Select and edit the person in this secure form. Their details are not sent to the AI provider.',
+  'rubi.mod.step.person': 'Person', 'rubi.mod.step.details': 'Changes', 'rubi.mod.step.review': 'Review', 'rubi.mod.select.title': 'Select the person',
+  'rubi.mod.select.help': 'Only people in the current association and financial year are shown.', 'rubi.mod.select.placeholder': 'Select a person',
+  'rubi.mod.data.title': 'Permitted details', 'rubi.mod.boundary': 'Prepare validates and shows before and after. It does not register or apply the modification.',
+  'rubi.mod.prepare': 'Prepare modification', 'rubi.mod.prepared.badge': 'PREPARED', 'rubi.mod.prepared.title': 'Modification prepared',
+  'rubi.mod.prepared.pending': 'Awaiting confirmation', 'rubi.mod.prepared.stop': 'Review the exact changes before confirming.',
+  'rubi.mod.prepared.noEffects': 'Preparation does not create a request or write to Census.', 'rubi.mod.before': 'Before', 'rubi.mod.after': 'After',
+  'rubi.mod.confirm.title': 'Human confirmation', 'rubi.mod.confirm.warning': 'Confirmation will register the administrative modification process.',
+  'rubi.mod.confirm.accept': 'I reviewed the before and after values and want to register the process.', 'rubi.mod.confirm.action': 'Confirm and register', 'rubi.mod.confirming': 'Registering...',
+  'rubi.mod.edit': 'Edit changes', 'rubi.mod.registered.badge': 'REGISTERED', 'rubi.mod.confirmed.title': 'Modification registered',
+  'rubi.mod.confirmed.description': 'The administrative request was registered. Census was not updated directly.', 'rubi.mod.reference': 'Request',
+  'rubi.mod.normal.title': 'This case requires the standard flow', 'rubi.mod.normal.description': 'The role change requires a replacement, capacity check or special review.', 'rubi.mod.normal.open': 'Open standard flow',
+  'rubi.mod.cancelled': 'I cancelled the assisted modification and cleared its details.', 'rubi.mod.expired': 'The preparation expired and its details were cleared.',
+  'rubi.mod.error.permission': 'You do not have permission to prepare modifications.', 'rubi.mod.error.exercise': 'Select the active, started financial year.',
+  'rubi.mod.error.options': 'People or roles could not be loaded.', 'rubi.mod.error.form': 'Check the fields and formats.', 'rubi.mod.error.noChanges': 'You have not made any changes.',
+  'rubi.mod.error.duplicate': 'A pending modification already exists for this person.', 'rubi.mod.error.person': 'The person is no longer available in this association and financial year.',
+  'rubi.mod.error.expired': 'The preparation is no longer valid.', 'rubi.mod.error.contextChanged': 'The context changed. Prepare the modification again.',
+  'rubi.mod.error.transactionDisabled': 'Transactional confirmation is not enabled.', 'rubi.mod.error.prepare': 'The modification could not be prepared or registered.',
+  'rubi.mod.field.identificacion': 'Identification', 'rubi.mod.field.nombre': 'First name', 'rubi.mod.field.apellidos': 'Surnames', 'rubi.mod.field.nacimiento': 'Date of birth',
+  'rubi.mod.field.telefono': 'Telephone', 'rubi.mod.field.email': 'Email', 'rubi.mod.field.direccion': 'Address', 'rubi.mod.field.codigo_postal': 'Postcode', 'rubi.mod.field.cargos': 'Roles'
+});
+
 @Injectable({ providedIn: 'root' })
 export class I18nService {
   private readonly storageKey = 'ffsj-secretaria.language';

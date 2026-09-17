@@ -9,6 +9,7 @@ import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
 import { RubiAction, RubiApiService, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
 import { RubiAltaComponent } from './rubi-alta.component';
+import { RubiModificacionComponent } from './rubi-modificacion.component';
 import { RubiConversationService, RubiMessage } from './rubi-conversation.service';
 import { RubiScreenContextService } from './rubi-screen-context.service';
 
@@ -26,7 +27,7 @@ const SAFE_DESTINATIONS: Record<string, string> = {
 @Component({
   selector: 'app-rubi-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslatePipe, RubiAltaComponent],
+  imports: [CommonModule, FormsModule, TranslatePipe, RubiAltaComponent, RubiModificacionComponent],
   templateUrl: './rubi-panel.component.html',
   styleUrls: ['./rubi-panel.component.scss']
 })
@@ -41,6 +42,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   messages: RubiMessage[] = [];
   altaActive = false;
   altaPrepared = false;
+  modificationActive = false;
+  modificationPrepared = false;
   accessGranted = false;
   readonly welcomeSuggestions = ['rubi.quick.alta', 'rubi.quick.registro', 'rubi.quick.calendario', 'rubi.quick.help'];
   readonly quickActions = ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support'];
@@ -59,6 +62,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => {
       this.altaActive = false;
       this.altaPrepared = false;
+      this.modificationActive = false;
+      this.modificationPrepared = false;
       this.sessionOpened = false;
       this.api.resetSession();
     }));
@@ -143,6 +148,13 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       this.api.trackEvent({ event: 'flow_started', stage: 'alta' }).subscribe({ error: () => {} });
       return;
     }
+    if (action.type === 'start_flow' && action.flow === 'modificacion') {
+      this.conversation.excludeLastUserFromHistory();
+      this.modificationActive = true;
+      this.modificationPrepared = false;
+      this.api.trackEvent({ event: 'flow_started', stage: 'modificacion' }).subscribe({ error: () => {} });
+      return;
+    }
     if (action.type !== 'navigate') return;
     const destination = action.destination;
     const route = SAFE_DESTINATIONS[destination];
@@ -172,6 +184,22 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     this.altaPrepared = prepared;
   }
 
+  onModificationClosed(reason: 'cancelled' | 'expired'): void {
+    this.modificationActive = false;
+    this.modificationPrepared = false;
+    this.api.trackEvent({ event: 'flow_cancelled', stage: 'modificacion' }).subscribe({ error: () => {} });
+    this.conversation.add({ author: 'rubi', text: this.i18n.t(reason === 'expired' ? 'rubi.mod.expired' : 'rubi.mod.cancelled') });
+    setTimeout(() => this.messageInput?.nativeElement.focus());
+  }
+
+  openNormalModificationFlow(): void {
+    this.modificationActive = false;
+    this.modificationPrepared = false;
+    this.router.navigateByUrl('/asociados/gestion?tab=modificaciones').then(() => this.close());
+  }
+
+  onModificationPreparationStateChanged(prepared: boolean): void { this.modificationPrepared = prepared; }
+
   sendFeedback(message: RubiMessage, rating: 'helpful' | 'not_helpful'): void {
     if (message.feedbackPending || message.feedback) return;
     this.conversation.setFeedback(message.id, undefined, true);
@@ -190,7 +218,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       return;
     }
     this.draft = '';
-    if (response.conversation?.sensitiveFlow === 'alta') this.conversation.excludeLastUserFromHistory();
+    if (response.conversation?.sensitiveFlow === 'alta' || response.conversation?.sensitiveFlow === 'modificacion') this.conversation.excludeLastUserFromHistory();
     this.conversation.add({
       author: 'rubi', text: response.message, intent: response.intent,
       actions: response.actions.filter(action => this.isSafeAction(action)), tool: response.tool?.name,
@@ -236,7 +264,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     };
     const module = moduleByRoute[routeKey];
     const current = this.screenContext.current;
-    const state = this.altaActive ? { hasOpenRegistration: this.altaPrepared } : undefined;
+    const state = this.altaActive ? { hasOpenRegistration: this.altaPrepared }
+      : this.modificationActive ? { hasOpenModification: this.modificationPrepared } : undefined;
     if (current?.module === module) return { ...current, ...(state ? { state: { ...(current.state || {}), ...state } } : {}) };
     return { version: 1, module, view: routeKey === 'alta' ? 'gestion' : routeKey === 'home' ? 'inicio' : routeKey,
       ...(state ? { state } : {}) };
@@ -248,6 +277,6 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
 
   private isSafeAction(action: RubiAction): boolean {
     return (action.type === 'navigate' && typeof action.destination === 'string' && !!SAFE_DESTINATIONS[action.destination])
-      || (action.type === 'start_flow' && action.flow === 'alta');
+      || (action.type === 'start_flow' && (action.flow === 'alta' || action.flow === 'modificacion'));
   }
 }
