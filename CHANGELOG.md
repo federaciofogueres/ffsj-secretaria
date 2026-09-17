@@ -1,24 +1,30 @@
 # Changelog
 
-## 1.1.0#RUBI — EN DESARROLLO
+## 1.1.0#RUBI - 2026-09-17
 
-> RUBI-14 está completado. La versión permanece abierta hasta completar RUBI-15 — Bajas asistidas.
+### Añadido — Modificaciones asistidas (RUBI-14)
 
-### Añadido
-
-- Se incorpora el workflow de modificaciones asistidas de personas: selección estructurada, edición de campos permitidos, preparación y revisión antes/después.
+- Workflow de modificaciones asistidas de personas: selección estructurada, edición de campos permitidos, preparación y revisión antes/después.
 - La confirmación humana registra el trámite administrativo mediante la API, con revalidación, cancelación, idempotencia y derivación segura de cambios complejos de cargos al flujo normal.
-- Se incorpora la baja asistida de personas activas, con preparación, resumen, confirmación humana y derivación de cargos obligatorios al flujo normal.
-- Se añade el centro de administración y control de Rubi, con permiso `admin:rubi`, configuración global y por asociación y analíticas agregadas.
-- Rubi mantiene la privacidad de la PII fuera del provider y amplía la conversación, capabilities, telemetría y traducciones ES/VA/EN para el nuevo workflow.
 
-### Persistencia
+### Añadido — Bajas asistidas (RUBI-15)
 
-- Se incorporan las migraciones `057_rubi_admin_config.sql` y `058_rubi_usage_asociacion.sql`, ejecutadas manualmente por el usuario en DEV.
+- Baja asistida de personas activas, con selección, carga del estado real (incluidos cargos), motivo opcional, resumen, confirmación humana y derivación de cargos obligatorios al flujo normal.
+
+### Añadido — Centro de administración de Rubi (RUBI-15.1)
+
+- Centro de administración y control de Rubi en Configuración → RUBI (permiso `admin:rubi`): estado global (`enabled`), autorización explícita por asociación (`authorized`, con búsqueda y filtro), estado del provider sin exponer credenciales, presupuesto diario/mensual y una primera vista de analíticas agregadas.
+- El acceso `/asistente/acceso` refleja el modelo `enabled`/`authorized`; la allowlist de RUBI-13 queda como modo piloto opcional y ya no restringe el acceso ordinario.
+
+### Corregido — Estabilización conversacional
+
+- Rubi reconoce de forma fiable altas, modificaciones y bajas a partir de lenguaje natural (órdenes directas, correcciones y negaciones como "no quiero un alta, quiero una modificación"), sin que una intención secuestre a otra.
+- Se reconocen saludos con vocativo ("Hola Rubi!") y preguntas de capacidades formuladas de distintas maneras, evitando el fallback genérico cuando la intención es reconocible.
+- Rubi ya no afirma que no puede iniciar altas, cambios o bajas: puede abrirlos de forma segura cuando el usuario tiene permiso, siempre con confirmación humana en el formulario.
 
 ### Documentación
 
-- `docs/rubi/STATUS.md` refleja la finalización de RUBI-14 y deja RUBI-15 como siguiente hito sin iniciar.
+- `docs/rubi/STATUS.md` refleja el cierre de `1.1.0#RUBI` con RUBI-14, RUBI-15 y RUBI-15.1 validados funcionalmente en DEV por el usuario.
 
 ## 1.0.0#RUBI - 2026-09-17
 

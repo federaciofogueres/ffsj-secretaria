@@ -5,10 +5,10 @@
 ## Versión y alcance
 
 - Rama de frontend y API: `1.1.0#RUBI`.
-- Estado de la versión: **EN DESARROLLO**. `1.1.0#RUBI` no está cerrada.
-- Último hito funcional: corrección de un **bloqueante funcional** de RUBI-14 — la modificación asistida no se iniciaba de forma fiable desde conversación natural (ver sección dedicada más abajo). Implementada y validada en código/local; pendiente de una nueva validación manual del usuario en DEV.
-- Plan de la versión: RUBI-14, RUBI-15 y RUBI-15.1 completados en código, pero **RUBI-14 NO está validado en DEV**: el bloqueante descrito abajo impedía considerarlo cerrado. La versión se cerrará mediante la skill de cierre de versión en un prompt posterior, una vez el usuario confirme la corrección en DEV.
-- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos en DEV (el usuario los desplegó y ejecutó las migraciones `057`-`059` manualmente); en esa validación manual en DEV se detectaron dos regresiones conversacionales sucesivas (routing/tools genérico y, después, el secuestro de modificación por alta) que se corrigen en este repositorio. Ninguna corrección de este hito se ha desplegado todavía; no se ha desplegado ni activado nada en producción.
+- Estado de la versión: **CERRADA**. RUBI-14, RUBI-15 y RUBI-15.1 están completos y validados funcionalmente en DEV por el usuario (acceso, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales).
+- Último hito funcional: cierre formal de `1.1.0#RUBI` tras la validación manual en DEV, que incluyó dos correcciones conversacionales sucesivas (estabilización de routing/tools y, después, el bloqueante de modificación secuestrada por alta — ver secciones dedicadas más abajo).
+- Plan de la versión: RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi, junto con la separación `enabled`/`authorized`, el modo piloto opcional y la estabilización conversacional, quedan todos incluidos y cerrados en `1.1.0#RUBI`.
+- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. No se ha desplegado ni activado nada en producción; el despliegue a producción, si procede, lo decide y ejecuta el usuario en un momento posterior.
 - Workflows administrativos asistidos: altas, modificaciones y bajas de personas.
 - La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y ahora convive con la configuración administrada de RUBI-15.1 (ver más abajo).
 
@@ -34,7 +34,7 @@ Los valores efectivos pertenecen al entorno y no deben copiarse a documentación
 - Acceso: `RUBI_ENABLED`, `RUBI_PILOT_MODE_ENABLED` (activa el modo piloto explícito; `false` por defecto, el modo normal no usa la allowlist), `RUBI_PILOT_ACCESS_MODE`, `RUBI_PILOT_ACTOR_HASHES`.
 - Persistencia: `RUBI_TRANSACTIONAL_ENABLED`.
 - Provider: `RUBI_REAL_PROVIDER_ENABLED`, `RUBI_PROVIDER`, `RUBI_MODEL` y la credencial del provider.
-- Tools y contexto: `RUBI_ALLOWED_TOOLS`, máximos de mensaje, entrada, salida, historial y contexto.
+- Tools y contexto: `RUBI_BLOCKED_TOOLS` (kill switch extraordinario, vacío por defecto), máximos de mensaje, entrada, salida, historial y contexto.
 - Resiliencia: timeout, llamadas máximas, retries y demora base.
 - Protección de uso: límites por minuto/día/concurrencia y presupuestos diario/mensual.
 
@@ -88,7 +88,7 @@ Corrige una regresión funcional detectada manualmente en DEV: Rubi aparecía au
 
 ## Bloqueante de RUBI-14 corregido: modificación secuestrada por alta
 
-Un segundo problema, más grave, sobrevivió a la estabilización anterior y **bloqueaba el cierre de `1.1.0#RUBI`**: en DEV, "Necesito hacer una modificación de un asociado" iniciaba un ALTA, la corrección explícita del usuario ("Lo que necesito es hacer una modificación, no un alta") volvía a iniciar un ALTA, y "Necesito hacer un cambio" caía al fallback genérico.
+Un segundo problema, más grave, sobrevivió a la estabilización anterior y **bloqueó el cierre de `1.1.0#RUBI`** hasta corregirse: en DEV, "Necesito hacer una modificación de un asociado" iniciaba un ALTA, la corrección explícita del usuario ("Lo que necesito es hacer una modificación, no un alta") volvía a iniciar un ALTA, y "Necesito hacer un cambio" caía al fallback genérico. Corregido y validado funcionalmente por el usuario en DEV; ver "Siguiente hito" para el resultado final.
 
 - **Causa raíz**: `ALTA_TOPIC` usaba un patrón genérico "verbo (dar/hacer/crear/iniciar/preparar...) + persona/asociado", y `resolveDeterministicConversation` evaluaba alta **antes** que modificación. "Necesito **hacer** una modificación de un **asociado**" activaba ese patrón genérico de alta (verbo "hacer" cerca de "asociado") antes de que el router llegara siquiera a mirar la palabra "modificación". No era solo un problema de orden: "hacer", "persona" y "asociado" son palabras compartidas por alta, modificación y baja, así que cualquier orden de evaluación en cascada dejaba el sistema igual de frágil ante la siguiente frase no prevista.
 - **Corrección arquitectónica** (no un simple reordenado de `if`): se sustituye la cascada por una clasificación única (`classifyTopic`) que calcula los tres marcadores de tema de forma independiente y solo entonces decide. `ALTA_TOPIC` deja de reconocer el patrón genérico "verbo + persona/asociado" y pasa a exigir una palabra propia del trámite de alta (la palabra "alta", "nuevo asociado/miembro", "incorporar persona", "new member"...). `MODIFICACION_TOPIC` amplía su reconocimiento a "cambio"/"canvi"/"change" como sustantivo (no solo "cambiar datos"), cubriendo "necesito hacer un cambio"/"quiero hacer una modificación". Si más de un dominio queda activo a la vez se pide una aclaración concreta en vez de adivinar o caer en el fallback genérico; si ninguno queda activo, no hay tema.
@@ -113,18 +113,16 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - Las analíticas administrativas se limitan a lo que `secretaria_rubi_usage` puede responder hoy (llamadas, tokens, coste, fallidas, actores/asociaciones únicas). Conversaciones iniciadas, workflows por tipo, cancelaciones y feedback útil/no útil siguen sin persistirse de forma consultable (solo como logs de `RubiPilotTelemetry`); ampliarlo requeriría una tabla de eventos nueva, deliberadamente no creada en este hito para no inventar métricas no soportadas.
 - El consumo por asociación solo puede atribuirse a partir de la fecha de esta migración; los registros históricos de `secretaria_rubi_usage` anteriores no tienen `asociacion_id`.
 
-## Validación local (corrección `enabled`/`authorized`, estabilización de routing y bloqueante de RUBI-14)
+## Validación de cierre de `1.1.0#RUBI`
 
-- Frontend: 113 pruebas en ChromeHeadless correctas (sin nuevas specs; las existentes de `rubi-admin.*` se actualizaron al contrato `authorized`). Sin cambios de frontend en ninguna de las dos correcciones conversacionales (son puramente backend); se auditó el recorrido `start_flow → rubi-modificacion.component` sin encontrar defectos.
-- Frontend: build `development` correcto.
-- API: 261 pruebas correctas (244 previas + 17 nuevas del banco de regresión específico del bloqueante de RUBI-14: modificación secuestrada por alta, negaciones/correcciones, saludos con vocativo, permiso ausente).
+- Validación funcional manual en DEV por el usuario: acceso de Rubi, autorización por asociación, conversación, alta, modificación asistida, baja asistida, routing entre alta/modificación/baja y las correcciones conversacionales principales. En base a esa validación, RUBI-14 y RUBI-15 se consideran validados funcionalmente junto con RUBI-15.1.
+- Frontend: 113 pruebas en ChromeHeadless correctas y build `development` correcto.
+- API: 261 pruebas correctas.
 - Eval determinista de Rubi (`npm run rubi:eval`, provider `mock`): 100/100 casos, sin usar Gemini real.
-- Contrato OpenAPI sin cambios en este hito (no se añaden ni modifican endpoints); `git diff --check` correcto en ambos repositorios.
-- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV con anterioridad. No se ha ejecutado ninguna migración nueva ni se ha tocado Azure/producción en esta corrección.
+- Contrato OpenAPI sin cambios en el último hito de esta versión (no se añaden ni modifican endpoints); `git diff --check` correcto en ambos repositorios.
+- Migraciones `057`, `058` y `059` ejecutadas por el usuario en DEV. No se ejecuta ninguna migración, ni se toca Azure/producción, como parte de este cierre.
 
 ## Siguiente hito
 
-- RUBI-14, RUBI-15 y RUBI-15.1 están completados en código; **RUBI-14 no puede marcarse como validado en DEV hasta que el usuario despliegue esta corrección y repita la prueba manual** con las frases que fallaban ("Necesito hacer una modificación de un asociado", su corrección, y "Necesito hacer un cambio").
-- La corrección `enabled`/`authorized`, la estabilización conversacional/de routing y este bloqueante de RUBI-14 están validados localmente y pendientes de que el usuario los despliegue en DEV para una nueva validación manual.
-- `1.1.0#RUBI` permanece abierta; su cierre formal se realizará mediante la skill de cierre de versión en un prompt posterior, una vez confirmada la validación manual de RUBI-14.
-- No corresponde iniciar RUBI-15.2, RUBI-16 ni ninguna versión posterior todavía.
+- `1.1.0#RUBI` queda **CERRADA**. RUBI-14 — Modificaciones asistidas, RUBI-15 — Bajas asistidas y RUBI-15.1 — Centro de administración y control de Rubi están completos y validados funcionalmente.
+- `RUBI.md` no fija todavía un número de hito o versión siguiente concreto (solo el patrón general que debe repetir cualquier workflow nuevo); no se inicia RUBI-15.2, RUBI-16, `1.2.0#RUBI` ni ninguna otra versión en este cierre. El siguiente hito se definirá en un prompt posterior.
