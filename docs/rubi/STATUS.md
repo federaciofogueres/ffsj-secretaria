@@ -4,9 +4,10 @@
 
 ## Versión y alcance
 
-- **`1.7.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-22 — Hardening integral está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-21, ver más abajo). No se ha desplegado ni ejecutado ninguna migración.
-- **Consolidación previa**: `1.2.0#RUBI` → `1.6.0#RUBI` están **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-22 (RUBI-16 → RUBI-22 incluidos).
-- `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-22 sigue **pendiente** (no realizada; en curso en paralelo por el usuario a fecha de esta sesión, 2026-09-18).
+- **`1.8.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-23 — Release Candidate / Preparación de piloto está **implementado y validado técnicamente**; **validación funcional manual/piloto pendiente** (no existe confirmación del usuario de que se haya realizado; se suma a la campaña conjunta RUBI-17 → RUBI-23, ver más abajo). No se ha desplegado código, no se ha activado el piloto. Las migraciones Rubi disponibles en `develop` (`055` → `061`, sin ninguna posterior en este hito) están aplicadas en DEV — ver "Migraciones en DEV" más abajo para el detalle verificado de esta sesión.
+- **`1.7.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-22 — Hardening integral está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-23, ver más abajo). No se ha desplegado ni ejecutado ninguna migración en este hito.
+- **Consolidación previa**: `1.2.0#RUBI` → `1.7.0#RUBI` están **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-23 (RUBI-16 → RUBI-23 incluidos).
+- `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-23 sigue **pendiente**: no existe confirmación del usuario de que se haya realizado ni parcial ni totalmente. No debe inferirse como completada por ningún motivo.
 - `1.4.0#RUBI` — Soporte inteligente (RUBI-18) y Comunicaciones y envíos asistidos (RUBI-19): integrada técnicamente en `develop`. Validación funcional manual pendiente, incluida en la campaña conjunta.
 - `1.3.0#RUBI` — Actividades, calendario e inscripciones asistidas (RUBI-17): integrada técnicamente en `develop`. Validación funcional manual pendiente, incluida en la campaña conjunta.
 - `1.2.0#RUBI` está CERRADA y validada funcionalmente por el usuario (RUBI-16 — Registro General y documentación asistidos); integrada en `develop`.
@@ -216,6 +217,139 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - Antes de mergear `1.5.0#RUBI` se repitió la validación técnica completa (no se confió en los números de la sesión anterior): 390/390 pruebas de API, eval Rubi mock 110/110, 137/137 pruebas de frontend, build `development` y `git diff --check` correctos en ambos repositorios.
 - Merge de `1.5.0#RUBI` a `develop` (`--no-ff`, sin conflictos) en ambos repositorios, con la suite completa vuelta a ejecutar sobre `develop` tras el merge antes del `push`.
 - **Auditoría de migraciones en DEV** (`u438573835_secretaria_pre`, verificado explícitamente que no es la base de producción `u438573835_secretaria`): la tabla `secretaria_schema_migrations` mostraba 56 migraciones aplicadas, la última `060_registro_confirmaciones.sql`; `061_rubi_federation_authorized.sql` era la única pendiente. Se aplicó exclusivamente esa migración con el runner oficial del proyecto (`npm run db:migrate:dev`, que solo ejecuta migraciones no registradas todavía). Verificado tras aplicarla: columna `secretaria_rubi_config.federation_authorized` creada como `TINYINT(1) NOT NULL DEFAULT 0`; la fila existente quedó en `federation_authorized = 0` (deny-by-default, ningún acceso de Federación autorizado implícitamente); `enabled`/`real_provider_enabled`/`transactional_enabled` sin cambios. No se ejecutó ninguna otra migración, no se modificó ninguna migración histórica y no se tocó producción, Azure ni App Settings. No se realizó ningún despliegue de código frontend ni API.
+
+## Histórico: cierre técnico de `1.8.0#RUBI` — RUBI-23: Release Candidate / Preparación de piloto
+
+- `1.8.0#RUBI` está **CERRADA TÉCNICAMENTE** y mergeada a `develop` en ambos repositorios.
+- **Rama**: `1.8.0#RUBI` abierta desde el `develop` actualizado tras el cierre de `1.7.0#RUBI` (API `6eb4e3b`, frontend `a534c36`). Feature freeze: no se añade ninguna funcionalidad de producto. Objetivo: responder de forma verificable "¿podemos desplegar Rubi a un grupo controlado, observarla, detenerla inmediatamente si hay problemas y saber objetivamente si funciona?".
+
+### Release readiness (Fase 5)
+
+Todo lo siguiente ya existe (no se ha inventado ningún mecanismo nuevo en este hito):
+
+| Pregunta operativa | Mecanismo real |
+|---|---|
+| Activar/desactivar Rubi | `RUBI_ENABLED` (infraestructura) y `enabled` (Configuración → RUBI, panel admin) |
+| Autorizar una asociación | `authorized` por asociación, panel admin (`GET/PUT /admin/rubi/asociaciones`) |
+| Autorizar Federación | `federation_authorized`, interruptor global independiente del anterior |
+| Activar el piloto explícito | `RUBI_PILOT_MODE_ENABLED` + `RUBI_PILOT_ACCESS_MODE` + `RUBI_PILOT_ACTOR_HASHES` |
+| Limitar participantes | Allowlist seudonimizada (`RUBI_PILOT_ACTOR_HASHES`) o autorización explícita por asociación/Federación |
+| Desactivar el provider real | `RUBI_REAL_PROVIDER_ENABLED=false` |
+| Desactivar transacciones | `RUBI_TRANSACTIONAL_ENABLED=false` |
+| Bloquear una tool concreta | `RUBI_BLOCKED_TOOLS` |
+| Detener Rubi totalmente | `RUBI_ENABLED=false` o `enabled` global en el panel |
+| Volver a estado anterior | Ver `docs/rubi/ROLLBACK.md` |
+| Detectar errores | `rubi_request_failed`/`rubi_provider_attempt` (logs) + analíticas del panel admin |
+| Consultar consumo | `GET /admin/rubi/analiticas` (llamadas, tokens, coste, fallidas, actores/asociaciones únicas) |
+| Distinguir asociación/Federación | `scope` en contexto/telemetría, calculado siempre en `RubiContext` desde el JWT |
+| Fallo del provider | Degrada con reintento acotado, mensaje seguro, sin romper el resto de Secretaría (`RubiGateway`, probado en `rubi.stabilization.test.js`/`rubi.resilience.test.js`) |
+| Fallo de DB | Lecturas de estado global son fail-open, autorización por asociación/Federación es fail-closed (deny-by-default); confirmado con test dedicado en RUBI-22 |
+| Bug de un workflow concreto | Aislado por diseño: cada workflow (alta/modificación/baja/Registro/inscripción) tiene su propio almacén de confirmación opaco con TTL; un fallo no contamina a los demás |
+
+Documentado en detalle, con procedimiento paso a paso, en `docs/rubi/PILOT.md`.
+
+### Infraestructura de piloto (Fase 6) y matriz de acceso (Fase 7)
+
+- Auditada tras RUBI-14 → RUBI-22: `RUBI_PILOT_MODE_ENABLED`, la allowlist de actor hashes, el feedback útil/no útil y la telemetría siguen funcionando exactamente igual; ningún hito posterior a RUBI-13 ha tocado esa infraestructura de forma incompatible.
+- **Nuevo test exhaustivo** (`test/rubi.pilot.matrix.test.js`): matriz combinatoria completa (32 combinaciones para asociación, 32 para Federación) cruzando infraestructura, `enabled` global, `authorized`/`federation_authorized`, modo piloto y allowlist contra `resolveEffectiveAccess`. Confirma con certeza matemática (no solo casos sueltos) que el acceso queda autorizado si y solo si **todas** las capas lo permiten, y que "modo piloto activo + allowlist vacía" nunca autoriza a nadie — nunca existe una vía de "pilot ON → acceso automático general" salvo la decisión explícita `RUBI_PILOT_ACCESS_MODE=all`, que es un modo aparte y documentado, no un efecto colateral.
+
+### Kill switch / stop the world (Fase 8)
+
+- Los 4 niveles (bloquear una tool, desactivar transacciones, desactivar el provider real, apagar Rubi por completo) están demostrados mediante test dedicado (`test/rubi.killswitch.test.js`) y documentados paso a paso en `PILOT.md`. Los niveles 2, 3 y 4 ya tenían cobertura de test previa (workflows, `rubi.stabilization.test.js`, `rubi.gateway.test.js`); el nivel 1 (bloqueo de una tool concreta) tenía cobertura de configuración pero no un test end-to-end de que la tool efectivamente deja de ejecutarse — añadido en este hito. Los 4 niveles son independientes entre sí (probado) y ninguno requiere deploy, cambio de código ni una operación destructiva de base de datos.
+
+### Rollback (Fase 9)
+
+- Documentado en `docs/rubi/ROLLBACK.md`: rollback de frontend y de API son independientes entre sí (los endpoints de Rubi son aditivos, no reemplazan ninguno existente); las migraciones de Rubi son aditivas y con default seguro, por lo que revertir código es seguro aunque el esquema ya tenga las columnas/tablas nuevas (no hace falta revertir el esquema); la configuración operativa se revierte desde el panel admin o los flags de infraestructura, sin deploy. Principio explícito: un rollback de Rubi nunca implica borrar solicitudes/registros/incidencias/inscripciones creadas correctamente — son indistinguibles de las creadas sin Rubi una vez confirmadas.
+
+### Migraciones (Fase 10)
+
+- Auditadas `055` → `061` una a una: orden estrictamente secuencial, cada una depende solo del estado inmediatamente anterior (`059` renombra una columna de `057`; `058` y `061` añaden columnas a tablas de `057`/`056`), ninguna modifica una migración ya aplicada, todos los defaults nuevos son seguros (deny-by-default en `059`/`061`, aditivos sin pérdida de datos en el resto). El runner (`scripts/migrate.js`) solo ejecuta las no registradas en `secretaria_schema_migrations`, ordenadas por nombre de fichero (coincide con el orden numérico); es idempotente y compatible con un entorno nuevo que las aplique todas de una vez desde `001`. **No ha hecho falta ninguna migración nueva en este hito.**
+
+### Observabilidad real disponible (Fase 11) y métricas medibles (Fase 12)
+
+Indicadores que **realmente existen** (nada inventado):
+
+- Logging técnico del gateway: `rubi_request_completed`, `rubi_provider_attempt` (con `errorCode`, latencia, tokens, coste), `rubi_request_failed`, `rubi_usage_reconciliation_failed`.
+- `RubiPilotTelemetry`: `access_checked` (autorizado/motivo de denegación), eventos estructurados (`session_opened`, `flow_started`, `flow_cancelled`, `navigation`), `feedback` (útil/no útil por intent/tool), `conversation` (tokens/coste/latencia agregados), `insights` (conteos por dominio y dominios fallidos, RUBI-21), `workflow_error`.
+- Analíticas persistidas y consultables desde el panel admin (`GET /admin/rubi/analiticas`, sobre `secretaria_rubi_usage`): llamadas, tokens, coste estimado, fallidas, actores y asociaciones únicas, filtrable por periodo/asociación.
+
+Métricas que **NO existen** hoy de forma consultable (ya documentado como deuda desde RUBI-15.1, sigue siendo cierto): conversaciones iniciadas por workflow, cancelaciones y feedback útil/no útil como serie histórica consultable desde un panel — solo como logs de `RubiPilotTelemetry`, no persistidos en tabla. No se ha creado ninguna tabla nueva para producir métricas más "bonitas": no hay necesidad crítica demostrada que lo justifique en este hito.
+
+### Criterios de éxito del piloto (Fase 13, propuesta operativa — no umbrales técnicos verificados)
+
+Checklist mínimo, usando solo datos realmente disponibles:
+
+- Ningún bypass de permisos detectado (auditado exhaustivamente en RUBI-22/23; sin garantía absoluta futura, pero sin hallazgos pendientes).
+- Ningún incidente de aislamiento entre asociaciones/actores (revisable vía analíticas por asociación + reportes directos).
+- Ninguna operación persistente sin confirmación humana (invariante estructural, no una métrica que pueda fallar "un poco").
+- Tasa de `rubi_request_failed` dentro de un umbral que el equipo operativo decida antes de empezar (este documento no propone un porcentaje concreto: no hay datos históricos de producción de los que derivarlo con rigor).
+- Provider real estable (sin `RUBI_PROVIDER_TIMEOUT`/`RUBI_PROVIDER_REMOTE_ERROR` repetidos en `rubi_provider_attempt`).
+- Coste dentro del presupuesto configurado (`GET /admin/rubi/analiticas`, sin superar `RUBI_DAILY_BUDGET_USD`/`RUBI_MONTHLY_BUDGET_USD`).
+- Feedback útil/no útil revisado manualmente por intent/tool (no hay agregación automática por ahora, ver limitación de observabilidad arriba).
+- Workflows principales (alta, Registro, inscripción, soporte) usados con éxito por al menos un participante real del piloto.
+- Kill switch probado en el entorno real antes de dar el piloto por operativo (no solo en test).
+
+### Criterios de aborto inmediato (Fase 14)
+
+| Motivo | Kill switch a usar |
+|---|---|
+| Fuga de PII (aparece un dato personal donde no debería, provider o logs) | Nivel 4: `RUBI_ENABLED=false` — parar todo mientras se investiga el origen |
+| Cruce de datos entre asociaciones | Nivel 4 inmediato; después retirar `authorized`/`federation_authorized` de las asociaciones implicadas |
+| Bypass de permisos confirmado | Nivel 4 inmediato |
+| Ejecución de una operación sin confirmación humana | Nivel 2 (`RUBI_TRANSACTIONAL_ENABLED=false`) como mínimo; si afecta a la conversación en general, Nivel 4 |
+| Duplicación de trámites | Nivel 2 mientras se audita el flujo de idempotencia afectado |
+| Gasto anómalo | Nivel 3 (`RUBI_REAL_PROVIDER_ENABLED=false`) inmediato; revisar `RUBI_DAILY_BUDGET_USD` antes de reactivar |
+| Errores repetidos que bloqueen el resto de Secretaría (no solo Rubi) | Nivel 4 inmediato — Rubi nunca debe degradar el resto de la aplicación, cualquier indicio de que lo hace es motivo de parada total |
+| Comportamiento impredecible de una tool concreta | Nivel 1 (`RUBI_BLOCKED_TOOLS`) si está acotado a una tool; Nivel 4 si no está claro el alcance |
+
+### Vulnerabilidades de dependencias — reanálisis (Fase 19-20, sin aceptar la conclusión previa sin verificar)
+
+Se ha verificado el uso real del código, no solo la etiqueta de la CVE:
+
+- **jsPDF (crítico, `<=4.2.0`)**: uso real en `asociados.component.ts`/`inscripciones.component.ts` limitado a `pdf.text()`/`pdf.setFontSize()` sobre datos propios (listados/certificados). Verificado con grep: **no se usa** `addJS`, AcroForm, `.html()` ni `addImage()` — las APIs a las que se asocian las CVEs de ejecución de JavaScript/inyección de objetos PDF/HTML. Ningún dato pasa por Rubi antes de llegar a jsPDF. **Veredicto: ACCEPTED RISK para el piloto** (superficie de explotación real no activada por este código), **DEBT** para un hito dedicado (bump `3.x → 4.x`, fuera de alcance sin pruebas específicas de exportación).
+- **xlsx (alto, sin fix upstream)**: uso real limitado a `XLSX.utils.book_new/json_to_sheet` + `XLSX.writeFile` (exportar datos propios). Verificado con grep: **no existe** ninguna llamada a `XLSX.read`/`sheet_to_json` (parsear un fichero externo), que es el vector real de las CVEs de Prototype Pollution/ReDoS de SheetJS. **Veredicto: ACCEPTED RISK**, sin fix disponible en origen; revisar si en el futuro se añade importación de Excel, en cuyo caso este veredicto debe reevaluarse antes de activarla.
+- **Angular core/common/forms/router/platform-browser (alto, XSS varios, corregidos en `20.3.28+`, dentro del major ya declarado `^20.3.0`)**: verificado que Rubi y el resto del código auditado no usan `[innerHTML]` ni `bypassSecurityTrust*` en ningún componente (grep sin resultados en `src/app/`), ni SSR/hydration (`provideClientHydration` no configurado) ni el pipeline `$localize` de Angular (la app usa su propio `I18nService`) — los tres vectores que las CVEs de i18n/hydration exigen. Persiste una CVE más genérica (sanitización de host bindings/atributos SVG) que no depende de esos tres vectores y que no se ha podido descartar con la misma certeza sin auditar cada componente de la aplicación completa (fuera del alcance de un hardening centrado en Rubi). El fix es un simple bump de patch (`20.3.15 → 20.3.31+`) dentro del major declarado, pero un intento de aplicarlo en esta sesión chocó con `peerDependencies` cruzados entre `@angular/cdk`, `@angular/material`, `@angular-devkit/build-angular` y la librería local `ffsj-web-components`, que exigen coordinarse todos a la vez y no se pudo resolver sin arriesgar una resolución de dependencias incorrecta (`--legacy-peer-deps`/`--force`, explícitamente prohibido salvo análisis dedicado). **Veredicto: ACCEPTED RISK para un piloto controlado** (grupo cerrado de asociaciones ya autenticadas, no público general — reduce sustancialmente el modelo de atacante relevante para XSS), **DEBT bloqueante antes de una release pública más amplia**: requiere una sesión dedicada de actualización coordinada del stack Angular con pruebas de UI completas, no solo de Rubi.
+- **Resto (webpack, vite, rollup, postcss, etc., ~28 avisos)**: todas devDependencies del toolchain de build, no se empaquetan en el bundle servido al navegador. **Veredicto: N/A para el piloto** (sin superficie de ejecución en producción), pendiente de actualización cuando se aborde el bump coordinado de Angular (comparten árbol de dependencias).
+- **API (`ffsj-secretaria-api`)**: 0 vulnerabilidades tras el fix aplicado en RUBI-22 (confirmado de nuevo en esta sesión con `npm audit`).
+
+**Ningún BLOCKER de seguridad de dependencias pendiente para un piloto en grupo controlado.** Las dos DEBT identificadas (Angular, jsPDF) quedan documentadas explícitamente como condición para ampliar el piloto más allá de un grupo controlado y autenticado.
+
+### Provider real (Fase 21)
+
+- Auditada la configuración necesaria (`RUBI_PROVIDER`, `RUBI_MODEL`, credencial vía variable de entorno nunca expuesta por el panel, `RUBI_TIMEOUT_MS`, `RUBI_MAX_RETRIES`, límites de tokens de entrada/salida/historial/contexto) — sin cambios de código, sin mostrar secretos. Todos los tests de este hito y de los anteriores usan el provider `mock`; no se ha usado Gemini real en ningún momento de esta sesión.
+
+### Control de costes (Fase 22)
+
+- Rate limit (`RUBI_RATE_LIMIT_PER_MINUTE`/`_PER_DAY`), concurrencia por actor (`RUBI_CONCURRENCY_PER_ACTOR`) y presupuesto diario/mensual (`RUBI_DAILY_BUDGET_USD`/`RUBI_MONTHLY_BUDGET_USD`, con reserva de coste antes de cada llamada y liberación en `usageStore.finalize`) ya existían y siguen probados. Con presupuesto agotado, la llamada al provider real se rechaza de forma segura sin afectar al resto de Secretaría (comportamiento ya cubierto por `rubi.budget.test.js`, revalidado en esta sesión).
+
+### Privacidad y retención de datos — revisión final (Fase 23)
+
+| Dato | ¿Persiste? | Duración | ¿Contiene PII? | ¿Llega al provider? |
+|---|---|---|---|---|
+| Historial de conversación | No (memoria del cliente/servidor por request) | Efímero, se limpia al cambiar de contexto o cerrar sesión | Se sanea antes de cualquier uso | Solo texto saneado, nunca datos de flujos sensibles (se sustituyen por marcador) |
+| Confirmaciones de workflow (alta/modificación/baja/Registro) | Sí, tabla dedicada por dominio | TTL corto, opaco, vinculado a actor+asociación | Sí (borrador de datos administrativos) | No, nunca se envía al provider |
+| Uso/telemetría de provider (`secretaria_rubi_usage`) | Sí | Sin purga automática documentada (deuda ya conocida, no nueva) | No (hashes, contadores, códigos) | N/A (dato interno) |
+| Feedback del piloto | Solo como evento de log (`RubiPilotTelemetry`), no en tabla | No persistido de forma consultable | No (rating + intent/tool, sin texto libre) | No |
+| Logs técnicos | Según retención del entorno (fuera del control de Rubi) | N/A | No (identificadores seudonimizados/truncados) | N/A |
+
+Sin cambios de comportamiento en este hito: es una revisión, no una nueva política. No se crea ninguna política legal nueva, solo se documenta el comportamiento técnico real.
+
+### UX release review (Fase 24) y i18n (Fase 25)
+
+- Revisados loading/errores/estados vacíos/mobile/teclado/foco del panel (`RubiPanelComponent`): sin bugs claros encontrados que perjudiquen el piloto (ya auditado en RUBI-22, sin cambios desde entonces). No se ha rediseñado nada.
+- ES/VA/EN revisados para KB, mensajes de Rubi, errores, workflows, sugerencias: consistentes, sin claves nuevas sin traducir introducidas en este hito (no se ha añadido ningún texto nuevo).
+
+### Migraciones
+
+- Ninguna creada ni ejecutada en este hito.
+
+### Validación técnica final
+
+- 429/429 pruebas de API, 143/143 pruebas de frontend, build Angular `development`, evaluación Rubi con provider mock (112/112) y contrato OpenAPI correctos, `git diff --check` correcto en ambos repositorios. No se ha usado Gemini real. No se ha activado el piloto. No se ha desplegado.
+
+### Validación funcional manual
+
+- Pendiente, no realizada; se suma a la campaña conjunta de RUBI-17 → RUBI-23. No existe confirmación del usuario de que se haya realizado.
 
 ## Histórico: cierre técnico de `1.7.0#RUBI` — RUBI-22: Hardening integral
 
