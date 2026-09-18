@@ -175,6 +175,26 @@ describe('RubiPanelComponent', () => {
     expect(answer.activityId).toBe('ACT-1');
   });
 
+  it('opens Support through the registered route without an embedded form (RUBI-18)', () => {
+    const navigateByUrl = spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'soporte', destination: 'soporte', route: '/soporte' });
+    expect(navigateByUrl).toHaveBeenCalledWith('/soporte');
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'soporte' });
+  });
+
+  it('labels the Support action using the existing translation and rejects an unlisted flow (RUBI-18)', () => {
+    expect(component.actionLabel({ type: 'start_flow', flow: 'soporte', destination: 'soporte' })).toBe('Abrir Soporte');
+    api.message.and.returnValue(of({
+      message: 'Puedo abrir Soporte.', intent: 'start_soporte',
+      actions: [{ type: 'start_flow', flow: 'soporte', destination: 'soporte', route: '/soporte' }],
+      conversation: { intent: 'start_soporte', tool: 'start_soporte' },
+      errors: [], metadata: { success: true }
+    }));
+    component.send('Quiero abrir una incidencia');
+    const answer = component.messages[component.messages.length - 1];
+    expect(answer.actions?.length).toBe(1);
+  });
+
   it('sends only abstract documentacion preparation state to the screen context', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'documentacion' });

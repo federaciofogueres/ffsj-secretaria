@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.0#RUBI — EN DESARROLLO
+
+### Añadido — Soporte inteligente (RUBI-18)
+
+- Rubi puede orientar sobre un problema y, cuando el usuario lo pide explícitamente, abrir Soporte para crear la incidencia con el formulario real (categoría, asunto, descripción y adjuntos); nunca crea la incidencia, sube adjuntos ni confirma desde el chat.
+- Nueva capability `soporte.start` sin permiso asociado (crear una incidencia solo exige sesión autenticada en el sistema real) y tool cerrada `start_soporte` que solo navega a `/soporte`.
+- Soporte se integra en la clasificación única de dominios de Rubi; una mención de otro dominio dentro de una frase de problema ("me da un error al inscribirme") se trata como contexto, no como petición de actuar sobre ese dominio.
+- El texto de un turno de soporte se abstrae del historial antes de cualquier llamada posterior al proveedor, igual que el resto de dominios sensibles.
+- Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Contrato y pruebas
+
+- 129 pruebas de frontend y build `development` correctos.
+
 ## 1.3.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-17 — Actividades, calendario e inscripciones asistidas: implementado y validado técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.

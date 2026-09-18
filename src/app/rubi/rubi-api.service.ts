@@ -23,7 +23,7 @@ export interface RubiConversationState {
 }
 export type RubiAction =
   | { type: 'navigate'; destination: string; route?: string }
-  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion'; destination?: string; route?: string; inscriptionId?: string; label?: string };
+  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte'; destination?: string; route?: string; inscriptionId?: string; label?: string };
 
 export interface RubiResponse {
   message: string;
@@ -37,7 +37,7 @@ export interface RubiResponse {
 
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export interface AltaPreparacion {

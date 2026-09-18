@@ -186,6 +186,11 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       this.api.trackEvent({ event: 'flow_started', stage: action.flow }).subscribe({ error: () => {} });
       return;
     }
+    if (action.type === 'start_flow' && action.flow === 'soporte') {
+      this.api.trackEvent({ event: 'flow_started', stage: 'soporte' }).subscribe({ error: () => {} });
+      this.router.navigateByUrl(SAFE_DESTINATIONS.soporte).then(() => this.close());
+      return;
+    }
     if (action.type !== 'navigate') return;
     const destination = action.destination;
     const route = SAFE_DESTINATIONS[destination];
@@ -358,7 +363,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   private isSafeAction(action: RubiAction): boolean {
     return (action.type === 'navigate' && typeof action.destination === 'string' && !!SAFE_DESTINATIONS[action.destination])
       || (action.type === 'start_flow' && (action.flow === 'alta' || action.flow === 'modificacion' || action.flow === 'baja'
-        || action.flow === 'documentacion' || action.flow === 'comunicacion'
+        || action.flow === 'documentacion' || action.flow === 'comunicacion' || action.flow === 'soporte'
         || (action.flow === 'inscripcion' && typeof action.inscriptionId === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(action.inscriptionId))));
   }
 }
