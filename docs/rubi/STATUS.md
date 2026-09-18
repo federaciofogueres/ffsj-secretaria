@@ -6,6 +6,7 @@
 
 - Rama de frontend y API: `1.5.0#RUBI` (abierta desde el `develop` que contiene el cierre técnico de `1.4.0#RUBI`/RUBI-18/RUBI-19).
 - Estado de la versión: **EN DESARROLLO**. `1.5.0#RUBI` no está cerrada ni mergeada.
+- Hito en curso: **RUBI-20 — Rubi para Federación / Administración — EN DESARROLLO**.
 - `1.4.0#RUBI` está CERRADA TÉCNICAMENTE y mergeada a `develop`.
 - Hito **RUBI-18 — Soporte inteligente — implementado y validado técnicamente**. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
 - Hito **RUBI-19 — Comunicaciones y envíos asistidos — implementado y validado técnicamente**. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
