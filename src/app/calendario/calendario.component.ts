@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
@@ -11,6 +11,7 @@ import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 interface CalendarDay {
   date: Date;
@@ -27,7 +28,7 @@ type CalendarTab = 'calendario' | 'crear' | 'propuestas';
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })
-export class CalendarioComponent implements OnInit {
+export class CalendarioComponent implements OnInit, OnDestroy {
   actividades: ActividadSecretaria[] = [];
   inscripciones: InscripcionSecretaria[] = [];
   days: CalendarDay[] = [];
@@ -96,16 +97,29 @@ export class CalendarioComponent implements OnInit {
 
   private monthCursor = new Date();
 
+  private updateRubiContext(): void {
+    this.rubiScreenContext.set({
+      version: 1,
+      module: 'calendario',
+      view: 'calendario',
+      ...(this.selected ? { state: { selectedActivityId: String(this.selected.id) } } : {})
+    });
+  }
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly secretariaService: SecretariaService,
     private readonly adminAccess: AdminAccessService,
-    readonly permissions: PermissionsService
+    readonly permissions: PermissionsService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
+    this.updateRubiContext();
     this.cargar();
   }
+
+  ngOnDestroy(): void { this.rubiScreenContext.clear('calendario'); }
 
   get monthLabel(): string {
     return this.monthCursor.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
@@ -168,6 +182,7 @@ export class CalendarioComponent implements OnInit {
     }
     const hydrated = this.actividades.find(item => item.id === actividad.id) || actividad;
     this.selected = hydrated;
+    this.updateRubiContext();
     this.showActividadGestion = false;
     this.showInscripcionesGestion = false;
     this.error = '';
@@ -189,6 +204,7 @@ export class CalendarioComponent implements OnInit {
   selectDay(day: CalendarDay): void {
     this.selectedDate = day.date;
     this.selected = null;
+    this.updateRubiContext();
     this.showDayDialog = true;
   }
 
@@ -535,6 +551,7 @@ export class CalendarioComponent implements OnInit {
         if (estado === 'cancelada') {
           this.actividades = this.actividades.filter(item => item.id !== actividad.id);
           this.selected = null;
+          this.updateRubiContext();
           this.success = 'Actividad archivada correctamente.';
           this.buildCalendar();
           this.loading = false;
@@ -565,6 +582,7 @@ export class CalendarioComponent implements OnInit {
       next: () => {
         this.actividades = this.actividades.filter(item => item.id !== deletedId);
         this.selected = null;
+        this.updateRubiContext();
         this.success = 'Actividad borrada definitivamente.';
         this.buildCalendar();
         this.loading = false;
@@ -661,6 +679,7 @@ export class CalendarioComponent implements OnInit {
           this.select(created);
         } else {
           this.selected = null;
+          this.updateRubiContext();
         }
         this.success = 'Actividad creada correctamente.';
         this.actividadForm.reset({ responsable: 'Secretaria' });
@@ -684,6 +703,7 @@ export class CalendarioComponent implements OnInit {
       next: response => {
         this.actividades = response.actividades;
         this.selected = null;
+        this.updateRubiContext();
         this.cargarInscripciones();
       },
       error: () => {

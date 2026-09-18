@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.3.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-17 — Actividades, calendario e inscripciones asistidas: implementado y validado técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Añadido — Actividades, calendario e inscripciones asistidas (RUBI-17)
+
+- El panel admite selecciones estructuradas de actividad devueltas por Rubi y abre exclusivamente la ruta registrada del formulario real `/inscripciones/:id`.
+- Se conserva el referente allowlisted de actividad/formulario desde la pantalla y la conversación para seguimientos, sin participantes, respuestas ni adjuntos.
+- El calendario publica el contexto de la actividad seleccionada; el formulario dinámico, sus validaciones y su confirmación humana siguen siendo los existentes.
+- Cobertura frontend del action de inscripción, filtrado de identificadores inseguros y etiquetas estructuradas ES/VA/EN.
+
+### Contrato y pruebas
+
+- 127 pruebas de frontend y build `development` correctos; evaluación Rubi con provider mock validada en la API (104/104 casos ES/VA/EN).
+
 ## 1.2.0#RUBI — CERRADA
 
 > RUBI-16 — Registro General y documentación asistidos: completado y validado funcionalmente por el usuario.

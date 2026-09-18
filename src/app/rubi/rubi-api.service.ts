@@ -10,19 +10,20 @@ export type RubiRouteKey = 'home' | 'personas' | 'alta' | 'registro' | 'inscripc
 export type RubiModule = 'home' | 'asociados' | 'registro' | 'inscripciones' | 'soporte' | 'calendario' | 'solicitudes';
 export interface RubiHistoryEntry {
   role: 'user' | 'assistant'; text: string; intent?: string; tool?: string;
-  destination?: string; topic?: string; module?: RubiModule;
+  destination?: string; topic?: string; module?: RubiModule; activityId?: string; inscriptionId?: string;
 }
 export interface RubiScreenContext {
   version: 1; module: RubiModule; view?: string; tab?: string;
-  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; hasOpenDocumentacion?: boolean; hasOpenComunicacion?: boolean; missingRequiredFields?: string[] };
+  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; hasOpenDocumentacion?: boolean; hasOpenComunicacion?: boolean; missingRequiredFields?: string[]; selectedActivityId?: string; selectedInscriptionId?: string };
 }
 export interface RubiConversationState {
   intent: string; tool: string; destination?: string; topic?: string; module?: RubiModule;
   sensitiveFlow?: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion';
+  activityId?: string; inscriptionId?: string;
 }
 export type RubiAction =
   | { type: 'navigate'; destination: string; route?: string }
-  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion'; destination?: string; route?: string };
+  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion'; destination?: string; route?: string; inscriptionId?: string; label?: string };
 
 export interface RubiResponse {
   message: string;
@@ -36,7 +37,7 @@ export interface RubiResponse {
 
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export interface AltaPreparacion {

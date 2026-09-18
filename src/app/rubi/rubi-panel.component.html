@@ -36,7 +36,7 @@
         <span class="rubi-message-author">{{ (item.author === 'user' ? 'rubi.you' : item.author === 'system' ? 'rubi.status' : 'rubi.name') | t }}</span>
         <p>{{ item.text }}</p>
         <div *ngIf="item.actions?.length" class="rubi-actions">
-          <button *ngFor="let action of item.actions" type="button" [disabled]="loading" (click)="executeAction(action)">{{ ('rubi.action.' + (action.destination || action.flow)) | t }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+          <button *ngFor="let action of item.actions" type="button" [disabled]="loading" (click)="executeAction(action)">{{ actionLabel(action) }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
         </div>
         <div *ngIf="item.author === 'rubi' && (item.intent || item.tool)" class="rubi-feedback" [attr.aria-label]="'rubi.feedback.question' | t">
           <span *ngIf="!item.feedback">{{ 'rubi.feedback.question' | t }}</span>

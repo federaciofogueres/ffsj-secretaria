@@ -152,6 +152,11 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   }
 
   executeAction(action: RubiAction): void {
+    if (action.type === 'start_flow' && action.flow === 'inscripcion' && action.inscriptionId) {
+      this.api.trackEvent({ event: 'flow_started', stage: 'inscripcion' }).subscribe({ error: () => {} });
+      this.router.navigate(['/inscripciones', action.inscriptionId]).then(() => this.close());
+      return;
+    }
     if (action.type === 'start_flow' && action.flow === 'alta') {
       this.conversation.excludeLastUserFromHistory();
       this.altaActive = true;
@@ -187,6 +192,11 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     if (!route) return;
     this.api.trackEvent({ event: 'navigation', stage: 'conversation', destination }).subscribe({ error: () => {} });
     this.router.navigateByUrl(route).then(() => this.close());
+  }
+
+  actionLabel(action: RubiAction): string {
+    if (action.type === 'start_flow' && action.flow === 'inscripcion' && action.label) return action.label;
+    return this.i18n.t(`rubi.action.${action.destination || (action.type === 'start_flow' ? action.flow : '')}`);
   }
 
   onAltaClosed(reason: 'cancelled' | 'expired'): void {
@@ -286,7 +296,9 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       actions: response.actions.filter(action => this.isSafeAction(action)), tool: response.tool?.name,
       destination: response.conversation?.destination,
       topic: response.conversation?.topic,
-      module: response.conversation?.module
+      module: response.conversation?.module,
+      activityId: response.conversation?.activityId,
+      inscriptionId: response.conversation?.inscriptionId
     });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
@@ -331,9 +343,12 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       : this.bajaActive ? { hasOpenBaja: this.bajaPrepared }
       : this.registroActive && this.registroTipo === 'documentacion' ? { hasOpenDocumentacion: this.registroPrepared }
       : this.registroActive && this.registroTipo === 'comunicacion' ? { hasOpenComunicacion: this.registroPrepared } : undefined;
-    if (current?.module === module) return { ...current, ...(state ? { state: { ...(current.state || {}), ...state } } : {}) };
+    const path = this.router.url.split(/[?#]/, 1)[0];
+    const inscriptionMatch = routeKey === 'inscripciones' ? path.match(/^\/inscripciones\/([A-Za-z0-9._:-]{1,128})$/) : null;
+    const routeState = inscriptionMatch ? { selectedInscriptionId: inscriptionMatch[1] } : undefined;
+    if (current?.module === module) return { ...current, ...((state || routeState) ? { state: { ...(current.state || {}), ...(routeState || {}), ...(state || {}) } } : {}) };
     return { version: 1, module, view: routeKey === 'alta' ? 'gestion' : routeKey === 'home' ? 'inicio' : routeKey,
-      ...(state ? { state } : {}) };
+      ...((state || routeState) ? { state: { ...(routeState || {}), ...(state || {}) } } : {}) };
   }
 
   private isValidResponse(response: RubiResponse): boolean {
@@ -343,6 +358,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   private isSafeAction(action: RubiAction): boolean {
     return (action.type === 'navigate' && typeof action.destination === 'string' && !!SAFE_DESTINATIONS[action.destination])
       || (action.type === 'start_flow' && (action.flow === 'alta' || action.flow === 'modificacion' || action.flow === 'baja'
-        || action.flow === 'documentacion' || action.flow === 'comunicacion'));
+        || action.flow === 'documentacion' || action.flow === 'comunicacion'
+        || (action.flow === 'inscripcion' && typeof action.inscriptionId === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(action.inscriptionId))));
   }
 }
