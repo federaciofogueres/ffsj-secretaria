@@ -25,6 +25,7 @@ const SAFE_DESTINATIONS: Record<string, string> = {
   personas: '/asociados', registro: '/registro', inscripciones: '/inscripciones',
   soporte: '/soporte', calendario: '/calendario', solicitudes: '/solicitudes', alta: '/asociados/gestion'
 };
+const COMUNICACIONES_BANDEJAS = new Set(['nuevas', 'recibidas', 'enviadas', 'contestadas']);
 
 @Component({
   selector: 'app-rubi-panel',
@@ -189,6 +190,12 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     if (action.type === 'start_flow' && action.flow === 'soporte') {
       this.api.trackEvent({ event: 'flow_started', stage: 'soporte' }).subscribe({ error: () => {} });
       this.router.navigateByUrl(SAFE_DESTINATIONS.soporte).then(() => this.close());
+      return;
+    }
+    if (action.type === 'start_flow' && action.flow === 'comunicaciones') {
+      this.api.trackEvent({ event: 'flow_started', stage: 'comunicaciones' }).subscribe({ error: () => {} });
+      const queryParams = action.bandeja && COMUNICACIONES_BANDEJAS.has(action.bandeja) ? { bandeja: action.bandeja } : {};
+      this.router.navigate(['/registro/comunicacion'], { queryParams }).then(() => this.close());
       return;
     }
     if (action.type !== 'navigate') return;
@@ -364,6 +371,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     return (action.type === 'navigate' && typeof action.destination === 'string' && !!SAFE_DESTINATIONS[action.destination])
       || (action.type === 'start_flow' && (action.flow === 'alta' || action.flow === 'modificacion' || action.flow === 'baja'
         || action.flow === 'documentacion' || action.flow === 'comunicacion' || action.flow === 'soporte'
+        || (action.flow === 'comunicaciones' && (action.bandeja === undefined || COMUNICACIONES_BANDEJAS.has(action.bandeja)))
         || (action.flow === 'inscripcion' && typeof action.inscriptionId === 'string' && /^[A-Za-z0-9._:-]{1,128}$/.test(action.inscriptionId))));
   }
 }

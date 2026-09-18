@@ -195,6 +195,32 @@ describe('RubiPanelComponent', () => {
     expect(answer.actions?.length).toBe(1);
   });
 
+  it('opens the real communications inbox with an allowlisted bandeja filter (RUBI-19)', () => {
+    const navigate = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'comunicaciones', destination: 'registro', route: '/registro/comunicacion', bandeja: 'nuevas' });
+    expect(navigate).toHaveBeenCalledWith(['/registro/comunicacion'], { queryParams: { bandeja: 'nuevas' } });
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'comunicaciones' });
+  });
+
+  it('ignores an unlisted bandeja value and still opens the inbox unfiltered (RUBI-19)', () => {
+    const navigate = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'comunicaciones', destination: 'registro', bandeja: 'archivadas-secretas' as any });
+    expect(navigate).toHaveBeenCalledWith(['/registro/comunicacion'], { queryParams: {} });
+  });
+
+  it('renders a live communications summary distinct from sending a new one (RUBI-19)', () => {
+    api.message.and.returnValue(of({
+      message: 'Tienes 1 comunicación nueva.', intent: 'comunicaciones_info',
+      actions: [{ type: 'start_flow', flow: 'comunicaciones', destination: 'registro', route: '/registro/comunicacion', bandeja: 'nuevas' }],
+      conversation: { intent: 'comunicaciones_info', tool: 'get_comunicaciones', topic: 'comunicaciones_consulta', module: 'registro', destination: 'registro' },
+      errors: [], metadata: { success: true }
+    }));
+    component.send('¿Tengo comunicaciones nuevas?');
+    const answer = component.messages[component.messages.length - 1];
+    expect(answer.actions?.length).toBe(1);
+    expect(answer.topic).toBe('comunicaciones_consulta');
+  });
+
   it('sends only abstract documentacion preparation state to the screen context', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'documentacion' });

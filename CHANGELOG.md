@@ -14,6 +14,16 @@
 
 - 129 pruebas de frontend y build `development` correctos.
 
+### Añadido — Comunicaciones y envíos asistidos (RUBI-19)
+
+- Rubi puede consultar las comunicaciones reales recibidas de la Federación (cuántas hay, cuáles son nuevas, quién las envía) y abrir la bandeja real de Registro → Comunicación, reutilizando el filtro `bandeja` (nuevas/recibidas/enviadas/contestadas) que el componente ya soportaba.
+- No se confunde con RUBI-16 (enviar una comunicación nueva): el plural "comunicaciones" (consultar) tiene prioridad sobre el singular "una comunicación" con verbo de envío (crear).
+- Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Contrato y pruebas
+
+- 132 pruebas de frontend y build `development` correctos.
+
 ## 1.3.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-17 — Actividades, calendario e inscripciones asistidas: implementado y validado técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
