@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.8.0#RUBI — EN DESARROLLO
+
+> RUBI-23 — Release Candidate / Preparación de piloto: implementado y validado técnicamente. Feature freeze, sin funcionalidades nuevas. Sin deploy, sin piloto activado, validación funcional manual pendiente.
+
+### Release Candidate — RUBI-23
+
+- Nuevos documentos operativos: `docs/rubi/PILOT.md` (runbook), `docs/rubi/DEPLOY_CHECKLIST.md`, `docs/rubi/SMOKE_TEST.md` (10-20 min), `docs/rubi/REGRESSION_PLAN.md` (RUBI-01 → RUBI-22 por dominio), `docs/rubi/ROLLBACK.md`.
+- Matriz de acceso del piloto probada exhaustivamente (32 combinaciones asociación + 32 Federación): autorizado solo si todas las capas lo permiten; modo piloto con allowlist vacía nunca autoriza a nadie.
+- Los 4 niveles de kill switch (tool concreta, transacciones, provider real, Rubi completo) demostrados con test dedicado; independientes entre sí.
+- Migraciones `055` → `061` reauditadas: orden, idempotencia, defaults seguros. Ninguna nueva necesaria.
+- Reanálisis de las 32 vulnerabilidades de dependencias pendientes del frontend, sin aceptar la conclusión previa sin verificar el uso real del código: jsPDF y xlsx clasificadas ACCEPTED RISK (uso real no activa las APIs vulnerables, verificado); Angular core ACCEPTED RISK para un piloto en grupo controlado, DEBT bloqueante antes de una release pública más amplia. Ningún BLOCKER de seguridad pendiente para el piloto.
+- Revisión final de privacidad/retención, observabilidad real disponible, control de costes, UX e i18n: sin cambios de comportamiento, solo documentación y verificación.
+
 ## 1.7.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-22 — Hardening integral: implementado y validado técnicamente. No añade funcionalidades. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-21).
