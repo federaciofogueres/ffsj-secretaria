@@ -18,6 +18,7 @@ El flujo real es:
 ## Invariantes
 
 - El backend es la fuente de verdad para identidad, asociación, ejercicio, permisos, scopes, capabilities, reglas y resultados.
+- Todo endpoint de Rubi rechaza explícitamente cualquier parámetro de entrada no reconocido (body o query), nunca lo ignora en silencio; un parámetro inesperado es un error (`RUBI_UNEXPECTED_PARAMETER`), no un dato descartado. Cada endpoint nuevo debe declarar su propio allowlist cerrado de claves permitidas, igual que ya hace `/asistente/mensaje` (RUBI-22, tras encontrar y corregir una excepción en `/asistente/sugerencias`).
 - El LLM no accede directamente a las bases de datos de Secretaría ni de Censo.
 - La IA no genera ni ejecuta SQL, endpoints arbitrarios o rutas no registradas.
 - Permisos, scope de asociación y capabilities se calculan en backend a partir de la sesión autenticada.
