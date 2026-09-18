@@ -36,6 +36,12 @@
       <div class="rubi-suggestions" [attr.aria-label]="'rubi.quickActions' | t">
         <button *ngFor="let key of welcomeSuggestions" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}<i class="bi bi-arrow-up-right" aria-hidden="true"></i></button>
       </div>
+      <ul *ngIf="insights.length" class="rubi-insights" [attr.aria-label]="'rubi.insights.title' | t">
+        <li *ngFor="let insight of insights" class="rubi-insight" [class.rubi-insight--urgent]="insight.priority === 'accion_requerida'">
+          <span>{{ insightLabel(insight) }}</span>
+          <button type="button" [disabled]="loading" (click)="openInsight(insight)">{{ 'rubi.insights.open' | t }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
+        </li>
+      </ul>
     </section>
 
     <article *ngFor="let item of messages" class="rubi-message" [class.rubi-user]="item.author === 'user'" [class.rubi-system]="item.author === 'system'" [class.rubi-message--initial]="isInitialState && item.author === 'rubi'">

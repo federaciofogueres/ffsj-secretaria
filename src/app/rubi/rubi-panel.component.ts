@@ -7,7 +7,7 @@ import { Subscription } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { RubiAction, RubiApiService, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
+import { RubiAction, RubiApiService, RubiInsight, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
 import { RubiAltaComponent } from './rubi-alta.component';
 import { RubiModificacionComponent } from './rubi-modificacion.component';
 import { RubiBajaComponent } from './rubi-baja.component';
@@ -58,6 +58,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   targetAssociationId: number | null = null;
   federationAssociations: Asociacion[] = [];
   federationAssociationsLoading = false;
+  insights: RubiInsight[] = [];
+  insightsLoading = false;
   readonly welcomeSuggestions = ['rubi.quick.alta', 'rubi.quick.registro', 'rubi.quick.calendario', 'rubi.quick.help'];
   readonly quickActions = ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support'];
   private opener: HTMLElement | null = null;
@@ -125,6 +127,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       this.targetAssociationId = null;
     }
     this.addWelcomeIfNeeded();
+    this.loadInsights();
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
 
@@ -136,14 +139,47 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     });
   }
 
+  // RUBI-21: nunca bloquea el panel si falla; es una mejora, no una
+  // dependencia critica (Fase 23). No usa el chat ni el provider.
+  private loadInsights(): void {
+    this.insightsLoading = true;
+    this.api.getSuggestions(this.targetAssociationId).subscribe({
+      next: response => { this.insights = response.insights.filter(item => this.isSafeAction(item.action)); this.insightsLoading = false; },
+      error: () => { this.insights = []; this.insightsLoading = false; }
+    });
+  }
+
+  insightLabel(insight: RubiInsight): string {
+    const params = { count: insight.count ?? 0, days: insight.daysRemaining ?? 0, title: insight.title ?? '' };
+    if (insight.domain === 'actividades') {
+      const key = insight.daysRemaining === 0 ? 'rubi.insight.actividades.hoy' : insight.daysRemaining === 1 ? 'rubi.insight.actividades.manana' : 'rubi.insight.actividades.dias';
+      return this.i18n.t(key, params);
+    }
+    if (insight.domain === 'comunicaciones') {
+      return this.i18n.t((insight.count ?? 0) === 1 ? 'rubi.insight.comunicaciones.una' : 'rubi.insight.comunicaciones.varias', params);
+    }
+    if (insight.id === 'admin-solicitudes-pendientes') return this.i18n.t('rubi.insight.solicitudes.admin', params);
+    if (insight.id === 'autorizaciones-alta') return this.i18n.t('rubi.insight.solicitudes.autorizaciones', params);
+    return this.i18n.t('rubi.insight.solicitudes.incidencia', params);
+  }
+
+  openInsight(insight: RubiInsight): void {
+    // executeAction ya emite su propio evento de telemetria segun el tipo de
+    // accion (navegacion o flujo estructurado); no se duplica aqui.
+    this.executeAction(insight.action);
+  }
+
   // Cambiar de asociacion objetivo limpia la conversacion: ningun referente de la
   // asociacion anterior (actividad, inscripcion, comunicacion) debe sobrevivir al
-  // cambio de contexto (RUBI-20, aislamiento A/B).
+  // cambio de contexto (RUBI-20, aislamiento A/B). Las sugerencias tambien se
+  // recalculan por completo, nunca se conservan las de la asociacion anterior.
   onTargetAssociationChange(value: number | null): void {
     const id = Number(value);
     this.targetAssociationId = Number.isInteger(id) && id > 0 ? id : null;
     this.conversation.clear();
+    this.insights = [];
     this.addWelcomeIfNeeded();
+    this.loadInsights();
   }
 
   close(): void {

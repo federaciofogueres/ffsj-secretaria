@@ -18,10 +18,11 @@ describe('RubiPanelComponent', () => {
   let router: Router;
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj<RubiApiService>('RubiApiService', ['access', 'message', 'startSession', 'resetSession', 'trackEvent', 'feedback']);
+    api = jasmine.createSpyObj<RubiApiService>('RubiApiService', ['access', 'message', 'startSession', 'resetSession', 'trackEvent', 'feedback', 'getSuggestions']);
     api.access.and.returnValue(of({ enabled: true, authorized: true }));
     api.trackEvent.and.returnValue(of({ accepted: true }));
     api.feedback.and.returnValue(of({ accepted: true }));
+    api.getSuggestions.and.returnValue(of({ insights: [], errors: [], metadata: { success: true } }));
     censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociaciones'], { asociacionId: 12 });
     censoService.getAsociaciones.and.returnValue(of([]));
     await TestBed.configureTestingModule({
@@ -342,5 +343,61 @@ describe('RubiPanelComponent', () => {
     federationComponent.onTargetAssociationChange(40);
     expect(federationComponent.targetAssociationId).toBe(40);
     expect(federationComponent.messages.some(item => item.text.includes('asociación 25'))).toBeFalse();
+  });
+
+  it('RUBI-21 loads suggestions when the panel opens and renders none when there are none', () => {
+    component.show();
+    expect(api.getSuggestions).toHaveBeenCalledWith(null);
+    fixture.detectChanges();
+    expect(component.insights).toEqual([]);
+    expect(fixture.nativeElement.querySelector('.rubi-insights')).toBeNull();
+  });
+
+  it('RUBI-21 renders a suggestion and its localized sentence, sorted as returned by the backend', () => {
+    const insights = [
+      { id: 'comunicaciones-nuevas', domain: 'comunicaciones' as const, priority: 'novedad' as const, count: 2, deadline: null, daysRemaining: null, title: null, action: { type: 'start_flow' as const, flow: 'comunicaciones' as const, destination: 'registro', route: '/registro/comunicacion', bandeja: 'nuevas' as const } },
+      { id: 'plazo-INS-1', domain: 'actividades' as const, priority: 'plazo_proximo' as const, count: null, deadline: '2026-09-19', daysRemaining: 1, title: 'Fogueres', action: { type: 'start_flow' as const, flow: 'inscripcion' as const, destination: 'inscripciones', inscriptionId: 'INS-1', label: 'Fogueres' } }
+    ];
+    api.getSuggestions.and.returnValue(of({ insights, errors: [], metadata: { success: true } }));
+    component.show();
+    fixture.detectChanges();
+    expect(component.insights.length).toBe(2);
+    expect(component.insightLabel(insights[0])).toContain('2 comunicaciones');
+    expect(component.insightLabel(insights[1])).toContain('mañana');
+    const rendered = fixture.nativeElement.querySelectorAll('.rubi-insight');
+    expect(rendered.length).toBe(2);
+  });
+
+  it('RUBI-21 opening a suggestion reuses executeAction and never calls a confirm/write endpoint', () => {
+    const navigate = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    const insight = { id: 'plazo-INS-1', domain: 'actividades' as const, priority: 'plazo_proximo' as const, count: null, deadline: '2026-09-19', daysRemaining: 1, title: 'Fogueres', action: { type: 'start_flow' as const, flow: 'inscripcion' as const, destination: 'inscripciones', inscriptionId: 'INS-1', label: 'Fogueres' } };
+    component.openInsight(insight);
+    expect(navigate).toHaveBeenCalledWith(['/inscripciones', 'INS-1']);
+  });
+
+  it('RUBI-21 an unsafe action returned by the backend is filtered out defensively', () => {
+    const unsafe = { id: 'bad', domain: 'actividades' as const, priority: 'plazo_proximo' as const, count: null, deadline: null, daysRemaining: 1, title: 'x', action: { type: 'start_flow' as const, flow: 'inscripcion' as const, destination: 'inscripciones', inscriptionId: '../etc/passwd', label: 'x' } };
+    api.getSuggestions.and.returnValue(of({ insights: [unsafe], errors: [], metadata: { success: true } }));
+    component.show();
+    expect(component.insights).toEqual([]);
+  });
+
+  it('RUBI-21 a failed suggestions request never breaks the panel: it just shows no suggestions', () => {
+    api.getSuggestions.and.returnValue(throwError(() => new HttpErrorResponse({ status: 500 })));
+    component.show();
+    expect(component.open).toBeTrue();
+    expect(component.insights).toEqual([]);
+  });
+
+  it('RUBI-21 changing the target association recalculates suggestions from scratch with the new target', () => {
+    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    const federationComponent = federationFixture.componentInstance;
+    federationComponent.insights = [{ id: 'stale', domain: 'comunicaciones', priority: 'novedad', count: 1, deadline: null, daysRemaining: null, title: null, action: { type: 'navigate', destination: 'registro' } }];
+    api.getSuggestions.calls.reset();
+    federationComponent.onTargetAssociationChange(25);
+    expect(federationComponent.insights).toEqual([]);
+    expect(api.getSuggestions).toHaveBeenCalledWith(25);
   });
 });
