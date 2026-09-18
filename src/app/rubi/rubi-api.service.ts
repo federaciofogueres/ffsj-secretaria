@@ -14,15 +14,15 @@ export interface RubiHistoryEntry {
 }
 export interface RubiScreenContext {
   version: 1; module: RubiModule; view?: string; tab?: string;
-  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; missingRequiredFields?: string[] };
+  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; hasOpenDocumentacion?: boolean; hasOpenComunicacion?: boolean; missingRequiredFields?: string[] };
 }
 export interface RubiConversationState {
   intent: string; tool: string; destination?: string; topic?: string; module?: RubiModule;
-  sensitiveFlow?: 'alta' | 'modificacion' | 'baja';
+  sensitiveFlow?: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion';
 }
 export type RubiAction =
   | { type: 'navigate'; destination: string; route?: string }
-  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja'; destination?: string; route?: string };
+  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion'; destination?: string; route?: string };
 
 export interface RubiResponse {
   message: string;
@@ -36,7 +36,7 @@ export interface RubiResponse {
 
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export interface AltaPreparacion {
@@ -109,6 +109,26 @@ export interface BajaPreparacion {
 export interface BajaConfirmacionResultado {
   solicitudId: number; numero?: string | null; estado?: string | null; tipo?: 'baja';
   asociacionId?: number; ejercicio?: number; siguientePaso?: 'firma_solicitud'; idempotentReplay: boolean;
+}
+
+export interface RegistroAsistidoAdjuntoMetadato { fileName: string; mimeType: string; size: number }
+
+export interface RegistroAsistidoPreparacion {
+  estado: 'preparada';
+  asociacionId: number;
+  tipo: 'documentacion' | 'comunicacion';
+  destinatario: { id: number; nombre: string; departamentoNombre: string | null };
+  titulo: string;
+  mensaje: string;
+  adjuntos: RegistroAsistidoAdjuntoMetadato[];
+  siguientePaso: 'confirmar';
+  efectos: { creaRegistro: boolean; escribeEnCenso: false; requiereFirma: boolean; circuito: string };
+  confirmacion?: { referencia: string; expiraAt: string; confirmacionHumanaHabilitada: boolean };
+}
+
+export interface RegistroAsistidoResultado {
+  registroId: number; numero: string; tipo: 'documentacion' | 'comunicacion'; estado: string;
+  fechaEntrada: string; adjuntosPendientes?: RegistroAsistidoAdjuntoMetadato[]; idempotentReplay: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -214,6 +234,25 @@ export class RubiApiService {
 
   confirmarBaja(confirmacion: string): Observable<BajaConfirmacionResultado> {
     return this.http.post<BajaConfirmacionResultado>(`${this.apiUrl.secretariaBasePath}/bajas/confirmar`, {
+      confirmacion, confirmar: true
+    }, { headers: this.authHeaders() }).pipe(timeout(20000));
+  }
+
+  prepararRegistro(tipo: 'documentacion' | 'comunicacion', destinatarioId: number, titulo: string, mensaje: string, adjuntos: RegistroAsistidoAdjuntoMetadato[] = []): Observable<RegistroAsistidoPreparacion> {
+    this.startSession();
+    return this.http.post<RegistroAsistidoPreparacion>(`${this.apiUrl.secretariaBasePath}/registro-asistido/preparar`, {
+      tipo, destinatarioId, titulo, mensaje, adjuntos
+    }, { headers: this.authHeaders() }).pipe(timeout(15000));
+  }
+
+  cancelarPreparacionRegistro(confirmacion: string): Observable<{ cancelada: boolean }> {
+    return this.http.post<{ cancelada: boolean }>(`${this.apiUrl.secretariaBasePath}/registro-asistido/preparacion/cancelar`, {
+      confirmacion
+    }, { headers: this.authHeaders() }).pipe(timeout(10000));
+  }
+
+  confirmarRegistro(confirmacion: string): Observable<RegistroAsistidoResultado> {
+    return this.http.post<RegistroAsistidoResultado>(`${this.apiUrl.secretariaBasePath}/registro-asistido/confirmar`, {
       confirmacion, confirmar: true
     }, { headers: this.authHeaders() }).pipe(timeout(20000));
   }

@@ -1,0 +1,58 @@
+<section class="rubi-alta rubi-registro" aria-labelledby="rubi-registro-title">
+  <header class="rubi-alta-header"><div><p class="rubi-alta-kicker">{{ (tipo === 'documentacion' ? 'rubi.registro.doc.guided' : 'rubi.registro.comm.guided') | t }}</p><h3 id="rubi-registro-title">{{ (tipo === 'documentacion' ? 'rubi.registro.doc.title' : 'rubi.registro.comm.title') | t }}</h3><p>{{ 'rubi.registro.privacy' | t }}</p></div><i class="bi" [class.bi-file-earmark-text]="tipo === 'documentacion'" [class.bi-chat-left-text]="tipo === 'comunicacion'" aria-hidden="true"></i></header>
+  <ol class="rubi-alta-progress"><li [class.is-active]="!form.value.destinatarioId"><span>1</span>{{ 'rubi.registro.step.destinatario' | t }}</li><li [class.is-active]="!!form.value.destinatarioId && !prepared && !confirmed" [class.is-complete]="!!prepared || !!confirmed"><span>2</span>{{ 'rubi.registro.step.details' | t }}</li><li [class.is-active]="!!prepared" [class.is-complete]="!!confirmed"><span>3</span>{{ 'rubi.registro.step.review' | t }}</li></ol>
+  <p *ngIf="loading" class="rubi-alta-status" role="status"><span class="spinner-border spinner-border-sm"></span>{{ 'common.loading' | t }}</p>
+  <p *ngIf="errorKey" class="rubi-alta-error" role="alert">{{ errorKey | t }}</p>
+  <p *ngIf="exerciseBlocked" class="rubi-alta-error" role="alert">{{ 'rubi.registro.error.exerciseInactive' | t }}</p>
+
+  <section *ngIf="confirmed as result" class="rubi-alta-state rubi-alta-success" role="status">
+    <span class="rubi-alta-state-icon"><i class="bi bi-check-lg"></i></span>
+    <div><p class="rubi-alta-state-kicker">{{ 'rubi.registro.registered.badge' | t }}</p><h4>{{ (tipo === 'documentacion' ? 'rubi.registro.doc.confirmed.title' : 'rubi.registro.comm.confirmed.title') | t }}</h4><p>{{ (tipo === 'documentacion' ? 'rubi.registro.doc.confirmed.description' : 'rubi.registro.comm.confirmed.description') | t }}</p></div>
+    <dl class="rubi-alta-result">
+      <div><dt>{{ 'rubi.registro.reference' | t }}</dt><dd>{{ result.numero }}</dd></div>
+      <div><dt>{{ 'rubi.registro.state' | t }}</dt><dd>{{ result.estado }}</dd></div>
+    </dl>
+    <p class="rubi-alta-boundary" *ngIf="uploading">{{ 'rubi.registro.uploading' | t }}</p>
+    <div class="rubi-alta-error" role="alert" *ngIf="pendingUploads.length && !uploading">
+      <p>{{ 'rubi.registro.uploadFailed' | t }}</p>
+      <button class="ux-btn" type="button" (click)="retryUploads()">{{ 'rubi.registro.retryUpload' | t }}</button>
+    </div>
+  </section>
+
+  <ng-container *ngIf="!confirmed">
+    <ng-container *ngIf="prepared as result; else editForm">
+      <section class="rubi-alta-state rubi-alta-prepared">
+        <div class="rubi-alta-prepared-head"><div><p class="rubi-alta-state-kicker">{{ 'rubi.registro.prepared.badge' | t }}</p><h4>{{ 'rubi.registro.prepared.title' | t }}</h4></div><span class="rubi-state-pill">{{ 'rubi.registro.prepared.pending' | t }}</span></div>
+        <p class="rubi-alta-stop">{{ 'rubi.registro.prepared.stop' | t }}</p>
+        <div class="rubi-baja-summary"><dl>
+          <div><dt>{{ 'rubi.registro.summary.destinatario' | t }}</dt><dd>{{ result.destinatario.nombre }}</dd></div>
+          <div><dt>{{ 'rubi.registro.summary.titulo' | t }}</dt><dd>{{ result.titulo }}</dd></div>
+          <div><dt>{{ 'rubi.registro.summary.mensaje' | t }}</dt><dd>{{ result.mensaje }}</dd></div>
+          <div><dt>{{ 'rubi.registro.summary.adjuntos' | t }}</dt><dd>{{ result.adjuntos.length }}</dd></div>
+        </dl></div>
+        <p class="rubi-alta-boundary">{{ 'rubi.registro.prepared.noEffects' | t }}</p>
+        <fieldset *ngIf="result.confirmacion?.confirmacionHumanaHabilitada" class="rubi-alta-confirmation">
+          <legend>{{ 'rubi.registro.confirm.title' | t }}</legend>
+          <p>{{ (tipo === 'documentacion' ? 'rubi.registro.doc.confirm.warning' : 'rubi.registro.comm.confirm.warning') | t }}</p>
+          <label class="rubi-alta-check"><input type="checkbox" [checked]="confirmationAccepted" (change)="confirmationAccepted = $any($event.target).checked" /><span>{{ 'rubi.registro.confirm.accept' | t }}</span></label>
+          <button class="rubi-alta-confirm-button" type="button" [disabled]="!confirmationAccepted || confirming" (click)="confirm()">{{ (confirming ? 'rubi.registro.confirming' : 'rubi.registro.confirm.action') | t }}</button>
+        </fieldset>
+        <div class="rubi-alta-buttons"><button class="rubi-alta-secondary" type="button" (click)="edit()">{{ 'rubi.registro.edit' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+      </section>
+    </ng-container>
+
+    <ng-template #editForm><form [formGroup]="form" (ngSubmit)="prepare()" novalidate>
+      <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>1</span><div><h4>{{ 'rubi.registro.destinatario.title' | t }}</h4><p>{{ 'rubi.registro.destinatario.help' | t }}</p></div></div>
+        <select formControlName="destinatarioId"><option [ngValue]="null">{{ 'rubi.registro.destinatario.placeholder' | t }}</option><option *ngFor="let item of destinatarios" [ngValue]="item.id">{{ item.departamentoNombre }} · {{ item.nombre }}</option></select>
+      </section>
+      <section class="rubi-alta-form-section"><div class="rubi-alta-section-heading"><span>2</span><div><h4>{{ 'rubi.registro.details.title' | t }}</h4><p>{{ (tipo === 'documentacion' ? 'rubi.registro.doc.details.help' : 'rubi.registro.comm.details.help') | t }}</p></div></div>
+        <label>{{ 'rubi.registro.field.titulo' | t }}</label><input type="text" formControlName="titulo" maxlength="255" />
+        <label>{{ 'rubi.registro.field.mensaje' | t }}</label><textarea formControlName="mensaje" rows="4"></textarea>
+        <app-adjuntos-selector [label]="(tipo === 'documentacion' ? 'rubi.registro.doc.adjuntos' : 'rubi.registro.comm.adjuntos') | t" [files]="adjuntos" (filesChange)="adjuntos = $event" accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.txt,.doc,.docx,.xls,.xlsx"></app-adjuntos-selector>
+        <p class="rubi-alta-error" *ngIf="requiereAdjunto && !adjuntos.length && submitted">{{ 'rubi.registro.doc.adjuntoRequerido' | t }}</p>
+      </section>
+      <p class="rubi-alta-boundary">{{ 'rubi.registro.boundary' | t }}</p>
+      <div class="rubi-alta-buttons"><button class="ux-btn" type="submit" [disabled]="loading || exerciseBlocked">{{ 'rubi.registro.prepare' | t }}</button><button class="rubi-alta-cancel" type="button" (click)="cancel()">{{ 'common.cancel' | t }}</button></div>
+    </form></ng-template>
+  </ng-container>
+</section>

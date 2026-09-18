@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.2.0#RUBI — CERRADA
+
+> RUBI-16 — Registro General y documentación asistidos: completado y validado funcionalmente por el usuario.
+
+### Añadido — Registro General y documentación asistidos (RUBI-16)
+
+- Nuevo componente `rubi-registro` (documentación y comunicación) que sigue el mismo patrón preparar → revisar → confirmar humano de alta/modificación/baja: selección de destinatario, título, mensaje, adjuntos, resumen y confirmación explícita.
+- Los adjuntos se seleccionan en el propio formulario (selector ya existente) y se suben aparte, tras confirmar, directamente contra el registro ya real y numerado; si alguno falla, el panel ofrece reintentar solo los pendientes sin perder ni duplicar el registro.
+- Documentación exige al menos un archivo adjunto; comunicación los admite como opcionales y respeta el aviso de ejercicio no activo que ya muestra el Registro real.
+- `RubiPanelComponent` reconoce las nuevas acciones `documentacion`/`comunicacion` iniciadas por Rubi, con su propio estado de preparación y contexto de pantalla abstraído (nunca título, mensaje ni nombres de archivo).
+- Traducciones ES/VA/EN para el nuevo flujo.
+
+### Contrato y pruebas
+
+- 125 pruebas en ChromeHeadless (12 nuevas) y build `development` correcto.
+
 ## 1.1.0#RUBI - 2026-09-17
 
 ### Añadido — Modificaciones asistidas (RUBI-14)
