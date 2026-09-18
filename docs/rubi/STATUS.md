@@ -4,6 +4,7 @@
 
 ## Versión y alcance
 
+- **`1.8.0#RUBI` — EN DESARROLLO** (rama abierta desde el `develop` recién actualizado tras el cierre de `1.7.0#RUBI`, sin mergear). **RUBI-23 — Release Candidate / Preparación de piloto — EN DESARROLLO**. Feature freeze: no añade funcionalidades de producto. Convierte el estado actual de Rubi en una Release Candidate operable, observable, reversible y verificable (runbook, checklist de despliegue, matriz de acceso, kill switches probados, criterios de éxito/abortar). No se ha desplegado, no se ha activado el piloto y no se ha ejecutado ninguna migración.
 - **`1.7.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-22 — Hardening integral está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-21, ver más abajo). No se ha desplegado ni ejecutado ninguna migración.
 - **Consolidación previa**: `1.2.0#RUBI` → `1.6.0#RUBI` están **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-22 (RUBI-16 → RUBI-22 incluidos).
 - `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-22 sigue **pendiente** (no realizada; en curso en paralelo por el usuario a fecha de esta sesión, 2026-09-18).
