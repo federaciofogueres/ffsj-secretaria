@@ -14,6 +14,8 @@ import { RubiBajaComponent } from './rubi-baja.component';
 import { RubiRegistroComponent } from './rubi-registro.component';
 import { RubiConversationService, RubiMessage } from './rubi-conversation.service';
 import { RubiScreenContextService } from './rubi-screen-context.service';
+import { CensoService } from '../core/censo.service';
+import { Asociacion } from '../core/models';
 
 const ROUTE_KEYS: Array<[string, RubiRouteKey]> = [
   ['/asociados/gestion', 'alta'], ['/asociados', 'personas'], ['/registro', 'registro'],
@@ -53,6 +55,9 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   registroTipo: 'documentacion' | 'comunicacion' = 'documentacion';
   registroPrepared = false;
   accessGranted = false;
+  targetAssociationId: number | null = null;
+  federationAssociations: Asociacion[] = [];
+  federationAssociationsLoading = false;
   readonly welcomeSuggestions = ['rubi.quick.alta', 'rubi.quick.registro', 'rubi.quick.calendario', 'rubi.quick.help'];
   readonly quickActions = ['rubi.quick.alta', 'rubi.quick.documents', 'rubi.quick.inscriptions', 'rubi.quick.support'];
   private opener: HTMLElement | null = null;
@@ -64,7 +69,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     private readonly conversation: RubiConversationService,
     readonly i18n: I18nService,
     private readonly router: Router,
-    private readonly screenContext: RubiScreenContextService
+    private readonly screenContext: RubiScreenContextService,
+    private readonly censoService: CensoService
   ) {
     this.subscriptions.add(this.conversation.messagesChanges.subscribe(messages => this.messages = messages));
     this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => {
@@ -88,6 +94,14 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     });
   }
 
+  // RUBI-20: un actor Federacion/Administracion no tiene asociacion propia. Es la
+  // misma senal que ya usa el backend (RubiContext) para decidir el scope: no se
+  // basa en admin:access, que solo indica acceso a pantallas administrativas y no
+  // implica ningun alcance funcional de Rubi.
+  get isFederationActor(): boolean {
+    return !this.censoService.asociacionId;
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
@@ -105,8 +119,31 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       this.api.startSession();
       this.api.trackEvent({ event: 'session_opened', stage: 'conversation' }).subscribe({ error: () => {} });
     }
+    if (this.isFederationActor) {
+      if (!this.federationAssociations.length && !this.federationAssociationsLoading) this.loadFederationAssociations();
+    } else if (this.targetAssociationId !== null) {
+      this.targetAssociationId = null;
+    }
     this.addWelcomeIfNeeded();
     setTimeout(() => this.messageInput?.nativeElement.focus());
+  }
+
+  private loadFederationAssociations(): void {
+    this.federationAssociationsLoading = true;
+    this.censoService.getAsociaciones().subscribe({
+      next: asociaciones => { this.federationAssociations = asociaciones; this.federationAssociationsLoading = false; },
+      error: () => { this.federationAssociationsLoading = false; }
+    });
+  }
+
+  // Cambiar de asociacion objetivo limpia la conversacion: ningun referente de la
+  // asociacion anterior (actividad, inscripcion, comunicacion) debe sobrevivir al
+  // cambio de contexto (RUBI-20, aislamiento A/B).
+  onTargetAssociationChange(value: number | null): void {
+    const id = Number(value);
+    this.targetAssociationId = Number.isInteger(id) && id > 0 ? id : null;
+    this.conversation.clear();
+    this.addWelcomeIfNeeded();
   }
 
   close(): void {
@@ -136,7 +173,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     const history = this.conversation.recentHistory();
     this.conversation.add({ author: 'user', text: trimmed });
     const routeKey = this.currentRouteKey();
-    this.api.message(trimmed, this.i18n.language, routeKey, history, this.currentScreenContext(routeKey)).subscribe({
+    this.api.message(trimmed, this.i18n.language, routeKey, history, this.currentScreenContext(routeKey), this.targetAssociationId).subscribe({
       next: response => this.handleResponse(response),
       error: error => this.handleError(error)
     });

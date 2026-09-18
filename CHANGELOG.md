@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.0#RUBI — EN DESARROLLO
+
+### Añadido — Rubi para Federación / Administración (RUBI-20)
+
+- Rubi reconoce un actor Federación/Administración (un cargo autenticado sin asociación propia), además del actor de asociación existente. `admin:access` y `admin:rubi` no conceden ninguna capability funcional por sí solos.
+- Nuevo selector estructurado de asociación objetivo en el panel (reutiliza el listado real de Censo ya usado en otras pantallas administrativas); nunca se escribe un id a mano ni se interpreta desde el chat. Cambiar de asociación objetivo limpia la conversación completa.
+- Nuevo interruptor en el Centro de administración de Rubi para autorizar el acceso de Federación, independiente de la autorización por asociación.
+- Validación funcional manual en DEV pendiente; se realizará conjuntamente para RUBI-17, RUBI-18, RUBI-19 y RUBI-20 antes del cierre final de `1.5.0#RUBI`.
+
+### Contrato y pruebas
+
+- 137 pruebas de frontend y build `development` correctos.
+
 ## 1.4.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-18 — Soporte inteligente y RUBI-19 — Comunicaciones y envíos asistidos: implementados y validados técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20).

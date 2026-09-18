@@ -27,8 +27,15 @@
               <span class="form-check-label">{{ 'rubi.admin.toggle.transactional' | t }}</span>
             </label>
           </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.federationAuthorized" (change)="toggleGlobal('federationAuthorized', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.federation' | t }}</span>
+            </label>
+          </div>
         </div>
         <p class="text-muted small mt-2">{{ 'rubi.admin.status.hint' | t }}</p>
+        <p class="text-muted small">{{ 'rubi.admin.status.federationHint' | t }}</p>
       </section>
 
       <section class="section-panel" *ngIf="provider as p">

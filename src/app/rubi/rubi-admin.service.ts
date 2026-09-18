@@ -9,6 +9,7 @@ export interface RubiAdminGlobalConfig {
   enabled: boolean;
   realProviderEnabled: boolean;
   transactionalEnabled: boolean;
+  federationAuthorized: boolean;
 }
 
 export interface RubiAdminProviderStatus {

@@ -8,11 +8,13 @@ import { I18nService } from '../core/i18n.service';
 import { RubiApiService, RubiResponse } from './rubi-api.service';
 import { RubiConversationService } from './rubi-conversation.service';
 import { RubiPanelComponent } from './rubi-panel.component';
+import { CensoService } from '../core/censo.service';
 
 describe('RubiPanelComponent', () => {
   let fixture: ComponentFixture<RubiPanelComponent>;
   let component: RubiPanelComponent;
   let api: jasmine.SpyObj<RubiApiService>;
+  let censoService: jasmine.SpyObj<CensoService>;
   let router: Router;
 
   beforeEach(async () => {
@@ -20,11 +22,14 @@ describe('RubiPanelComponent', () => {
     api.access.and.returnValue(of({ enabled: true, authorized: true }));
     api.trackEvent.and.returnValue(of({ accepted: true }));
     api.feedback.and.returnValue(of({ accepted: true }));
+    censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociaciones'], { asociacionId: 12 });
+    censoService.getAsociaciones.and.returnValue(of([]));
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, RubiPanelComponent],
       providers: [
         I18nService, RubiConversationService,
-        { provide: RubiApiService, useValue: api }
+        { provide: RubiApiService, useValue: api },
+        { provide: CensoService, useValue: censoService }
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(RubiPanelComponent);
@@ -57,7 +62,7 @@ describe('RubiPanelComponent', () => {
     api.message.and.returnValue(of(response));
     component.show();
     component.sendQuickAction('rubi.quick.documents');
-    expect(api.message).toHaveBeenCalledWith('Enviar documentacion', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' });
+    expect(api.message).toHaveBeenCalledWith('Enviar documentacion', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' }, null);
     expect(component.messages[component.messages.length - 1].actions).toEqual(response.actions);
     expect(component.messages[component.messages.length - 1].topic).toBe('registro');
   });
@@ -259,7 +264,7 @@ describe('RubiPanelComponent', () => {
     TestBed.inject(I18nService).setLanguage('en');
     component.draft = 'Help';
     component.send();
-    expect(api.message).toHaveBeenCalledWith('Help', 'en', 'home', [], { version: 1, module: 'home', view: 'inicio' });
+    expect(api.message).toHaveBeenCalledWith('Help', 'en', 'home', [], { version: 1, module: 'home', view: 'inicio' }, null);
   });
 
   it('provides the new pilot and feedback labels in ES, VA and EN', () => {
@@ -292,5 +297,50 @@ describe('RubiPanelComponent', () => {
     expect(api.feedback).toHaveBeenCalledWith('helpful', { intent: 'help', tool: 'search_help' });
     expect(JSON.stringify(api.feedback.calls.mostRecent().args)).not.toContain('Pregunta con datos');
     expect(answer.text).toBe('Respuesta segura');
+  });
+
+  it('RUBI-20 an association actor never sees the target association picker', () => {
+    expect(component.isFederationActor).toBeFalse();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.rubi-target-association')).toBeNull();
+  });
+
+  it('RUBI-20 a Federacion actor (no own association) sees the picker and loads associations on open', () => {
+    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    censoService.getAsociaciones.and.returnValue(of([{ id: 25, nombre: 'Doctor Bergez - Carolinas', cif: 'G1' }, { id: 40, nombre: 'Pío XII', cif: 'G2' }]));
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    const federationComponent = federationFixture.componentInstance;
+    expect(federationComponent.isFederationActor).toBeTrue();
+    federationComponent.show();
+    expect(censoService.getAsociaciones).toHaveBeenCalled();
+    expect(federationComponent.federationAssociations.length).toBe(2);
+    federationFixture.detectChanges();
+    expect(federationFixture.nativeElement.querySelector('.rubi-target-association')).not.toBeNull();
+  });
+
+  it('RUBI-20 sends the selected targetAssociationId with each message', () => {
+    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    const federationComponent = federationFixture.componentInstance;
+    api.message.and.returnValue(of({ message: 'ok', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    federationComponent.onTargetAssociationChange(25);
+    federationComponent.send('¿Tengo comunicaciones nuevas?');
+    expect(api.message).toHaveBeenCalledWith('¿Tengo comunicaciones nuevas?', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' }, 25);
+  });
+
+  it('RUBI-20 changing the target association clears the conversation (no referent from the previous association survives)', () => {
+    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    const federationComponent = federationFixture.componentInstance;
+    federationComponent.onTargetAssociationChange(25);
+    federationComponent.messages.push({ id: 99, author: 'rubi', text: 'Datos de la asociación 25' } as never);
+    (federationComponent as unknown as { conversation: RubiConversationService }).conversation.add({ author: 'rubi', text: 'Datos de la asociación 25', intent: 'comunicaciones_info' });
+    expect(federationComponent.messages.some(item => item.text.includes('asociación 25'))).toBeTrue();
+    federationComponent.onTargetAssociationChange(40);
+    expect(federationComponent.targetAssociationId).toBe(40);
+    expect(federationComponent.messages.some(item => item.text.includes('asociación 25'))).toBeFalse();
   });
 });

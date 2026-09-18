@@ -13,7 +13,7 @@ describe('RubiAdminComponent', () => {
   let permissions: jasmine.SpyObj<PermissionsService>;
 
   const configResponse = {
-    global: { enabled: true, realProviderEnabled: true, transactionalEnabled: true },
+    global: { enabled: true, realProviderEnabled: true, transactionalEnabled: true, federationAuthorized: false },
     provider: { killSwitchEnabled: true, provider: 'gemini', model: 'test', realProviderRequested: true, credentialConfigured: true, transactionalEnabled: true },
     budget: { dailyBudgetUsd: 0, dailyUsedUsd: 0, dailyPercent: null, dailyLimitReached: false, monthlyBudgetUsd: 0, monthlyUsedUsd: 0, monthlyPercent: null, monthlyLimitReached: false }
   };
@@ -61,9 +61,19 @@ describe('RubiAdminComponent', () => {
 
   it('applies the update result when toggling the global flag succeeds', () => {
     fixture.detectChanges();
-    api.updateConfig.and.returnValue(of({ global: { enabled: false, realProviderEnabled: true, transactionalEnabled: true } }));
+    api.updateConfig.and.returnValue(of({ global: { enabled: false, realProviderEnabled: true, transactionalEnabled: true, federationAuthorized: false } }));
     component.toggleGlobal('enabled', false);
     expect(component.global?.enabled).toBe(false);
+  });
+
+  it('RUBI-20 toggles federationAuthorized independently from the other global flags', () => {
+    fixture.detectChanges();
+    expect(component.global?.federationAuthorized).toBe(false);
+    api.updateConfig.and.returnValue(of({ global: { enabled: true, realProviderEnabled: true, transactionalEnabled: true, federationAuthorized: true } }));
+    component.toggleGlobal('federationAuthorized', true);
+    expect(api.updateConfig).toHaveBeenCalledWith({ federationAuthorized: true });
+    expect(component.global?.federationAuthorized).toBe(true);
+    expect(component.global?.enabled).toBe(true);
   });
 
   it('toggles a single association and rolls back on error', () => {

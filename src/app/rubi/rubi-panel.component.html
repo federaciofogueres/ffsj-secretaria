@@ -16,6 +16,14 @@
     </div>
   </header>
 
+  <div *ngIf="isFederationActor" class="rubi-target-association">
+    <label for="rubi-target-association">{{ 'rubi.target.label' | t }}</label>
+    <select id="rubi-target-association" [disabled]="federationAssociationsLoading" [ngModel]="targetAssociationId" (ngModelChange)="onTargetAssociationChange($event)">
+      <option [ngValue]="null">{{ 'rubi.target.none' | t }}</option>
+      <option *ngFor="let asociacion of federationAssociations" [ngValue]="asociacion.id">{{ asociacion.nombre || asociacion.name }}</option>
+    </select>
+  </div>
+
   <p *ngIf="unavailable" class="rubi-status rubi-status-error" role="status">{{ 'rubi.disabled' | t }}</p>
   <section class="rubi-messages" aria-label="Rubi" aria-live="polite">
     <section *ngIf="isInitialState && !altaActive && !modificationActive && !bajaActive" class="rubi-welcome-card" aria-labelledby="rubi-welcome-title">
