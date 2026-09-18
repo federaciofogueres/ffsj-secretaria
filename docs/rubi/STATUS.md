@@ -5,8 +5,8 @@
 ## Versión y alcance
 
 - Rama de frontend y API: `1.3.0#RUBI` (abierta desde el `develop` que contiene el cierre de `1.2.0#RUBI`).
-- Estado de la versión: **EN DESARROLLO**. `1.3.0#RUBI` no está cerrada.
-- Hito en curso: **RUBI-17 — Actividades, calendario e inscripciones asistidas — implementado en código, pendiente de validación manual en DEV**.
+- Estado de la versión: **CERRADA TÉCNICAMENTE** y mergeada a `develop`.
+- Hito cerrado técnicamente: **RUBI-17 — Actividades, calendario e inscripciones asistidas — implementado y validado técnicamente**. Validación funcional manual en DEV diferida deliberadamente a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20 en un único ciclo de validación con el usuario).
 - `1.2.0#RUBI` está CERRADA y validada funcionalmente por el usuario (RUBI-16 — Registro General y documentación asistidos).
 - `1.1.0#RUBI` está CERRADA y validada funcionalmente en DEV por el usuario (RUBI-14, RUBI-15, RUBI-15.1 y la estabilización posterior); ver el histórico más abajo para el detalle de ese hito.
 - Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. RUBI-16 ha sido validado funcionalmente por el usuario; la migración `060_registro_confirmaciones.sql` forma parte de la versión. No se ha desplegado ni activado nada en producción.
@@ -147,15 +147,16 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - Contrato OpenAPI actualizado: `/registro-asistido/preparar`, `/registro-asistido/preparacion/cancelar`, `/registro-asistido/confirmar` (83 rutas en total); `git diff --check` correcto en ambos repositorios.
 - La migración `060_registro_confirmaciones.sql` se incorporó a la versión y fue aplicada en DEV por autorización explícita del usuario; no se ejecutó ninguna migración adicional ni se tocó Azure/producción.
 
-## Hito en curso
+## Histórico: cierre técnico de `1.3.0#RUBI`
 
-- `1.3.0#RUBI` está **EN DESARROLLO**.
-- RUBI-17 — Actividades, calendario e inscripciones asistidas está **implementado en código y pendiente de validación manual en DEV**.
+- `1.3.0#RUBI` está **CERRADA TÉCNICAMENTE** y mergeada a `develop` en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`).
+- RUBI-17 — Actividades, calendario e inscripciones asistidas está **implementado y validado técnicamente**. Validación técnica completa; validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
 - **Arquitectura**: `list_actividades` y `get_calendario` leen estado dinámico allowlisted de los servicios reales; `start_inscripcion` selecciona un formulario disponible y devuelve una acción estructurada con su identificador. Angular construye la ruta registrada `/inscripciones/:id` y reutiliza el formulario dinámico existente. Rubi no prepara, confirma ni persiste inscripciones.
 - **Permisos/capabilities**: `actividades.read` y `calendario.read` derivan de `inscripciones:read`; `inscripcion.start` deriva de `inscripciones:write`. Las tools vuelven a comprobar la capability al ejecutarse.
 - **Estado real**: las consultas se limitan al ejercicio activo, actividades activas/visibles y formularios publicados. Se distingue entrada inexistente, existente editable y existente bloqueada por estado; plazos, actividad y ejercicio se revalidan de nuevo en el submit ordinario.
+- **Fix de contexto (revisión de relevo)**: la coincidencia explícita por texto prevalece siempre sobre el referente implícito (`lastActivityId`) de pantalla/conversación; las consultas amplias reconocidas ("¿qué actividades hay?", "mi calendario", "esta semana", "próxima actividad") ya no quedan acotadas accidentalmente a la última actividad referenciada.
 - **Privacidad**: el provider no recibe participantes, respuestas, campos dinámicos, adjuntos ni propietarios. La selección conserva únicamente identificadores funcionales allowlisted en contexto/historial efímero.
 - **Idempotencia**: el submit bloquea transaccionalmente el formulario antes de comprobar la entrada asociación/formulario; un retry o doble clic actualiza la entrada editable existente y no inserta una segunda. Las entradas validadas o retiradas no se modifican.
 - **Dominio auditado sin conceptos ficticios**: el modelo actual no contiene capacidad, cupos, requisitos configurables ni elegibilidad específica por asociación para actividades. RUBI-17 no inventa esos controles; reutiliza estado, visibilidad, ejercicio, plazo, formulario y reglas existentes.
 - **Migraciones**: ninguna. No se ha ejecutado ninguna migración ni se ha tocado DEV, Azure o producción.
-- **Validación técnica local**: 333/333 pruebas de API, 127/127 pruebas de frontend, build Angular `development`, contrato OpenAPI y evaluación Rubi con provider mock (104/104 casos ES/VA/EN) correctos. No se ha usado Gemini real.
+- **Validación técnica final antes del cierre**: 333/333 pruebas de API, 127/127 pruebas de frontend, build Angular `development`, contrato OpenAPI y evaluación Rubi con provider mock (104/104 casos ES/VA/EN) correctos, `git diff --check` correcto en ambos repositorios. No se ha usado Gemini real. La validación funcional manual en DEV se difiere deliberadamente y no se ha realizado.

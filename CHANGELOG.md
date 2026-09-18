@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.3.0#RUBI — EN DESARROLLO
+## 1.3.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-17 — Actividades, calendario e inscripciones asistidas: implementado y validado técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
 
 ### Añadido — Actividades, calendario e inscripciones asistidas (RUBI-17)
 
