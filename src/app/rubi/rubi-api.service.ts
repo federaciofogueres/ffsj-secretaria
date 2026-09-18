@@ -168,12 +168,13 @@ export class RubiApiService {
     }, { headers: this.authHeaders() }).pipe(timeout(10000));
   }
 
-  message(message: string, idioma: AppLanguage, routeKey?: RubiRouteKey, history?: RubiHistoryEntry[], screenContext?: RubiScreenContext): Observable<RubiResponse> {
+  message(message: string, idioma: AppLanguage, routeKey?: RubiRouteKey, history?: RubiHistoryEntry[], screenContext?: RubiScreenContext, targetAssociationId?: number | null): Observable<RubiResponse> {
     this.startSession();
-    const payload: { message: string; idioma: AppLanguage; routeKey?: RubiRouteKey; history?: RubiHistoryEntry[]; screenContext?: RubiScreenContext } = { message, idioma };
+    const payload: { message: string; idioma: AppLanguage; routeKey?: RubiRouteKey; history?: RubiHistoryEntry[]; screenContext?: RubiScreenContext; targetAssociationId?: number } = { message, idioma };
     if (routeKey) payload.routeKey = routeKey;
     if (history?.length) payload.history = history;
     if (screenContext) payload.screenContext = screenContext;
+    if (typeof targetAssociationId === 'number' && targetAssociationId > 0) payload.targetAssociationId = targetAssociationId;
 
     return this.http.post<RubiResponse>(`${this.apiUrl.secretariaBasePath}/asistente/mensaje`, payload, {
       headers: this.authHeaders()
