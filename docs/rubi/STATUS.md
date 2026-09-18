@@ -4,8 +4,9 @@
 
 ## Versión y alcance
 
-- Rama de frontend y API: `1.4.0#RUBI` (abierta desde el `develop` que contiene el cierre técnico de `1.3.0#RUBI`/RUBI-17).
-- Estado de la versión: **EN DESARROLLO**. `1.4.0#RUBI` no está cerrada ni mergeada.
+- Rama de frontend y API: `1.5.0#RUBI` (abierta desde el `develop` que contiene el cierre técnico de `1.4.0#RUBI`/RUBI-18/RUBI-19).
+- Estado de la versión: **EN DESARROLLO**. `1.5.0#RUBI` no está cerrada ni mergeada.
+- `1.4.0#RUBI` está CERRADA TÉCNICAMENTE y mergeada a `develop`.
 - Hito **RUBI-18 — Soporte inteligente — implementado y validado técnicamente**. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
 - Hito **RUBI-19 — Comunicaciones y envíos asistidos — implementado y validado técnicamente**. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
 - `1.3.0#RUBI` está CERRADA TÉCNICAMENTE y mergeada a `develop` (RUBI-17 — Actividades, calendario e inscripciones asistidas, implementado y validado técnicamente). Validación funcional manual en DEV diferida deliberadamente a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20 en un único ciclo de validación con el usuario).
@@ -163,7 +164,12 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - **Migraciones**: ninguna. No se ha ejecutado ninguna migración ni se ha tocado DEV, Azure o producción.
 - **Validación técnica final antes del cierre**: 333/333 pruebas de API, 127/127 pruebas de frontend, build Angular `development`, contrato OpenAPI y evaluación Rubi con provider mock (104/104 casos ES/VA/EN) correctos, `git diff --check` correcto en ambos repositorios. No se ha usado Gemini real. La validación funcional manual en DEV se difiere deliberadamente y no se ha realizado.
 
-## Hito en curso: RUBI-18 — Soporte inteligente (implementado y validado técnicamente)
+## Histórico: cierre técnico de `1.4.0#RUBI`
+
+- `1.4.0#RUBI` está **CERRADA TÉCNICAMENTE** y mergeada a `develop` en ambos repositorios.
+- **Deuda conocida heredada (no corregida en el cierre)**: el mensaje/listado de `ambiguousTopic` (`RubiDeterministicRouter.js`, usado cuando el usuario parece querer varios dominios a la vez) quedó desactualizado respecto a los dominios añadidos desde RUBI-17: solo enumera alta/modificación/baja/documentación/comunicación y no menciona actividades/inscripción/calendario/soporte/comunicaciones recibidas. No se ha corregido durante el cierre de `1.4.0#RUBI` para no introducir cambios funcionales fuera de alcance; queda pendiente de revisión durante RUBI-20, que vuelve a tocar clasificación/capabilities/contexto.
+
+### RUBI-18 — Soporte inteligente (implementado y validado técnicamente)
 
 - **Auditoría del Soporte real**: Rubi reutiliza íntegramente `secretaria_soporte_incidencias`/`secretaria_soporte_eventos` (`service/SupportService.js`, `controllers/Soporte.js`). La creación y lectura de incidencias propias (`POST/GET /soporte/incidencias`, mensajes, adjuntos, marcado leído/no leído) solo exigen `requireAuth`; no existe un permiso granular `soporte:*` en el modelo real. Categoría, asunto (3-180 caracteres), descripción (10-5000 caracteres) y hasta 5 adjuntos (PNG/JPG/PDF/TXT/DOC/DOCX/XLS/XLSX, 10 MB) son exactamente los campos reales del formulario Angular (`soporte.component.ts`); Rubi no inventa campos ni categorías nuevas.
 - **Capability**: nueva `soporte.start`, sin permiso asociado (fiel al hecho de que crear una incidencia solo exige autenticación, igual que la navegación a Soporte ya existente). Se documenta expresamente en el código para que no se confunda con un descuido.
@@ -175,7 +181,7 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - **Migraciones**: ninguna. No se ha modificado `SupportService.js`, `controllers/Soporte.js` ni `index.js`.
 - **Validación técnica**: 348/348 pruebas de API, 129/129 pruebas de frontend, build Angular `development`, evaluación Rubi con provider mock (107/107 casos ES/VA/EN) y `git diff --check` correctos en ambos repositorios. No se ha usado Gemini real.
 
-## Hito en curso: RUBI-19 — Comunicaciones y envíos asistidos (implementado y validado técnicamente)
+### RUBI-19 — Comunicaciones y envíos asistidos (implementado y validado técnicamente)
 
 - **Auditoría del dominio**: no existe un segundo sistema de "Comunicaciones/Envíos" independiente de Registro. `secretaria_registros` (`tipo='comunicacion'`) es la misma entidad que ya usa RUBI-16 para crear una comunicación; lo que faltaba era el lado de **consulta y gestión** de lo ya existente (`GET /registros`, respuesta, cierre, marcado leído/no leído — `service/SecretariaService.js`, `controllers/Registros.js`), nunca cubierto por Rubi. RUBI-19 no duplica RUBI-16: cubre exactamente ese hueco real.
 - **Capability**: nueva `comunicaciones.read`, derivada de `registro:read` (mismo permiso que ya exige `GET /registros` en el sistema real y que habilita la navegación a Registro).

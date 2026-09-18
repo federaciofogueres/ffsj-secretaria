@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.4.0#RUBI — EN DESARROLLO
+## 1.4.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-18 — Soporte inteligente y RUBI-19 — Comunicaciones y envíos asistidos: implementados y validados técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20).
 
 ### Añadido — Soporte inteligente (RUBI-18)
 
