@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthService } from 'ffsj-web-components';
 import { Observable, timeout } from 'rxjs';
@@ -40,6 +40,24 @@ export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
   | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' | 'comunicaciones' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
+
+export type RubiInsightDomain = 'comunicaciones' | 'actividades' | 'solicitudes';
+export type RubiInsightPriority = 'accion_requerida' | 'plazo_proximo' | 'novedad' | 'informativo';
+export interface RubiInsight {
+  id: string;
+  domain: RubiInsightDomain;
+  priority: RubiInsightPriority;
+  count: number | null;
+  deadline: string | null;
+  daysRemaining: number | null;
+  title: string | null;
+  action: RubiAction;
+}
+export interface RubiSuggestionsResponse {
+  insights: RubiInsight[];
+  errors: Array<{ code: string; message: string }>;
+  metadata: { success: boolean; scope?: 'association' | 'federation'; hasTargetAssociation?: boolean; failedDomains?: string[] };
+}
 
 export interface AltaPreparacion {
   estado: 'preparada' | 'requiere_flujo_normal';
@@ -179,6 +197,20 @@ export class RubiApiService {
     return this.http.post<RubiResponse>(`${this.apiUrl.secretariaBasePath}/asistente/mensaje`, payload, {
       headers: this.authHeaders()
     }).pipe(timeout(15000));
+  }
+
+  // RUBI-21: nunca invoca al provider; solo backend determinista. Se puede
+  // llamar libremente (al abrir Rubi, al cambiar de asociación objetivo) sin
+  // ningún coste de tokens.
+  getSuggestions(targetAssociationId?: number | null): Observable<RubiSuggestionsResponse> {
+    this.startSession();
+    let params = new HttpParams();
+    if (typeof targetAssociationId === 'number' && targetAssociationId > 0) {
+      params = params.set('targetAssociationId', String(targetAssociationId));
+    }
+    return this.http.get<RubiSuggestionsResponse>(`${this.apiUrl.secretariaBasePath}/asistente/sugerencias`, {
+      headers: this.authHeaders(), params
+    }).pipe(timeout(10000));
   }
 
   prepararAlta(ejercicioId: number, datos: Record<string, unknown>): Observable<AltaPreparacion> {

@@ -1,13 +1,30 @@
 # Changelog
 
-## 1.5.0#RUBI — EN DESARROLLO
+## 1.6.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-21 — Proactividad contextual: implementado y validado técnicamente. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-20).
+
+### Añadido — Proactividad contextual (RUBI-21)
+
+- Nuevo endpoint `GET /asistente/sugerencias`: sugerencias deterministas calculadas en backend (`RubiInsightsService`), nunca decididas por el provider. Reutiliza las tools de lectura ya auditadas (`get_comunicaciones`, `get_calendario`) y los dashboards existentes; no introduce consultas SQL paralelas.
+- Dominios: comunicaciones nuevas, plazos de inscripción próximos (ventana fija de 3 días), solicitudes pendientes (asociación propia o, en Federación sin objetivo con permiso, el panel admin). Prioridad fija `acción requerida > plazo próximo > novedad > informativo`.
+- Subordinado a permisos/scope/target exactamente igual que el resto de Rubi; aislamiento A→B verificado con test dedicado (mismo patrón que RUBI-20).
+- Panel Angular consulta sugerencias al abrir y al cambiar de asociación objetivo; sin polling, sin apertura automática del panel. Cada sugerencia reutiliza `executeAction`/`isSafeAction`; ninguna ejecuta nada por sí sola. Fallo parcial de un dominio no rompe el resto del panel.
+- Sin badge en el lanzador (decisión deliberada para no duplicar/confundir la campana `.tasks-bell` existente). Sin tabla ni migración nueva.
+
+### Contrato y pruebas
+
+- 408 pruebas de API (18 nuevas), 143 pruebas de frontend (6 nuevas), build `development`, evaluación Rubi con provider mock (110/110) y contrato OpenAPI (`/asistente/sugerencias`, `RubiInsight`, `RubiSuggestionsResponse`) correctos en ambos repositorios. Sin migraciones ejecutadas.
+
+## 1.5.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-20 — Rubi para Federación / Administración: implementado y validado técnicamente e integrado en `develop`. Validación funcional manual en DEV pendiente; se realizará conjuntamente para RUBI-17, RUBI-18, RUBI-19 y RUBI-20.
 
 ### Añadido — Rubi para Federación / Administración (RUBI-20)
 
 - Rubi reconoce un actor Federación/Administración (un cargo autenticado sin asociación propia), además del actor de asociación existente. `admin:access` y `admin:rubi` no conceden ninguna capability funcional por sí solos.
 - Nuevo selector estructurado de asociación objetivo en el panel (reutiliza el listado real de Censo ya usado en otras pantallas administrativas); nunca se escribe un id a mano ni se interpreta desde el chat. Cambiar de asociación objetivo limpia la conversación completa.
 - Nuevo interruptor en el Centro de administración de Rubi para autorizar el acceso de Federación, independiente de la autorización por asociación.
-- Validación funcional manual en DEV pendiente; se realizará conjuntamente para RUBI-17, RUBI-18, RUBI-19 y RUBI-20 antes del cierre final de `1.5.0#RUBI`.
 
 ### Contrato y pruebas
 
