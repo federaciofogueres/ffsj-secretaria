@@ -4,10 +4,10 @@
 
 ## Versión y alcance
 
-- **`1.8.0#RUBI` — EN DESARROLLO** (rama abierta desde el `develop` recién actualizado tras el cierre de `1.7.0#RUBI`, sin mergear). **RUBI-23 — Release Candidate / Preparación de piloto — EN DESARROLLO**. Feature freeze: no añade funcionalidades de producto. Convierte el estado actual de Rubi en una Release Candidate operable, observable, reversible y verificable (runbook, checklist de despliegue, matriz de acceso, kill switches probados, criterios de éxito/abortar). No se ha desplegado, no se ha activado el piloto y no se ha ejecutado ninguna migración.
-- **`1.7.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-22 — Hardening integral está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-21, ver más abajo). No se ha desplegado ni ejecutado ninguna migración.
-- **Consolidación previa**: `1.2.0#RUBI` → `1.6.0#RUBI` están **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-22 (RUBI-16 → RUBI-22 incluidos).
-- `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-22 sigue **pendiente** (no realizada; en curso en paralelo por el usuario a fecha de esta sesión, 2026-09-18).
+- **`1.8.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-23 — Release Candidate / Preparación de piloto está **implementado y validado técnicamente**; **validación funcional manual/piloto pendiente** (no existe confirmación del usuario de que se haya realizado; se suma a la campaña conjunta RUBI-17 → RUBI-23, ver más abajo). No se ha desplegado código, no se ha activado el piloto. Las migraciones Rubi disponibles en `develop` (`055` → `061`, sin ninguna posterior en este hito) están aplicadas en DEV — ver "Migraciones en DEV" más abajo para el detalle verificado de esta sesión.
+- **`1.7.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-22 — Hardening integral está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-23, ver más abajo). No se ha desplegado ni ejecutado ninguna migración en este hito.
+- **Consolidación previa**: `1.2.0#RUBI` → `1.7.0#RUBI` están **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-23 (RUBI-16 → RUBI-23 incluidos).
+- `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-23 sigue **pendiente**: no existe confirmación del usuario de que se haya realizado ni parcial ni totalmente. No debe inferirse como completada por ningún motivo.
 - `1.4.0#RUBI` — Soporte inteligente (RUBI-18) y Comunicaciones y envíos asistidos (RUBI-19): integrada técnicamente en `develop`. Validación funcional manual pendiente, incluida en la campaña conjunta.
 - `1.3.0#RUBI` — Actividades, calendario e inscripciones asistidas (RUBI-17): integrada técnicamente en `develop`. Validación funcional manual pendiente, incluida en la campaña conjunta.
 - `1.2.0#RUBI` está CERRADA y validada funcionalmente por el usuario (RUBI-16 — Registro General y documentación asistidos); integrada en `develop`.
@@ -218,8 +218,9 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - Merge de `1.5.0#RUBI` a `develop` (`--no-ff`, sin conflictos) en ambos repositorios, con la suite completa vuelta a ejecutar sobre `develop` tras el merge antes del `push`.
 - **Auditoría de migraciones en DEV** (`u438573835_secretaria_pre`, verificado explícitamente que no es la base de producción `u438573835_secretaria`): la tabla `secretaria_schema_migrations` mostraba 56 migraciones aplicadas, la última `060_registro_confirmaciones.sql`; `061_rubi_federation_authorized.sql` era la única pendiente. Se aplicó exclusivamente esa migración con el runner oficial del proyecto (`npm run db:migrate:dev`, que solo ejecuta migraciones no registradas todavía). Verificado tras aplicarla: columna `secretaria_rubi_config.federation_authorized` creada como `TINYINT(1) NOT NULL DEFAULT 0`; la fila existente quedó en `federation_authorized = 0` (deny-by-default, ningún acceso de Federación autorizado implícitamente); `enabled`/`real_provider_enabled`/`transactional_enabled` sin cambios. No se ejecutó ninguna otra migración, no se modificó ninguna migración histórica y no se tocó producción, Azure ni App Settings. No se realizó ningún despliegue de código frontend ni API.
 
-## `1.8.0#RUBI` — RUBI-23: Release Candidate / Preparación de piloto (implementado y validado técnicamente, rama abierta, sin mergear)
+## Histórico: cierre técnico de `1.8.0#RUBI` — RUBI-23: Release Candidate / Preparación de piloto
 
+- `1.8.0#RUBI` está **CERRADA TÉCNICAMENTE** y mergeada a `develop` en ambos repositorios.
 - **Rama**: `1.8.0#RUBI` abierta desde el `develop` actualizado tras el cierre de `1.7.0#RUBI` (API `6eb4e3b`, frontend `a534c36`). Feature freeze: no se añade ninguna funcionalidad de producto. Objetivo: responder de forma verificable "¿podemos desplegar Rubi a un grupo controlado, observarla, detenerla inmediatamente si hay problemas y saber objetivamente si funciona?".
 
 ### Release readiness (Fase 5)
@@ -348,7 +349,7 @@ Sin cambios de comportamiento en este hito: es una revisión, no una nueva polí
 
 ### Validación funcional manual
 
-- Pendiente, no realizada; se suma a la campaña conjunta de RUBI-17 → RUBI-22. `1.8.0#RUBI` permanece abierta, sin mergear a `develop`.
+- Pendiente, no realizada; se suma a la campaña conjunta de RUBI-17 → RUBI-23. No existe confirmación del usuario de que se haya realizado.
 
 ## Histórico: cierre técnico de `1.7.0#RUBI` — RUBI-22: Hardening integral
 

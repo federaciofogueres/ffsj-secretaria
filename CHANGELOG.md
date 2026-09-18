@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.8.0#RUBI — EN DESARROLLO
+## 1.8.0#RUBI — CERRADA TÉCNICAMENTE
 
-> RUBI-23 — Release Candidate / Preparación de piloto: implementado y validado técnicamente. Feature freeze, sin funcionalidades nuevas. Sin deploy, sin piloto activado, validación funcional manual pendiente.
+> RUBI-23 — Release Candidate / Preparación de piloto: implementado y validado técnicamente. Feature freeze, sin funcionalidades nuevas. Sin deploy, sin piloto activado, validación funcional manual pendiente (sin confirmación del usuario de que se haya realizado).
 
 ### Release Candidate — RUBI-23
 
