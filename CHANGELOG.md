@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.7.0#RUBI — EN DESARROLLO
+## 1.7.0#RUBI — CERRADA TÉCNICAMENTE
 
-> RUBI-22 — Hardening integral: implementado y validado técnicamente. No añade funcionalidades. Validación funcional manual pendiente.
+> RUBI-22 — Hardening integral: implementado y validado técnicamente. No añade funcionalidades. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-21).
 
 ### Hardening — RUBI-22
 
