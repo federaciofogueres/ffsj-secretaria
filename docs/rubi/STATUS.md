@@ -4,6 +4,7 @@
 
 ## Versión y alcance
 
+- **`1.7.0#RUBI` — EN DESARROLLO** (rama abierta desde el `develop` recién actualizado tras el cierre de `1.6.0#RUBI`, sin mergear). **RUBI-22 — Hardening integral — EN DESARROLLO**. No añade funcionalidades: busca y corrige bypasses de permisos/scope, fugas de privacidad, fallos de idempotencia/concurrencia y degradación insegura ante fallos del provider, antes de una futura Release Candidate/piloto. No se ha desplegado ni ejecutado ninguna migración.
 - **`1.6.0#RUBI` — CERRADA TÉCNICAMENTE e integrada en `develop`**. RUBI-21 — Proactividad contextual está **implementado y validado técnicamente**; **validación funcional manual pendiente de campaña conjunta** (se suma a RUBI-17 → RUBI-20, ver más abajo). No se ha desplegado ni ejecutado ninguna migración.
 - **Consolidación previa**: `1.2.0#RUBI`, `1.3.0#RUBI`, `1.4.0#RUBI` y `1.5.0#RUBI` están las cuatro **integradas técnicamente en `develop`** en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), verificado mediante `git merge-base`/`branch --contains` (no solo ahead/behind). `origin/develop` es la fuente completa del código acumulado hasta RUBI-21 (RUBI-16 → RUBI-21 incluidos).
 - `1.5.0#RUBI` — Rubi para Federación / Administración (RUBI-20): **integrada técnicamente en `develop`**. Validación funcional manual conjunta de RUBI-17 → RUBI-21 sigue **pendiente** (no realizada; en curso en paralelo por el usuario a fecha de esta sesión, 2026-09-18).
