@@ -4,9 +4,11 @@
 
 ## Versión y alcance
 
-- Rama de frontend y API: `1.3.0#RUBI` (abierta desde el `develop` que contiene el cierre de `1.2.0#RUBI`).
-- Estado de la versión: **CERRADA TÉCNICAMENTE** y mergeada a `develop`.
-- Hito cerrado técnicamente: **RUBI-17 — Actividades, calendario e inscripciones asistidas — implementado y validado técnicamente**. Validación funcional manual en DEV diferida deliberadamente a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20 en un único ciclo de validación con el usuario).
+- Rama de frontend y API: `1.4.0#RUBI` (abierta desde el `develop` que contiene el cierre técnico de `1.3.0#RUBI`/RUBI-17).
+- Estado de la versión: **EN DESARROLLO**. `1.4.0#RUBI` no está cerrada ni mergeada.
+- Hito en curso: **RUBI-18 — Soporte inteligente — EN DESARROLLO**.
+- Hito planificado: **RUBI-19 — Comunicaciones y envíos asistidos — PENDIENTE**.
+- `1.3.0#RUBI` está CERRADA TÉCNICAMENTE y mergeada a `develop` (RUBI-17 — Actividades, calendario e inscripciones asistidas, implementado y validado técnicamente). Validación funcional manual en DEV diferida deliberadamente a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20 en un único ciclo de validación con el usuario).
 - `1.2.0#RUBI` está CERRADA y validada funcionalmente por el usuario (RUBI-16 — Registro General y documentación asistidos).
 - `1.1.0#RUBI` está CERRADA y validada funcionalmente en DEV por el usuario (RUBI-14, RUBI-15, RUBI-15.1 y la estabilización posterior); ver el histórico más abajo para el detalle de ese hito.
 - Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. RUBI-16 ha sido validado funcionalmente por el usuario; la migración `060_registro_confirmaciones.sql` forma parte de la versión. No se ha desplegado ni activado nada en producción.
