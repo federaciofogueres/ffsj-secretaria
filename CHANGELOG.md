@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.2.0#RUBI — EN DESARROLLO
+## 1.2.0#RUBI — CERRADA
 
-> RUBI-16 — Registro General y documentación asistidos: implementado en código, pendiente de validación manual en DEV.
+> RUBI-16 — Registro General y documentación asistidos: completado y validado funcionalmente por el usuario.
 
 ### Añadido — Registro General y documentación asistidos (RUBI-16)
 

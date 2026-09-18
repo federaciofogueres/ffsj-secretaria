@@ -5,11 +5,11 @@
 ## Versión y alcance
 
 - Rama de frontend y API: `1.2.0#RUBI` (abierta desde el `develop` que contiene el cierre de `1.1.0#RUBI`).
-- Estado de la versión: **EN DESARROLLO**. `1.2.0#RUBI` no está cerrada.
-- Hito en curso: **RUBI-16 — Registro General y documentación asistidos — implementado en código, pendiente de validación manual en DEV**.
+- Estado de la versión: **CERRADA**. `1.2.0#RUBI` queda formalmente cerrada tras la validación funcional del usuario.
+- Hito completado: **RUBI-16 — Registro General y documentación asistidos — COMPLETADO y validado funcionalmente por el usuario**.
 - `1.1.0#RUBI` está CERRADA y validada funcionalmente en DEV por el usuario (RUBI-14, RUBI-15, RUBI-15.1 y la estabilización posterior); ver el histórico más abajo para el detalle de ese hito.
-- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. RUBI-16 todavía no se ha desplegado ni validado en ningún entorno; no se ha marcado como validado por el propio trabajo de implementación. No se ha desplegado ni activado nada en producción.
-- Workflows administrativos asistidos: altas, modificaciones y bajas de personas; Registro (documentación y comunicación) implementado en código durante RUBI-16, pendiente de validación manual.
+- Último estado desplegado conocido: RUBI-14, RUBI-15 y RUBI-15.1 están activos y validados en DEV por el usuario, incluidas las migraciones `057`-`059`. RUBI-16 ha sido validado funcionalmente por el usuario; la migración `060_registro_confirmaciones.sql` forma parte de la versión. No se ha desplegado ni activado nada en producción.
+- Workflows administrativos asistidos: altas, modificaciones y bajas de personas, y Registro (documentación y comunicación) como capacidades actuales de Rubi.
 - La infraestructura de piloto de RUBI-13 se conserva disponible, desactivada/no configurada remotamente, y convive con la configuración administrada de RUBI-15.1 (ver más abajo).
 
 ## Disponible hoy
@@ -143,9 +143,9 @@ Un segundo problema, más grave, sobrevivió a la estabilización anterior y **b
 - API: 301 pruebas correctas (261 previas + 40 nuevas: `RegistroWorkflow`, `RegistroConfirmationStore` y banco de regresión conversacional de documentación/comunicación, colisiones y permisos).
 - Eval determinista de Rubi (`npm run rubi:eval`, provider `mock`): 100/100 casos, sin usar Gemini real.
 - Contrato OpenAPI actualizado: `/registro-asistido/preparar`, `/registro-asistido/preparacion/cancelar`, `/registro-asistido/confirmar` (83 rutas en total); `git diff --check` correcto en ambos repositorios.
-- La migración `060_registro_confirmaciones.sql` se ejecutó en DEV por autorización explícita del usuario tras esta implementación; no se ha ejecutado ninguna otra migración ni se ha tocado Azure/producción. RUBI-16 queda con la migración aplicada y pendiente de validación funcional manual en DEV por el usuario.
+- La migración `060_registro_confirmaciones.sql` se incorporó a la versión y fue aplicada en DEV por autorización explícita del usuario; no se ejecutó ninguna migración adicional ni se tocó Azure/producción.
 
 ## Siguiente hito
 
-- `1.2.0#RUBI` permanece **EN DESARROLLO**. RUBI-16 — Registro General y documentación asistidos está implementado en código y validado localmente (tests/evals/build), pero **no se marca como validado en DEV**: esa validación la hace el usuario tras desplegar.
+- `1.2.0#RUBI` está **CERRADA**. RUBI-16 — Registro General y documentación asistidos está completado y validado funcionalmente por el usuario.
 - No se inicia RUBI-17 ni `1.3.0#RUBI` en este hito.
