@@ -13,6 +13,8 @@ export interface RubiMessage {
   destination?: string;
   topic?: string;
   module?: RubiModule;
+  activityId?: string;
+  inscriptionId?: string;
   excludeFromHistory?: boolean;
   feedback?: 'helpful' | 'not_helpful';
   feedbackPending?: boolean;
@@ -46,7 +48,8 @@ export class RubiConversationService {
         role: message.author === 'user' ? 'user' : 'assistant', text: message.text,
         ...(message.intent ? { intent: message.intent } : {}), ...(message.tool ? { tool: message.tool } : {}),
         ...(message.destination || message.actions?.[0]?.destination ? { destination: message.destination || message.actions?.[0]?.destination } : {}),
-        ...(message.topic ? { topic: message.topic } : {}), ...(message.module ? { module: message.module } : {})
+        ...(message.topic ? { topic: message.topic } : {}), ...(message.module ? { module: message.module } : {}),
+        ...(message.activityId ? { activityId: message.activityId } : {}), ...(message.inscriptionId ? { inscriptionId: message.inscriptionId } : {})
       }));
   }
 

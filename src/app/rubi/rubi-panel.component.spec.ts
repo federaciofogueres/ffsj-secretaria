@@ -149,6 +149,32 @@ describe('RubiPanelComponent', () => {
     expect(router.navigateByUrl).toHaveBeenCalledWith('/registro/comunicacion');
   });
 
+  it('opens a registration only through the allowlisted real form route (RUBI-17)', () => {
+    const navigate = spyOn(router, 'navigate').and.returnValue(Promise.resolve(true));
+    const navigateByUrl = spyOn(router, 'navigateByUrl').and.returnValue(Promise.resolve(true));
+    component.executeAction({ type: 'start_flow', flow: 'inscripcion', inscriptionId: 'INS-FORM-2027', label: 'Actividad segura', route: 'https://invalid.example' });
+    expect(navigate).toHaveBeenCalledWith(['/inscripciones', 'INS-FORM-2027']);
+    expect(navigateByUrl).not.toHaveBeenCalled();
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_started', stage: 'inscripcion' });
+  });
+
+  it('renders structured activity choices and rejects an unsafe registration id (RUBI-17)', () => {
+    api.message.and.returnValue(of({
+      message: 'Selecciona una actividad.', intent: 'start_inscripcion',
+      actions: [
+        { type: 'start_flow', flow: 'inscripcion', inscriptionId: 'INS-1', label: 'Actividad uno' },
+        { type: 'start_flow', flow: 'inscripcion', inscriptionId: '../admin', label: 'No segura' }
+      ],
+      conversation: { intent: 'start_inscripcion', tool: 'start_inscripcion', activityId: 'ACT-1' },
+      errors: [], metadata: { success: true }
+    }));
+    component.send('Quiero inscribirme');
+    const answer = component.messages[component.messages.length - 1];
+    expect(answer.actions?.length).toBe(1);
+    expect(component.actionLabel(answer.actions![0])).toBe('Actividad uno');
+    expect(answer.activityId).toBe('ACT-1');
+  });
+
   it('sends only abstract documentacion preparation state to the screen context', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'documentacion' });
