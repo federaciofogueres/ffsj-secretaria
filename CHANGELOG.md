@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.7.0#RUBI — EN DESARROLLO
+
+> RUBI-22 — Hardening integral: implementado y validado técnicamente. No añade funcionalidades. Validación funcional manual pendiente.
+
+### Hardening — RUBI-22
+
+- Auditoría activa de bypasses de permisos/scope, prompt/tool injection, privacidad, kill switches, concurrencia y degradación ante fallos del provider. Mapa de superficie: `RubiGateway`, `RubiContext`, `RubiCapabilityResolver`, `RubiToolRegistry`, `RubiDeterministicRouter`, `RubiConversationContext`, `RubiPilotAccess`, `RubiInsightsGateway`, panel Angular.
+- `RubiInsightsGateway` no rechazaba parámetros de query no reconocidos en `GET /asistente/sugerencias` (a diferencia de `/asistente/mensaje`). Corregido con el mismo allowlist explícito.
+- Nuevo banco adversarial (`rubi.hardening.test.js`, 12 tests): frases de inyección combinadas con un provider que las "obedece" y propone tools/argumentos maliciosos, matriz de kill switches, aislamiento de `associationId`/scope frente a mensaje/argumentos manipulados, seguridad de las acciones de insights. Ningún bypass real encontrado.
+- Eval adversarial ampliado con 2 casos nuevos (exigir una tool sin permiso; pedir confirmar sin revisión humana). 112/112.
+- `npm audit fix` sin `--force` en ambos repositorios: 7/7 vulnerabilidades resueltas en la API; 40/72 resueltas en el frontend (resto documentado como deuda: bump coordinado de Angular pendiente de pruebas de UI, jsPDF requiere major, xlsx sin fix en origen).
+- Sin migraciones. Sin despliegue.
+
 ## 1.6.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-21 — Proactividad contextual: implementado y validado técnicamente. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-20).
