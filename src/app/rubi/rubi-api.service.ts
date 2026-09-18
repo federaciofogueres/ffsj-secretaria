@@ -21,9 +21,10 @@ export interface RubiConversationState {
   sensitiveFlow?: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion';
   activityId?: string; inscriptionId?: string;
 }
+export type RubiComunicacionesBandeja = 'nuevas' | 'recibidas' | 'enviadas' | 'contestadas';
 export type RubiAction =
   | { type: 'navigate'; destination: string; route?: string }
-  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion'; destination?: string; route?: string; inscriptionId?: string; label?: string };
+  | { type: 'start_flow'; flow: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' | 'comunicaciones'; destination?: string; route?: string; inscriptionId?: string; label?: string; bandeja?: RubiComunicacionesBandeja };
 
 export interface RubiResponse {
   message: string;
@@ -37,7 +38,7 @@ export interface RubiResponse {
 
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' }
+  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' | 'comunicaciones' }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export interface AltaPreparacion {
