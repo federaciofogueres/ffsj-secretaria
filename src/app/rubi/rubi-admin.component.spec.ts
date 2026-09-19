@@ -22,7 +22,7 @@ describe('RubiAdminComponent', () => {
     api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked']);
     api.getConfig.and.returnValue(of(configResponse));
     api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
-    api.getAnalytics.and.returnValue(of({ periodo: { desde: '', hasta: '' }, llamadas: 3, inputTokens: 10, outputTokens: 5, costeUsd: 0.01, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1 }));
+    api.getAnalytics.and.returnValue(of({ periodo: { desde: '', hasta: '' }, llamadas: 3, inputTokens: 10, outputTokens: 5, costeUsd: 0.01, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] }));
     api.getTools.and.returnValue(of({
       tools: [
         { name: 'start_baja', description: 'Abre el flujo de baja.', domain: 'personas', available: true, blockedByAdmin: false, blockedByInfra: false },
@@ -97,6 +97,37 @@ describe('RubiAdminComponent', () => {
     component.setAnalyticsDias(30);
     expect(api.getAnalytics).toHaveBeenCalledTimes(2);
     expect(component.analyticsDias).toBe(30);
+  });
+
+  describe('E (post-auditoria 1.8.1#RUBI): desglose operativo', () => {
+    it('filters analytics by association id when provided', () => {
+      fixture.detectChanges();
+      component.analyticsAsociacionId = '25';
+      component.loadAnalytics();
+      expect(api.getAnalytics.calls.mostRecent().args[0]?.asociacionId).toBe(25);
+    });
+
+    it('ignores a non-numeric or empty association filter', () => {
+      fixture.detectChanges();
+      component.analyticsAsociacionId = '';
+      component.loadAnalytics();
+      expect(api.getAnalytics.calls.mostRecent().args[0]?.asociacionId).toBeUndefined();
+    });
+
+    it('renders the breakdown by tool, failure code and association', () => {
+      api.getAnalytics.and.returnValue(of({
+        periodo: { desde: '', hasta: '' }, llamadas: 5, inputTokens: 1, outputTokens: 1, costeUsd: 0, fallidas: 1, actoresUnicos: 1, asociacionesUnicas: 1,
+        latenciaMediaMs: 200,
+        porTool: [{ tool: 'list_actividades', llamadas: 4, fallidas: 0 }],
+        fallosPorCodigo: [{ codigo: 'RUBI_TOOL_NOT_AUTHORIZED', llamadas: 1 }],
+        porAsociacion: [{ asociacionId: 25, llamadas: 5 }]
+      }));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('list_actividades');
+      expect(text).toContain('RUBI_TOOL_NOT_AUTHORIZED');
+      expect(text).toContain('#25');
+    });
   });
 
   it('provides the new admin labels in ES, VA and EN', () => {

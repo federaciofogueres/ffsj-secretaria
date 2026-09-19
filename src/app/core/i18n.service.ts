@@ -275,6 +275,8 @@ Object.assign(translations.es, {
   'rubi.admin.analytics.title': 'Analiticas', 'rubi.admin.analytics.last7': 'Ultimos 7 dias', 'rubi.admin.analytics.last30': 'Ultimos 30 dias',
   'rubi.admin.analytics.calls': 'Llamadas', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Coste estimado',
   'rubi.admin.analytics.failures': 'Fallidas', 'rubi.admin.analytics.actors': 'Actores unicos', 'rubi.admin.analytics.associations': 'Asociaciones unicas',
+  'rubi.admin.analytics.latency': 'Latencia media', 'rubi.admin.analytics.filterAssociation': 'Filtrar por asociacion (id)',
+  'rubi.admin.analytics.byTool': 'Por tool', 'rubi.admin.analytics.byFailureCode': 'Fallos por codigo', 'rubi.admin.analytics.byAssociation': 'Por asociacion',
   'rubi.admin.tools.title': 'Tools y capacidades', 'rubi.admin.tools.hint': 'El kill switch de infraestructura (RUBI_BLOCKED_TOOLS) sigue siendo superior: una tool bloqueada por infraestructura no puede reactivarse desde aqui.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Dominio', 'rubi.admin.tools.status': 'Estado',
   'rubi.admin.tools.blocked': 'Bloqueada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloqueada por infraestructura'
@@ -298,6 +300,8 @@ Object.assign(translations.va, {
   'rubi.admin.analytics.title': 'Analitiques', 'rubi.admin.analytics.last7': 'Ultims 7 dies', 'rubi.admin.analytics.last30': 'Ultims 30 dies',
   'rubi.admin.analytics.calls': 'Crides', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Cost estimat',
   'rubi.admin.analytics.failures': 'Fallides', 'rubi.admin.analytics.actors': 'Actors unics', 'rubi.admin.analytics.associations': 'Associacions uniques',
+  'rubi.admin.analytics.latency': 'Latencia mitjana', 'rubi.admin.analytics.filterAssociation': 'Filtrar per associacio (id)',
+  'rubi.admin.analytics.byTool': 'Per tool', 'rubi.admin.analytics.byFailureCode': 'Fallades per codi', 'rubi.admin.analytics.byAssociation': 'Per associacio',
   'rubi.admin.tools.title': 'Tools i capacitats', 'rubi.admin.tools.hint': 'El kill switch d infraestructura (RUBI_BLOCKED_TOOLS) continua sent superior: una tool bloquejada per infraestructura no pot reactivar-se des d aci.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domini', 'rubi.admin.tools.status': 'Estat',
   'rubi.admin.tools.blocked': 'Bloquejada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloquejada per infraestructura'
@@ -321,6 +325,8 @@ Object.assign(translations.en, {
   'rubi.admin.analytics.title': 'Analytics', 'rubi.admin.analytics.last7': 'Last 7 days', 'rubi.admin.analytics.last30': 'Last 30 days',
   'rubi.admin.analytics.calls': 'Calls', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Estimated cost',
   'rubi.admin.analytics.failures': 'Failures', 'rubi.admin.analytics.actors': 'Unique actors', 'rubi.admin.analytics.associations': 'Unique associations',
+  'rubi.admin.analytics.latency': 'Average latency', 'rubi.admin.analytics.filterAssociation': 'Filter by association (id)',
+  'rubi.admin.analytics.byTool': 'By tool', 'rubi.admin.analytics.byFailureCode': 'Failures by code', 'rubi.admin.analytics.byAssociation': 'By association',
   'rubi.admin.tools.title': 'Tools and capabilities', 'rubi.admin.tools.hint': 'The infrastructure kill switch (RUBI_BLOCKED_TOOLS) is still superior: a tool blocked by infrastructure cannot be re-enabled from here.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domain', 'rubi.admin.tools.status': 'Status',
   'rubi.admin.tools.blocked': 'Blocked', 'rubi.admin.tools.available': 'Available', 'rubi.admin.tools.blockedByInfra': 'Blocked by infrastructure'

@@ -39,6 +39,7 @@ export class RubiAdminComponent implements OnInit {
   analyticsLoading = false;
   analyticsError = '';
   analyticsDias: 7 | 30 = 7;
+  analyticsAsociacionId = '';
 
   tools: RubiAdminTool[] = [];
   toolsLoading = false;
@@ -120,7 +121,8 @@ export class RubiAdminComponent implements OnInit {
     this.analyticsError = '';
     const to = new Date();
     const from = new Date(to.getTime() - this.analyticsDias * 24 * 60 * 60 * 1000);
-    this.api.getAnalytics({ from: from.toISOString(), to: to.toISOString() })
+    const asociacionId = Number(this.analyticsAsociacionId) > 0 ? Number(this.analyticsAsociacionId) : undefined;
+    this.api.getAnalytics({ from: from.toISOString(), to: to.toISOString(), asociacionId })
       .pipe(finalize(() => this.analyticsLoading = false))
       .subscribe({
         next: response => { this.analytics = response; },

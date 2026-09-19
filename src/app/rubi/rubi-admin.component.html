@@ -120,9 +120,14 @@
 
       <section class="section-panel">
         <h2 class="h5">{{ 'rubi.admin.analytics.title' | t }}</h2>
-        <div class="d-flex gap-2 mb-2">
+        <div class="d-flex gap-2 mb-2 align-items-end flex-wrap">
           <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 7" [class.btn-outline-secondary]="analyticsDias !== 7" (click)="setAnalyticsDias(7)">{{ 'rubi.admin.analytics.last7' | t }}</button>
           <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 30" [class.btn-outline-secondary]="analyticsDias !== 30" (click)="setAnalyticsDias(30)">{{ 'rubi.admin.analytics.last30' | t }}</button>
+          <div>
+            <label class="form-label mb-0">{{ 'rubi.admin.analytics.filterAssociation' | t }}</label>
+            <input class="form-control form-control-sm" type="number" min="1" [(ngModel)]="analyticsAsociacionId" (keyup.enter)="loadAnalytics()" />
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadAnalytics()">{{ 'rubi.admin.associations.refresh' | t }}</button>
         </div>
         <p *ngIf="analyticsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
         <div class="alert alert-danger" *ngIf="analyticsError">{{ analyticsError | t }}</div>
@@ -133,6 +138,27 @@
           <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.failures' | t }}</span><strong>{{ a.fallidas }}</strong></div></div>
           <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.actors' | t }}</span><strong>{{ a.actoresUnicos }}</strong></div></div>
           <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.associations' | t }}</span><strong>{{ a.asociacionesUnicas }}</strong></div></div>
+          <div class="col-md-4" *ngIf="a.latenciaMediaMs !== null"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.latency' | t }}</span><strong>{{ a.latenciaMediaMs | number: '1.0-0' }} ms</strong></div></div>
+        </div>
+        <div class="row g-3 mt-1" *ngIf="!analyticsLoading && analytics as a">
+          <div class="col-md-4" *ngIf="a.porTool.length">
+            <h3 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h3>
+            <ul class="list-unstyled small mb-0">
+              <li *ngFor="let item of a.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.fallidas }} {{ 'rubi.admin.analytics.failures' | t | lowercase }})</li>
+            </ul>
+          </div>
+          <div class="col-md-4" *ngIf="a.fallosPorCodigo.length">
+            <h3 class="h6">{{ 'rubi.admin.analytics.byFailureCode' | t }}</h3>
+            <ul class="list-unstyled small mb-0">
+              <li *ngFor="let item of a.fallosPorCodigo">{{ item.codigo }}: {{ item.llamadas }}</li>
+            </ul>
+          </div>
+          <div class="col-md-4" *ngIf="a.porAsociacion.length">
+            <h3 class="h6">{{ 'rubi.admin.analytics.byAssociation' | t }}</h3>
+            <ul class="list-unstyled small mb-0">
+              <li *ngFor="let item of a.porAsociacion">#{{ item.asociacionId }}: {{ item.llamadas }}</li>
+            </ul>
+          </div>
         </div>
       </section>
     </ng-container>

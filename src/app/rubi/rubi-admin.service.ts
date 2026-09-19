@@ -49,6 +49,22 @@ export interface RubiAdminAsociacionesResponse {
   items: RubiAdminAsociacion[];
 }
 
+export interface RubiAdminToolUsage {
+  tool: string;
+  llamadas: number;
+  fallidas: number;
+}
+
+export interface RubiAdminFailureCode {
+  codigo: string;
+  llamadas: number;
+}
+
+export interface RubiAdminAssociationUsage {
+  asociacionId: number;
+  llamadas: number;
+}
+
 export interface RubiAdminAnalytics {
   periodo: { desde: string; hasta: string };
   llamadas: number;
@@ -58,6 +74,10 @@ export interface RubiAdminAnalytics {
   fallidas: number;
   actoresUnicos: number;
   asociacionesUnicas: number;
+  latenciaMediaMs: number | null;
+  porTool: RubiAdminToolUsage[];
+  fallosPorCodigo: RubiAdminFailureCode[];
+  porAsociacion: RubiAdminAssociationUsage[];
 }
 
 export interface RubiAdminTool {
