@@ -9,7 +9,12 @@ import { I18nService } from '../core/i18n.service';
 import { RubiApiService, RubiResponse } from './rubi-api.service';
 import { RubiConversationService } from './rubi-conversation.service';
 import { RubiPanelComponent } from './rubi-panel.component';
+import { RubiScreenContextService } from './rubi-screen-context.service';
 import { CensoService } from '../core/censo.service';
+
+function setRouterUrl(router: Router, url: string): void {
+  Object.defineProperty(router, 'url', { get: () => url, configurable: true });
+}
 
 describe('RubiPanelComponent', () => {
   let fixture: ComponentFixture<RubiPanelComponent>;
@@ -415,6 +420,85 @@ describe('RubiPanelComponent', () => {
     federationComponent.onTargetAssociationChange(25);
     expect(federationComponent.insights).toEqual([]);
     expect(api.getSuggestions).toHaveBeenCalledWith(25);
+  });
+
+  describe('A (post-auditoria 1.8.1#RUBI): contexto de pantalla', () => {
+    let screenContext: RubiScreenContextService;
+
+    beforeEach(() => {
+      screenContext = TestBed.inject(RubiScreenContextService);
+    });
+
+    it('contexto home: sin ninguna pagina real registrada, el panel usa el contexto minimo por defecto', () => {
+      setRouterUrl(router, '/');
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('Hola');
+      expect(api.message).toHaveBeenCalledWith('Hola', 'es', 'home', [], { version: 1, module: 'home', view: 'inicio' }, null);
+    });
+
+    it('contexto Registro: expone si el usuario puede crear (canCreate) sin ningun dato del formulario', () => {
+      setRouterUrl(router, '/registro');
+      screenContext.set({ version: 1, module: 'registro', view: 'registro', state: { canCreate: true } });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('¿Qué puedo hacer aquí?');
+      const args = api.message.calls.mostRecent().args;
+      expect(args[4]).toEqual({ version: 1, module: 'registro', view: 'registro', state: { canCreate: true } });
+    });
+
+    it('contexto Calendario: conserva la actividad seleccionada puesta por la pagina real', () => {
+      setRouterUrl(router, '/calendario');
+      screenContext.set({ version: 1, module: 'calendario', view: 'calendario', state: { selectedActivityId: 'ACT-1' } });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('¿Qué es esto?');
+      const args = api.message.calls.mostRecent().args;
+      expect(args[4]).toEqual({ version: 1, module: 'calendario', view: 'calendario', state: { selectedActivityId: 'ACT-1' } });
+    });
+
+    it('contexto listado de Inscripciones: view=listado, sin ningun id seleccionado', () => {
+      setRouterUrl(router, '/inscripciones');
+      screenContext.set({ version: 1, module: 'inscripciones', view: 'listado' });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('¿Qué puedo hacer aquí?');
+      const args = api.message.calls.mostRecent().args;
+      expect(args[4]).toEqual({ version: 1, module: 'inscripciones', view: 'listado' });
+    });
+
+    it('contexto detalle de Inscripción: view=detalle con el id ya validado, sin datos del formulario', () => {
+      setRouterUrl(router, '/inscripciones/INS-42');
+      screenContext.set({ version: 1, module: 'inscripciones', view: 'detalle', state: { selectedInscriptionId: 'INS-42' } });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('¿Qué estoy viendo?');
+      const args = api.message.calls.mostRecent().args;
+      expect(args[4]).toEqual({ version: 1, module: 'inscripciones', view: 'detalle', state: { selectedInscriptionId: 'INS-42' } });
+    });
+
+    it('un cambio de ruta actualiza el contexto enviado (nunca se arrastra el de la pagina anterior)', () => {
+      setRouterUrl(router, '/registro');
+      screenContext.set({ version: 1, module: 'registro', view: 'registro', state: { canCreate: true } });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('Primero');
+      expect(api.message.calls.mostRecent().args[4]).toEqual({ version: 1, module: 'registro', view: 'registro', state: { canCreate: true } });
+
+      setRouterUrl(router, '/inscripciones');
+      screenContext.set({ version: 1, module: 'inscripciones', view: 'listado' });
+      component.send('Después');
+      const secondContext = api.message.calls.mostRecent().args[4] as { module: string };
+      expect(secondContext.module).toBe('inscripciones');
+      expect(JSON.stringify(secondContext)).not.toContain('canCreate');
+    });
+
+    it('el contexto nunca incluye PII: solo las claves estructuradas permitidas', () => {
+      setRouterUrl(router, '/inscripciones/INS-42');
+      screenContext.set({ version: 1, module: 'inscripciones', view: 'detalle', state: { selectedInscriptionId: 'INS-42' } });
+      api.message.and.returnValue(of({ message: 'ok', intent: null, actions: [], errors: [], metadata: { success: true } }));
+      component.send('¿Qué estoy viendo?');
+      const sent = JSON.stringify(api.message.calls.mostRecent().args[4]);
+      expect(sent).not.toMatch(/nombre|apellidos|nif|dni|email|telefono|direccion/i);
+      const allowedKeys = new Set(['version', 'module', 'view', 'tab', 'state', 'canCreate', 'hasOpenRegistration', 'hasOpenModification', 'hasOpenBaja', 'hasOpenDocumentacion', 'hasOpenComunicacion', 'missingRequiredFields', 'selectedActivityId', 'selectedInscriptionId']);
+      const context = api.message.calls.mostRecent().args[4] as unknown as Record<string, unknown>;
+      for (const key of Object.keys(context)) expect(allowedKeys.has(key)).toBeTrue();
+      for (const key of Object.keys((context['state'] as Record<string, unknown>) || {})) expect(allowedKeys.has(key)).toBeTrue();
+    });
   });
 
   it('RUBI-23.1 a logout (and the following login) clears a previously selected target association: it never survives across sessions in the same tab', () => {

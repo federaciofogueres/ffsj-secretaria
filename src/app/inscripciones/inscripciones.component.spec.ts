@@ -13,7 +13,7 @@ import { InscripcionesComponent } from './inscripciones.component';
 import { InscripcionDraftStateService } from './inscripcion-draft-state.service';
 
 describe('InscripcionesComponent', () => {
-  function createComponent(entrada?: any): InscripcionesComponent {
+  function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any): InscripcionesComponent {
     const secretaria = jasmine.createSpyObj('SecretariaService', [
       'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion'
     ]);
@@ -28,13 +28,37 @@ describe('InscripcionesComponent', () => {
       { asociacionId: 1 } as any,
       {} as any,
       { isAdmin: () => false } as any,
-      { snapshot: { paramMap: { get: () => null }, queryParamMap: { get: () => null }, routeConfig: null } } as any,
+      { snapshot: { paramMap: { get: () => routeId }, queryParamMap: { get: () => null }, routeConfig: null } } as any,
       { navigate: () => Promise.resolve(true) } as any,
       { hasPermission: () => true } as any,
       { isSelectedActive: true, selectedSnapshot: null } as any,
-      new InscripcionDraftStateService()
+      new InscripcionDraftStateService(),
+      rubiScreenContext || { set: () => undefined, clear: () => undefined } as any
     );
   }
+
+  it('A (post-auditoria 1.8.1#RUBI): el listado expone view=listado sin ningún id seleccionado', () => {
+    const rubiScreenContext = jasmine.createSpyObj('RubiScreenContextService', ['set', 'clear']);
+    const component = createComponent(undefined, null, rubiScreenContext);
+    spyOn(component as any, 'cargarDatos');
+    component.ngOnInit();
+    expect(rubiScreenContext.set).toHaveBeenCalledWith({ version: 1, module: 'inscripciones', view: 'listado' });
+  });
+
+  it('A (post-auditoria 1.8.1#RUBI): el detalle expone view=detalle con el id de la ruta, sin datos del formulario', () => {
+    const rubiScreenContext = jasmine.createSpyObj('RubiScreenContextService', ['set', 'clear']);
+    const component = createComponent(undefined, 'INS-42', rubiScreenContext);
+    spyOn(component as any, 'cargarDatos');
+    component.ngOnInit();
+    expect(rubiScreenContext.set).toHaveBeenCalledWith({ version: 1, module: 'inscripciones', view: 'detalle', state: { selectedInscriptionId: 'INS-42' } });
+  });
+
+  it('A (post-auditoria 1.8.1#RUBI): ngOnDestroy limpia el contexto de la pantalla', () => {
+    const rubiScreenContext = jasmine.createSpyObj('RubiScreenContextService', ['set', 'clear']);
+    const component = createComponent(undefined, null, rubiScreenContext);
+    component.ngOnDestroy();
+    expect(rubiScreenContext.clear).toHaveBeenCalledWith('inscripciones');
+  });
 
   it('conserva el estado global al cambiar de pestaña y al volver a seleccionar la inscripción', () => {
     const component = createComponent();

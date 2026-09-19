@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, switchMap } from 'rxjs';
@@ -19,6 +19,7 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 import { FormulariosComponent } from '../formularios/formularios.component';
 import { InscripcionDraftState, InscripcionDraftStateService } from './inscripcion-draft-state.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -32,7 +33,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
-export class InscripcionesComponent implements OnInit {
+export class InscripcionesComponent implements OnInit, OnDestroy {
   actividades: ActividadSecretaria[] = [];
   formularios: FormularioInscripcion[] = [];
   inscripciones: InscripcionSecretaria[] = [];
@@ -97,7 +98,8 @@ export class InscripcionesComponent implements OnInit {
     private readonly router: Router,
     readonly permissions: PermissionsService,
     readonly ejercicioService: EjercicioService,
-    private readonly draftState: InscripcionDraftStateService
+    private readonly draftState: InscripcionDraftStateService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +113,17 @@ export class InscripcionesComponent implements OnInit {
     this.createMode = this.isCreateRoute();
     this.detailMode = this.createMode || Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
     this.cargarDatos();
+    // A (post-auditoria 1.8.1#RUBI): distingue listado de detalle, y expone el
+    // id de la inscripcion seleccionada (ya validado como allowlist de
+    // caracteres seguros por el backend) sin ningun dato del formulario.
+    this.rubiScreenContext.set({
+      version: 1, module: 'inscripciones', view: this.detailMode ? 'detalle' : 'listado',
+      ...(routeId ? { state: { selectedInscriptionId: routeId } } : {})
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.rubiScreenContext.clear('inscripciones');
   }
 
   get isAdminMode(): boolean {
