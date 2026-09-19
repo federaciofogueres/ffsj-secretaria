@@ -1,5 +1,23 @@
 # Changelog
 
+## fix/rubi-post-auditoria — revisión técnica final (EN DESARROLLO, NO mergeada a develop)
+
+> Última revisión acotada antes de mergear la estabilización A-F. Implementado y validado técnicamente; validación manual pendiente.
+
+### Observabilidad (frente E): contrato de analíticas actualizado
+
+- `/admin/rubi/analiticas` separa ahora `operacion` (peticiones conversacionales reales a Rubi) de `provider` (coste/tokens del proveedor de pago), en vez de una lista plana de campos ambiguos. La sección de analíticas del Centro RUBI muestra ambos bloques con etiquetas explícitas sobre qué mide cada uno.
+- 6 tests actualizados/nuevos en `rubi-admin.component.spec.ts`.
+
+### Sin cambios de frontend en los otros dos puntos de esta revisión
+
+- La corrección de `registrationStatus()` y la auditoría de autorización de `Inscripciones.js` son puramente de backend/documentación (ver CHANGELOG de `ffsj-secretaria-api`); no requieren ningún cambio en el frontend.
+
+### Contrato y pruebas
+
+- 171/171 pruebas de frontend, build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
 ## fix/rubi-post-auditoria — EN DESARROLLO (rama correctiva, NO mergeada a develop)
 
 > Estabilización funcional derivada de la campaña manual completa posterior a `1.8.1#RUBI` (97 pruebas: 89 OK, 3 fallo, 5 bloqueadas). Seis frentes funcionales, implementados y validados técnicamente; validación manual pendiente. Sin deploy, sin migraciones ejecutadas, sin piloto activado.
