@@ -261,6 +261,7 @@ Object.assign(translations.es, {
   'rubi.admin.error.load': 'No se ha podido cargar la configuracion de Rubi.', 'rubi.admin.error.save': 'No se ha podido guardar el cambio.',
   'rubi.admin.error.associations': 'No se han podido cargar las asociaciones.', 'rubi.admin.error.associationSave': 'No se ha podido actualizar el acceso de la asociacion.',
   'rubi.admin.error.analytics': 'No se ha podido cargar la analitica.',
+  'rubi.admin.error.tools': 'No se ha podido cargar el catalogo de tools.', 'rubi.admin.error.toolSave': 'No se ha podido actualizar el bloqueo de la tool.',
   'rubi.admin.status.title': 'Estado general', 'rubi.admin.status.hint': 'El kill switch de infraestructura sigue teniendo prioridad sobre estas opciones.', 'rubi.admin.status.federationHint': 'La autorización de Federación/Administración es independiente de la autorización por asociación: ninguna concede acceso a la otra.',
   'rubi.admin.toggle.enabled': 'Rubi habilitada', 'rubi.admin.toggle.realProvider': 'Proveedor real habilitado', 'rubi.admin.toggle.transactional': 'Operaciones transaccionales habilitadas', 'rubi.admin.toggle.federation': 'Acceso de Federación/Administración autorizado',
   'rubi.admin.provider.title': 'Proveedor', 'rubi.admin.provider.name': 'Proveedor', 'rubi.admin.provider.model': 'Modelo',
@@ -273,13 +274,17 @@ Object.assign(translations.es, {
   'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Asociacion', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No se han encontrado asociaciones.',
   'rubi.admin.analytics.title': 'Analiticas', 'rubi.admin.analytics.last7': 'Ultimos 7 dias', 'rubi.admin.analytics.last30': 'Ultimos 30 dias',
   'rubi.admin.analytics.calls': 'Llamadas', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Coste estimado',
-  'rubi.admin.analytics.failures': 'Fallidas', 'rubi.admin.analytics.actors': 'Actores unicos', 'rubi.admin.analytics.associations': 'Asociaciones unicas'
+  'rubi.admin.analytics.failures': 'Fallidas', 'rubi.admin.analytics.actors': 'Actores unicos', 'rubi.admin.analytics.associations': 'Asociaciones unicas',
+  'rubi.admin.tools.title': 'Tools y capacidades', 'rubi.admin.tools.hint': 'El kill switch de infraestructura (RUBI_BLOCKED_TOOLS) sigue siendo superior: una tool bloqueada por infraestructura no puede reactivarse desde aqui.',
+  'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Dominio', 'rubi.admin.tools.status': 'Estado',
+  'rubi.admin.tools.blocked': 'Bloqueada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloqueada por infraestructura'
 });
 Object.assign(translations.va, {
   'rubi.admin.noAccess': 'No tens permis per a administrar la configuracio de Rubi.',
   'rubi.admin.error.load': 'No s ha pogut carregar la configuracio de Rubi.', 'rubi.admin.error.save': 'No s ha pogut guardar el canvi.',
   'rubi.admin.error.associations': 'No s han pogut carregar les associacions.', 'rubi.admin.error.associationSave': 'No s ha pogut actualitzar l acces de l associacio.',
   'rubi.admin.error.analytics': 'No s ha pogut carregar l analitica.',
+  'rubi.admin.error.tools': 'No s ha pogut carregar el cataleg de tools.', 'rubi.admin.error.toolSave': 'No s ha pogut actualitzar el bloqueig de la tool.',
   'rubi.admin.status.title': 'Estat general', 'rubi.admin.status.hint': 'El kill switch d infraestructura continua tenint prioritat sobre estes opcions.', 'rubi.admin.status.federationHint': 'L autorització de Federació/Administració és independent de l autorització per associació: cap concedix accés a l altra.',
   'rubi.admin.toggle.enabled': 'Rubi habilitada', 'rubi.admin.toggle.realProvider': 'Proveidor real habilitat', 'rubi.admin.toggle.transactional': 'Operacions transaccionals habilitades', 'rubi.admin.toggle.federation': 'Accés de Federació/Administració autoritzat',
   'rubi.admin.provider.title': 'Proveidor', 'rubi.admin.provider.name': 'Proveidor', 'rubi.admin.provider.model': 'Model',
@@ -292,13 +297,17 @@ Object.assign(translations.va, {
   'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Associacio', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No s han trobat associacions.',
   'rubi.admin.analytics.title': 'Analitiques', 'rubi.admin.analytics.last7': 'Ultims 7 dies', 'rubi.admin.analytics.last30': 'Ultims 30 dies',
   'rubi.admin.analytics.calls': 'Crides', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Cost estimat',
-  'rubi.admin.analytics.failures': 'Fallides', 'rubi.admin.analytics.actors': 'Actors unics', 'rubi.admin.analytics.associations': 'Associacions uniques'
+  'rubi.admin.analytics.failures': 'Fallides', 'rubi.admin.analytics.actors': 'Actors unics', 'rubi.admin.analytics.associations': 'Associacions uniques',
+  'rubi.admin.tools.title': 'Tools i capacitats', 'rubi.admin.tools.hint': 'El kill switch d infraestructura (RUBI_BLOCKED_TOOLS) continua sent superior: una tool bloquejada per infraestructura no pot reactivar-se des d aci.',
+  'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domini', 'rubi.admin.tools.status': 'Estat',
+  'rubi.admin.tools.blocked': 'Bloquejada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloquejada per infraestructura'
 });
 Object.assign(translations.en, {
   'rubi.admin.noAccess': 'You do not have permission to manage Rubi configuration.',
   'rubi.admin.error.load': 'Rubi configuration could not be loaded.', 'rubi.admin.error.save': 'The change could not be saved.',
   'rubi.admin.error.associations': 'Associations could not be loaded.', 'rubi.admin.error.associationSave': 'The association access could not be updated.',
   'rubi.admin.error.analytics': 'Analytics could not be loaded.',
+  'rubi.admin.error.tools': 'The tools catalogue could not be loaded.', 'rubi.admin.error.toolSave': 'The tool block could not be updated.',
   'rubi.admin.status.title': 'Overall status', 'rubi.admin.status.hint': 'The infrastructure kill switch still takes priority over these options.', 'rubi.admin.status.federationHint': 'Federation/Administration authorization is independent from association authorization: neither one grants access to the other.',
   'rubi.admin.toggle.enabled': 'Rubi enabled', 'rubi.admin.toggle.realProvider': 'Real provider enabled', 'rubi.admin.toggle.transactional': 'Transactional operations enabled', 'rubi.admin.toggle.federation': 'Federation/Administration access authorized',
   'rubi.admin.provider.title': 'Provider', 'rubi.admin.provider.name': 'Provider', 'rubi.admin.provider.model': 'Model',
@@ -311,7 +320,10 @@ Object.assign(translations.en, {
   'rubi.admin.associations.total': 'Total', 'rubi.admin.associations.name': 'Association', 'rubi.admin.associations.status': 'Rubi', 'rubi.admin.associations.empty': 'No associations found.',
   'rubi.admin.analytics.title': 'Analytics', 'rubi.admin.analytics.last7': 'Last 7 days', 'rubi.admin.analytics.last30': 'Last 30 days',
   'rubi.admin.analytics.calls': 'Calls', 'rubi.admin.analytics.tokens': 'Tokens', 'rubi.admin.analytics.cost': 'Estimated cost',
-  'rubi.admin.analytics.failures': 'Failures', 'rubi.admin.analytics.actors': 'Unique actors', 'rubi.admin.analytics.associations': 'Unique associations'
+  'rubi.admin.analytics.failures': 'Failures', 'rubi.admin.analytics.actors': 'Unique actors', 'rubi.admin.analytics.associations': 'Unique associations',
+  'rubi.admin.tools.title': 'Tools and capabilities', 'rubi.admin.tools.hint': 'The infrastructure kill switch (RUBI_BLOCKED_TOOLS) is still superior: a tool blocked by infrastructure cannot be re-enabled from here.',
+  'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domain', 'rubi.admin.tools.status': 'Status',
+  'rubi.admin.tools.blocked': 'Blocked', 'rubi.admin.tools.available': 'Available', 'rubi.admin.tools.blockedByInfra': 'Blocked by infrastructure'
 });
 Object.assign(translations.es, {
   'rubi.action.documentacion': 'Presentar documentación con Rubi', 'rubi.action.comunicacion': 'Enviar una comunicación con Rubi',

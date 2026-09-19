@@ -7,7 +7,7 @@ import { PermissionsService } from '../core/permissions.service';
 import { TranslatePipe } from '../shared/translate.pipe';
 import {
   RubiAdminAnalytics, RubiAdminAsociacion, RubiAdminBudgetStatus, RubiAdminGlobalConfig,
-  RubiAdminProviderStatus, RubiAdminService
+  RubiAdminProviderStatus, RubiAdminService, RubiAdminTool
 } from './rubi-admin.service';
 
 type AsociacionFiltro = 'all' | 'authorized' | 'unauthorized';
@@ -40,6 +40,11 @@ export class RubiAdminComponent implements OnInit {
   analyticsError = '';
   analyticsDias: 7 | 30 = 7;
 
+  tools: RubiAdminTool[] = [];
+  toolsLoading = false;
+  toolsError = '';
+  private readonly savingToolNames = new Set<string>();
+
   constructor(
     private readonly api: RubiAdminService,
     private readonly permissions: PermissionsService
@@ -51,6 +56,7 @@ export class RubiAdminComponent implements OnInit {
     this.load();
     this.loadAsociaciones();
     this.loadAnalytics();
+    this.loadTools();
   }
 
   load(): void {
@@ -119,6 +125,35 @@ export class RubiAdminComponent implements OnInit {
       .subscribe({
         next: response => { this.analytics = response; },
         error: () => { this.analyticsError = 'rubi.admin.error.analytics'; }
+      });
+  }
+
+  loadTools(): void {
+    this.toolsLoading = true;
+    this.toolsError = '';
+    this.api.getTools()
+      .pipe(finalize(() => this.toolsLoading = false))
+      .subscribe({
+        next: response => { this.tools = response.tools; },
+        error: () => { this.toolsError = 'rubi.admin.error.tools'; }
+      });
+  }
+
+  isSavingTool(name: string): boolean {
+    return this.savingToolNames.has(name);
+  }
+
+  toggleTool(tool: RubiAdminTool, checked: boolean): void {
+    if (tool.blockedByInfra) return;
+    const previous = tool.blockedByAdmin;
+    tool.blockedByAdmin = checked;
+    tool.available = !checked && !tool.blockedByInfra;
+    this.savingToolNames.add(tool.name);
+    this.api.setToolBlocked(tool.name, checked)
+      .pipe(finalize(() => this.savingToolNames.delete(tool.name)))
+      .subscribe({
+        next: () => {},
+        error: () => { tool.blockedByAdmin = previous; tool.available = !previous && !tool.blockedByInfra; this.toolsError = 'rubi.admin.error.toolSave'; }
       });
   }
 }

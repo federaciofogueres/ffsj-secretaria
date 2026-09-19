@@ -93,6 +93,32 @@
       </section>
 
       <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.tools.title' | t }}</h2>
+        <p class="text-muted small">{{ 'rubi.admin.tools.hint' | t }}</p>
+        <p *ngIf="toolsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="toolsError">{{ toolsError | t }}</div>
+        <table class="table table-sm" *ngIf="!toolsLoading && tools.length">
+          <thead><tr><th>{{ 'rubi.admin.tools.name' | t }}</th><th>{{ 'rubi.admin.tools.domain' | t }}</th><th>{{ 'rubi.admin.tools.status' | t }}</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let tool of tools">
+              <td>
+                <strong>{{ tool.name }}</strong>
+                <p class="text-muted small mb-0" *ngIf="tool.description">{{ tool.description }}</p>
+              </td>
+              <td>{{ tool.domain }}</td>
+              <td>
+                <span class="badge bg-secondary" *ngIf="tool.blockedByInfra">{{ 'rubi.admin.tools.blockedByInfra' | t }}</span>
+                <label class="form-check" *ngIf="!tool.blockedByInfra">
+                  <input class="form-check-input" type="checkbox" [checked]="tool.blockedByAdmin" [disabled]="isSavingTool(tool.name)" (change)="toggleTool(tool, $any($event.target).checked)" />
+                  <span class="form-check-label">{{ (tool.blockedByAdmin ? 'rubi.admin.tools.blocked' : 'rubi.admin.tools.available') | t }}</span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section-panel">
         <h2 class="h5">{{ 'rubi.admin.analytics.title' | t }}</h2>
         <div class="d-flex gap-2 mb-2">
           <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 7" [class.btn-outline-secondary]="analyticsDias !== 7" (click)="setAnalyticsDias(7)">{{ 'rubi.admin.analytics.last7' | t }}</button>

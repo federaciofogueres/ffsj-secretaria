@@ -60,6 +60,19 @@ export interface RubiAdminAnalytics {
   asociacionesUnicas: number;
 }
 
+export interface RubiAdminTool {
+  name: string;
+  description: string | null;
+  domain: string;
+  available: boolean;
+  blockedByAdmin: boolean;
+  blockedByInfra: boolean;
+}
+
+export interface RubiAdminToolsResponse {
+  tools: RubiAdminTool[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class RubiAdminService {
   constructor(
@@ -102,6 +115,18 @@ export class RubiAdminService {
     if (params.asociacionId) query['asociacionId'] = String(params.asociacionId);
     return this.http.get<RubiAdminAnalytics>(`${this.apiUrl.secretariaBasePath}/admin/rubi/analiticas`, {
       headers: this.adminHeaders(), params: query
+    });
+  }
+
+  getTools(): Observable<RubiAdminToolsResponse> {
+    return this.http.get<RubiAdminToolsResponse>(`${this.apiUrl.secretariaBasePath}/admin/rubi/tools`, {
+      headers: this.adminHeaders()
+    });
+  }
+
+  setToolBlocked(toolName: string, blocked: boolean): Observable<{ blockedTools: string[] }> {
+    return this.http.put<{ blockedTools: string[] }>(`${this.apiUrl.secretariaBasePath}/admin/rubi/tools/${toolName}`, { blocked }, {
+      headers: this.adminHeaders()
     });
   }
 
