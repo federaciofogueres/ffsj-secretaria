@@ -53,6 +53,13 @@ export interface RubiInsight {
   title: string | null;
   action: RubiAction;
 }
+export interface RubiAccess {
+  enabled: boolean;
+  authorized: boolean;
+  scope: 'association' | 'federation';
+  canSelectTargetAssociation: boolean;
+}
+
 export interface RubiSuggestionsResponse {
   insights: RubiInsight[];
   errors: Array<{ code: string; message: string }>;
@@ -160,8 +167,11 @@ export class RubiApiService {
     private readonly auth: AuthService
   ) {}
 
-  access(): Observable<{ enabled: boolean; authorized: boolean }> {
-    return this.http.get<{ enabled: boolean; authorized: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/acceso`, {
+  // RUBI-23.1: el scope (asociacion vs Federacion/Administracion) y si procede
+  // mostrar el selector de asociacion objetivo los resuelve exclusivamente el
+  // backend; el frontend nunca los infiere a partir del token.
+  access(): Observable<RubiAccess> {
+    return this.http.get<RubiAccess>(`${this.apiUrl.secretariaBasePath}/asistente/acceso`, {
       headers: this.authHeaders(false)
     }).pipe(timeout(10000));
   }

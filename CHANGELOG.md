@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.8.1#RUBI — CERRADA — Corrección de blocker de validación manual (RUBI-20)
+
+> Hallazgo real durante la validación manual de RUBI-20 en DEV: un usuario Federación/Administración autorizado no veía el selector de asociación objetivo en el panel Rubi, bloqueando 150-06 → 150-10. Corrección de una sola causa, sin funcionalidad nueva de producto. **Validación funcional manual posterior confirmada: 150-05, 150-06, 150-07, 150-08, 150-09, 150-10 y 160-06 OK.**
+
+### Causa raíz
+
+- `isFederationActor` (rubi-panel.component.ts) se calculaba como `!this.censoService.asociacionId`, delegando en `AuthService.getIdAsociacion()` de `ffsj-web-components`. Esa función devuelve `-1` (no `0`) para cualquier login que no sea de asociación, y en JavaScript `!(-1)` es `false`. El selector, por tanto, nunca se mostraba a un actor Federación/Administración real, independientemente de su autorización.
+- Decisión arquitectónica corregida: **el frontend ya no infiere el scope**; consume el scope y `canSelectTargetAssociation` resueltos exclusivamente por `GET /asistente/acceso` (ver CHANGELOG de `ffsj-secretaria-api` 1.8.1#RUBI). Ver `docs/rubi/RUBI.md`.
+
+### Cambio frontend
+
+- `RubiApiService.access()` devuelve ahora `{ enabled, authorized, scope, canSelectTargetAssociation }` (interfaz `RubiAccess`).
+- `RubiPanelComponent`: eliminado el getter `isFederationActor`; nuevo estado `canSelectTargetAssociation`, poblado desde la respuesta de `/asistente/acceso` en `ngOnInit`. El `<select>` de asociación objetivo (`rubi-panel.component.html`) pasa a condicionarse por este campo.
+- Corrección adicional relacionada: el panel Rubi persiste montado entre sesiones (`@defer` en `app.component.html`), así que un `targetAssociationId`/`federationAssociations` cargados por un actor podían sobrevivir a un logout/login posterior en la misma pestaña. Ahora se limpian al cambiar el estado de sesión (`AuthService.loginStatusObservable`).
+- `CensoService`/`AuthService.getIdAsociacion()` se mantienen sin cambios: siguen siendo correctos para su uso original (contexto de asociación propia); el bug estaba únicamente en reutilizarlos como señal de "es Federación".
+
+### Contrato y pruebas
+
+- 145/145 pruebas de frontend (2 nuevas), build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
+
 ## 1.8.0#RUBI — CERRADA TÉCNICAMENTE
 
 > RUBI-23 — Release Candidate / Preparación de piloto: implementado y validado técnicamente. Feature freeze, sin funcionalidades nuevas. Sin deploy, sin piloto activado, validación funcional manual pendiente (sin confirmación del usuario de que se haya realizado).

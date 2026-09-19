@@ -16,7 +16,7 @@
     </div>
   </header>
 
-  <div *ngIf="isFederationActor" class="rubi-target-association">
+  <div *ngIf="canSelectTargetAssociation" class="rubi-target-association">
     <label for="rubi-target-association">{{ 'rubi.target.label' | t }}</label>
     <select id="rubi-target-association" [disabled]="federationAssociationsLoading" [ngModel]="targetAssociationId" (ngModelChange)="onTargetAssociationChange($event)">
       <option [ngValue]="null">{{ 'rubi.target.none' | t }}</option>

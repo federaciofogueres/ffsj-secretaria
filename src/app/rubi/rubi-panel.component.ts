@@ -3,7 +3,8 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { AuthService } from 'ffsj-web-components';
+import { Subscription, distinctUntilChanged, skip } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
@@ -55,6 +56,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   registroTipo: 'documentacion' | 'comunicacion' = 'documentacion';
   registroPrepared = false;
   accessGranted = false;
+  canSelectTargetAssociation = false;
   targetAssociationId: number | null = null;
   federationAssociations: Asociacion[] = [];
   federationAssociationsLoading = false;
@@ -72,9 +74,19 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     readonly i18n: I18nService,
     private readonly router: Router,
     private readonly screenContext: RubiScreenContextService,
-    private readonly censoService: CensoService
+    private readonly censoService: CensoService,
+    private readonly auth: AuthService
   ) {
     this.subscriptions.add(this.conversation.messagesChanges.subscribe(messages => this.messages = messages));
+    // RUBI-23.1: el panel persiste montado entre sesiones (ver `@defer` en
+    // app.component.html), asi que un target/asociaciones cargados por un
+    // actor no deben sobrevivir a un logout/login posterior en la misma
+    // pestana. `skip(1)` ignora el valor inicial: el bootstrap de acceso ya
+    // lo gestiona ngOnInit.
+    this.subscriptions.add(this.auth.loginStatusObservable.pipe(distinctUntilChanged(), skip(1)).subscribe(() => {
+      this.targetAssociationId = null;
+      this.federationAssociations = [];
+    }));
     this.subscriptions.add(this.conversation.clearedChanges.subscribe(() => {
       this.altaActive = false;
       this.altaPrepared = false;
@@ -91,17 +103,15 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.api.access().subscribe({
-      next: access => this.accessGranted = access.enabled && access.authorized,
-      error: () => this.accessGranted = false
+      next: access => {
+        this.accessGranted = access.enabled && access.authorized;
+        this.canSelectTargetAssociation = access.canSelectTargetAssociation;
+      },
+      error: () => {
+        this.accessGranted = false;
+        this.canSelectTargetAssociation = false;
+      }
     });
-  }
-
-  // RUBI-20: un actor Federacion/Administracion no tiene asociacion propia. Es la
-  // misma senal que ya usa el backend (RubiContext) para decidir el scope: no se
-  // basa en admin:access, que solo indica acceso a pantallas administrativas y no
-  // implica ningun alcance funcional de Rubi.
-  get isFederationActor(): boolean {
-    return !this.censoService.asociacionId;
   }
 
   ngOnDestroy(): void {
@@ -121,7 +131,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       this.api.startSession();
       this.api.trackEvent({ event: 'session_opened', stage: 'conversation' }).subscribe({ error: () => {} });
     }
-    if (this.isFederationActor) {
+    if (this.canSelectTargetAssociation) {
       if (!this.federationAssociations.length && !this.federationAssociationsLoading) this.loadFederationAssociations();
     } else if (this.targetAssociationId !== null) {
       this.targetAssociationId = null;
