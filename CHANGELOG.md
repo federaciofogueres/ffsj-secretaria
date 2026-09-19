@@ -1,8 +1,8 @@
 # Changelog
 
-## 1.8.1#RUBI — Corrección de blocker de validación manual (RUBI-20)
+## 1.8.1#RUBI — CERRADA — Corrección de blocker de validación manual (RUBI-20)
 
-> Hallazgo real durante la validación manual de RUBI-20 en DEV: un usuario Federación/Administración autorizado no veía el selector de asociación objetivo en el panel Rubi, bloqueando 150-06 → 150-10. Corrección de una sola causa, sin funcionalidad nueva de producto. La validación manual 150-06 → 150-10 sigue pendiente de repetirse en DEV tras el despliegue.
+> Hallazgo real durante la validación manual de RUBI-20 en DEV: un usuario Federación/Administración autorizado no veía el selector de asociación objetivo en el panel Rubi, bloqueando 150-06 → 150-10. Corrección de una sola causa, sin funcionalidad nueva de producto. **Validación funcional manual posterior confirmada: 150-05, 150-06, 150-07, 150-08, 150-09, 150-10 y 160-06 OK.**
 
 ### Causa raíz
 
