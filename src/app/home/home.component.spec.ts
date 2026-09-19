@@ -6,6 +6,7 @@ import { HomeComponent } from './home.component';
 import { PermissionsService } from '../core/permissions.service';
 import { AdminAccessService } from '../core/admin-access.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 describe('HomeComponent', () => {
   let component: HomeComponent;
@@ -42,5 +43,12 @@ describe('HomeComponent', () => {
 
   it('should expose five modules on the home screen', () => {
     expect(component.modules.length).toBe(5);
+  });
+
+  it('A (post-auditoria 1.8.1#RUBI): expone el contexto de pantalla home a Rubi y lo limpia al destruirse', () => {
+    const screenContext = TestBed.inject(RubiScreenContextService);
+    expect(screenContext.current).toEqual({ version: 1, module: 'home', view: 'inicio' });
+    component.ngOnDestroy();
+    expect(screenContext.current).toBeNull();
   });
 });

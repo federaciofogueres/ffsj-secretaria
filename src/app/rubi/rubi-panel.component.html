@@ -61,11 +61,19 @@
       </div>
     </article>
     <p *ngIf="loading" class="rubi-status rubi-status-loading" role="status"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> {{ 'rubi.loading' | t }}</p>
-    <app-rubi-alta *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
-    <app-rubi-modificacion *ngIf="modificationActive" (closed)="onModificationClosed($event)" (openNormalFlow)="openNormalModificationFlow()" (preparationStateChanged)="onModificationPreparationStateChanged($event)"></app-rubi-modificacion>
-    <app-rubi-baja *ngIf="bajaActive" (closed)="onBajaClosed($event)" (openNormalFlow)="openNormalBajaFlow()" (preparationStateChanged)="onBajaPreparationStateChanged($event)"></app-rubi-baja>
-    <app-rubi-registro *ngIf="registroActive" [tipo]="registroTipo" (closed)="onRegistroClosed($event)" (openNormalFlow)="openNormalRegistroFlow()" (preparationStateChanged)="onRegistroPreparationStateChanged($event)"></app-rubi-registro>
+    <app-rubi-alta #altaFlow *ngIf="altaActive" (closed)="onAltaClosed($event)" (openNormalFlow)="openNormalAltaFlow()" (preparationStateChanged)="onAltaPreparationStateChanged($event)"></app-rubi-alta>
+    <app-rubi-modificacion #modificacionFlow *ngIf="modificationActive" (closed)="onModificationClosed($event)" (openNormalFlow)="openNormalModificationFlow()" (preparationStateChanged)="onModificationPreparationStateChanged($event)"></app-rubi-modificacion>
+    <app-rubi-baja #bajaFlow *ngIf="bajaActive" (closed)="onBajaClosed($event)" (openNormalFlow)="openNormalBajaFlow()" (preparationStateChanged)="onBajaPreparationStateChanged($event)"></app-rubi-baja>
+    <app-rubi-registro #registroFlow *ngIf="registroActive" [tipo]="registroTipo" (closed)="onRegistroClosed($event)" (openNormalFlow)="openNormalRegistroFlow()" (preparationStateChanged)="onRegistroPreparationStateChanged($event)"></app-rubi-registro>
   </section>
+
+  <!-- F (post-auditoria 1.8.1#RUBI): salida siempre visible de un tramite
+       estructurado, sin depender de encontrar el boton de cancelar propio del
+       formulario. Cancela en backend (invalida la preparacion si existia) y
+       devuelve el composer para poder rectificar de inmediato. -->
+  <div *ngIf="altaActive || modificationActive || bajaActive || registroActive" class="rubi-workflow-exit">
+    <button type="button" class="rubi-workflow-cancel" (click)="cancelActiveWorkflow()">{{ 'rubi.workflow.cancel' | t }}</button>
+  </div>
 
   <section *ngIf="!altaActive && !modificationActive && !bajaActive && !isInitialState" class="rubi-quick-actions" [attr.aria-label]="'rubi.quickActions' | t">
     <button *ngFor="let key of quickActions" type="button" [disabled]="loading || unavailable" (click)="sendQuickAction(key)">{{ key | t }}</button>

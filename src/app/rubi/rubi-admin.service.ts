@@ -49,15 +49,62 @@ export interface RubiAdminAsociacionesResponse {
   items: RubiAdminAsociacion[];
 }
 
-export interface RubiAdminAnalytics {
-  periodo: { desde: string; hasta: string };
+export interface RubiAdminToolUsage {
+  tool: string;
+  llamadas: number;
+  fallidas: number;
+}
+
+export interface RubiAdminFailureCode {
+  codigo: string;
+  llamadas: number;
+}
+
+export interface RubiAdminAssociationUsage {
+  asociacionId: number;
+  llamadas: number;
+}
+
+// Revision tecnica final (post fix/rubi-post-auditoria): `operacion` mide
+// peticiones conversacionales reales a Rubi (deterministicas o via
+// provider); `provider` mide exclusivamente coste/tokens del proveedor de
+// pago. Nunca se mezclan en la misma cifra: ver docs/rubi/RUBI.md.
+export interface RubiAdminOperationalSummary {
+  llamadas: number;
+  exitosas: number;
+  fallidas: number;
+  actoresUnicos: number;
+  asociacionesUnicas: number;
+  latenciaMediaMs: number | null;
+  porTool: RubiAdminToolUsage[];
+  fallosPorCodigo: RubiAdminFailureCode[];
+  porAsociacion: RubiAdminAssociationUsage[];
+}
+
+export interface RubiAdminProviderSummary {
   llamadas: number;
   inputTokens: number;
   outputTokens: number;
   costeUsd: number;
-  fallidas: number;
-  actoresUnicos: number;
-  asociacionesUnicas: number;
+}
+
+export interface RubiAdminAnalytics {
+  periodo: { desde: string; hasta: string };
+  operacion: RubiAdminOperationalSummary;
+  provider: RubiAdminProviderSummary;
+}
+
+export interface RubiAdminTool {
+  name: string;
+  description: string | null;
+  domain: string;
+  available: boolean;
+  blockedByAdmin: boolean;
+  blockedByInfra: boolean;
+}
+
+export interface RubiAdminToolsResponse {
+  tools: RubiAdminTool[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -102,6 +149,18 @@ export class RubiAdminService {
     if (params.asociacionId) query['asociacionId'] = String(params.asociacionId);
     return this.http.get<RubiAdminAnalytics>(`${this.apiUrl.secretariaBasePath}/admin/rubi/analiticas`, {
       headers: this.adminHeaders(), params: query
+    });
+  }
+
+  getTools(): Observable<RubiAdminToolsResponse> {
+    return this.http.get<RubiAdminToolsResponse>(`${this.apiUrl.secretariaBasePath}/admin/rubi/tools`, {
+      headers: this.adminHeaders()
+    });
+  }
+
+  setToolBlocked(toolName: string, blocked: boolean): Observable<{ blockedTools: string[] }> {
+    return this.http.put<{ blockedTools: string[] }>(`${this.apiUrl.secretariaBasePath}/admin/rubi/tools/${toolName}`, { blocked }, {
+      headers: this.adminHeaders()
     });
   }
 

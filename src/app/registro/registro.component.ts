@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -15,6 +15,7 @@ import { EjercicioService } from '../core/ejercicio.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas' | 'archivadas';
@@ -28,7 +29,7 @@ type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })
-export class RegistroComponent implements OnInit {
+export class RegistroComponent implements OnInit, OnDestroy {
   mode: RegistroMode = null;
   formMode: Exclude<RegistroMode, null> | null = null;
   detailMode: Exclude<RegistroMode, null> | null = null;
@@ -87,7 +88,8 @@ export class RegistroComponent implements OnInit {
     private readonly router: Router,
     readonly permissions: PermissionsService,
     readonly ejercicioService: EjercicioService,
-    private readonly dashboardSummary: DashboardSummaryService
+    private readonly dashboardSummary: DashboardSummaryService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -107,6 +109,14 @@ export class RegistroComponent implements OnInit {
         this.asociaciones = [asociacion];
       });
     }
+    // A (post-auditoria 1.8.1#RUBI): expone si el usuario puede crear
+    // documentacion/comunicaciones desde aqui, sin enviar ningun dato de
+    // formulario ni destinatario.
+    this.rubiScreenContext.set({ version: 1, module: 'registro', view: 'registro', state: { canCreate: this.canCreateRegistros || this.canCreateComm } });
+  }
+
+  ngOnDestroy(): void {
+    this.rubiScreenContext.clear('registro');
   }
 
   setMode(mode: Exclude<RegistroMode, null>): void {

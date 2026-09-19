@@ -1,5 +1,57 @@
 # Changelog
 
+## fix/rubi-post-auditoria — revisión técnica final (EN DESARROLLO, NO mergeada a develop)
+
+> Última revisión acotada antes de mergear la estabilización A-F. Implementado y validado técnicamente; validación manual pendiente.
+
+### Observabilidad (frente E): contrato de analíticas actualizado
+
+- `/admin/rubi/analiticas` separa ahora `operacion` (peticiones conversacionales reales a Rubi) de `provider` (coste/tokens del proveedor de pago), en vez de una lista plana de campos ambiguos. La sección de analíticas del Centro RUBI muestra ambos bloques con etiquetas explícitas sobre qué mide cada uno.
+- 6 tests actualizados/nuevos en `rubi-admin.component.spec.ts`.
+
+### Sin cambios de frontend en los otros dos puntos de esta revisión
+
+- La corrección de `registrationStatus()` y la auditoría de autorización de `Inscripciones.js` son puramente de backend/documentación (ver CHANGELOG de `ffsj-secretaria-api`); no requieren ningún cambio en el frontend.
+
+### Contrato y pruebas
+
+- 171/171 pruebas de frontend, build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
+## fix/rubi-post-auditoria — EN DESARROLLO (rama correctiva, NO mergeada a develop)
+
+> Estabilización funcional derivada de la campaña manual completa posterior a `1.8.1#RUBI` (97 pruebas: 89 OK, 3 fallo, 5 bloqueadas). Seis frentes funcionales, implementados y validados técnicamente; validación manual pendiente. Sin deploy, sin migraciones ejecutadas, sin piloto activado.
+
+### A — Contexto de pantalla (100-05)
+
+- `HomeComponent`, `RegistroComponent` e `InscripcionesComponent` (listado y detalle) informan ahora a `RubiScreenContextService`; antes solo Calendario y la gestión de asociados lo hacían.
+- `InscripcionesComponent` distingue `view: 'listado' | 'detalle'` y expone `selectedInscriptionId` solo en detalle.
+
+### B — Consultas temporales (130-02)
+
+- Sin cambios de frontend (la corrección determinista de ventanas temporales vive en el backend).
+
+### C — Lectura de estado de inscripciones (130-06, 150-03)
+
+- Sin cambios de UI dedicados: la nueva capability se consume igual que el resto de respuestas de Rubi en el chat existente.
+
+### D — Administración de tools (180-03)
+
+- Nueva sección "Tools y capacidades" en Configuración → RUBI (`rubi-admin.component`): catálogo real, descripción, dominio, estado efectivo y toggle de bloqueo administrativo por tool. Una tool bloqueada por infraestructura se muestra con una insignia informativa, sin ningún control que pueda desbloquearla.
+
+### E — Observabilidad (180-07)
+
+- La sección de analíticas del Centro RUBI añade latencia media, distribución por tool, fallos por código y llamadas por asociación, y un filtro por asociación (el backend ya lo soportaba).
+
+### F — Rectificación de workflows (X-02)
+
+- Botón siempre visible "Cancelar trámite y volver al chat" durante alta/modificación/baja/documentación/comunicación. Reutiliza el `cancel()` público que cada componente ya exponía.
+
+### Contrato y pruebas
+
+- 171/171 pruebas de frontend (26 nuevas), build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
 ## 1.8.1#RUBI — CERRADA — Corrección de blocker de validación manual (RUBI-20)
 
 > Hallazgo real durante la validación manual de RUBI-20 en DEV: un usuario Federación/Administración autorizado no veía el selector de asociación objetivo en el panel Rubi, bloqueando 150-06 → 150-10. Corrección de una sola causa, sin funcionalidad nueva de producto. **Validación funcional manual posterior confirmada: 150-05, 150-06, 150-07, 150-08, 150-09, 150-10 y 160-06 OK.**
