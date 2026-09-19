@@ -2,7 +2,8 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of, throwError } from 'rxjs';
+import { AuthService } from 'ffsj-web-components';
+import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
 import { RubiApiService, RubiResponse } from './rubi-api.service';
@@ -15,22 +16,25 @@ describe('RubiPanelComponent', () => {
   let component: RubiPanelComponent;
   let api: jasmine.SpyObj<RubiApiService>;
   let censoService: jasmine.SpyObj<CensoService>;
+  let loginStatus: BehaviorSubject<boolean>;
   let router: Router;
 
   beforeEach(async () => {
     api = jasmine.createSpyObj<RubiApiService>('RubiApiService', ['access', 'message', 'startSession', 'resetSession', 'trackEvent', 'feedback', 'getSuggestions']);
-    api.access.and.returnValue(of({ enabled: true, authorized: true }));
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'association', canSelectTargetAssociation: false }));
     api.trackEvent.and.returnValue(of({ accepted: true }));
     api.feedback.and.returnValue(of({ accepted: true }));
     api.getSuggestions.and.returnValue(of({ insights: [], errors: [], metadata: { success: true } }));
     censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociaciones'], { asociacionId: 12 });
     censoService.getAsociaciones.and.returnValue(of([]));
+    loginStatus = new BehaviorSubject<boolean>(true);
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, RubiPanelComponent],
       providers: [
         I18nService, RubiConversationService,
         { provide: RubiApiService, useValue: api },
-        { provide: CensoService, useValue: censoService }
+        { provide: CensoService, useValue: censoService },
+        { provide: AuthService, useValue: { loginStatusObservable: loginStatus.asObservable() } }
       ]
     }).compileComponents();
     fixture = TestBed.createComponent(RubiPanelComponent);
@@ -50,7 +54,7 @@ describe('RubiPanelComponent', () => {
   });
 
   it('keeps the launcher unavailable for a user outside the pilot', () => {
-    api.access.and.returnValue(of({ enabled: true, authorized: false }));
+    api.access.and.returnValue(of({ enabled: true, authorized: false, scope: 'association', canSelectTargetAssociation: false }));
     const deniedFixture = TestBed.createComponent(RubiPanelComponent);
     deniedFixture.detectChanges();
     expect(deniedFixture.componentInstance.accessGranted).toBeFalse();
@@ -301,18 +305,30 @@ describe('RubiPanelComponent', () => {
   });
 
   it('RUBI-20 an association actor never sees the target association picker', () => {
-    expect(component.isFederationActor).toBeFalse();
+    expect(component.canSelectTargetAssociation).toBeFalse();
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('.rubi-target-association')).toBeNull();
   });
 
+  it('RUBI-23.1 the frontend never infers the scope itself: it trusts canSelectTargetAssociation resolved by backend even if CensoService still reports an association id', () => {
+    // Regresion cubierta: el bug real era que un actor Federacion con
+    // AuthService.getIdAsociacion() devolviendo -1 (truthy) nunca veia el
+    // selector porque el frontend inferia el scope con `!asociacionId`. Ahora
+    // el frontend ignora censoService.asociacionId para esta decision.
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    expect(federationFixture.componentInstance.canSelectTargetAssociation).toBeTrue();
+    federationFixture.nativeElement.querySelector('.rubi-target-association');
+  });
+
   it('RUBI-20 a Federacion actor (no own association) sees the picker and loads associations on open', () => {
-    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
     censoService.getAsociaciones.and.returnValue(of([{ id: 25, nombre: 'Doctor Bergez - Carolinas', cif: 'G1' }, { id: 40, nombre: 'Pío XII', cif: 'G2' }]));
     const federationFixture = TestBed.createComponent(RubiPanelComponent);
     federationFixture.detectChanges();
     const federationComponent = federationFixture.componentInstance;
-    expect(federationComponent.isFederationActor).toBeTrue();
+    expect(federationComponent.canSelectTargetAssociation).toBeTrue();
     federationComponent.show();
     expect(censoService.getAsociaciones).toHaveBeenCalled();
     expect(federationComponent.federationAssociations.length).toBe(2);
@@ -321,7 +337,7 @@ describe('RubiPanelComponent', () => {
   });
 
   it('RUBI-20 sends the selected targetAssociationId with each message', () => {
-    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
     const federationFixture = TestBed.createComponent(RubiPanelComponent);
     federationFixture.detectChanges();
     const federationComponent = federationFixture.componentInstance;
@@ -332,7 +348,7 @@ describe('RubiPanelComponent', () => {
   });
 
   it('RUBI-20 changing the target association clears the conversation (no referent from the previous association survives)', () => {
-    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
     const federationFixture = TestBed.createComponent(RubiPanelComponent);
     federationFixture.detectChanges();
     const federationComponent = federationFixture.componentInstance;
@@ -390,7 +406,7 @@ describe('RubiPanelComponent', () => {
   });
 
   it('RUBI-21 changing the target association recalculates suggestions from scratch with the new target', () => {
-    Object.defineProperty(censoService, 'asociacionId', { value: 0 });
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
     const federationFixture = TestBed.createComponent(RubiPanelComponent);
     federationFixture.detectChanges();
     const federationComponent = federationFixture.componentInstance;
@@ -399,5 +415,22 @@ describe('RubiPanelComponent', () => {
     federationComponent.onTargetAssociationChange(25);
     expect(federationComponent.insights).toEqual([]);
     expect(api.getSuggestions).toHaveBeenCalledWith(25);
+  });
+
+  it('RUBI-23.1 a logout (and the following login) clears a previously selected target association: it never survives across sessions in the same tab', () => {
+    api.access.and.returnValue(of({ enabled: true, authorized: true, scope: 'federation', canSelectTargetAssociation: true }));
+    censoService.getAsociaciones.and.returnValue(of([{ id: 25, nombre: 'Doctor Bergez - Carolinas', cif: 'G1' }]));
+    const federationFixture = TestBed.createComponent(RubiPanelComponent);
+    federationFixture.detectChanges();
+    const federationComponent = federationFixture.componentInstance;
+    federationComponent.onTargetAssociationChange(25);
+    expect(federationComponent.targetAssociationId).toBe(25);
+
+    loginStatus.next(false);
+    expect(federationComponent.targetAssociationId).toBeNull();
+    expect(federationComponent.federationAssociations).toEqual([]);
+
+    loginStatus.next(true);
+    expect(federationComponent.targetAssociationId).toBeNull();
   });
 });
