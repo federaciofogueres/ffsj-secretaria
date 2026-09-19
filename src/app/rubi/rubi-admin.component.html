@@ -131,35 +131,50 @@
         </div>
         <p *ngIf="analyticsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
         <div class="alert alert-danger" *ngIf="analyticsError">{{ analyticsError | t }}</div>
-        <div class="row g-3" *ngIf="!analyticsLoading && analytics as a">
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.calls' | t }}</span><strong>{{ a.llamadas }}</strong></div></div>
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.tokens' | t }}</span><strong>{{ a.inputTokens + a.outputTokens }}</strong></div></div>
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.cost' | t }}</span><strong>{{ a.costeUsd | number: '1.2-4' }} USD</strong></div></div>
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.failures' | t }}</span><strong>{{ a.fallidas }}</strong></div></div>
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.actors' | t }}</span><strong>{{ a.actoresUnicos }}</strong></div></div>
-          <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.associations' | t }}</span><strong>{{ a.asociacionesUnicas }}</strong></div></div>
-          <div class="col-md-4" *ngIf="a.latenciaMediaMs !== null"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.latency' | t }}</span><strong>{{ a.latenciaMediaMs | number: '1.0-0' }} ms</strong></div></div>
-        </div>
-        <div class="row g-3 mt-1" *ngIf="!analyticsLoading && analytics as a">
-          <div class="col-md-4" *ngIf="a.porTool.length">
-            <h3 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h3>
-            <ul class="list-unstyled small mb-0">
-              <li *ngFor="let item of a.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.fallidas }} {{ 'rubi.admin.analytics.failures' | t | lowercase }})</li>
-            </ul>
+        <ng-container *ngIf="!analyticsLoading && analytics as a">
+          <!-- Revision tecnica final: OPERACION (peticiones conversacionales
+               reales a Rubi, deterministicas o via provider) y PROVIDER
+               (coste/tokens del proveedor de pago) son cifras distintas y
+               nunca se mezclan; las etiquetas dejan explicito que mide cada
+               bloque. -->
+          <h3 class="h6 text-muted">{{ 'rubi.admin.analytics.operationTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.calls' | t }}</span><strong>{{ a.operacion.llamadas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.successful' | t }}</span><strong>{{ a.operacion.exitosas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.failures' | t }}</span><strong>{{ a.operacion.fallidas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.actors' | t }}</span><strong>{{ a.operacion.actoresUnicos }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.associations' | t }}</span><strong>{{ a.operacion.asociacionesUnicas }}</strong></div></div>
+            <div class="col-md-4" *ngIf="a.operacion.latenciaMediaMs !== null"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.latency' | t }}</span><strong>{{ a.operacion.latenciaMediaMs | number: '1.0-0' }} ms</strong></div></div>
           </div>
-          <div class="col-md-4" *ngIf="a.fallosPorCodigo.length">
-            <h3 class="h6">{{ 'rubi.admin.analytics.byFailureCode' | t }}</h3>
-            <ul class="list-unstyled small mb-0">
-              <li *ngFor="let item of a.fallosPorCodigo">{{ item.codigo }}: {{ item.llamadas }}</li>
-            </ul>
+          <div class="row g-3 mt-1">
+            <div class="col-md-4" *ngIf="a.operacion.porTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.fallidas }} {{ 'rubi.admin.analytics.failures' | t | lowercase }})</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.operacion.fallosPorCodigo.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byFailureCode' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.fallosPorCodigo">{{ item.codigo }}: {{ item.llamadas }}</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.operacion.porAsociacion.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byAssociation' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.porAsociacion">#{{ item.asociacionId }}: {{ item.llamadas }}</li>
+              </ul>
+            </div>
           </div>
-          <div class="col-md-4" *ngIf="a.porAsociacion.length">
-            <h3 class="h6">{{ 'rubi.admin.analytics.byAssociation' | t }}</h3>
-            <ul class="list-unstyled small mb-0">
-              <li *ngFor="let item of a.porAsociacion">#{{ item.asociacionId }}: {{ item.llamadas }}</li>
-            </ul>
+
+          <h3 class="h6 text-muted mt-3">{{ 'rubi.admin.analytics.providerTitle' | t }}</h3>
+          <p class="text-muted small">{{ 'rubi.admin.analytics.providerHint' | t }}</p>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.providerCalls' | t }}</span><strong>{{ a.provider.llamadas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.tokens' | t }}</span><strong>{{ a.provider.inputTokens + a.provider.outputTokens }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.cost' | t }}</span><strong>{{ a.provider.costeUsd | number: '1.2-4' }} USD</strong></div></div>
           </div>
-        </div>
+        </ng-container>
       </section>
     </ng-container>
   </ng-container>

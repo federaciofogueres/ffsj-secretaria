@@ -22,7 +22,11 @@ describe('RubiAdminComponent', () => {
     api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked']);
     api.getConfig.and.returnValue(of(configResponse));
     api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
-    api.getAnalytics.and.returnValue(of({ periodo: { desde: '', hasta: '' }, llamadas: 3, inputTokens: 10, outputTokens: 5, costeUsd: 0.01, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] }));
+    api.getAnalytics.and.returnValue(of({
+      periodo: { desde: '', hasta: '' },
+      operacion: { llamadas: 3, exitosas: 3, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] },
+      provider: { llamadas: 0, inputTokens: 10, outputTokens: 5, costeUsd: 0.01 }
+    }));
     api.getTools.and.returnValue(of({
       tools: [
         { name: 'start_baja', description: 'Abre el flujo de baja.', domain: 'personas', available: true, blockedByAdmin: false, blockedByInfra: false },
@@ -55,7 +59,7 @@ describe('RubiAdminComponent', () => {
     fixture.detectChanges();
     expect(component.global).toEqual(configResponse.global);
     expect(component.asociaciones.length).toBe(2);
-    expect(component.analytics?.llamadas).toBe(3);
+    expect(component.analytics?.operacion.llamadas).toBe(3);
   });
 
   it('toggles the global enabled flag optimistically and rolls back on error', () => {
@@ -116,11 +120,14 @@ describe('RubiAdminComponent', () => {
 
     it('renders the breakdown by tool, failure code and association', () => {
       api.getAnalytics.and.returnValue(of({
-        periodo: { desde: '', hasta: '' }, llamadas: 5, inputTokens: 1, outputTokens: 1, costeUsd: 0, fallidas: 1, actoresUnicos: 1, asociacionesUnicas: 1,
-        latenciaMediaMs: 200,
-        porTool: [{ tool: 'list_actividades', llamadas: 4, fallidas: 0 }],
-        fallosPorCodigo: [{ codigo: 'RUBI_TOOL_NOT_AUTHORIZED', llamadas: 1 }],
-        porAsociacion: [{ asociacionId: 25, llamadas: 5 }]
+        periodo: { desde: '', hasta: '' },
+        operacion: {
+          llamadas: 5, exitosas: 4, fallidas: 1, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: 200,
+          porTool: [{ tool: 'list_actividades', llamadas: 4, fallidas: 0 }],
+          fallosPorCodigo: [{ codigo: 'RUBI_TOOL_NOT_AUTHORIZED', llamadas: 1 }],
+          porAsociacion: [{ asociacionId: 25, llamadas: 5 }]
+        },
+        provider: { llamadas: 0, inputTokens: 1, outputTokens: 1, costeUsd: 0 }
       }));
       fixture.detectChanges();
       const text = fixture.nativeElement.textContent;

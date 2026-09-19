@@ -277,6 +277,9 @@ Object.assign(translations.es, {
   'rubi.admin.analytics.failures': 'Fallidas', 'rubi.admin.analytics.actors': 'Actores unicos', 'rubi.admin.analytics.associations': 'Asociaciones unicas',
   'rubi.admin.analytics.latency': 'Latencia media', 'rubi.admin.analytics.filterAssociation': 'Filtrar por asociacion (id)',
   'rubi.admin.analytics.byTool': 'Por tool', 'rubi.admin.analytics.byFailureCode': 'Fallos por codigo', 'rubi.admin.analytics.byAssociation': 'Por asociacion',
+  'rubi.admin.analytics.operationTitle': 'Operacion (peticiones reales a Rubi)', 'rubi.admin.analytics.successful': 'Exitosas',
+  'rubi.admin.analytics.providerTitle': 'Proveedor (coste y tokens)', 'rubi.admin.analytics.providerHint': 'Solo el tramo que llega al proveedor de pago; no incluye respuestas deterministas, que no tienen coste.',
+  'rubi.admin.analytics.providerCalls': 'Llamadas al proveedor',
   'rubi.admin.tools.title': 'Tools y capacidades', 'rubi.admin.tools.hint': 'El kill switch de infraestructura (RUBI_BLOCKED_TOOLS) sigue siendo superior: una tool bloqueada por infraestructura no puede reactivarse desde aqui.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Dominio', 'rubi.admin.tools.status': 'Estado',
   'rubi.admin.tools.blocked': 'Bloqueada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloqueada por infraestructura'
@@ -302,6 +305,9 @@ Object.assign(translations.va, {
   'rubi.admin.analytics.failures': 'Fallides', 'rubi.admin.analytics.actors': 'Actors unics', 'rubi.admin.analytics.associations': 'Associacions uniques',
   'rubi.admin.analytics.latency': 'Latencia mitjana', 'rubi.admin.analytics.filterAssociation': 'Filtrar per associacio (id)',
   'rubi.admin.analytics.byTool': 'Per tool', 'rubi.admin.analytics.byFailureCode': 'Fallades per codi', 'rubi.admin.analytics.byAssociation': 'Per associacio',
+  'rubi.admin.analytics.operationTitle': 'Operacio (peticions reals a Rubi)', 'rubi.admin.analytics.successful': 'Exitoses',
+  'rubi.admin.analytics.providerTitle': 'Proveidor (cost i tokens)', 'rubi.admin.analytics.providerHint': 'Nomes el tram que arriba al proveidor de pagament; no inclou respostes deterministes, que no tenen cost.',
+  'rubi.admin.analytics.providerCalls': 'Crides al proveidor',
   'rubi.admin.tools.title': 'Tools i capacitats', 'rubi.admin.tools.hint': 'El kill switch d infraestructura (RUBI_BLOCKED_TOOLS) continua sent superior: una tool bloquejada per infraestructura no pot reactivar-se des d aci.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domini', 'rubi.admin.tools.status': 'Estat',
   'rubi.admin.tools.blocked': 'Bloquejada', 'rubi.admin.tools.available': 'Disponible', 'rubi.admin.tools.blockedByInfra': 'Bloquejada per infraestructura'
@@ -327,6 +333,9 @@ Object.assign(translations.en, {
   'rubi.admin.analytics.failures': 'Failures', 'rubi.admin.analytics.actors': 'Unique actors', 'rubi.admin.analytics.associations': 'Unique associations',
   'rubi.admin.analytics.latency': 'Average latency', 'rubi.admin.analytics.filterAssociation': 'Filter by association (id)',
   'rubi.admin.analytics.byTool': 'By tool', 'rubi.admin.analytics.byFailureCode': 'Failures by code', 'rubi.admin.analytics.byAssociation': 'By association',
+  'rubi.admin.analytics.operationTitle': 'Operation (real requests to Rubi)', 'rubi.admin.analytics.successful': 'Successful',
+  'rubi.admin.analytics.providerTitle': 'Provider (cost and tokens)', 'rubi.admin.analytics.providerHint': 'Only the tier that reaches the paid provider; does not include deterministic responses, which have no cost.',
+  'rubi.admin.analytics.providerCalls': 'Provider calls',
   'rubi.admin.tools.title': 'Tools and capabilities', 'rubi.admin.tools.hint': 'The infrastructure kill switch (RUBI_BLOCKED_TOOLS) is still superior: a tool blocked by infrastructure cannot be re-enabled from here.',
   'rubi.admin.tools.name': 'Tool', 'rubi.admin.tools.domain': 'Domain', 'rubi.admin.tools.status': 'Status',
   'rubi.admin.tools.blocked': 'Blocked', 'rubi.admin.tools.available': 'Available', 'rubi.admin.tools.blockedByInfra': 'Blocked by infrastructure'

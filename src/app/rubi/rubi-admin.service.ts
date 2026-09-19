@@ -65,12 +65,13 @@ export interface RubiAdminAssociationUsage {
   llamadas: number;
 }
 
-export interface RubiAdminAnalytics {
-  periodo: { desde: string; hasta: string };
+// Revision tecnica final (post fix/rubi-post-auditoria): `operacion` mide
+// peticiones conversacionales reales a Rubi (deterministicas o via
+// provider); `provider` mide exclusivamente coste/tokens del proveedor de
+// pago. Nunca se mezclan en la misma cifra: ver docs/rubi/RUBI.md.
+export interface RubiAdminOperationalSummary {
   llamadas: number;
-  inputTokens: number;
-  outputTokens: number;
-  costeUsd: number;
+  exitosas: number;
   fallidas: number;
   actoresUnicos: number;
   asociacionesUnicas: number;
@@ -78,6 +79,19 @@ export interface RubiAdminAnalytics {
   porTool: RubiAdminToolUsage[];
   fallosPorCodigo: RubiAdminFailureCode[];
   porAsociacion: RubiAdminAssociationUsage[];
+}
+
+export interface RubiAdminProviderSummary {
+  llamadas: number;
+  inputTokens: number;
+  outputTokens: number;
+  costeUsd: number;
+}
+
+export interface RubiAdminAnalytics {
+  periodo: { desde: string; hasta: string };
+  operacion: RubiAdminOperationalSummary;
+  provider: RubiAdminProviderSummary;
 }
 
 export interface RubiAdminTool {
