@@ -40,6 +40,10 @@ const COMUNICACIONES_BANDEJAS = new Set(['nuevas', 'recibidas', 'enviadas', 'con
 export class RubiPanelComponent implements OnInit, OnDestroy {
   @ViewChild('messageInput') private messageInput?: ElementRef<HTMLTextAreaElement>;
   @ViewChild('launcher') private launcher?: ElementRef<HTMLButtonElement>;
+  @ViewChild('altaFlow') private altaFlow?: RubiAltaComponent;
+  @ViewChild('modificacionFlow') private modificacionFlow?: RubiModificacionComponent;
+  @ViewChild('bajaFlow') private bajaFlow?: RubiBajaComponent;
+  @ViewChild('registroFlow') private registroFlow?: RubiRegistroComponent;
 
   open = false;
   loading = false;
@@ -120,6 +124,18 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
 
   toggle(): void {
     this.open ? this.close() : this.show();
+  }
+
+  // F (post-auditoria 1.8.1#RUBI): salida siempre visible y accesible desde
+  // fuera del propio formulario. Reutiliza el cancel() publico del workflow
+  // activo, que ya invalida la preparacion en backend si existia
+  // (discardPrepared) antes de limpiar el estado del panel via el evento
+  // `closed` -> onXClosed(). Nunca deja un token de confirmacion vivo.
+  cancelActiveWorkflow(): void {
+    if (this.altaActive) this.altaFlow?.cancel();
+    else if (this.modificationActive) this.modificacionFlow?.cancel();
+    else if (this.bajaActive) this.bajaFlow?.cancel();
+    else if (this.registroActive) this.registroFlow?.cancel();
   }
 
   show(): void {

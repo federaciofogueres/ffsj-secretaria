@@ -422,6 +422,66 @@ describe('RubiPanelComponent', () => {
     expect(api.getSuggestions).toHaveBeenCalledWith(25);
   });
 
+  describe('F (post-auditoria 1.8.1#RUBI): rectificacion durante un workflow', () => {
+    it('cancela el alta activa invocando el cancel() publico del hijo (que ya invalida la preparacion en backend)', () => {
+      const cancel = jasmine.createSpy('cancel');
+      (component as any).altaFlow = { cancel };
+      component.altaActive = true;
+      component.cancelActiveWorkflow();
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it('cancela la modificacion activa', () => {
+      const cancel = jasmine.createSpy('cancel');
+      (component as any).modificacionFlow = { cancel };
+      component.modificationActive = true;
+      component.cancelActiveWorkflow();
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it('cancela la baja activa', () => {
+      const cancel = jasmine.createSpy('cancel');
+      (component as any).bajaFlow = { cancel };
+      component.bajaActive = true;
+      component.cancelActiveWorkflow();
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it('cancela el registro (documentacion/comunicacion) activo', () => {
+      const cancel = jasmine.createSpy('cancel');
+      (component as any).registroFlow = { cancel };
+      component.registroActive = true;
+      component.cancelActiveWorkflow();
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it('no hace nada si no hay ningun workflow activo', () => {
+      const altaCancel = jasmine.createSpy('cancel');
+      (component as any).altaFlow = { cancel: altaCancel };
+      component.cancelActiveWorkflow();
+      expect(altaCancel).not.toHaveBeenCalled();
+    });
+
+    it('cancelar la baja limpia el estado y el composer vuelve a estar disponible (mismo camino que el boton propio del formulario)', () => {
+      component.open = true;
+      component.bajaActive = true;
+      component.onBajaClosed('cancelled');
+      expect(component.bajaActive).toBeFalse();
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.rubi-composer')).not.toBeNull();
+    });
+
+    it('tras cancelar, un nuevo mensaje ya no lleva el flag de baja en curso en el contexto de pantalla', () => {
+      component.bajaActive = true;
+      component.bajaPrepared = true;
+      component.onBajaClosed('cancelled');
+      api.message.and.returnValue(of({ message: 'ok', intent: 'start_modificacion', actions: [], errors: [], metadata: { success: true } }));
+      component.send('No quiero darlo de baja, quiero modificarlo');
+      const screenContext = api.message.calls.mostRecent().args[4] as { state?: Record<string, unknown> };
+      expect(screenContext.state?.['hasOpenBaja']).toBeFalsy();
+    });
+  });
+
   describe('A (post-auditoria 1.8.1#RUBI): contexto de pantalla', () => {
     let screenContext: RubiScreenContextService;
 
