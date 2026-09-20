@@ -5,14 +5,15 @@ import { EjerciciosComponent } from '../ejercicios/ejercicios.component';
 import { RegistroDestinatario, RegistroResponsable } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
+import { RubiAdminComponent } from '../rubi/rubi-admin.component';
 
 @Component({
   selector: 'app-configuracion', standalone: true,
-  imports: [CommonModule, FormsModule, EjerciciosComponent, ConfirmDialogComponent],
+  imports: [CommonModule, FormsModule, EjerciciosComponent, ConfirmDialogComponent, RubiAdminComponent],
   templateUrl: './configuracion.component.html', styleUrls: ['./configuracion.component.scss']
 })
 export class ConfiguracionComponent implements OnInit {
-  tab: 'ejercicios' | 'registro' = 'ejercicios';
+  tab: 'ejercicios' | 'registro' | 'rubi' = 'ejercicios';
   destinatarios: RegistroDestinatario[] = [];
   responsables: RegistroResponsable[] = [];
   departamento = '';

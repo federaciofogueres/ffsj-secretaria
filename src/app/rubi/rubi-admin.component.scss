@@ -1,0 +1,23 @@
+.rubi-admin .section-panel { border: 1px solid var(--alta-line, #dee2e6); border-radius: .65rem; padding: 1rem 1.25rem; margin-bottom: 1rem; background: #fff; }
+.rubi-admin-summary { display: grid; gap: .5rem; margin: 0; }
+.rubi-admin-summary > div { display: flex; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+.rubi-admin-summary dt { color: var(--alta-muted, #6c757d); font-size: .7rem; font-weight: 800; text-transform: uppercase; }
+.rubi-admin-summary dd { margin: 0; }
+.rubi-admin-stat { display: flex; flex-direction: column; gap: .2rem; padding: .75rem; border-radius: .5rem; background: #f8f9fa; }
+.rubi-admin-stat span { font-size: .7rem; font-weight: 800; text-transform: uppercase; color: var(--alta-muted, #6c757d); }
+.rubi-admin-stat strong { font-size: 1.1rem; }
+.rubi-admin-status { display: flex; align-items: center; gap: .5rem; }
+.rubi-funnel { border-left: 3px solid var(--alta-line, #dee2e6); padding-left: .75rem; margin-bottom: .75rem; }
+.rubi-funnel-list li { padding: .1rem 0; }
+.rubi-admin-stat small { color: var(--alta-muted, #6c757d); font-size: .65rem; }
+.rubi-trends li { padding: .2rem 0; border-bottom: 1px solid var(--alta-line, #f1f1f1); }
+.rubi-suggestion-row { cursor: pointer; }
+.rubi-suggestion-row:hover { background: #f8f9fa; }
+.rubi-suggestion-status--NUEVA { background: #cfe2ff; color: #084298; }
+.rubi-suggestion-status--EN_REVISION { background: #fff3cd; color: #664d03; }
+.rubi-suggestion-status--ACEPTADA { background: #d1e7dd; color: #0f5132; }
+.rubi-suggestion-status--IMPLEMENTADA, .rubi-suggestion-status--MIDIENDO_RESULTADO { background: #e2d9f3; color: #4a2f7a; }
+.rubi-suggestion-status--CERRADA { background: #e9ecef; color: #495057; }
+.rubi-suggestion-status--DESCARTADA, .rubi-suggestion-status--RESUELTA_SIN_INTERVENCION { background: #f8d7da; color: #842029; }
+.rubi-suggestion-detail { border: 1px solid var(--alta-line, #dee2e6); border-radius: .5rem; padding: 1rem; margin-top: 1rem; background: #fbfbfb; }
+.rubi-suggestion-discard-input { max-width: 16rem; }

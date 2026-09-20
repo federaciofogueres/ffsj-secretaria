@@ -1,5 +1,358 @@
 # Changelog
 
+## 1.12.0#RUBI — Conversational Quality & Model Evaluation
+
+> Cuarta versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): el grueso del trabajo (banco de evaluación, comparación de modelos, capa de redacción natural) vive en `ffsj-secretaria-api` (ver su CHANGELOG). Este repositorio aporta la superficie administrativa para incorporar los resultados de un benchmark controlado como evidencia de una sugerencia. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin activación real de ningún proveedor/modelo nuevo.
+
+### Ficha de sugerencia: "Evidencia de benchmark" (8.7)
+
+- Nueva sección en la ficha de sugerencia (Configuración → Rubi → Sugerencias): muestra el modelo base y el candidato comparados, la métrica y sus valores, la variación de coste estimada y notas breves, cuando existen; en caso contrario, un mensaje explícito de que todavía no se ha adjuntado ningún benchmark.
+- Nuevo formulario "Adjuntar evidencia de benchmark": siempre una acción administrativa explícita — el benchmark se ejecuta antes y aparte, en local (`npm run rubi:eval:matrix` en `ffsj-secretaria-api`); esta pantalla solo adjunta el resumen ya calculado, nunca dispara un proveedor ni cambia el estado o la prioridad de la sugerencia. El envío exige los 4 campos de identidad (proveedor/modelo base y candidato) y la métrica; el resto son opcionales.
+- `RubiAdminService` gana `RubiBenchmarkEvidence`/`RubiBenchmarkParticipant` (tipos) y `attachSuggestionBenchmark()` (`PUT /admin/rubi/sugerencias/{id}/benchmark`); `RubiSuggestion.benchmarkEvidence` refleja exactamente el contrato nuevo del backend.
+
+### Contrato y pruebas
+
+- 263/263 pruebas de frontend (5 nuevas en `rubi-admin.component.spec.ts` para la sección de benchmark), build `development` correcto, `git diff --check` limpio.
+
+## 1.11.0#RUBI — Improvement Suggestions
+
+> Tercera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): Configuración → Rubi → Sugerencias deja de ser un stub deshabilitado y pasa a mostrar el catálogo real de sugerencias detectadas de forma determinista, con su ficha completa y las acciones administrativas del ciclo de vida. El grueso del cálculo (detectores, prioridad/confianza, persistencia) vive en `ffsj-secretaria-api` (ver su CHANGELOG). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin cambios automáticos de configuración.
+
+### Sección "Sugerencias" funcional (sustituye el stub de 1.10.0#RUBI)
+
+- Tabla (7.6 del roadmap): Estado | Sugerencia | Evidencia | Prioridad | Confianza, con filtro Abiertas/Descartadas/Cerradas y botón "Analizar ahora" (dispara el análisis bajo demanda; nunca automático).
+- Ficha de sugerencia (7.7): qué ha detectado, por qué (muestra, veces detectada), comparación (actual vs. periodo anterior), medición posterior cuando existe (antes/después/cambio, con el texto explícito de que es coincidencia temporal, no causalidad), qué propone, impacto esperado (marcado como hipótesis) y las acciones administrativas.
+- Las acciones (Marcar en revisión / Aceptar / Descartar / Marcar implementada / Cerrar) se generan siempre a partir de `allowedTransitions` que devuelve el backend: el frontend nunca inventa una transición de estado. Descartar exige un motivo no vacío antes de habilitar el botón.
+- `RubiAdminService` gana los tipos (`RubiSuggestion`, `RubiSuggestionStatus`, etc.) y los 4 métodos HTTP correspondientes; `RubiAdminFeedbackSummary` gana `motivoPorSource` (necesario para el detector de modelo del backend).
+
+### Contrato y pruebas
+
+- 258/258 pruebas de frontend (9 nuevas en `rubi-admin.component.spec.ts`, sustituyendo el test del stub deshabilitado de 1.10.0#RUBI), build `development` correcto, `git diff --check` limpio.
+
+## 1.10.0#RUBI — Product Analytics
+
+> Segunda versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): convierte los eventos de 1.9.0#RUBI en analítica comprensible para Administración. La mayor parte del trabajo vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la nueva sección de Analytics en Configuración → Rubi, el stub de Sugerencias y `metadata.source`/`source` de feedback de punta a punta. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.
+
+### Configuración → Rubi: sección "Analytics" ampliada y stub "Sugerencias"
+
+- La sección de Analíticas ya existente (7/30 días, filtro por asociación) gana: funnel por workflow con números absolutos y porcentajes; analytics conversacional por intent/tool/source; desglose de motivos del 👎 por intent/tool/flow; métricas de calidad (siempre con su muestra `n` visible, nunca una tasa sola); tendencias frente al periodo inmediatamente anterior, con ambos valores absolutos junto al delta. Un mensaje explícito ("todavía no hay datos suficientes") sustituye a una tabla vacía sin explicación.
+- Nueva sección "Sugerencias" (6.1 de roadmap/RUBI-v2.md), deshabilitada con el mensaje exacto del roadmap: no se fabrica ninguna sugerencia en esta versión (eso es 1.11.0#RUBI).
+- `RubiAdminService`/`RubiAdminAnalytics` (tipos TS) se extienden con `flujos`, `feedback` ampliado, `conversacional`, `calidad` y `comparacionPeriodoAnterior`, reflejando exactamente el contrato nuevo del backend.
+
+### `metadata.source` de punta a punta
+
+- `RubiMessage` guarda `source` (`deterministic`/`provider`) de la respuesta que representa; `RubiPanelComponent.submitFeedback()` lo incluye en el feedback cuando está disponible, permitiendo comparar satisfacción por source en el panel de administración. Nunca se expone el nombre real del proveedor de IA, solo si fue determinista o no.
+
+### Contrato y pruebas
+
+- 251/251 pruebas de frontend (8 nuevas: 6 en `rubi-admin.component.spec.ts` para las secciones nuevas y el stub de Sugerencias, 2 en `rubi-panel.component.spec.ts` para `metadata.source`/feedback), build `development` correcto, `git diff --check` limpio.
+
+## 1.9.0#RUBI — Pilot Instrumentation
+
+> Primera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): instrumentación necesaria para que el piloto produzca información fiable. La mayor parte de esta versión vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la distinción real cancelado/caducado/derivado-a-flujo-normal en el tracking de eventos y el selector de motivo del 👎. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.
+
+### El feedback negativo ahora deja elegir el motivo real (antes se fijaba siempre a "no útil")
+
+- `rubi-panel.component.ts`/`.html`: al pulsar 👎 se muestra un selector con las 4 opciones ya soportadas por el backend (`incorrect`/`not_understood`/`not_useful`/`technical_issue`, i18n ES/VA/EN) en vez de enviar el feedback de inmediato con un motivo fijo. El feedback también incluye ahora el `flow` activo (alta/modificación/baja/documentación/comunicación) cuando hay un workflow de Rubi abierto en ese momento.
+- `RubiApiService.feedback()` deja de forzar `reason: 'not_useful'`; el motivo (y el `flow`) los decide quien llama.
+
+### Distinción real entre cancelado, caducado y derivado al flujo normal
+
+- Causa: `onAltaClosed`/`onModificacionClosed`/`onBajaClosed`/`onRegistroClosed` reportaban siempre `flow_cancelled` al backend, incluso cuando el motivo real era `'expired'` (la preparación caducó) — la métrica "expirados" del funnel (roadmap/RUBI-v2.md 5.1/5.2) era imposible de calcular con ese dato. Además, usar el botón "usar el flujo normal" (`openNormalAltaFlow()` y equivalentes) no se reportaba en absoluto.
+- Corrección: se reporta `flow_expired` cuando el motivo es `'expired'` (nunca ya `flow_cancelled` en ese caso), y `flow_redirected` al elegir el flujo normal existente. Ver `ffsj-secretaria-api` para cómo se persiste y se calcula el funnel a partir de estos eventos.
+
+### Contrato y pruebas
+
+- 243/243 pruebas de frontend (10 nuevas en `rubi-panel.component.spec.ts`, 1 actualizada en `rubi-api.service.spec.ts` para reflejar que el motivo ya no es fijo), build `development` correcto, `git diff --check` limpio.
+- Privacidad sin cambios: el feedback nunca incluye el texto del mensaje ni de la respuesta (verificado en test), solo la clasificación estructurada ya existente más el motivo elegido.
+
+## fix/rubi-normal-form-visibility — corrige la visibilidad real del formulario de Altas (INTEGRADA en develop, merge `--no-ff`)
+
+> Bug real detectado en la validación manual en DEV sobre el fix anterior (`fix/rubi-normal-form-diagnostics`): la validación seguía fallando. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real. No requiere cambios en la API.
+
+### Bug real: entrar a `/asociados/gestion` sin `?tab=altas` seguía sin publicar `formDiagnostics`
+
+- Causa: `mostrarFormMod` no representa "hay un formulario visible" — la plantilla solo la usa para condicionar el formulario de Modificación. El de Altas se muestra siempre que no se esté viendo el listado de pendientes, sin comprobar `mostrarFormMod` en ningún momento. Como `mostrarFormMod` solo se ponía a `true` dentro del bloque que procesa el query param `?tab=altas`, la navegación normal (sin ese parámetro) dejaba el formulario de Altas visible en pantalla pero `currentFormDiagnostics()` devolvía `undefined`.
+- Corrección: nuevo `isCurrentFormVisible()`, fuente de verdad única que replica las condiciones reales de la plantilla por pestaña (Altas: `!estaViendoPendientes('alta')`; Modificaciones: `!estaViendoPendientes('cambio') && mostrarFormMod`), sustituye el guard antiguo basado solo en `mostrarFormMod`.
+- `abrirPendientes()`/`volverDesdePendientes()` ahora llaman a `syncRubiScreenContext()` de inmediato (antes podían dejar un `formDiagnostics` obsoleto o ausente al alternar entre el formulario y el listado de pendientes). Se cubren además dos puntos donde `activeTab` pasaba a `'solicitudes'` sin sincronizar.
+- 9 tests nuevos (`asociados-gestion.component.spec.ts`) que reproducen el bug real sin `setTab()`/`patchValue()`/sync manual: entrada sin `?tab=altas` (verificado que falla contra el código anterior), entrada con `?tab=altas` explícito, apertura/cierre de pendientes de Alta y de Modificación, y el payload de regresión completo.
+
+## fix/rubi-normal-form-diagnostics — diagnóstico de formularios normales de Secretaría (INTEGRADA en develop, merge `--no-ff`)
+
+> Corrige un fallo funcional confirmado en la validación manual en DEV: Rubi no sabía diagnosticar formularios normales de Secretaría (fuera del panel de Rubi), solo los workflows embebidos e Inscripciones. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
+
+### Bug confirmado: `/asociados/gestion` (Altas) respondía "no veo ningún formulario abierto"
+
+- Causa: `AsociadosGestionComponent.updateRubiScreenContext()` solo publicaba `{ module, view, tab }`, nunca `state.formDiagnostics`; el formulario de alta real (`altaForm`) nunca pasaba por `buildFormDiagnostics()`.
+- Corrección: nuevo `syncRubiScreenContext()` (sustituye a `updateRubiScreenContext()`), único punto que construye el contexto completo. Publica `formDiagnostics` solo cuando el formulario está realmente visible (`mostrarFormMod`), suscrito a `altaForm.valueChanges` para reflejar cada tecla sin esperar a cambiar de pestaña. Incluye `extraIssues` para las condiciones reales de `guardarRegistroAltaOCambio()` que no son errores de Angular: cargo obligatorio no seleccionado (`ALTA_CARGO_REQUERIDO`, nuevo), representación legal incompleta para un menor (`ALTA_REPRESENTACION_REQUERIDA`, ya existente) y ejercicio no activo (`ALTA_EJERCICIO_NO_DISPONIBLE`, nuevo).
+- Cambiar de pestaña, o de Altas a Modificaciones, limpia el diagnóstico anterior de inmediato (nunca lo arrastra). Labels de campo estáticos (el mismo texto ya visible en la plantilla), sin i18n (este componente no lo usa) y sin scraping del DOM.
+- `SoporteComponent` (formulario de nueva incidencia) gana el mismo patrón desde cero (antes sin ningún wiring a Rubi): `syncRubiScreenContext()`, `valueChanges`, y ausencia de diagnóstico mientras se ve el detalle de un ticket existente.
+- 17 tests nuevos (`asociados-gestion.component.spec.ts`, `soporte.component.spec.ts`, `rubi-panel.component.spec.ts`), incluido un test de regresión que reproduce el payload real del bug y confirma que ahora incluye `state.formDiagnostics`.
+
+### Bug de contexto: cambio de ejercicio global sin tocar el formulario
+
+- Causa: `accionesBloqueadasPorEjercicio` (y por tanto `ALTA_EJERCICIO_NO_DISPONIBLE`) depende del selector global de ejercicio, pero el componente nunca se suscribía a `EjercicioService.selectedChanges`. Cambiar a un ejercicio histórico sin tocar el formulario ni la pestaña podía dejar un `formDiagnostics` obsoleto hasta el siguiente evento local.
+- Corrección: `formDiagnosticsSub` pasa a ser una única bolsa `Subscription` que agrupa `altaForm.valueChanges` y la nueva suscripción a `selectedChanges`; limpieza única en `ngOnDestroy`. Sin llamadas HTTP nuevas.
+- 3 tests nuevos con un `EjercicioService` respaldado por un `BehaviorSubject` real: reproducen el caso exacto (emitir un ejercicio no activo por `selectedChanges`, sin `setTab`/`patchValue`/sync manual) más un test de limpieza de la suscripción.
+
+### Lenguaje natural ampliado, sin secuestrar Soporte
+
+- Nuevas frases ES/VA/EN ("no puedo enviar el formulario", "no me deja guardar", "el formulario no funciona"...) reconocidas como pregunta de diagnóstico — ver CHANGELOG de `ffsj-secretaria-api` para el detalle del router determinista. Estas frases se solapan a propósito con la orientación hacia Soporte, así que solo se resuelven como diagnóstico cuando hay un formulario realmente activo; sin él, siguen el routing normal.
+
+### Pendiente (documentado, no incluido en esta rama)
+
+- `RegistroComponent`: ya publica `state.canCreate` pero no `formDiagnostics`; requiere antes auditar su reutilización de componente entre `/registro/documentacion` y `/registro/comunicacion` para no publicar un diagnóstico obsoleto al cambiar de modo sin recrear el componente.
+- `AsociacionComponent`: no tiene módulo Rubi asignado hoy; ampliarlo exige un módulo nuevo en `RubiModule` y sus allowlists de backend, fuera de alcance de esta corrección puntual.
+
+### Contrato y pruebas
+
+- 228/228 pruebas de frontend (20 nuevas sobre el cierre de `feat/rubi-form-diagnostics`), build `development` correcto, `git diff --check` limpio. Revalidado desde cero antes y después del merge `--no-ff` a `develop`; `git merge-base --is-ancestor` confirma la rama íntegramente contenida.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
+
+## feat/rubi-form-diagnostics — diagnóstico contextual de formularios (INTEGRADA en develop, merge `--no-ff`)
+
+> Última mejora funcional/UX de Rubi antes del piloto, más dos correcciones UX detectadas en la validación manual post-auditoría (30 pruebas: 29 OK, 1 fallo menor de UX, 0 bloqueadas). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
+
+### G — Diagnóstico contextual de formularios
+
+- Rubi ahora puede explicar el estado funcional del formulario activo ("¿qué me falta?", "¿por qué no me deja enviar esto?", reformulaciones equivalentes en ES/VA/EN) a partir de metadatos de validación estructurados, nunca de los valores introducidos por el usuario. Diagnóstico 100% determinista (plantillas locales, sin llamar al provider). Ver `docs/rubi/RUBI.md` para la arquitectura y el contrato completos.
+- Nuevo extractor genérico y reutilizable `form-diagnostics.util.ts` (`buildFormDiagnostics`) que traduce el resultado de los validadores de Angular (`required`, `requiredTrue`, `pattern`, `email`, `minlength`/`maxlength`, `min`/`max`, `minItems`/`maxItems`, validadores custom ya usados por Secretaría) a un contrato pequeño (`RubiFormDiagnostics`/`RubiFormDiagnosticIssue`), sin depender de scraping del DOM ni de una nueva biblioteca de formularios.
+- Cobertura: formulario dinámico de Inscripciones (`InscripcionesComponent`) y los cuatro workflows Rubi (alta, modificación, baja, documentación/comunicación). Cada uno aporta también, cuando aplica, condiciones de negocio conocidas que bloquean el envío sin ser un error de Angular (participantes insuficientes, adjunto obligatorio, ejercicio no activo, plazo de inscripción cerrado) y códigos funcionales seguros ya devueltos por el backend (`ALTA_CARGO_NO_DISPONIBLE`, `INSCRIPCION_PLAZO_CERRADO`...).
+- El diagnóstico se limpia por completo al cambiar de inscripción, de workflow o al cancelarlo; nunca sobrevive al siguiente turno.
+- Extiende `RubiScreenContext.state` con `formDiagnostics` (opcional); actualizado el test cerrado de "el contexto nunca incluye PII" (`rubi-panel.component.spec.ts`) para incluir la nueva clave.
+- **Corrección (`totalIssues`/`truncated`)**: `issues` sigue capado a 8 (privacidad/tamaño de contexto/tokens), pero `buildFormDiagnostics()` calcula ahora `totalIssues` ANTES de recortar y `truncated = totalIssues > issues.length`. Sin esto, un formulario con 12 errores reales solo enviaba 8, y Rubi podía acabar afirmando "te faltan 8 cosas" cuando en realidad faltaban 12. Ambos campos son solo un recuento (metadata segura, nunca un dato de usuario) y son opcionales para no romper compatibilidad.
+
+### Correcciones UX (validación manual post-auditoría)
+
+- **A-05** — "¿Qué inscripción tengo seleccionada?" con la inscripción ya abierta en pantalla ya no ofrece la acción redundante "Ir a Inscripciones"/"abrir inscripción"; confirma directamente que esa es la inscripción activa. Corrección en backend (`RubiActivityTools.js`); ver CHANGELOG de `ffsj-secretaria-api`.
+- **A-06 (launcher sobre el composer)** — el botón flotante "Rubi ¿Te ayudo?" deja de renderizarse mientras el panel está abierto (antes solo dependía de `accessGranted`, ahora también de `!open`), eliminando el solapamiento con la cabecera/composer en cualquier resolución. El panel se sigue cerrando únicamente con la X de la cabecera; al cerrarlo, el launcher reaparece. 2 tests nuevos en `rubi-panel.component.spec.ts`.
+
+### Contrato y pruebas
+
+- 208/208 pruebas de frontend (37 nuevas sobre el cierre anterior), build `development` correcto, `git diff --check` limpio. Revalidado desde cero antes y después del merge `--no-ff` a `develop`; `git merge-base --is-ancestor` confirma la rama íntegramente contenida.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
+
+## fix/rubi-post-auditoria — revisión técnica final (EN DESARROLLO, NO mergeada a develop)
+
+> Última revisión acotada antes de mergear la estabilización A-F. Implementado y validado técnicamente; validación manual pendiente.
+
+### Observabilidad (frente E): contrato de analíticas actualizado
+
+- `/admin/rubi/analiticas` separa ahora `operacion` (peticiones conversacionales reales a Rubi) de `provider` (coste/tokens del proveedor de pago), en vez de una lista plana de campos ambiguos. La sección de analíticas del Centro RUBI muestra ambos bloques con etiquetas explícitas sobre qué mide cada uno.
+- 6 tests actualizados/nuevos en `rubi-admin.component.spec.ts`.
+
+### Sin cambios de frontend en los otros dos puntos de esta revisión
+
+- La corrección de `registrationStatus()` y la auditoría de autorización de `Inscripciones.js` son puramente de backend/documentación (ver CHANGELOG de `ffsj-secretaria-api`); no requieren ningún cambio en el frontend.
+
+### Contrato y pruebas
+
+- 171/171 pruebas de frontend, build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
+## fix/rubi-post-auditoria — EN DESARROLLO (rama correctiva, NO mergeada a develop)
+
+> Estabilización funcional derivada de la campaña manual completa posterior a `1.8.1#RUBI` (97 pruebas: 89 OK, 3 fallo, 5 bloqueadas). Seis frentes funcionales, implementados y validados técnicamente; validación manual pendiente. Sin deploy, sin migraciones ejecutadas, sin piloto activado.
+
+### A — Contexto de pantalla (100-05)
+
+- `HomeComponent`, `RegistroComponent` e `InscripcionesComponent` (listado y detalle) informan ahora a `RubiScreenContextService`; antes solo Calendario y la gestión de asociados lo hacían.
+- `InscripcionesComponent` distingue `view: 'listado' | 'detalle'` y expone `selectedInscriptionId` solo en detalle.
+
+### B — Consultas temporales (130-02)
+
+- Sin cambios de frontend (la corrección determinista de ventanas temporales vive en el backend).
+
+### C — Lectura de estado de inscripciones (130-06, 150-03)
+
+- Sin cambios de UI dedicados: la nueva capability se consume igual que el resto de respuestas de Rubi en el chat existente.
+
+### D — Administración de tools (180-03)
+
+- Nueva sección "Tools y capacidades" en Configuración → RUBI (`rubi-admin.component`): catálogo real, descripción, dominio, estado efectivo y toggle de bloqueo administrativo por tool. Una tool bloqueada por infraestructura se muestra con una insignia informativa, sin ningún control que pueda desbloquearla.
+
+### E — Observabilidad (180-07)
+
+- La sección de analíticas del Centro RUBI añade latencia media, distribución por tool, fallos por código y llamadas por asociación, y un filtro por asociación (el backend ya lo soportaba).
+
+### F — Rectificación de workflows (X-02)
+
+- Botón siempre visible "Cancelar trámite y volver al chat" durante alta/modificación/baja/documentación/comunicación. Reutiliza el `cancel()` público que cada componente ya exponía.
+
+### Contrato y pruebas
+
+- 171/171 pruebas de frontend (26 nuevas), build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
+## 1.8.1#RUBI — CERRADA — Corrección de blocker de validación manual (RUBI-20)
+
+> Hallazgo real durante la validación manual de RUBI-20 en DEV: un usuario Federación/Administración autorizado no veía el selector de asociación objetivo en el panel Rubi, bloqueando 150-06 → 150-10. Corrección de una sola causa, sin funcionalidad nueva de producto. **Validación funcional manual posterior confirmada: 150-05, 150-06, 150-07, 150-08, 150-09, 150-10 y 160-06 OK.**
+
+### Causa raíz
+
+- `isFederationActor` (rubi-panel.component.ts) se calculaba como `!this.censoService.asociacionId`, delegando en `AuthService.getIdAsociacion()` de `ffsj-web-components`. Esa función devuelve `-1` (no `0`) para cualquier login que no sea de asociación, y en JavaScript `!(-1)` es `false`. El selector, por tanto, nunca se mostraba a un actor Federación/Administración real, independientemente de su autorización.
+- Decisión arquitectónica corregida: **el frontend ya no infiere el scope**; consume el scope y `canSelectTargetAssociation` resueltos exclusivamente por `GET /asistente/acceso` (ver CHANGELOG de `ffsj-secretaria-api` 1.8.1#RUBI). Ver `docs/rubi/RUBI.md`.
+
+### Cambio frontend
+
+- `RubiApiService.access()` devuelve ahora `{ enabled, authorized, scope, canSelectTargetAssociation }` (interfaz `RubiAccess`).
+- `RubiPanelComponent`: eliminado el getter `isFederationActor`; nuevo estado `canSelectTargetAssociation`, poblado desde la respuesta de `/asistente/acceso` en `ngOnInit`. El `<select>` de asociación objetivo (`rubi-panel.component.html`) pasa a condicionarse por este campo.
+- Corrección adicional relacionada: el panel Rubi persiste montado entre sesiones (`@defer` en `app.component.html`), así que un `targetAssociationId`/`federationAssociations` cargados por un actor podían sobrevivir a un logout/login posterior en la misma pestaña. Ahora se limpian al cambiar el estado de sesión (`AuthService.loginStatusObservable`).
+- `CensoService`/`AuthService.getIdAsociacion()` se mantienen sin cambios: siguen siendo correctos para su uso original (contexto de asociación propia); el bug estaba únicamente en reutilizarlos como señal de "es Federación".
+
+### Contrato y pruebas
+
+- 145/145 pruebas de frontend (2 nuevas), build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
+
+## 1.8.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-23 — Release Candidate / Preparación de piloto: implementado y validado técnicamente. Feature freeze, sin funcionalidades nuevas. Sin deploy, sin piloto activado, validación funcional manual pendiente (sin confirmación del usuario de que se haya realizado).
+
+### Release Candidate — RUBI-23
+
+- Nuevos documentos operativos: `docs/rubi/PILOT.md` (runbook), `docs/rubi/DEPLOY_CHECKLIST.md`, `docs/rubi/SMOKE_TEST.md` (10-20 min), `docs/rubi/REGRESSION_PLAN.md` (RUBI-01 → RUBI-22 por dominio), `docs/rubi/ROLLBACK.md`.
+- Matriz de acceso del piloto probada exhaustivamente (32 combinaciones asociación + 32 Federación): autorizado solo si todas las capas lo permiten; modo piloto con allowlist vacía nunca autoriza a nadie.
+- Los 4 niveles de kill switch (tool concreta, transacciones, provider real, Rubi completo) demostrados con test dedicado; independientes entre sí.
+- Migraciones `055` → `061` reauditadas: orden, idempotencia, defaults seguros. Ninguna nueva necesaria.
+- Reanálisis de las 32 vulnerabilidades de dependencias pendientes del frontend, sin aceptar la conclusión previa sin verificar el uso real del código: jsPDF y xlsx clasificadas ACCEPTED RISK (uso real no activa las APIs vulnerables, verificado); Angular core ACCEPTED RISK para un piloto en grupo controlado, DEBT bloqueante antes de una release pública más amplia. Ningún BLOCKER de seguridad pendiente para el piloto.
+- Revisión final de privacidad/retención, observabilidad real disponible, control de costes, UX e i18n: sin cambios de comportamiento, solo documentación y verificación.
+
+## 1.7.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-22 — Hardening integral: implementado y validado técnicamente. No añade funcionalidades. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-21).
+
+### Hardening — RUBI-22
+
+- Auditoría activa de bypasses de permisos/scope, prompt/tool injection, privacidad, kill switches, concurrencia y degradación ante fallos del provider. Mapa de superficie: `RubiGateway`, `RubiContext`, `RubiCapabilityResolver`, `RubiToolRegistry`, `RubiDeterministicRouter`, `RubiConversationContext`, `RubiPilotAccess`, `RubiInsightsGateway`, panel Angular.
+- `RubiInsightsGateway` no rechazaba parámetros de query no reconocidos en `GET /asistente/sugerencias` (a diferencia de `/asistente/mensaje`). Corregido con el mismo allowlist explícito.
+- Nuevo banco adversarial (`rubi.hardening.test.js`, 12 tests): frases de inyección combinadas con un provider que las "obedece" y propone tools/argumentos maliciosos, matriz de kill switches, aislamiento de `associationId`/scope frente a mensaje/argumentos manipulados, seguridad de las acciones de insights. Ningún bypass real encontrado.
+- Eval adversarial ampliado con 2 casos nuevos (exigir una tool sin permiso; pedir confirmar sin revisión humana). 112/112.
+- `npm audit fix` sin `--force` en ambos repositorios: 7/7 vulnerabilidades resueltas en la API; 40/72 resueltas en el frontend (resto documentado como deuda: bump coordinado de Angular pendiente de pruebas de UI, jsPDF requiere major, xlsx sin fix en origen).
+- Sin migraciones. Sin despliegue.
+
+## 1.6.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-21 — Proactividad contextual: implementado y validado técnicamente. Validación funcional manual pendiente de campaña conjunta (se suma a RUBI-17 → RUBI-20).
+
+### Añadido — Proactividad contextual (RUBI-21)
+
+- Nuevo endpoint `GET /asistente/sugerencias`: sugerencias deterministas calculadas en backend (`RubiInsightsService`), nunca decididas por el provider. Reutiliza las tools de lectura ya auditadas (`get_comunicaciones`, `get_calendario`) y los dashboards existentes; no introduce consultas SQL paralelas.
+- Dominios: comunicaciones nuevas, plazos de inscripción próximos (ventana fija de 3 días), solicitudes pendientes (asociación propia o, en Federación sin objetivo con permiso, el panel admin). Prioridad fija `acción requerida > plazo próximo > novedad > informativo`.
+- Subordinado a permisos/scope/target exactamente igual que el resto de Rubi; aislamiento A→B verificado con test dedicado (mismo patrón que RUBI-20).
+- Panel Angular consulta sugerencias al abrir y al cambiar de asociación objetivo; sin polling, sin apertura automática del panel. Cada sugerencia reutiliza `executeAction`/`isSafeAction`; ninguna ejecuta nada por sí sola. Fallo parcial de un dominio no rompe el resto del panel.
+- Sin badge en el lanzador (decisión deliberada para no duplicar/confundir la campana `.tasks-bell` existente). Sin tabla ni migración nueva.
+
+### Contrato y pruebas
+
+- 408 pruebas de API (18 nuevas), 143 pruebas de frontend (6 nuevas), build `development`, evaluación Rubi con provider mock (110/110) y contrato OpenAPI (`/asistente/sugerencias`, `RubiInsight`, `RubiSuggestionsResponse`) correctos en ambos repositorios. Sin migraciones ejecutadas.
+
+## 1.5.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-20 — Rubi para Federación / Administración: implementado y validado técnicamente e integrado en `develop`. Validación funcional manual en DEV pendiente; se realizará conjuntamente para RUBI-17, RUBI-18, RUBI-19 y RUBI-20.
+
+### Añadido — Rubi para Federación / Administración (RUBI-20)
+
+- Rubi reconoce un actor Federación/Administración (un cargo autenticado sin asociación propia), además del actor de asociación existente. `admin:access` y `admin:rubi` no conceden ninguna capability funcional por sí solos.
+- Nuevo selector estructurado de asociación objetivo en el panel (reutiliza el listado real de Censo ya usado en otras pantallas administrativas); nunca se escribe un id a mano ni se interpreta desde el chat. Cambiar de asociación objetivo limpia la conversación completa.
+- Nuevo interruptor en el Centro de administración de Rubi para autorizar el acceso de Federación, independiente de la autorización por asociación.
+
+### Contrato y pruebas
+
+- 137 pruebas de frontend y build `development` correctos.
+
+## 1.4.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-18 — Soporte inteligente y RUBI-19 — Comunicaciones y envíos asistidos: implementados y validados técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI` (cubrirá RUBI-17 → RUBI-20).
+
+### Añadido — Soporte inteligente (RUBI-18)
+
+- Rubi puede orientar sobre un problema y, cuando el usuario lo pide explícitamente, abrir Soporte para crear la incidencia con el formulario real (categoría, asunto, descripción y adjuntos); nunca crea la incidencia, sube adjuntos ni confirma desde el chat.
+- Nueva capability `soporte.start` sin permiso asociado (crear una incidencia solo exige sesión autenticada en el sistema real) y tool cerrada `start_soporte` que solo navega a `/soporte`.
+- Soporte se integra en la clasificación única de dominios de Rubi; una mención de otro dominio dentro de una frase de problema ("me da un error al inscribirme") se trata como contexto, no como petición de actuar sobre ese dominio.
+- El texto de un turno de soporte se abstrae del historial antes de cualquier llamada posterior al proveedor, igual que el resto de dominios sensibles.
+- Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Contrato y pruebas
+
+- 129 pruebas de frontend y build `development` correctos.
+
+### Añadido — Comunicaciones y envíos asistidos (RUBI-19)
+
+- Rubi puede consultar las comunicaciones reales recibidas de la Federación (cuántas hay, cuáles son nuevas, quién las envía) y abrir la bandeja real de Registro → Comunicación, reutilizando el filtro `bandeja` (nuevas/recibidas/enviadas/contestadas) que el componente ya soportaba.
+- No se confunde con RUBI-16 (enviar una comunicación nueva): el plural "comunicaciones" (consultar) tiene prioridad sobre el singular "una comunicación" con verbo de envío (crear).
+- Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Contrato y pruebas
+
+- 132 pruebas de frontend y build `development` correctos.
+
+## 1.3.0#RUBI — CERRADA TÉCNICAMENTE
+
+> RUBI-17 — Actividades, calendario e inscripciones asistidas: implementado y validado técnicamente. Validación funcional manual en DEV diferida a la campaña conjunta previa al cierre de `1.5.0#RUBI`.
+
+### Añadido — Actividades, calendario e inscripciones asistidas (RUBI-17)
+
+- El panel admite selecciones estructuradas de actividad devueltas por Rubi y abre exclusivamente la ruta registrada del formulario real `/inscripciones/:id`.
+- Se conserva el referente allowlisted de actividad/formulario desde la pantalla y la conversación para seguimientos, sin participantes, respuestas ni adjuntos.
+- El calendario publica el contexto de la actividad seleccionada; el formulario dinámico, sus validaciones y su confirmación humana siguen siendo los existentes.
+- Cobertura frontend del action de inscripción, filtrado de identificadores inseguros y etiquetas estructuradas ES/VA/EN.
+
+### Contrato y pruebas
+
+- 127 pruebas de frontend y build `development` correctos; evaluación Rubi con provider mock validada en la API (104/104 casos ES/VA/EN).
+
+## 1.2.0#RUBI — CERRADA
+
+> RUBI-16 — Registro General y documentación asistidos: completado y validado funcionalmente por el usuario.
+
+### Añadido — Registro General y documentación asistidos (RUBI-16)
+
+- Nuevo componente `rubi-registro` (documentación y comunicación) que sigue el mismo patrón preparar → revisar → confirmar humano de alta/modificación/baja: selección de destinatario, título, mensaje, adjuntos, resumen y confirmación explícita.
+- Los adjuntos se seleccionan en el propio formulario (selector ya existente) y se suben aparte, tras confirmar, directamente contra el registro ya real y numerado; si alguno falla, el panel ofrece reintentar solo los pendientes sin perder ni duplicar el registro.
+- Documentación exige al menos un archivo adjunto; comunicación los admite como opcionales y respeta el aviso de ejercicio no activo que ya muestra el Registro real.
+- `RubiPanelComponent` reconoce las nuevas acciones `documentacion`/`comunicacion` iniciadas por Rubi, con su propio estado de preparación y contexto de pantalla abstraído (nunca título, mensaje ni nombres de archivo).
+- Traducciones ES/VA/EN para el nuevo flujo.
+
+### Contrato y pruebas
+
+- 125 pruebas en ChromeHeadless (12 nuevas) y build `development` correcto.
+
+## 1.1.0#RUBI - 2026-09-17
+
+### Añadido — Modificaciones asistidas (RUBI-14)
+
+- Workflow de modificaciones asistidas de personas: selección estructurada, edición de campos permitidos, preparación y revisión antes/después.
+- La confirmación humana registra el trámite administrativo mediante la API, con revalidación, cancelación, idempotencia y derivación segura de cambios complejos de cargos al flujo normal.
+
+### Añadido — Bajas asistidas (RUBI-15)
+
+- Baja asistida de personas activas, con selección, carga del estado real (incluidos cargos), motivo opcional, resumen, confirmación humana y derivación de cargos obligatorios al flujo normal.
+
+### Añadido — Centro de administración de Rubi (RUBI-15.1)
+
+- Centro de administración y control de Rubi en Configuración → RUBI (permiso `admin:rubi`): estado global (`enabled`), autorización explícita por asociación (`authorized`, con búsqueda y filtro), estado del provider sin exponer credenciales, presupuesto diario/mensual y una primera vista de analíticas agregadas.
+- El acceso `/asistente/acceso` refleja el modelo `enabled`/`authorized`; la allowlist de RUBI-13 queda como modo piloto opcional y ya no restringe el acceso ordinario.
+
+### Corregido — Estabilización conversacional
+
+- Rubi reconoce de forma fiable altas, modificaciones y bajas a partir de lenguaje natural (órdenes directas, correcciones y negaciones como "no quiero un alta, quiero una modificación"), sin que una intención secuestre a otra.
+- Se reconocen saludos con vocativo ("Hola Rubi!") y preguntas de capacidades formuladas de distintas maneras, evitando el fallback genérico cuando la intención es reconocible.
+- Rubi ya no afirma que no puede iniciar altas, cambios o bajas: puede abrirlos de forma segura cuando el usuario tiene permiso, siempre con confirmación humana en el formulario.
+
+### Documentación
+
+- `docs/rubi/STATUS.md` refleja el cierre de `1.1.0#RUBI` con RUBI-14, RUBI-15 y RUBI-15.1 validados funcionalmente en DEV por el usuario.
+
+## 1.0.0#RUBI - 2026-09-17
+
+### Cerrado
+
+- Se cierra la base funcional de Rubi: Gateway, provider Gemini, conversación contextual multi-turn, contexto de pantalla, navegación, Knowledge Base, scopes/capabilities, límites, budgets, retries y observabilidad.
+- Se completa el primer workflow asistido de alta con preparación, confirmación humana, revalidación, idempotencia y registro administrativo real, manteniendo la PII fuera del provider.
+- Se incorpora documentación de continuidad entre agentes en `docs/rubi/`.
+- La infraestructura segura de piloto queda disponible en código, pero desactivada y sin configuración remota; el piloto se realizará en una fase posterior.
+
 ## 0.29.20#ESMERALDA - 2026-09-15
 
 ### Corregido

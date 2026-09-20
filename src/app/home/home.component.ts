@@ -1,10 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AdminAccessService } from '../core/admin-access.service';
 import { DashboardAdminResumen, DashboardAsociacionResumen } from '../core/models';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { PermissionsService } from '../core/permissions.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 interface ModuleTile {
   title: string;
@@ -32,7 +33,7 @@ interface TaskCard {
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
-export class HomeComponent implements OnInit {
+export class HomeComponent implements OnInit, OnDestroy {
   readonly isAdmin: boolean;
   dashboardLoading = false;
   dashboardError = false;
@@ -95,7 +96,8 @@ export class HomeComponent implements OnInit {
   constructor(
     readonly permissions: PermissionsService,
     readonly adminAccess: AdminAccessService,
-    private readonly dashboardSummary: DashboardSummaryService
+    private readonly dashboardSummary: DashboardSummaryService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {
     this.isAdmin = this.adminAccess.isAdmin();
   }
@@ -114,6 +116,13 @@ export class HomeComponent implements OnInit {
         this.dashboardSummary.loadAssociation(asociacionId);
       }
     }
+    // A (post-auditoria 1.8.1#RUBI): sin esto Rubi no sabia que el usuario
+    // estaba en Inicio; solo veia el modulo generico por defecto.
+    this.rubiScreenContext.set({ version: 1, module: 'home', view: 'inicio' });
+  }
+
+  ngOnDestroy(): void {
+    this.rubiScreenContext.clear('home');
   }
 
   get taskCards(): TaskCard[] {

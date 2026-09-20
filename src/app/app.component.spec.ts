@@ -9,6 +9,7 @@ import { EjercicioService } from './core/ejercicio.service';
 import { DashboardSummaryService } from './core/dashboard-summary.service';
 import { PermissionsService } from './core/permissions.service';
 import { SecretariaService } from './core/secretaria.service';
+import { RubiConversationService } from './rubi/rubi-conversation.service';
 
 describe('AppComponent', () => {
   beforeEach(async () => {
@@ -18,9 +19,10 @@ describe('AppComponent', () => {
         { provide: AuthService, useValue: { isLoggedIn: () => false, logout: () => undefined, loginStatusObservable: of(false) } },
         { provide: AdminAccessService, useValue: { isAdmin: () => false } },
         { provide: EjercicioService, useValue: { ejerciciosChanges: of([]), selectedChanges: of(null), select: () => undefined, load: () => undefined, isSelectedActive: false, selectedSnapshot: null } },
-        { provide: PermissionsService, useValue: { loadContext: () => of(null), hasPermission: () => true, clear: () => undefined } },
+        { provide: PermissionsService, useValue: { loadContext: () => of(null), hasPermission: () => true, clear: () => undefined, contextChanges: of(null) } },
         { provide: SecretariaService, useValue: { iniciarEjercicio: () => of(null) } },
-        { provide: DashboardSummaryService, useValue: { clear: () => undefined, associationChanges: of({}), adminChanges: of({}), loadingChanges: of(false), errorChanges: of(false) } }
+        { provide: DashboardSummaryService, useValue: { clear: () => undefined, associationChanges: of({}), adminChanges: of({}), loadingChanges: of(false), errorChanges: of(false) } },
+        { provide: RubiConversationService, useValue: { clear: jasmine.createSpy('clear') } }
       ]
     }).compileComponents();
   });
@@ -35,5 +37,11 @@ describe('AppComponent', () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
     expect(app.title).toEqual('ffsj-secretaria');
+  });
+
+  it('clears Rubi conversation state when the session closes', () => {
+    const fixture = TestBed.createComponent(AppComponent);
+    fixture.detectChanges();
+    expect(TestBed.inject(RubiConversationService).clear).toHaveBeenCalled();
   });
 });

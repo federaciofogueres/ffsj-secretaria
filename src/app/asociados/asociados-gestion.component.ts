@@ -1,10 +1,10 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
-import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AlertButtonType, FfsjDialogAlertService, FfsjSpinnerComponent } from 'ffsj-web-components';
-import { forkJoin, map, of, switchMap } from 'rxjs';
+import { forkJoin, map, of, Subscription, switchMap } from 'rxjs';
 
 import { CensoService } from '../core/censo.service';
 import { AdjuntoSecretaria, AutorizacionAlta, CargoCupoSecretaria, CargoResumen, HistoricoAsociado, RegistroPendiente, SolicitudSecretaria, SolicitudTipo } from '../core/models';
@@ -13,32 +13,28 @@ import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { Asociado, AsociadosService } from './asociados.service';
+import { ALTA_TELEFONO_PATTERN, esMenorDeEdad, fechaHoyLocal, fechaNacimientoValidator, identificacionValidator } from './alta-form.utils';
+import { buildFormDiagnostics, FormDiagnosticFieldMeta } from '../rubi/form-diagnostics.util';
+import { RubiFormDiagnosticIssue, RubiFormDiagnostics } from '../rubi/rubi-api.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
+
+// G (form-diagnostics, formulario normal): las mismas etiquetas visibles junto
+// a cada campo en la plantilla (metadata real y estatica del formulario, nunca
+// DOM scraping). Este componente no usa i18n en ningun otro sitio, asi que el
+// texto literal es la unica "fuente real" disponible, igual que el resto de
+// labels ya mostrados al usuario.
+const FIELD_LABELS: Record<string, string> = {
+  tipo: 'Tipo de asociado', identificacion: 'DNI/NIE/Pasaporte o SIP', nacimiento: 'Fecha de nacimiento',
+  nombre: 'Nombre', apellidos: 'Apellidos', direccion: 'Dirección', cp: 'Código postal',
+  localidad: 'Localidad', provincia: 'Provincia', telefono: 'Teléfono', email: 'Email',
+  representante1Nombre: 'Representación legal 1 - Nombre', representante1Telefono: 'Representación legal 1 - Teléfono',
+  representante2Nombre: 'Representación legal 2 - Nombre', representante2Telefono: 'Representación legal 2 - Teléfono'
+};
 
 type GestionTab = 'altas' | 'modificaciones' | 'bajas' | 'solicitudes' | 'cupos';
 type AsociadoGrupo = 'adultos' | 'infantiles';
 type PestanaSolicitudAsociacion = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
 
-function fechaNacimientoValidator(control: AbstractControl): ValidationErrors | null {
-  const value = String(control.value || '').trim();
-  if (!value) return null;
-  const date = new Date(`${value}T00:00:00Z`);
-  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value && value <= fechaHoyLocal()
-    ? null : { fechaNacimientoInvalida: true };
-}
-
-function identificacionValidator(control: AbstractControl): ValidationErrors | null {
-  const value = String(control.value || '').trim().replace(/\s+/g, '').toUpperCase();
-  if (!value) return { required: true };
-  const documento = /^(?:\d{8}|[XYZ]\d{7})[A-Z]$/.test(value)
-    || /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{5,20}$/.test(value);
-  const sip = /^(?=.*\d)[A-Z0-9-]{5,30}$/.test(value);
-  return documento || sip ? null : { identificacionInvalida: true };
-}
-
-function fechaHoyLocal(): string {
-  const today = new Date();
-  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-}
 type ListadoContexto = 'modificaciones' | 'bajas';
 
 interface SustitucionCargoRequerido {
@@ -65,7 +61,7 @@ interface ConflictoCargoExclusivo {
   templateUrl: './asociados-gestion.component.html',
   styleUrls: ['./asociados-gestion.component.scss']
 })
-export class AsociadosGestionComponent implements OnInit {
+export class AsociadosGestionComponent implements OnInit, OnDestroy {
   activeTab: GestionTab = 'altas';
 
   adultos: Asociado[] = [];
@@ -117,6 +113,13 @@ export class AsociadosGestionComponent implements OnInit {
   modoFormulario: 'alta' | 'modificacion' = 'alta';
   asociadoEnEdicion: Asociado | null = null;
   tipoAsociacion: number | null = null;
+  submitted = false;
+  // G (form-diagnostics, formulario normal): bolsa unica para todas las
+  // suscripciones que deben mantener el diagnostico al dia sin que el
+  // usuario toque el formulario (valueChanges del propio altaForm y
+  // cualquier dependencia externa relevante, p.ej. el ejercicio
+  // seleccionado). Una unica limpieza en ngOnDestroy.
+  private readonly formDiagnosticsSub = new Subscription();
 
   readonly tipoOpciones = ['Hoguera adulta', 'Hoguera infantil'];
   readonly pageSize = 10;
@@ -155,7 +158,8 @@ export class AsociadosGestionComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly dialog: FfsjDialogAlertService,
     readonly permissions: PermissionsService,
-    readonly ejercicioService: EjercicioService
+    readonly ejercicioService: EjercicioService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -165,6 +169,18 @@ export class AsociadosGestionComponent implements OnInit {
       this.mostrarFormMod = requestedTab === 'altas';
     }
     this.filtroSolicitudes = this.route.snapshot.queryParamMap.get('filtro') === 'incidencias' ? 'incidencias' : null;
+    // G (form-diagnostics, formulario normal): reacciona a cada tecla del
+    // formulario real de Secretaria (no solo al abrir/cambiar de pestana),
+    // igual que ya hace InscripcionesComponent.watchFormDiagnostics().
+    this.formDiagnosticsSub.add(this.altaForm.valueChanges.subscribe(() => this.syncRubiScreenContext()));
+    // Bug real (validacion manual DEV): `accionesBloqueadasPorEjercicio` (y
+    // por tanto el issue ALTA_EJERCICIO_NO_DISPONIBLE) depende del ejercicio
+    // GLOBAL seleccionado, que el usuario puede cambiar sin tocar el
+    // formulario ni cambiar de pestana. Sin esta suscripcion, cambiar a un
+    // ejercicio historico dejaria un formDiagnostics obsoleto hasta el
+    // siguiente evento local.
+    this.formDiagnosticsSub.add(this.ejercicioService.selectedChanges.subscribe(() => this.syncRubiScreenContext()));
+    this.syncRubiScreenContext();
 
     if (this.asociacionId) {
       this.censoService.getAsociacion(this.asociacionId).subscribe({
@@ -186,6 +202,11 @@ export class AsociadosGestionComponent implements OnInit {
     this.cargarRegistroPendiente();
     this.cargarSolicitudes();
     this.cargarCupos();
+  }
+
+  ngOnDestroy(): void {
+    this.formDiagnosticsSub.unsubscribe();
+    this.rubiScreenContext.clear('asociados');
   }
 
   get asociacionId(): number {
@@ -263,6 +284,10 @@ export class AsociadosGestionComponent implements OnInit {
     this.asociadoEnEdicion = null;
     this.seleccionBaja.clear();
     this.mostrarFormMod = tab === 'altas';
+    // G (form-diagnostics, formulario normal): cambiar de pestana limpia de
+    // inmediato el diagnostico anterior (resetFormulario ya deja el
+    // formulario valido/vacio; mostrarFormMod decide si hay diagnostico).
+    this.syncRubiScreenContext();
 
     if (tab === 'solicitudes') {
       this.cargarSolicitudes();
@@ -271,15 +296,90 @@ export class AsociadosGestionComponent implements OnInit {
     }
   }
 
+  // G (form-diagnostics, formulario normal): unico punto que construye y
+  // publica el contexto de Rubi para este componente (modulo, vista, pestana
+  // y el diagnostico del formulario real si lo hay). Se invoca en cada cambio
+  // relevante: valueChanges del propio altaForm (ver ngOnInit), cambio de
+  // pestana, apertura/cierre del formulario, seleccion de cargo y tras cada
+  // intento de envio.
+  private syncRubiScreenContext(): void {
+    const diagnostics = this.currentFormDiagnostics();
+    this.rubiScreenContext.set({
+      version: 1,
+      module: 'asociados',
+      view: 'gestion',
+      tab: this.activeTab,
+      ...(diagnostics ? { state: { formDiagnostics: diagnostics } } : {})
+    });
+  }
+
+  // G (form-diagnostics, formulario normal - bug real corregido): unica
+  // fuente de verdad de si el formulario funcional (Alta o Modificacion) esta
+  // REALMENTE visible en pantalla. Debe coincidir EXACTAMENTE con las
+  // condiciones de asociados-gestion.component.html:
+  //   Altas          -> *ngIf="activeTab === 'altas'" y, dentro,
+  //                      *ngIf="estaViendoPendientes('alta'); else altaFormView"
+  //                      (el formulario se muestra en el "else", SIEMPRE que
+  //                      no se este viendo el listado de pendientes -
+  //                      `mostrarFormMod` NUNCA se comprueba aqui).
+  //   Modificaciones -> *ngIf="activeTab === 'modificaciones'" y, dentro (una
+  //                      vez descartado el listado de pendientes), solo
+  //                      *ngIf="mostrarFormMod" muestra el formulario (antes
+  //                      hay que elegir una persona con iniciarModificacion()).
+  // `mostrarFormMod` por si solo NO representa la visibilidad real del
+  // formulario de Altas: era la causa exacta del bug reproducido en DEV
+  // (entrada normal a /asociados/gestion sin ?tab=altas: activeTab='altas' por
+  // defecto, mostrarFormMod=false por defecto, formulario visualmente
+  // abierto, Rubi creia que no habia ninguno).
+  private isCurrentFormVisible(): boolean {
+    if (this.activeTab === 'altas') return !this.estaViendoPendientes('alta');
+    if (this.activeTab === 'modificaciones') return !this.estaViendoPendientes('cambio') && this.mostrarFormMod;
+    return false;
+  }
+
+  // Reutiliza el extractor generico buildFormDiagnostics() ya existente y
+  // anade, como extraIssues, las condiciones reales de
+  // guardarRegistroAltaOCambio() que no viven en control.errors: cargo
+  // obligatorio no seleccionado, representacion legal incompleta (solo alta)
+  // y ejercicio no activo. Nunca incluye datos de la persona.
+  private currentFormDiagnostics(): RubiFormDiagnostics | undefined {
+    if (!this.isCurrentFormVisible()) return undefined;
+    const fieldMeta: Record<string, FormDiagnosticFieldMeta> = {};
+    Object.entries(FIELD_LABELS).forEach(([field, label]) => fieldMeta[field] = { label });
+    const extraIssues: RubiFormDiagnosticIssue[] = [];
+    if (this.cargosSeleccionadosIds.size === 0) {
+      extraIssues.push({ field: 'cargoId', label: 'Cargo', code: 'ALTA_CARGO_REQUERIDO', source: 'client' });
+    }
+    if (this.modoFormulario === 'alta' && this.esMenorEdad) {
+      const nombre = String(this.altaForm.value.representante1Nombre || '').trim();
+      const telefono = String(this.altaForm.value.representante1Telefono || '').trim();
+      if (!nombre || !ALTA_TELEFONO_PATTERN.test(telefono)) {
+        extraIssues.push({ field: 'representante1Nombre', label: 'Representación legal 1', code: 'ALTA_REPRESENTACION_REQUERIDA', source: 'client' });
+      }
+    }
+    if (this.accionesBloqueadasPorEjercicio) {
+      extraIssues.push({ code: 'ALTA_EJERCICIO_NO_DISPONIBLE', source: 'client' });
+    }
+    return buildFormDiagnostics(this.altaForm, { submitted: this.submitted, fieldMeta, extraIssues });
+  }
+
+  // G (form-diagnostics, formulario normal - bug relacionado): abrir/cerrar
+  // el listado de pendientes sustituye el formulario en pantalla
+  // (`estaViendoPendientes()` forma parte de `isCurrentFormVisible()`), asi
+  // que debe sincronizar el contexto de inmediato en los dos sentidos: nunca
+  // debe quedar un `formDiagnostics` de un formulario que ya no esta visible,
+  // ni faltar el de uno que acaba de reaparecer.
   abrirPendientes(tipo: SolicitudTipo): void {
     this.pendingViewTipo = tipo;
     this.seleccionRegistro.clear();
     this.cargarRegistroPendiente();
+    this.syncRubiScreenContext();
   }
 
   volverDesdePendientes(): void {
     this.pendingViewTipo = null;
     this.seleccionRegistro.clear();
+    this.syncRubiScreenContext();
   }
 
   estaViendoPendientes(tipo: SolicitudTipo): boolean {
@@ -322,6 +422,7 @@ export class AsociadosGestionComponent implements OnInit {
       });
       this.cargosSeleccionadosIds = new Set(asociado.cargoIds?.length ? asociado.cargoIds : [asociado.cargoId ?? this.getCargoIdPorNombre(asociado.cargo, asociado.tipo)].filter(Boolean) as number[]);
       this.precargarCargoActual(asociado);
+      this.syncRubiScreenContext();
     });
   }
 
@@ -355,6 +456,11 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   guardarRegistroAltaOCambio(): void {
+    // G (form-diagnostics, formulario normal): a partir de aqui, un "que me
+    // falta" debe poder explicar tambien los campos que el usuario aun no ha
+    // tocado (el mismo criterio ya usado en el resto de formularios Rubi).
+    this.submitted = true;
+    this.syncRubiScreenContext();
     if (!this.permissions.hasPermission('solicitudes:write')) {
       this.showError('No tienes permiso para crear registros pendientes.');
       return;
@@ -386,7 +492,7 @@ export class AsociadosGestionComponent implements OnInit {
     if (tipo === 'alta' && this.esMenorEdad) {
       const representante1Nombre = String(this.altaForm.value.representante1Nombre || '').trim();
       const representante1Telefono = String(this.altaForm.value.representante1Telefono || '').trim();
-      if (!representante1Nombre || !/^[+0-9][0-9\s-]{7,19}$/.test(representante1Telefono)) {
+      if (!representante1Nombre || !ALTA_TELEFONO_PATTERN.test(representante1Telefono)) {
         this.showError('Indica nombre y teléfono válidos para la representación legal 1.');
         return;
       }
@@ -492,6 +598,7 @@ export class AsociadosGestionComponent implements OnInit {
         this.resetFormulario();
         this.activeTab = 'solicitudes';
         this.mostrarFormMod = false;
+        this.syncRubiScreenContext();
         this.loading = false;
         this.dialog.openDialogAlert({
           title: 'Alta registrada',
@@ -643,6 +750,7 @@ export class AsociadosGestionComponent implements OnInit {
           this.asociadoEnEdicion = null;
           this.mostrarFormMod = false;
           this.activeTab = 'solicitudes';
+          this.syncRubiScreenContext();
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Solicitud creada',
@@ -678,6 +786,7 @@ export class AsociadosGestionComponent implements OnInit {
           this.resetFormulario();
           this.asociadoEnEdicion = null;
           this.mostrarFormMod = this.activeTab === 'altas';
+          this.syncRubiScreenContext();
           this.dialog.openDialogAlert({
             title: tipo === 'alta' ? 'Alta pendiente' : 'Cambio pendiente',
             content: 'Se ha anadido al borrador de solicitud.',
@@ -940,6 +1049,7 @@ export class AsociadosGestionComponent implements OnInit {
           this.asociadoEnEdicion = null;
           this.mostrarFormMod = false;
           this.activeTab = 'solicitudes';
+          this.syncRubiScreenContext();
           this.loading = false;
           this.cerrarSustitucionesDialog();
           this.dialog.openDialogAlert({
@@ -1060,6 +1170,7 @@ export class AsociadosGestionComponent implements OnInit {
           this.solicitudDetalle = solicitud;
           this.activeTab = 'solicitudes';
           this.pendingViewTipo = null;
+          this.syncRubiScreenContext();
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Solicitud registrada',
@@ -1098,6 +1209,7 @@ export class AsociadosGestionComponent implements OnInit {
     const solicitud = this.solicitudes.find(item => Number(item.id) === Number(solicitudId));
     this.activeTab = 'solicitudes';
     this.pendingViewTipo = null;
+    this.syncRubiScreenContext();
     if (solicitud) {
       this.verSolicitud(solicitud);
       return;
@@ -1574,6 +1686,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   public resetFormulario(): void {
+    this.submitted = false;
     this.altaForm.reset({
       tipo: 'Hoguera adulta',
       cargoId: null,
@@ -1624,10 +1737,12 @@ export class AsociadosGestionComponent implements OnInit {
 
     this.cargosSeleccionadosIds.add(currentCargoId);
     this.altaForm.patchValue({ cargoId: null });
+    this.syncRubiScreenContext();
   }
 
   quitarCargoSeleccionado(cargoId: number): void {
     this.cargosSeleccionadosIds.delete(Number(cargoId));
+    this.syncRubiScreenContext();
   }
 
   asociadosPagina(contexto: ListadoContexto, grupo: AsociadoGrupo): Asociado[] {
@@ -1953,12 +2068,7 @@ export class AsociadosGestionComponent implements OnInit {
   }
 
   get esMenorEdad(): boolean {
-    const nacimiento = new Date(`${this.altaForm.value.nacimiento || ''}T00:00:00`);
-    if (Number.isNaN(nacimiento.getTime())) return false;
-    const hoy = new Date();
-    let edad = hoy.getFullYear() - nacimiento.getFullYear();
-    if (hoy.getMonth() < nacimiento.getMonth() || (hoy.getMonth() === nacimiento.getMonth() && hoy.getDate() < nacimiento.getDate())) edad--;
-    return edad < 18;
+    return esMenorDeEdad(this.altaForm.value.nacimiento);
   }
 
   private fechaNacimientoValida(): boolean {

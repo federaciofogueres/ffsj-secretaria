@@ -212,6 +212,9 @@
   </footer>
 
   <lib-ffsj-alert></lib-ffsj-alert>
+  @defer (when isLoggedIn) {
+    <app-rubi-panel></app-rubi-panel>
+  }
 </div>
 
 <div class="modal-backdrop-custom" *ngIf="showIniciarEjercicioDialog" (click)="cerrarDialogoIniciarEjercicio()"></div>

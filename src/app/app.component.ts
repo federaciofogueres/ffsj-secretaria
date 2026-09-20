@@ -13,6 +13,8 @@ import { SecretariaService } from './core/secretaria.service';
 import { AppLanguage, I18nService } from './core/i18n.service';
 import { TranslatePipe } from './shared/translate.pipe';
 import { APP_VERSION } from './core/app-version';
+import { RubiConversationService } from './rubi/rubi-conversation.service';
+import { RubiPanelComponent } from './rubi/rubi-panel.component';
 
 interface PendingTask {
   title: string;
@@ -25,7 +27,7 @@ interface PendingTask {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, FfsjSpinnerComponent, TranslatePipe],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, FfsjSpinnerComponent, TranslatePipe, RubiPanelComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -85,6 +87,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private tareasSubscription?: Subscription;
   private tareasLoadingSubscription?: Subscription;
   private tareasErrorSubscription?: Subscription;
+  private rubiContextKey: string | null = null;
 
   constructor(
     readonly auth: AuthService,
@@ -94,6 +97,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly secretariaService: SecretariaService,
     private readonly dashboardSummary: DashboardSummaryService,
+    private readonly rubiConversation: RubiConversationService,
     readonly i18n: I18nService
   ) {}
 
@@ -104,6 +108,11 @@ export class AppComponent implements OnInit, OnDestroy {
       this.permissions.loadContext().subscribe();
     }
     this.contextSubscription = this.permissions.contextChanges.subscribe(context => {
+      const nextRubiContextKey = context ? `${context.asociacionId}:${context.ejercicioActivo?.id ?? ''}` : null;
+      if (this.rubiContextKey && nextRubiContextKey && this.rubiContextKey !== nextRubiContextKey) {
+        this.rubiConversation.clear();
+      }
+      this.rubiContextKey = nextRubiContextKey;
       this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
       this.associationName = context?.asociacionNombre || context?.nombre || '';
       this.associationType = context?.asociacionTipo || '';
@@ -134,6 +143,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         this.permissions.clear();
         this.dashboardSummary.clear();
+        this.rubiConversation.clear();
       }
     });
     this.routerSubscription = this.router.events
@@ -177,6 +187,7 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
     this.ejerciciosService.select(Number(ejercicioId));
+    this.rubiConversation.clear();
     this.closeHeaderPopovers();
     const url = this.router.url;
     this.router.navigateByUrl('/', { skipLocationChange: true }).then(() => this.router.navigateByUrl(url));

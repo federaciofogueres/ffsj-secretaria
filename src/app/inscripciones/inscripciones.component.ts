@@ -1,8 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { forkJoin, of, switchMap } from 'rxjs';
+import { forkJoin, of, Subscription, switchMap } from 'rxjs';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { FfsjSpinnerComponent } from 'ffsj-web-components';
@@ -19,6 +19,18 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 import { FormulariosComponent } from '../formularios/formularios.component';
 import { InscripcionDraftState, InscripcionDraftStateService } from './inscripcion-draft-state.service';
+import { buildFormDiagnostics, FormDiagnosticFieldMeta } from '../rubi/form-diagnostics.util';
+import { RubiFormDiagnosticIssue, RubiFormDiagnostics } from '../rubi/rubi-api.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
+
+// G (form-diagnostics): unicos codigos de backend "de formulario" para el
+// envio de una inscripcion (el resto de errores de submitInscripcion, p.ej.
+// permisos o datos malformados, no aportan nada corregible en el propio
+// formulario dinamico).
+const SERVER_DIAGNOSTIC_CODES = new Set([
+  'INSCRIPCION_CERRADA', 'INSCRIPCION_PLAZO_CERRADO', 'INSCRIPCION_EJERCICIO_NO_ACTIVO',
+  'ACTIVIDAD_NO_DISPONIBLE', 'INSCRIPCION_ENTRADA_BLOQUEADA'
+]);
 
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
@@ -32,7 +44,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })
-export class InscripcionesComponent implements OnInit {
+export class InscripcionesComponent implements OnInit, OnDestroy {
   actividades: ActividadSecretaria[] = [];
   formularios: FormularioInscripcion[] = [];
   inscripciones: InscripcionSecretaria[] = [];
@@ -51,7 +63,10 @@ export class InscripcionesComponent implements OnInit {
   form: FormGroup = this.fb.group({});
   selectedParticipants = new Set<string>();
   asociadoSearchTerms: Record<string, string> = {};
+  submitted = false;
   private asociadosCargados = false;
+  private lastServerIssue: RubiFormDiagnosticIssue | null = null;
+  private formDiagnosticsSub?: Subscription;
   loading = false;
   error = '';
   success = '';
@@ -97,7 +112,8 @@ export class InscripcionesComponent implements OnInit {
     private readonly router: Router,
     readonly permissions: PermissionsService,
     readonly ejercicioService: EjercicioService,
-    private readonly draftState: InscripcionDraftStateService
+    private readonly draftState: InscripcionDraftStateService,
+    private readonly rubiScreenContext: RubiScreenContextService
   ) {}
 
   ngOnInit(): void {
@@ -111,6 +127,62 @@ export class InscripcionesComponent implements OnInit {
     this.createMode = this.isCreateRoute();
     this.detailMode = this.createMode || Boolean(routeId || this.route.snapshot.queryParamMap.get('inscripcionId'));
     this.cargarDatos();
+    // A (post-auditoria 1.8.1#RUBI): distingue listado de detalle, y expone el
+    // id de la inscripcion seleccionada (ya validado como allowlist de
+    // caracteres seguros por el backend) sin ningun dato del formulario.
+    this.syncRubiScreenContext();
+  }
+
+  ngOnDestroy(): void {
+    this.formDiagnosticsSub?.unsubscribe();
+    this.rubiScreenContext.clear('inscripciones');
+  }
+
+  // G (form-diagnostics): unico punto que publica el contexto de Rubi para
+  // este modulo; recalcula el diagnostico del formulario activo (si lo hay) a
+  // partir de las validaciones que Angular ya ha ejecutado, nunca de
+  // `form.value`. Se invoca en cada cambio relevante (formulario, ejercicio,
+  // participantes, envio) para que Rubi nunca vea un estado obsoleto.
+  private syncRubiScreenContext(): void {
+    const routeId = this.selectedInscription?.id || this.route.snapshot.paramMap.get('id');
+    const diagnostics = this.currentFormDiagnostics();
+    this.rubiScreenContext.set({
+      version: 1, module: 'inscripciones', view: this.detailMode ? 'detalle' : 'listado',
+      ...((routeId || diagnostics) ? {
+        state: {
+          ...(routeId ? { selectedInscriptionId: routeId } : {}),
+          ...(diagnostics ? { formDiagnostics: diagnostics } : {})
+        }
+      } : {})
+    });
+  }
+
+  private currentFormDiagnostics(): RubiFormDiagnostics | undefined {
+    if (!this.detailMode || !this.selectedInscription || this.associationMode !== 'edit') return undefined;
+    const fieldMeta: Record<string, FormDiagnosticFieldMeta> = {};
+    (this.selectedInscription.campos || []).forEach(field => {
+      fieldMeta[field.key] = { label: field.label, max: field.maxSelections };
+    });
+    const extraIssues: RubiFormDiagnosticIssue[] = [];
+    if (this.requiresParticipants && !this.selectedParticipants.size) {
+      extraIssues.push({ field: 'participantes', label: 'Participantes', code: 'minItems', source: 'client', required: 1, current: 0 });
+    }
+    if (!this.isInscripcionDisponible(this.selectedInscription)) {
+      extraIssues.push({ code: 'INSCRIPCION_PLAZO_CERRADO', source: 'client' });
+    }
+    if (this.lastServerIssue) extraIssues.push(this.lastServerIssue);
+    return buildFormDiagnostics(this.form, { submitted: this.submitted, fieldMeta, extraIssues });
+  }
+
+  private watchFormDiagnostics(): void {
+    this.formDiagnosticsSub?.unsubscribe();
+    this.formDiagnosticsSub = this.form.valueChanges.subscribe(() => this.syncRubiScreenContext());
+    this.syncRubiScreenContext();
+  }
+
+  private diagnosticIssueFor(error: unknown): RubiFormDiagnosticIssue | null {
+    const code = String((error as { error?: { details?: { code?: string } } })?.error?.details?.code || '');
+    return SERVER_DIAGNOSTIC_CODES.has(code) ? { code, source: 'server' } : null;
   }
 
   get isAdminMode(): boolean {
@@ -212,10 +284,13 @@ export class InscripcionesComponent implements OnInit {
     this.associationMode = this.isAdminMode ? 'edit' : 'edit';
     this.success = '';
     this.error = '';
+    this.submitted = false;
+    this.lastServerIssue = null;
     const draft = this.draftState.getOrCreate(inscription.id, () => this.createDraft(inscription));
     this.form = draft.form;
     this.selectedParticipants = draft.participantes;
     this.asociadoSearchTerms = draft.busquedasAsociados;
+    this.watchFormDiagnostics();
     this.cargarAdjuntos(inscription.id);
     if (this.isAdminMode) {
       this.cargarEntradas(inscription.id);
@@ -450,6 +525,7 @@ export class InscripcionesComponent implements OnInit {
     this.selectedParticipants.has(id)
       ? this.selectedParticipants.delete(id)
       : this.selectedParticipants.add(id);
+    this.syncRubiScreenContext();
   }
 
   isParticipantSelected(participant: Asociado): boolean {
@@ -508,9 +584,11 @@ export class InscripcionesComponent implements OnInit {
     const participants = this.filteredParticipants;
     if (this.allTabParticipantsSelected) {
       participants.forEach(person => this.selectedParticipants.delete(String(person.id)));
+      this.syncRubiScreenContext();
       return;
     }
     participants.forEach(person => this.selectedParticipants.add(String(person.id)));
+    this.syncRubiScreenContext();
   }
 
   abrirDocumento(adjunto: AdjuntoSecretaria): void {
@@ -718,6 +796,8 @@ export class InscripcionesComponent implements OnInit {
 
   submit(): void {
     if (!this.selectedInscription) return;
+    this.submitted = true;
+    this.lastServerIssue = null;
     if (this.accionesAsociacionBloqueadasPorEjercicio) {
       this.error = this.mensajeEjercicioNoActivo;
       return;
@@ -725,6 +805,7 @@ export class InscripcionesComponent implements OnInit {
     const disponibilidad = this.mensajeDisponibilidadInscripcion(this.selectedInscription);
     if (disponibilidad) {
       this.error = disponibilidad;
+      this.syncRubiScreenContext();
       return;
     }
     if (!this.canAttemptSubmit) {
@@ -732,6 +813,7 @@ export class InscripcionesComponent implements OnInit {
         this.error = 'No tienes permiso para enviar inscripciones.';
       } else if (this.requiresParticipants && !this.selectedParticipants.size) {
         this.error = 'Selecciona al menos un asociado para continuar.';
+        this.syncRubiScreenContext();
       }
       return;
     }
@@ -741,6 +823,7 @@ export class InscripcionesComponent implements OnInit {
       this.error = invalidFields.length
         ? `Revisa los campos obligatorios o inválidos: ${invalidFields.join(', ')}.`
         : 'Revisa los campos obligatorios o inválidos antes de enviar la inscripción.';
+      this.syncRubiScreenContext();
       return;
     }
     const invalidAsociados = this.invalidAsociadoFields();
@@ -751,6 +834,7 @@ export class InscripcionesComponent implements OnInit {
         control?.markAsTouched();
       });
       this.error = `Selecciona un asociado válido de la lista: ${invalidAsociados.map(field => field.label).join(', ')}.`;
+      this.syncRubiScreenContext();
       return;
     }
     this.secretariaService.enviarInscripcion({
@@ -764,9 +848,12 @@ export class InscripcionesComponent implements OnInit {
         this.miEntrada = entry as InscripcionEntradaSecretaria;
         this.associationMode = 'summary';
         this.success = 'Inscripcion enviada correctamente.';
+        this.syncRubiScreenContext();
       },
       error: error => {
         this.error = error?.error?.message || 'No se ha podido enviar la inscripción.';
+        this.lastServerIssue = this.diagnosticIssueFor(error);
+        this.syncRubiScreenContext();
       }
     });
   }
@@ -783,6 +870,7 @@ export class InscripcionesComponent implements OnInit {
     this.associationMode = 'edit';
     this.success = '';
     this.error = '';
+    this.syncRubiScreenContext();
   }
 
   cancelarEdicionAsociacion(): void {
@@ -792,12 +880,16 @@ export class InscripcionesComponent implements OnInit {
     this.form = draft.form;
     this.selectedParticipants = draft.participantes;
     this.asociadoSearchTerms = draft.busquedasAsociados;
+    this.submitted = false;
+    this.lastServerIssue = null;
     if (this.miEntrada) {
       this.patchEntradaForm(this.miEntrada);
       this.associationMode = 'view';
+      this.watchFormDiagnostics();
       return;
     }
     this.associationMode = 'edit';
+    this.watchFormDiagnostics();
   }
 
   puedeModificarMiEntrada(): boolean {

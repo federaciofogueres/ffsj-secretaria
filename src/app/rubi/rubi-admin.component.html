@@ -1,0 +1,463 @@
+<section class="rubi-admin" aria-labelledby="rubi-admin-title">
+  <p class="text-muted" *ngIf="!allowed">{{ 'rubi.admin.noAccess' | t }}</p>
+
+  <ng-container *ngIf="allowed">
+    <p *ngIf="loading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+    <div class="alert alert-danger" *ngIf="error">{{ error | t }}</div>
+
+    <ng-container *ngIf="!loading">
+      <section class="section-panel">
+        <h2 id="rubi-admin-title" class="h5">{{ 'rubi.admin.status.title' | t }}</h2>
+        <div class="row g-3" *ngIf="global as g">
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.enabled" (change)="toggleGlobal('enabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.enabled' | t }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.realProviderEnabled" (change)="toggleGlobal('realProviderEnabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.realProvider' | t }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.transactionalEnabled" (change)="toggleGlobal('transactionalEnabled', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.transactional' | t }}</span>
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="checkbox" [checked]="g.federationAuthorized" (change)="toggleGlobal('federationAuthorized', $any($event.target).checked)" />
+              <span class="form-check-label">{{ 'rubi.admin.toggle.federation' | t }}</span>
+            </label>
+          </div>
+        </div>
+        <p class="text-muted small mt-2">{{ 'rubi.admin.status.hint' | t }}</p>
+        <p class="text-muted small">{{ 'rubi.admin.status.federationHint' | t }}</p>
+      </section>
+
+      <section class="section-panel" *ngIf="provider as p">
+        <h2 class="h5">{{ 'rubi.admin.provider.title' | t }}</h2>
+        <dl class="rubi-admin-summary">
+          <div><dt>{{ 'rubi.admin.provider.name' | t }}</dt><dd>{{ p.provider }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.model' | t }}</dt><dd>{{ p.model }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.killSwitch' | t }}</dt><dd>{{ (p.killSwitchEnabled ? 'rubi.admin.state.active' : 'rubi.admin.state.inactive') | t }}</dd></div>
+          <div><dt>{{ 'rubi.admin.provider.credential' | t }}</dt><dd>{{ (p.credentialConfigured ? 'rubi.admin.state.configured' : 'rubi.admin.state.notConfigured') | t }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="section-panel" *ngIf="budget as b">
+        <h2 class="h5">{{ 'rubi.admin.budget.title' | t }}</h2>
+        <dl class="rubi-admin-summary">
+          <div><dt>{{ 'rubi.admin.budget.daily' | t }}</dt><dd>{{ b.dailyUsedUsd | number: '1.2-4' }} / {{ b.dailyBudgetUsd | number: '1.2-4' }} USD<span class="badge bg-light text-dark ms-2" *ngIf="b.dailyPercent !== null">{{ b.dailyPercent }}%</span><span class="badge bg-danger ms-2" *ngIf="b.dailyLimitReached">{{ 'rubi.admin.budget.limitReached' | t }}</span></dd></div>
+          <div><dt>{{ 'rubi.admin.budget.monthly' | t }}</dt><dd>{{ b.monthlyUsedUsd | number: '1.2-4' }} / {{ b.monthlyBudgetUsd | number: '1.2-4' }} USD<span class="badge bg-light text-dark ms-2" *ngIf="b.monthlyPercent !== null">{{ b.monthlyPercent }}%</span><span class="badge bg-danger ms-2" *ngIf="b.monthlyLimitReached">{{ 'rubi.admin.budget.limitReached' | t }}</span></dd></div>
+        </dl>
+      </section>
+
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.associations.title' | t }}</h2>
+        <div class="row g-2 align-items-end mb-2">
+          <div class="col-md-5">
+            <label class="form-label">{{ 'rubi.admin.associations.search' | t }}</label>
+            <input class="form-control" type="search" [(ngModel)]="busqueda" (keyup.enter)="loadAsociaciones()" />
+          </div>
+          <div class="col-md-4 d-flex gap-2">
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'all'" [class.btn-outline-secondary]="filtro !== 'all'" (click)="setFiltro('all')">{{ 'rubi.admin.associations.filter.all' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'authorized'" [class.btn-outline-secondary]="filtro !== 'authorized'" (click)="setFiltro('authorized')">{{ 'rubi.admin.associations.filter.authorized' | t }}</button>
+            <button class="btn btn-sm" [class.btn-foc-rojo]="filtro === 'unauthorized'" [class.btn-outline-secondary]="filtro !== 'unauthorized'" (click)="setFiltro('unauthorized')">{{ 'rubi.admin.associations.filter.unauthorized' | t }}</button>
+          </div>
+          <div class="col-md-3 d-grid">
+            <button class="btn btn-outline-secondary" type="button" (click)="loadAsociaciones()">{{ 'rubi.admin.associations.refresh' | t }}</button>
+          </div>
+        </div>
+        <p *ngIf="asociacionesLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="asociacionesError">{{ asociacionesError | t }}</div>
+        <p class="text-muted small">{{ 'rubi.admin.associations.total' | t }}: {{ asociacionesTotal }}</p>
+        <table class="table table-sm" *ngIf="!asociacionesLoading && asociaciones.length">
+          <thead><tr><th>{{ 'rubi.admin.associations.name' | t }}</th><th>{{ 'rubi.admin.associations.status' | t }}</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let asociacion of asociaciones">
+              <td>{{ asociacion.nombre }}</td>
+              <td>
+                <label class="form-check">
+                  <input class="form-check-input" type="checkbox" [checked]="asociacion.authorized" [disabled]="isSavingAsociacion(asociacion.id)" (change)="toggleAsociacion(asociacion, $any($event.target).checked)" />
+                  <span class="form-check-label">{{ (asociacion.authorized ? 'rubi.admin.state.authorized' : 'rubi.admin.state.notAuthorized') | t }}</span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-muted" *ngIf="!asociacionesLoading && !asociaciones.length">{{ 'rubi.admin.associations.empty' | t }}</p>
+      </section>
+
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.tools.title' | t }}</h2>
+        <p class="text-muted small">{{ 'rubi.admin.tools.hint' | t }}</p>
+        <p *ngIf="toolsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="toolsError">{{ toolsError | t }}</div>
+        <table class="table table-sm" *ngIf="!toolsLoading && tools.length">
+          <thead><tr><th>{{ 'rubi.admin.tools.name' | t }}</th><th>{{ 'rubi.admin.tools.domain' | t }}</th><th>{{ 'rubi.admin.tools.status' | t }}</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let tool of tools">
+              <td>
+                <strong>{{ tool.name }}</strong>
+                <p class="text-muted small mb-0" *ngIf="tool.description">{{ tool.description }}</p>
+              </td>
+              <td>{{ tool.domain }}</td>
+              <td>
+                <span class="badge bg-secondary" *ngIf="tool.blockedByInfra">{{ 'rubi.admin.tools.blockedByInfra' | t }}</span>
+                <label class="form-check" *ngIf="!tool.blockedByInfra">
+                  <input class="form-check-input" type="checkbox" [checked]="tool.blockedByAdmin" [disabled]="isSavingTool(tool.name)" (change)="toggleTool(tool, $any($event.target).checked)" />
+                  <span class="form-check-label">{{ (tool.blockedByAdmin ? 'rubi.admin.tools.blocked' : 'rubi.admin.tools.available') | t }}</span>
+                </label>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.analytics.title' | t }}</h2>
+        <div class="d-flex gap-2 mb-2 align-items-end flex-wrap">
+          <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 7" [class.btn-outline-secondary]="analyticsDias !== 7" (click)="setAnalyticsDias(7)">{{ 'rubi.admin.analytics.last7' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="analyticsDias === 30" [class.btn-outline-secondary]="analyticsDias !== 30" (click)="setAnalyticsDias(30)">{{ 'rubi.admin.analytics.last30' | t }}</button>
+          <div>
+            <label class="form-label mb-0">{{ 'rubi.admin.analytics.filterAssociation' | t }}</label>
+            <input class="form-control form-control-sm" type="number" min="1" [(ngModel)]="analyticsAsociacionId" (keyup.enter)="loadAnalytics()" />
+          </div>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadAnalytics()">{{ 'rubi.admin.associations.refresh' | t }}</button>
+        </div>
+        <p *ngIf="analyticsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="analyticsError">{{ analyticsError | t }}</div>
+        <ng-container *ngIf="!analyticsLoading && analytics as a">
+          <!-- Revision tecnica final: OPERACION (peticiones conversacionales
+               reales a Rubi, deterministicas o via provider) y PROVIDER
+               (coste/tokens del proveedor de pago) son cifras distintas y
+               nunca se mezclan; las etiquetas dejan explicito que mide cada
+               bloque. -->
+          <h3 class="h6 text-muted">{{ 'rubi.admin.analytics.operationTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.calls' | t }}</span><strong>{{ a.operacion.llamadas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.successful' | t }}</span><strong>{{ a.operacion.exitosas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.failures' | t }}</span><strong>{{ a.operacion.fallidas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.actors' | t }}</span><strong>{{ a.operacion.actoresUnicos }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.associations' | t }}</span><strong>{{ a.operacion.asociacionesUnicas }}</strong></div></div>
+            <div class="col-md-4" *ngIf="a.operacion.latenciaMediaMs !== null"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.latency' | t }}</span><strong>{{ a.operacion.latenciaMediaMs | number: '1.0-0' }} ms</strong></div></div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-4" *ngIf="a.operacion.porTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.fallidas }} {{ 'rubi.admin.analytics.failures' | t | lowercase }})</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.operacion.fallosPorCodigo.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byFailureCode' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.fallosPorCodigo">{{ item.codigo }}: {{ item.llamadas }}</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.operacion.porAsociacion.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byAssociation' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.operacion.porAsociacion">#{{ item.asociacionId }}: {{ item.llamadas }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3 class="h6 text-muted mt-3">{{ 'rubi.admin.analytics.providerTitle' | t }}</h3>
+          <p class="text-muted small">{{ 'rubi.admin.analytics.providerHint' | t }}</p>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.providerCalls' | t }}</span><strong>{{ a.provider.llamadas }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.tokens' | t }}</span><strong>{{ a.provider.inputTokens + a.provider.outputTokens }}</strong></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.cost' | t }}</span><strong>{{ a.provider.costeUsd | number: '1.2-4' }} USD</strong></div></div>
+          </div>
+
+          <!-- 1.9.0#RUBI/1.10.0#RUBI: funnel por workflow. Cada barra muestra
+               siempre el numero absoluto junto al porcentaje (nunca solo la
+               tasa), calculado sobre "iniciados". -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.funnelTitle' | t }}</h3>
+          <p class="text-muted small" *ngIf="!a.flujos.length">{{ 'rubi.admin.analytics.noData' | t }}</p>
+          <div class="rubi-funnel" *ngFor="let flow of a.flujos">
+            <h4 class="h6 mb-2">{{ flow.flow }}</h4>
+            <ul class="list-unstyled small mb-0 rubi-funnel-list">
+              <li>{{ 'rubi.admin.analytics.funnel.started' | t }}: <strong>{{ flow.iniciados }}</strong></li>
+              <li>{{ 'rubi.admin.analytics.funnel.prepared' | t }}: <strong>{{ flow.preparados }}</strong> ({{ flow.preparationRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.completed' | t }}: <strong>{{ flow.completados }}</strong> ({{ flow.completionRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.cancelled' | t }}: <strong>{{ flow.cancelados }}</strong> ({{ flow.cancellationRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.failed' | t }}: <strong>{{ flow.fallidos }}</strong> ({{ flow.failureRate | percent: '1.0-1' }})</li>
+              <li *ngIf="flow.derivadosFlujoNormal">{{ 'rubi.admin.analytics.funnel.redirected' | t }}: <strong>{{ flow.derivadosFlujoNormal }}</strong> ({{ flow.normalFlowRedirectRate | percent: '1.0-1' }})</li>
+              <li *ngIf="flow.expirados">{{ 'rubi.admin.analytics.funnel.expired' | t }}: <strong>{{ flow.expirados }}</strong></li>
+            </ul>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.4): analytics conversacional por intent/tool/source. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.conversationalTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4" *ngIf="a.conversacional.porIntent.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byIntent' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porIntent">
+                  {{ item.intent }}: {{ item.llamadas }} · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}
+                  <span *ngIf="item.posiblesReformulaciones"> · {{ 'rubi.admin.analytics.reformulations' | t }}: {{ item.posiblesReformulaciones }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.conversacional.porTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.failureRate | percent: '1.0-1' }} {{ 'rubi.admin.analytics.failures' | t | lowercase }}) · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.conversacional.porSource.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.bySource' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porSource">{{ item.source }}: {{ item.llamadas }}<span *ngIf="item.latenciaMediaMs !== null"> · {{ item.latenciaMediaMs | number: '1.0-0' }} ms</span> · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.5): motivos del 👎, con desglose por dimension. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.feedbackTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-3"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.helpful' | t }}</span><strong>{{ a.feedback.helpful }}</strong></div></div>
+            <div class="col-md-3"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.notHelpful' | t }}</span><strong>{{ a.feedback.notHelpful }}</strong></div></div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-3" *ngIf="a.feedback.porMotivo.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReason' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.porMotivo">{{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorIntent.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonIntent' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorIntent">{{ item.intent }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorTool">{{ item.tool }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorFlow.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonFlow' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorFlow">{{ item.flow }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.8): calidad, siempre con muestra (n) junto a la tasa. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.qualityTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.unknownIntent' | t }}</span><strong>{{ a.calidad.conversacion.unknownIntentRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.unknownIntentRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.reformulation' | t }}</span><strong>{{ a.calidad.conversacion.possibleReformulationRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.possibleReformulationRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.helpful' | t }}</span><strong>{{ a.calidad.conversacion.helpfulRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.helpfulRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.flowCompletion' | t }}</span><strong>{{ a.calidad.workflows.flowCompletionRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.workflows.flowCompletionRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.flowCancellation' | t }}</span><strong>{{ a.calidad.workflows.flowCancellationRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.workflows.flowCancellationRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.providerUsage' | t }}</span><strong>{{ a.calidad.provider.providerUsageRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.provider.providerUsageRate.n }}</small></div></div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.6): tendencias frente al periodo inmediatamente
+               anterior de igual duracion. Nunca se muestra un delta sin los
+               dos valores absolutos (actual/anterior) que lo componen. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.trendsTitle' | t }}</h3>
+          <p class="text-muted small">{{ 'rubi.admin.analytics.trendsHint' | t }}: {{ a.comparacionPeriodoAnterior.periodo.desde | date: 'short' }} - {{ a.comparacionPeriodoAnterior.periodo.hasta | date: 'short' }}</p>
+          <ul class="list-unstyled small mb-0 rubi-trends">
+            <li>
+              {{ 'rubi.admin.analytics.quality.unknownIntent' | t }}:
+              {{ a.comparacionPeriodoAnterior.unknownIntentRate.actual.rate | percent: '1.0-1' }} (n={{ a.comparacionPeriodoAnterior.unknownIntentRate.actual.n }})
+              {{ 'rubi.admin.analytics.trends.vs' | t }}
+              {{ a.comparacionPeriodoAnterior.unknownIntentRate.anterior.rate | percent: '1.0-1' }} (n={{ a.comparacionPeriodoAnterior.unknownIntentRate.anterior.n }})
+              <strong *ngIf="a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales !== null">({{ a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li *ngFor="let item of a.comparacionPeriodoAnterior.cancelacionPorFlow">
+              {{ 'rubi.admin.analytics.trends.cancellation' | t }} {{ item.flow }}:
+              {{ item.actual.rate | percent: '1.0-1' }} (n={{ item.actual.n }}) {{ 'rubi.admin.analytics.trends.vs' | t }} {{ item.anterior.rate | percent: '1.0-1' }} (n={{ item.anterior.n }})
+              <strong *ngIf="item.deltaPuntosPorcentuales !== null">({{ item.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ item.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li *ngFor="let item of a.comparacionPeriodoAnterior.satisfaccionPorIntent">
+              👍 {{ item.intent }}:
+              {{ item.actual.rate | percent: '1.0-1' }} (n={{ item.actual.n }}) {{ 'rubi.admin.analytics.trends.vs' | t }} {{ item.anterior.rate | percent: '1.0-1' }} (n={{ item.anterior.n }})
+              <strong *ngIf="item.deltaPuntosPorcentuales !== null">({{ item.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ item.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li>
+              {{ 'rubi.admin.analytics.trends.providerLatency' | t }}:
+              {{ a.comparacionPeriodoAnterior.latenciaProvider.actual.value | number: '1.0-0' }} ms (n={{ a.comparacionPeriodoAnterior.latenciaProvider.actual.n }})
+              {{ 'rubi.admin.analytics.trends.vs' | t }}
+              {{ a.comparacionPeriodoAnterior.latenciaProvider.anterior.value | number: '1.0-0' }} ms (n={{ a.comparacionPeriodoAnterior.latenciaProvider.anterior.n }})
+              <strong *ngIf="a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual !== null">({{ a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual > 0 ? '+' : '' }}{{ a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual }}%)</strong>
+            </li>
+          </ul>
+        </ng-container>
+      </section>
+
+      <!-- 1.11.0#RUBI (Improvement Suggestions, 7.6/7.7): Fase A (deteccion)
+           y Fase B (redaccion) son responsabilidad del backend; esta seccion
+           solo muestra el resultado y permite las acciones administrativas
+           explicitas del ciclo de vida (7.7). Nunca se autoaplica nada. -->
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.suggestions.title' | t }}</h2>
+        <p class="text-muted small">{{ 'rubi.admin.suggestions.hint' | t }}</p>
+        <div class="d-flex gap-2 mb-2 align-items-center flex-wrap">
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'abiertas'" [class.btn-outline-secondary]="suggestionsFiltro !== 'abiertas'" (click)="setSuggestionsFiltro('abiertas')">{{ 'rubi.admin.suggestions.filter.open' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'DESCARTADA'" [class.btn-outline-secondary]="suggestionsFiltro !== 'DESCARTADA'" (click)="setSuggestionsFiltro('DESCARTADA')">{{ 'rubi.admin.suggestions.filter.discarded' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'CERRADA'" [class.btn-outline-secondary]="suggestionsFiltro !== 'CERRADA'" (click)="setSuggestionsFiltro('CERRADA')">{{ 'rubi.admin.suggestions.filter.closed' | t }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadSuggestions()">{{ 'rubi.admin.associations.refresh' | t }}</button>
+          <button class="btn btn-sm btn-foc-rojo ms-auto" type="button" [disabled]="analyzingSuggestions" (click)="runSuggestionAnalysis()">
+            <span *ngIf="analyzingSuggestions" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            {{ 'rubi.admin.suggestions.analyze' | t }}
+          </button>
+        </div>
+        <p *ngIf="suggestionsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="suggestionsError">{{ suggestionsError | t }}</div>
+
+        <table class="table table-sm" *ngIf="!suggestionsLoading && suggestions.length">
+          <thead>
+            <tr>
+              <th>{{ 'rubi.admin.suggestions.col.status' | t }}</th>
+              <th>{{ 'rubi.admin.suggestions.col.suggestion' | t }}</th>
+              <th>{{ 'rubi.admin.suggestions.col.evidence' | t }}</th>
+              <th class="text-end">{{ 'rubi.admin.suggestions.col.priority' | t }}</th>
+              <th class="text-end">{{ 'rubi.admin.suggestions.col.confidence' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let suggestion of suggestions" class="rubi-suggestion-row" (click)="selectSuggestion(suggestion)">
+              <td><span class="badge" [class]="'rubi-suggestion-status--' + suggestion.status">{{ suggestion.status }}</span></td>
+              <td>{{ suggestion.title }}</td>
+              <td class="text-muted small">{{ suggestion.summary }}</td>
+              <td class="text-end">{{ suggestion.priority }}</td>
+              <td class="text-end">{{ suggestion.confidence | percent: '1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-muted" *ngIf="!suggestionsLoading && !suggestions.length">{{ 'rubi.admin.suggestions.empty' | t }}</p>
+
+        <!-- 7.7: ficha de sugerencia. -->
+        <div class="rubi-suggestion-detail" *ngIf="selectedSuggestion as s">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h6 mb-2">{{ s.title }}</h3>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="closeSuggestionDetail()">{{ 'rubi.admin.suggestions.detail.close' | t }}</button>
+          </div>
+          <div class="alert alert-danger" *ngIf="suggestionActionError">{{ suggestionActionError | t }}</div>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.whatDetected' | t }}</h4>
+          <p>{{ s.summary }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.why' | t }}</h4>
+          <ul class="list-unstyled small mb-0">
+            <li>{{ 'rubi.admin.suggestions.detail.sample' | t }}: {{ s.sampleSize }}</li>
+            <li>{{ 'rubi.admin.suggestions.detail.timesDetected' | t }}: {{ s.timesDetected }}</li>
+            <li *ngIf="s.dimensionValue">{{ s.dimensionType }}: {{ s.dimensionValue }}</li>
+          </ul>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.comparison' | t }}</h4>
+          <p class="small mb-0">
+            {{ 'rubi.admin.suggestions.detail.current' | t }}: {{ s.evidence.currentRate !== null && s.evidence.currentRate !== undefined ? (s.evidence.currentRate | percent: '1.0-1') : ('rubi.admin.suggestions.detail.noData' | t) }}
+            <ng-container *ngIf="s.evidence.baselineRate !== null && s.evidence.baselineRate !== undefined">
+              {{ 'rubi.admin.analytics.trends.vs' | t }} {{ s.evidence.baselineRate | percent: '1.0-1' }} ({{ 'rubi.admin.suggestions.detail.baseline' | t }})
+            </ng-container>
+          </p>
+
+          <ng-container *ngIf="s.measurementResult as m">
+            <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.measurement' | t }}</h4>
+            <p class="small mb-0">
+              {{ 'rubi.admin.suggestions.detail.before' | t }}: {{ m.before !== null ? (m.before | percent: '1.0-1') : '—' }} ·
+              {{ 'rubi.admin.suggestions.detail.after' | t }}: {{ m.after !== null ? (m.after | percent: '1.0-1') : '—' }} ·
+              {{ 'rubi.admin.suggestions.detail.change' | t }}: {{ m.difference !== null ? (m.difference | percent: '1.0-1') : '—' }}
+            </p>
+            <p class="text-muted small">{{ 'rubi.admin.suggestions.detail.measurementHint' | t }}</p>
+          </ng-container>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.proposal' | t }}</h4>
+          <p>{{ s.recommendation }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.impact' | t }}</h4>
+          <p class="fst-italic">{{ s.possibleImpact }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.actions' | t }}</h4>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button *ngIf="s.allowedTransitions.includes('EN_REVISION')" class="btn btn-sm btn-outline-secondary" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'EN_REVISION')">{{ 'rubi.admin.suggestions.action.review' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('ACEPTADA')" class="btn btn-sm btn-foc-rojo" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'ACEPTADA')">{{ 'rubi.admin.suggestions.action.accept' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('IMPLEMENTADA')" class="btn btn-sm btn-foc-rojo" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'IMPLEMENTADA')">{{ 'rubi.admin.suggestions.action.implement' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('CERRADA')" class="btn btn-sm btn-outline-secondary" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'CERRADA')">{{ 'rubi.admin.suggestions.action.close' | t }}</button>
+            <ng-container *ngIf="s.allowedTransitions.includes('DESCARTADA')">
+              <input class="form-control form-control-sm rubi-suggestion-discard-input" type="text" [(ngModel)]="discardReasonDraft" [placeholder]="'rubi.admin.suggestions.action.discardReasonPlaceholder' | t" />
+              <button class="btn btn-sm btn-outline-danger" [disabled]="isSavingSuggestion(s.id) || !discardReasonDraft.trim()" (click)="setSuggestionStatus(s, 'DESCARTADA', discardReasonDraft.trim())">{{ 'rubi.admin.suggestions.action.discard' | t }}</button>
+            </ng-container>
+            <span class="text-muted small" *ngIf="!s.allowedTransitions.length">{{ 'rubi.admin.suggestions.detail.terminal' | t }}</span>
+          </div>
+          <p class="text-muted small mt-2" *ngIf="s.discardedReason">{{ 'rubi.admin.suggestions.action.discard' | t }}: {{ s.discardedReason }}</p>
+
+          <!-- 1.12.0#RUBI (8.7): evidencia de un benchmark controlado ya ejecutado por separado. -->
+          <h4 class="h6 text-muted mt-3">{{ 'rubi.admin.suggestions.detail.benchmark' | t }}</h4>
+          <div *ngIf="s.benchmarkEvidence as b; else noBenchmark" class="small">
+            <p class="mb-1">
+              <strong>{{ 'rubi.admin.suggestions.benchmark.baseline' | t }}:</strong> {{ b.baseline.provider }} / {{ b.baseline.model }}
+              <ng-container *ngIf="b.baselineValue !== null"> — {{ b.baselineValue }}</ng-container>
+            </p>
+            <p class="mb-1">
+              <strong>{{ 'rubi.admin.suggestions.benchmark.candidate' | t }}:</strong> {{ b.candidate.provider }} / {{ b.candidate.model }}
+              <ng-container *ngIf="b.candidateValue !== null"> — {{ b.candidateValue }}</ng-container>
+            </p>
+            <p class="mb-1"><strong>{{ 'rubi.admin.suggestions.benchmark.metric' | t }}:</strong> {{ b.metric }}</p>
+            <p class="mb-1" *ngIf="b.costDeltaPercent !== null"><strong>{{ 'rubi.admin.suggestions.detail.benchmarkCostDelta' | t }}:</strong> {{ b.costDeltaPercent }}%</p>
+            <p class="mb-1 fst-italic" *ngIf="b.notes">{{ b.notes }}</p>
+            <p class="text-muted mb-0">{{ 'rubi.admin.suggestions.detail.benchmarkAttachedAt' | t }}: {{ b.attachedAt | date: 'short' }}</p>
+          </div>
+          <ng-template #noBenchmark>
+            <p class="text-muted small mb-2">{{ 'rubi.admin.suggestions.detail.benchmarkNone' | t }}</p>
+          </ng-template>
+
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleBenchmarkForm()">
+            {{ (benchmarkFormOpen ? 'rubi.admin.suggestions.action.cancelBenchmark' : 'rubi.admin.suggestions.action.attachBenchmark') | t }}
+          </button>
+          <div *ngIf="benchmarkFormOpen" class="rubi-benchmark-form mt-2 small">
+            <p class="text-muted">{{ 'rubi.admin.suggestions.benchmark.hint' | t }}</p>
+            <div class="alert alert-danger" *ngIf="benchmarkError">{{ benchmarkError | t }}</div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baseline' | t }} — {{ 'rubi.admin.suggestions.benchmark.provider' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.baselineProvider" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baseline' | t }} — {{ 'rubi.admin.suggestions.benchmark.model' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.baselineModel" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidate' | t }} — {{ 'rubi.admin.suggestions.benchmark.provider' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.candidateProvider" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidate' | t }} — {{ 'rubi.admin.suggestions.benchmark.model' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.candidateModel" />
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.metric' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.metric" [placeholder]="'rubi.admin.suggestions.benchmark.metricPlaceholder' | t" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baselineValue' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.baselineValue" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidateValue' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.candidateValue" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.costDelta' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.costDeltaPercent" />
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.notes' | t }}</label>
+                <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="benchmarkDraft.notes"></textarea>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-foc-rojo mt-2" type="button" [disabled]="savingBenchmark" (click)="attachBenchmark(s)">
+              <span *ngIf="savingBenchmark" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              {{ 'rubi.admin.suggestions.benchmark.save' | t }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+  </ng-container>
+</section>
