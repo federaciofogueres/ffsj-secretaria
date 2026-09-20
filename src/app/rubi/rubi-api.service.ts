@@ -57,7 +57,11 @@ export interface RubiResponse {
   intent: string | null;
   actions: RubiAction[];
   errors: Array<{ code: string; message: string }>;
-  metadata: { success: boolean };
+  // 1.10.0#RUBI (Product Analytics, 6.4): si la respuesta fue determinista o
+  // via provider, nunca el nombre real del proveedor. Se guarda en el
+  // mensaje para poder calificarla despues con ese dato (ver
+  // rubi-panel.component.ts, submitFeedback()).
+  metadata: { success: boolean; source?: 'deterministic' | 'provider' };
   tool?: { name: string; status: string } | null;
   conversation?: RubiConversationState | null;
 }
@@ -224,9 +228,12 @@ export class RubiApiService {
   // 1.9.0#RUBI (Pilot Instrumentation, 5.3): el motivo del 👎 ahora lo elige
   // la persona (rubi-panel.component.ts muestra las 4 opciones cerradas del
   // backend) en vez de enviarse siempre fijo a 'not_useful'.
+  // 1.10.0#RUBI (Product Analytics, 6.4): `source` (deterministic/provider)
+  // permite comparar satisfaccion por source; viene de metadata.source de la
+  // respuesta calificada, nunca se infiere en este servicio.
   feedback(
     rating: 'helpful' | 'not_helpful',
-    context: { reason?: 'incorrect' | 'not_understood' | 'not_useful' | 'technical_issue'; intent?: string; tool?: string; flow?: RubiWorkflowFlow } = {}
+    context: { reason?: 'incorrect' | 'not_understood' | 'not_useful' | 'technical_issue'; intent?: string; tool?: string; flow?: RubiWorkflowFlow; source?: 'deterministic' | 'provider' } = {}
   ): Observable<{ accepted: boolean }> {
     this.startSession();
     return this.http.post<{ accepted: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/feedback`, {

@@ -406,7 +406,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     const flow = this.activeFlow();
     this.api.feedback(rating, {
       ...(reason ? { reason } : {}), ...(message.intent ? { intent: message.intent } : {}),
-      ...(message.tool ? { tool: message.tool } : {}), ...(flow ? { flow } : {})
+      ...(message.tool ? { tool: message.tool } : {}), ...(flow ? { flow } : {}),
+      ...(message.source ? { source: message.source } : {})
     }).subscribe({
       next: () => this.conversation.setFeedback(message.id, rating),
       error: () => this.conversation.setFeedback(message.id, undefined)
@@ -441,7 +442,8 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
       topic: response.conversation?.topic,
       module: response.conversation?.module,
       activityId: response.conversation?.activityId,
-      inscriptionId: response.conversation?.inscriptionId
+      inscriptionId: response.conversation?.inscriptionId,
+      source: response.metadata.source
     });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }

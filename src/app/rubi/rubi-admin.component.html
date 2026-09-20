@@ -174,7 +174,128 @@
             <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.tokens' | t }}</span><strong>{{ a.provider.inputTokens + a.provider.outputTokens }}</strong></div></div>
             <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.cost' | t }}</span><strong>{{ a.provider.costeUsd | number: '1.2-4' }} USD</strong></div></div>
           </div>
+
+          <!-- 1.9.0#RUBI/1.10.0#RUBI: funnel por workflow. Cada barra muestra
+               siempre el numero absoluto junto al porcentaje (nunca solo la
+               tasa), calculado sobre "iniciados". -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.funnelTitle' | t }}</h3>
+          <p class="text-muted small" *ngIf="!a.flujos.length">{{ 'rubi.admin.analytics.noData' | t }}</p>
+          <div class="rubi-funnel" *ngFor="let flow of a.flujos">
+            <h4 class="h6 mb-2">{{ flow.flow }}</h4>
+            <ul class="list-unstyled small mb-0 rubi-funnel-list">
+              <li>{{ 'rubi.admin.analytics.funnel.started' | t }}: <strong>{{ flow.iniciados }}</strong></li>
+              <li>{{ 'rubi.admin.analytics.funnel.prepared' | t }}: <strong>{{ flow.preparados }}</strong> ({{ flow.preparationRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.completed' | t }}: <strong>{{ flow.completados }}</strong> ({{ flow.completionRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.cancelled' | t }}: <strong>{{ flow.cancelados }}</strong> ({{ flow.cancellationRate | percent: '1.0-1' }})</li>
+              <li>{{ 'rubi.admin.analytics.funnel.failed' | t }}: <strong>{{ flow.fallidos }}</strong> ({{ flow.failureRate | percent: '1.0-1' }})</li>
+              <li *ngIf="flow.derivadosFlujoNormal">{{ 'rubi.admin.analytics.funnel.redirected' | t }}: <strong>{{ flow.derivadosFlujoNormal }}</strong> ({{ flow.normalFlowRedirectRate | percent: '1.0-1' }})</li>
+              <li *ngIf="flow.expirados">{{ 'rubi.admin.analytics.funnel.expired' | t }}: <strong>{{ flow.expirados }}</strong></li>
+            </ul>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.4): analytics conversacional por intent/tool/source. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.conversationalTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4" *ngIf="a.conversacional.porIntent.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byIntent' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porIntent">
+                  {{ item.intent }}: {{ item.llamadas }} · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}
+                  <span *ngIf="item.posiblesReformulaciones"> · {{ 'rubi.admin.analytics.reformulations' | t }}: {{ item.posiblesReformulaciones }}</span>
+                </li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.conversacional.porTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porTool">{{ item.tool }}: {{ item.llamadas }} ({{ item.failureRate | percent: '1.0-1' }} {{ 'rubi.admin.analytics.failures' | t | lowercase }}) · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}</li>
+              </ul>
+            </div>
+            <div class="col-md-4" *ngIf="a.conversacional.porSource.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.bySource' | t }}</h4>
+              <ul class="list-unstyled small mb-0">
+                <li *ngFor="let item of a.conversacional.porSource">{{ item.source }}: {{ item.llamadas }}<span *ngIf="item.latenciaMediaMs !== null"> · {{ item.latenciaMediaMs | number: '1.0-0' }} ms</span> · 👍{{ item.feedbackPositivo }} 👎{{ item.feedbackNegativo }}</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.5): motivos del 👎, con desglose por dimension. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.feedbackTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-3"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.helpful' | t }}</span><strong>{{ a.feedback.helpful }}</strong></div></div>
+            <div class="col-md-3"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.notHelpful' | t }}</span><strong>{{ a.feedback.notHelpful }}</strong></div></div>
+          </div>
+          <div class="row g-3 mt-1">
+            <div class="col-md-3" *ngIf="a.feedback.porMotivo.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReason' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.porMotivo">{{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorIntent.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonIntent' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorIntent">{{ item.intent }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorTool.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonTool' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorTool">{{ item.tool }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+            <div class="col-md-3" *ngIf="a.feedback.motivoPorFlow.length">
+              <h4 class="h6">{{ 'rubi.admin.analytics.byReasonFlow' | t }}</h4>
+              <ul class="list-unstyled small mb-0"><li *ngFor="let item of a.feedback.motivoPorFlow">{{ item.flow }} / {{ item.motivo }}: {{ item.total }}</li></ul>
+            </div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.8): calidad, siempre con muestra (n) junto a la tasa. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.qualityTitle' | t }}</h3>
+          <div class="row g-3">
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.unknownIntent' | t }}</span><strong>{{ a.calidad.conversacion.unknownIntentRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.unknownIntentRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.reformulation' | t }}</span><strong>{{ a.calidad.conversacion.possibleReformulationRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.possibleReformulationRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.helpful' | t }}</span><strong>{{ a.calidad.conversacion.helpfulRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.conversacion.helpfulRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.flowCompletion' | t }}</span><strong>{{ a.calidad.workflows.flowCompletionRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.workflows.flowCompletionRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.flowCancellation' | t }}</span><strong>{{ a.calidad.workflows.flowCancellationRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.workflows.flowCancellationRate.n }}</small></div></div>
+            <div class="col-md-4"><div class="rubi-admin-stat"><span>{{ 'rubi.admin.analytics.quality.providerUsage' | t }}</span><strong>{{ a.calidad.provider.providerUsageRate.rate | percent: '1.0-1' }}</strong><small class="text-muted">n={{ a.calidad.provider.providerUsageRate.n }}</small></div></div>
+          </div>
+
+          <!-- 1.10.0#RUBI (6.6): tendencias frente al periodo inmediatamente
+               anterior de igual duracion. Nunca se muestra un delta sin los
+               dos valores absolutos (actual/anterior) que lo componen. -->
+          <h3 class="h6 text-muted mt-4">{{ 'rubi.admin.analytics.trendsTitle' | t }}</h3>
+          <p class="text-muted small">{{ 'rubi.admin.analytics.trendsHint' | t }}: {{ a.comparacionPeriodoAnterior.periodo.desde | date: 'short' }} - {{ a.comparacionPeriodoAnterior.periodo.hasta | date: 'short' }}</p>
+          <ul class="list-unstyled small mb-0 rubi-trends">
+            <li>
+              {{ 'rubi.admin.analytics.quality.unknownIntent' | t }}:
+              {{ a.comparacionPeriodoAnterior.unknownIntentRate.actual.rate | percent: '1.0-1' }} (n={{ a.comparacionPeriodoAnterior.unknownIntentRate.actual.n }})
+              {{ 'rubi.admin.analytics.trends.vs' | t }}
+              {{ a.comparacionPeriodoAnterior.unknownIntentRate.anterior.rate | percent: '1.0-1' }} (n={{ a.comparacionPeriodoAnterior.unknownIntentRate.anterior.n }})
+              <strong *ngIf="a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales !== null">({{ a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ a.comparacionPeriodoAnterior.unknownIntentRate.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li *ngFor="let item of a.comparacionPeriodoAnterior.cancelacionPorFlow">
+              {{ 'rubi.admin.analytics.trends.cancellation' | t }} {{ item.flow }}:
+              {{ item.actual.rate | percent: '1.0-1' }} (n={{ item.actual.n }}) {{ 'rubi.admin.analytics.trends.vs' | t }} {{ item.anterior.rate | percent: '1.0-1' }} (n={{ item.anterior.n }})
+              <strong *ngIf="item.deltaPuntosPorcentuales !== null">({{ item.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ item.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li *ngFor="let item of a.comparacionPeriodoAnterior.satisfaccionPorIntent">
+              👍 {{ item.intent }}:
+              {{ item.actual.rate | percent: '1.0-1' }} (n={{ item.actual.n }}) {{ 'rubi.admin.analytics.trends.vs' | t }} {{ item.anterior.rate | percent: '1.0-1' }} (n={{ item.anterior.n }})
+              <strong *ngIf="item.deltaPuntosPorcentuales !== null">({{ item.deltaPuntosPorcentuales > 0 ? '+' : '' }}{{ item.deltaPuntosPorcentuales }} pp)</strong>
+            </li>
+            <li>
+              {{ 'rubi.admin.analytics.trends.providerLatency' | t }}:
+              {{ a.comparacionPeriodoAnterior.latenciaProvider.actual.value | number: '1.0-0' }} ms (n={{ a.comparacionPeriodoAnterior.latenciaProvider.actual.n }})
+              {{ 'rubi.admin.analytics.trends.vs' | t }}
+              {{ a.comparacionPeriodoAnterior.latenciaProvider.anterior.value | number: '1.0-0' }} ms (n={{ a.comparacionPeriodoAnterior.latenciaProvider.anterior.n }})
+              <strong *ngIf="a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual !== null">({{ a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual > 0 ? '+' : '' }}{{ a.comparacionPeriodoAnterior.latenciaProvider.deltaPorcentual }}%)</strong>
+            </li>
+          </ul>
         </ng-container>
+      </section>
+
+      <!-- 6.1 de roadmap/RUBI-v2.md: subarea "Sugerencias" ya visible en la
+           navegacion de Configuracion -> Rubi, deshabilitada hasta 1.11.0#RUBI
+           (Improvement Suggestions). No se fabrica ningun dato ni sugerencia
+           en 1.10.0#RUBI. -->
+      <section class="section-panel">
+        <h2 class="h5">{{ 'rubi.admin.suggestions.title' | t }}</h2>
+        <p class="text-muted small mb-0">{{ 'rubi.admin.suggestions.disabled' | t }}</p>
       </section>
     </ng-container>
   </ng-container>

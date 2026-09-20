@@ -7,3 +7,7 @@
 .rubi-admin-stat span { font-size: .7rem; font-weight: 800; text-transform: uppercase; color: var(--alta-muted, #6c757d); }
 .rubi-admin-stat strong { font-size: 1.1rem; }
 .rubi-admin-status { display: flex; align-items: center; gap: .5rem; }
+.rubi-funnel { border-left: 3px solid var(--alta-line, #dee2e6); padding-left: .75rem; margin-bottom: .75rem; }
+.rubi-funnel-list li { padding: .1rem 0; }
+.rubi-admin-stat small { color: var(--alta-muted, #6c757d); font-size: .65rem; }
+.rubi-trends li { padding: .2rem 0; border-bottom: 1px solid var(--alta-line, #f1f1f1); }
