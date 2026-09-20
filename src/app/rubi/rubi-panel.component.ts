@@ -8,7 +8,7 @@ import { Subscription, distinctUntilChanged, skip } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { RubiAction, RubiApiService, RubiInsight, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext } from './rubi-api.service';
+import { RubiAction, RubiApiService, RubiInsight, RubiModule, RubiRouteKey, RubiResponse, RubiScreenContext, RubiWorkflowFlow } from './rubi-api.service';
 import { RubiAltaComponent } from './rubi-alta.component';
 import { RubiModificacionComponent } from './rubi-modificacion.component';
 import { RubiBajaComponent } from './rubi-baja.component';
@@ -313,7 +313,10 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   onAltaClosed(reason: 'cancelled' | 'expired'): void {
     this.altaActive = false;
     this.altaPrepared = false;
-    this.api.trackEvent({ event: 'flow_cancelled', stage: 'alta' }).subscribe({ error: () => {} });
+    // 1.9.0#RUBI: antes se reportaba siempre flow_cancelled, perdiendo la
+    // distincion entre "el usuario cancelo" y "la preparacion caduco" que
+    // pide el funnel (roadmap/RUBI-v2.md 5.1/5.2, metrica "expirados").
+    this.api.trackEvent({ event: reason === 'expired' ? 'flow_expired' : 'flow_cancelled', stage: 'alta' }).subscribe({ error: () => {} });
     this.conversation.add({
       author: 'rubi',
       text: this.i18n.t(reason === 'expired' ? 'rubi.alta.expired' : 'rubi.alta.cancelled')
@@ -324,6 +327,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   openNormalAltaFlow(): void {
     this.altaActive = false;
     this.altaPrepared = false;
+    this.api.trackEvent({ event: 'flow_redirected', stage: 'alta' }).subscribe({ error: () => {} });
     this.router.navigateByUrl(SAFE_DESTINATIONS.alta).then(() => this.close());
   }
 
@@ -334,7 +338,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   onModificationClosed(reason: 'cancelled' | 'expired'): void {
     this.modificationActive = false;
     this.modificationPrepared = false;
-    this.api.trackEvent({ event: 'flow_cancelled', stage: 'modificacion' }).subscribe({ error: () => {} });
+    this.api.trackEvent({ event: reason === 'expired' ? 'flow_expired' : 'flow_cancelled', stage: 'modificacion' }).subscribe({ error: () => {} });
     this.conversation.add({ author: 'rubi', text: this.i18n.t(reason === 'expired' ? 'rubi.mod.expired' : 'rubi.mod.cancelled') });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
@@ -342,6 +346,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   openNormalModificationFlow(): void {
     this.modificationActive = false;
     this.modificationPrepared = false;
+    this.api.trackEvent({ event: 'flow_redirected', stage: 'modificacion' }).subscribe({ error: () => {} });
     this.router.navigateByUrl('/asociados/gestion?tab=modificaciones').then(() => this.close());
   }
 
@@ -350,7 +355,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   onBajaClosed(reason: 'cancelled' | 'expired'): void {
     this.bajaActive = false;
     this.bajaPrepared = false;
-    this.api.trackEvent({ event: 'flow_cancelled', stage: 'baja' }).subscribe({ error: () => {} });
+    this.api.trackEvent({ event: reason === 'expired' ? 'flow_expired' : 'flow_cancelled', stage: 'baja' }).subscribe({ error: () => {} });
     this.conversation.add({ author: 'rubi', text: this.i18n.t(reason === 'expired' ? 'rubi.baja.expired' : 'rubi.baja.cancelled') });
     setTimeout(() => this.messageInput?.nativeElement.focus());
   }
@@ -358,6 +363,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   openNormalBajaFlow(): void {
     this.bajaActive = false;
     this.bajaPrepared = false;
+    this.api.trackEvent({ event: 'flow_redirected', stage: 'baja' }).subscribe({ error: () => {} });
     this.router.navigateByUrl('/asociados/gestion?tab=bajas').then(() => this.close());
   }
 
@@ -366,7 +372,7 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   onRegistroClosed(reason: 'cancelled' | 'expired'): void {
     this.registroActive = false;
     this.registroPrepared = false;
-    this.api.trackEvent({ event: 'flow_cancelled', stage: this.registroTipo }).subscribe({ error: () => {} });
+    this.api.trackEvent({ event: reason === 'expired' ? 'flow_expired' : 'flow_cancelled', stage: this.registroTipo }).subscribe({ error: () => {} });
     const key = this.registroTipo === 'documentacion'
       ? (reason === 'expired' ? 'rubi.registro.doc.expired' : 'rubi.registro.doc.cancelled')
       : (reason === 'expired' ? 'rubi.registro.comm.expired' : 'rubi.registro.comm.cancelled');
@@ -377,20 +383,46 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
   openNormalRegistroFlow(): void {
     this.registroActive = false;
     this.registroPrepared = false;
+    this.api.trackEvent({ event: 'flow_redirected', stage: this.registroTipo }).subscribe({ error: () => {} });
     this.router.navigateByUrl(`/registro/${this.registroTipo}`).then(() => this.close());
   }
 
   onRegistroPreparationStateChanged(prepared: boolean): void { this.registroPrepared = prepared; }
 
+  // 1.9.0#RUBI (5.3): un 👎 ya no se envia con un motivo fijo; primero se
+  // muestra el selector de motivo (4 opciones cerradas, sin texto libre) y
+  // solo se llama a la API cuando la persona elige una.
   sendFeedback(message: RubiMessage, rating: 'helpful' | 'not_helpful'): void {
     if (message.feedbackPending || message.feedback) return;
+    if (rating === 'not_helpful') {
+      this.conversation.setFeedbackReasonPending(message.id, true);
+      return;
+    }
+    this.submitFeedback(message, rating);
+  }
+
+  submitFeedback(message: RubiMessage, rating: 'helpful' | 'not_helpful', reason?: 'incorrect' | 'not_understood' | 'not_useful' | 'technical_issue'): void {
     this.conversation.setFeedback(message.id, undefined, true);
+    const flow = this.activeFlow();
     this.api.feedback(rating, {
-      ...(message.intent ? { intent: message.intent } : {}), ...(message.tool ? { tool: message.tool } : {})
+      ...(reason ? { reason } : {}), ...(message.intent ? { intent: message.intent } : {}),
+      ...(message.tool ? { tool: message.tool } : {}), ...(flow ? { flow } : {})
     }).subscribe({
       next: () => this.conversation.setFeedback(message.id, rating),
       error: () => this.conversation.setFeedback(message.id, undefined)
     });
+  }
+
+  cancelFeedbackReason(message: RubiMessage): void {
+    this.conversation.setFeedbackReasonPending(message.id, false);
+  }
+
+  private activeFlow(): RubiWorkflowFlow | undefined {
+    if (this.altaActive) return 'alta';
+    if (this.modificationActive) return 'modificacion';
+    if (this.bajaActive) return 'baja';
+    if (this.registroActive) return this.registroTipo;
+    return undefined;
   }
 
   private handleResponse(response: RubiResponse): void {

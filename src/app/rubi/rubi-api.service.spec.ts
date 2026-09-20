@@ -49,9 +49,11 @@ describe('RubiApiService', () => {
     expect(event.request.headers.get('X-Rubi-Session-Id')).toBeTruthy();
     event.flush({ accepted: true });
 
-    service.feedback('not_helpful', { intent: 'help', tool: 'search_help' }).subscribe();
+    // 1.9.0#RUBI: el motivo ya no se fija automaticamente a 'not_useful' -
+    // lo elige la persona (rubi-panel.component.ts) y se pasa tal cual.
+    service.feedback('not_helpful', { reason: 'technical_issue', intent: 'help', tool: 'search_help', flow: 'alta' }).subscribe();
     const feedback = http.expectOne('/emjf1/Secretaria/1.0.0/asistente/feedback');
-    expect(feedback.request.body).toEqual({ rating: 'not_helpful', reason: 'not_useful', intent: 'help', tool: 'search_help' });
+    expect(feedback.request.body).toEqual({ rating: 'not_helpful', reason: 'technical_issue', intent: 'help', tool: 'search_help', flow: 'alta' });
     expect(JSON.stringify(feedback.request.body)).not.toContain('message');
     feedback.flush({ accepted: true });
   });

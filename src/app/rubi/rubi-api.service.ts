@@ -62,9 +62,15 @@ export interface RubiResponse {
   conversation?: RubiConversationState | null;
 }
 
+export type RubiWorkflowFlow = 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' | 'comunicaciones';
+
 export type RubiPilotEvent =
   | { event: 'session_opened'; stage: 'conversation' }
-  | { event: 'flow_started' | 'flow_cancelled'; stage: 'alta' | 'modificacion' | 'baja' | 'documentacion' | 'comunicacion' | 'inscripcion' | 'soporte' | 'comunicaciones' }
+  // 1.9.0#RUBI (Pilot Instrumentation): flow_expired y flow_redirected
+  // distinguen dos resoluciones que antes se reportaban ambas como
+  // flow_cancelled, perdiendo las metricas "expirados"/"derivados al flujo
+  // normal" del funnel (roadmap/RUBI-v2.md 5.1/5.2).
+  | { event: 'flow_started' | 'flow_cancelled' | 'flow_expired' | 'flow_redirected'; stage: RubiWorkflowFlow }
   | { event: 'navigation'; stage: 'conversation'; destination: string };
 
 export type RubiInsightDomain = 'comunicaciones' | 'actividades' | 'solicitudes';
@@ -215,10 +221,16 @@ export class RubiApiService {
     }).pipe(timeout(10000));
   }
 
-  feedback(rating: 'helpful' | 'not_helpful', context: { intent?: string; tool?: string } = {}): Observable<{ accepted: boolean }> {
+  // 1.9.0#RUBI (Pilot Instrumentation, 5.3): el motivo del 👎 ahora lo elige
+  // la persona (rubi-panel.component.ts muestra las 4 opciones cerradas del
+  // backend) en vez de enviarse siempre fijo a 'not_useful'.
+  feedback(
+    rating: 'helpful' | 'not_helpful',
+    context: { reason?: 'incorrect' | 'not_understood' | 'not_useful' | 'technical_issue'; intent?: string; tool?: string; flow?: RubiWorkflowFlow } = {}
+  ): Observable<{ accepted: boolean }> {
     this.startSession();
     return this.http.post<{ accepted: boolean }>(`${this.apiUrl.secretariaBasePath}/asistente/feedback`, {
-      rating, ...(rating === 'not_helpful' ? { reason: 'not_useful' } : {}), ...context
+      rating, ...context
     }, { headers: this.authHeaders() }).pipe(timeout(10000));
   }
 

@@ -18,6 +18,9 @@ export interface RubiMessage {
   excludeFromHistory?: boolean;
   feedback?: 'helpful' | 'not_helpful';
   feedbackPending?: boolean;
+  // 1.9.0#RUBI (Pilot Instrumentation, 5.3): tras pulsar 👎 se muestra el
+  // selector de motivo (catalogo cerrado) antes de enviar el feedback.
+  feedbackReasonPending?: boolean;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -72,6 +75,10 @@ export class RubiConversationService {
   }
 
   setFeedback(id: number, feedback: 'helpful' | 'not_helpful' | undefined, pending = false): void {
-    this.messagesSubject.next(this.messages.map(message => message.id === id ? { ...message, feedback, feedbackPending: pending } : message));
+    this.messagesSubject.next(this.messages.map(message => message.id === id ? { ...message, feedback, feedbackPending: pending, feedbackReasonPending: false } : message));
+  }
+
+  setFeedbackReasonPending(id: number, pending: boolean): void {
+    this.messagesSubject.next(this.messages.map(message => message.id === id ? { ...message, feedbackReasonPending: pending } : message));
   }
 }
