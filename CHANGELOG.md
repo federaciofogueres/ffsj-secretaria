@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.11.0#RUBI — Improvement Suggestions
+
+> Tercera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): Configuración → Rubi → Sugerencias deja de ser un stub deshabilitado y pasa a mostrar el catálogo real de sugerencias detectadas de forma determinista, con su ficha completa y las acciones administrativas del ciclo de vida. El grueso del cálculo (detectores, prioridad/confianza, persistencia) vive en `ffsj-secretaria-api` (ver su CHANGELOG). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin cambios automáticos de configuración.
+
+### Sección "Sugerencias" funcional (sustituye el stub de 1.10.0#RUBI)
+
+- Tabla (7.6 del roadmap): Estado | Sugerencia | Evidencia | Prioridad | Confianza, con filtro Abiertas/Descartadas/Cerradas y botón "Analizar ahora" (dispara el análisis bajo demanda; nunca automático).
+- Ficha de sugerencia (7.7): qué ha detectado, por qué (muestra, veces detectada), comparación (actual vs. periodo anterior), medición posterior cuando existe (antes/después/cambio, con el texto explícito de que es coincidencia temporal, no causalidad), qué propone, impacto esperado (marcado como hipótesis) y las acciones administrativas.
+- Las acciones (Marcar en revisión / Aceptar / Descartar / Marcar implementada / Cerrar) se generan siempre a partir de `allowedTransitions` que devuelve el backend: el frontend nunca inventa una transición de estado. Descartar exige un motivo no vacío antes de habilitar el botón.
+- `RubiAdminService` gana los tipos (`RubiSuggestion`, `RubiSuggestionStatus`, etc.) y los 4 métodos HTTP correspondientes; `RubiAdminFeedbackSummary` gana `motivoPorSource` (necesario para el detector de modelo del backend).
+
+### Contrato y pruebas
+
+- 258/258 pruebas de frontend (9 nuevas en `rubi-admin.component.spec.ts`, sustituyendo el test del stub deshabilitado de 1.10.0#RUBI), build `development` correcto, `git diff --check` limpio.
+
 ## 1.10.0#RUBI — Product Analytics
 
 > Segunda versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): convierte los eventos de 1.9.0#RUBI en analítica comprensible para Administración. La mayor parte del trabajo vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la nueva sección de Analytics en Configuración → Rubi, el stub de Sugerencias y `metadata.source`/`source` de feedback de punta a punta. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.

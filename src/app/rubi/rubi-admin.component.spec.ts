@@ -17,7 +17,7 @@ function analyticsFixture(overrides: Partial<RubiAdminAnalytics> = {}): RubiAdmi
     operacion: { llamadas: 3, exitosas: 3, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] },
     provider: { llamadas: 0, inputTokens: 10, outputTokens: 5, costeUsd: 0.01 },
     flujos: [],
-    feedback: { helpful: 0, notHelpful: 0, porMotivo: [], porIntent: [], porTool: [], motivoPorIntent: [], motivoPorTool: [], motivoPorFlow: [] },
+    feedback: { helpful: 0, notHelpful: 0, porMotivo: [], porIntent: [], porTool: [], motivoPorIntent: [], motivoPorTool: [], motivoPorFlow: [], motivoPorSource: [] },
     reformulaciones: { posibles: 0 },
     usoAcciones: { navigation: { ofrecidas: 0, usadas: 0 }, flow: { ofrecidas: 0, usadas: 0 } },
     conversacional: { porIntent: [], porTool: [], porSource: [] },
@@ -48,7 +48,10 @@ describe('RubiAdminComponent', () => {
   };
 
   beforeEach(async () => {
-    api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked']);
+    api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', [
+      'getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked',
+      'listSuggestions', 'getSuggestion', 'setSuggestionStatus', 'runSuggestionAnalysis'
+    ]);
     api.getConfig.and.returnValue(of(configResponse));
     api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
     api.getAnalytics.and.returnValue(of(analyticsFixture()));
@@ -59,6 +62,8 @@ describe('RubiAdminComponent', () => {
       ]
     }));
     api.setToolBlocked.and.returnValue(of({ blockedTools: ['start_baja'] }));
+    api.listSuggestions.and.returnValue(of({ sugerencias: [] }));
+    api.runSuggestionAnalysis.and.returnValue(of({ detected: 0, asociacionId: null, results: [] }));
     permissions = jasmine.createSpyObj<PermissionsService>('PermissionsService', ['hasPermission']);
     permissions.hasPermission.and.returnValue(true);
 
@@ -190,7 +195,7 @@ describe('RubiAdminComponent', () => {
           porIntent: [], porTool: [],
           motivoPorIntent: [{ intent: 'help', motivo: 'not_understood', total: 2 }],
           motivoPorTool: [{ tool: 'search_help', motivo: 'not_understood', total: 2 }],
-          motivoPorFlow: []
+          motivoPorFlow: [], motivoPorSource: []
         }
       })));
       fixture.detectChanges();
@@ -244,12 +249,98 @@ describe('RubiAdminComponent', () => {
     });
   });
 
-  it('shows the disabled Sugerencias stub with the exact roadmap message, without fabricating any suggestion', () => {
-    fixture.detectChanges();
-    const i18n = TestBed.inject(I18nService);
-    const text = fixture.nativeElement.textContent;
-    expect(text).toContain(i18n.t('rubi.admin.suggestions.title'));
-    expect(text).toContain(i18n.t('rubi.admin.suggestions.disabled'));
+  // 1.11.0#RUBI (Configuracion -> Rubi -> Sugerencias).
+  describe('Sugerencias', () => {
+    function suggestion(overrides: Partial<import('./rubi-admin.service').RubiSuggestion> = {}): import('./rubi-admin.service').RubiSuggestion {
+      return {
+        id: 7, type: 'high_post_prepare_cancellation', category: 'workflows', status: 'NUEVA',
+        dimensionType: 'flow', dimensionValue: 'alta', title: 'Cancelacion elevada en el flujo "alta"',
+        summary: 'El 31.0% de las preparaciones de el flujo "alta" terminan canceladas (muestra: 82 iniciados).',
+        generatedExplanation: null, possibleImpact: 'Hipotesis: friccion en el paso de confirmacion.',
+        recommendation: 'Revisar el paso de confirmacion.', priority: 'ALTA', confidence: 0.87, sampleSize: 82,
+        evidence: { signal: 'high_post_prepare_cancellation', currentRate: 0.31, baselineRate: 0.12, difference: 0.19, sample: 82 },
+        firstDetectedAt: '2026-01-01T00:00:00.000Z', lastDetectedAt: '2026-01-08T00:00:00.000Z',
+        periodFrom: '2026-01-01T00:00:00.000Z', periodTo: '2026-01-08T00:00:00.000Z', timesDetected: 3,
+        reviewedAt: null, acceptedAt: null, implementedAt: null, measurementWindowEndsAt: null,
+        measurementBaseline: null, measurementResult: null, closedAt: null, discardedReason: null,
+        allowedTransitions: ['EN_REVISION', 'ACEPTADA', 'DESCARTADA'],
+        ...overrides
+      };
+    }
+
+    it('loads suggestions on init and renders the table (Estado/Sugerencia/Evidencia/Prioridad/Confianza)', () => {
+      api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion()] }));
+      fixture.detectChanges();
+      expect(api.listSuggestions).toHaveBeenCalledWith({ status: undefined });
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('Cancelacion elevada en el flujo "alta"');
+      expect(text).toContain('ALTA');
+    });
+
+    it('shows an explicit empty message instead of an empty table when there are no suggestions', () => {
+      fixture.detectChanges();
+      const i18n = TestBed.inject(I18nService);
+      expect(fixture.nativeElement.textContent).toContain(i18n.t('rubi.admin.suggestions.empty'));
+    });
+
+    it('opens the ficha (7.7) with what/why/comparison/proposal/impact when a row is selected', () => {
+      api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion()] }));
+      fixture.detectChanges();
+      component.selectSuggestion(component.suggestions[0]);
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('Revisar el paso de confirmacion.');
+      expect(text).toContain('Hipotesis: friccion en el paso de confirmacion.');
+    });
+
+    it('only offers the administrative actions the backend already marked as allowed (never invents a transition)', () => {
+      api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion({ allowedTransitions: ['CERRADA'] })] }));
+      fixture.detectChanges();
+      const i18n = TestBed.inject(I18nService);
+      component.selectSuggestion(component.suggestions[0]);
+      fixture.detectChanges();
+      const buttons: string[] = Array.from(fixture.nativeElement.querySelectorAll('.rubi-suggestion-detail button')).map((el: any) => el.textContent.trim());
+      expect(buttons.some(text => text.includes(i18n.t('rubi.admin.suggestions.action.close')))).toBeTrue();
+      expect(buttons.some(text => text.includes(i18n.t('rubi.admin.suggestions.action.accept')))).toBeFalse();
+    });
+
+    it('discarding requires a non-empty reason (the administrator can reject a recommendation, but must justify it)', () => {
+      const target = suggestion();
+      api.listSuggestions.and.returnValue(of({ sugerencias: [target] }));
+      api.setSuggestionStatus.and.returnValue(of(suggestion({ status: 'DESCARTADA', allowedTransitions: [], discardedReason: 'Falso positivo: pico estacional ya conocido' })));
+      fixture.detectChanges();
+      component.selectSuggestion(component.suggestions[0]);
+      component.setSuggestionStatus(target, 'DESCARTADA', '');
+      expect(api.setSuggestionStatus).not.toHaveBeenCalled();
+      component.setSuggestionStatus(target, 'DESCARTADA', 'Falso positivo: pico estacional ya conocido');
+      expect(api.setSuggestionStatus).toHaveBeenCalledWith(7, 'DESCARTADA', 'Falso positivo: pico estacional ya conocido');
+    });
+
+    it('applying an action updates the row from the server response and never guesses the new state locally', () => {
+      const target = suggestion();
+      api.listSuggestions.and.returnValue(of({ sugerencias: [target] }));
+      fixture.detectChanges();
+      api.setSuggestionStatus.and.returnValue(of(suggestion({ status: 'EN_REVISION', allowedTransitions: ['ACEPTADA', 'DESCARTADA'] })));
+      component.setSuggestionStatus(target, 'EN_REVISION');
+      expect(component.suggestions[0].status).toBe('EN_REVISION');
+    });
+
+    it('runs the analysis on demand and reloads the list; never automatic', () => {
+      fixture.detectChanges();
+      api.listSuggestions.calls.reset();
+      component.runSuggestionAnalysis();
+      expect(api.runSuggestionAnalysis).toHaveBeenCalled();
+      expect(api.listSuggestions).toHaveBeenCalled();
+    });
+
+    it('never renders evidence as a bare percentage without exposing its sample size in the ficha', () => {
+      api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion()] }));
+      fixture.detectChanges();
+      component.selectSuggestion(component.suggestions[0]);
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('82');
+    });
   });
 
   it('provides the new admin labels in ES, VA and EN', () => {

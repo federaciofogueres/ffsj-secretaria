@@ -124,6 +124,8 @@ export interface RubiAdminFeedbackSummary {
   motivoPorIntent: Array<{ intent: string; motivo: string; total: number }>;
   motivoPorTool: Array<{ tool: string; motivo: string; total: number }>;
   motivoPorFlow: Array<{ flow: string; motivo: string; total: number }>;
+  // 1.11.0#RUBI: necesario para el detector "provider_high_not_understood".
+  motivoPorSource: Array<{ source: string; motivo: string; total: number }>;
 }
 
 export interface RubiAdminReformulations {
@@ -246,6 +248,64 @@ export interface RubiAdminToolsResponse {
   tools: RubiAdminTool[];
 }
 
+// 1.11.0#RUBI (Improvement Suggestions): evidence/sampleSize/priority/
+// confidence son siempre deterministas (Fase A); title/summary/
+// possibleImpact/recommendation se redactan solo a partir de ese mismo
+// agregado seguro (Fase B), nunca de conversaciones ni PII.
+export type RubiSuggestionStatus =
+  | 'NUEVA' | 'EN_REVISION' | 'ACEPTADA' | 'DESCARTADA'
+  | 'IMPLEMENTADA' | 'MIDIENDO_RESULTADO' | 'CERRADA' | 'RESUELTA_SIN_INTERVENCION';
+
+export interface RubiSuggestionMeasurementResult {
+  metric: string;
+  before: number | null;
+  after: number | null;
+  difference: number | null;
+  measuredAt: string;
+}
+
+export interface RubiSuggestion {
+  id: number;
+  type: string;
+  category: 'uso' | 'calidad' | 'workflows' | 'ux' | 'modelo' | 'oportunidades';
+  status: RubiSuggestionStatus;
+  dimensionType: 'flow' | 'tool' | 'intent' | 'source' | null;
+  dimensionValue: string | null;
+  title: string;
+  summary: string;
+  generatedExplanation: string | null;
+  possibleImpact: string | null;
+  recommendation: string | null;
+  priority: 'BAJA' | 'MEDIA' | 'ALTA' | 'CRITICA';
+  confidence: number;
+  sampleSize: number;
+  evidence: { signal?: string; currentRate?: number | null; baselineRate?: number | null; difference?: number | null; sample?: number; [key: string]: unknown };
+  firstDetectedAt: string;
+  lastDetectedAt: string;
+  periodFrom: string;
+  periodTo: string;
+  timesDetected: number;
+  reviewedAt: string | null;
+  acceptedAt: string | null;
+  implementedAt: string | null;
+  measurementWindowEndsAt: string | null;
+  measurementBaseline: { value: number | null; capturedAt: string } | null;
+  measurementResult: RubiSuggestionMeasurementResult | null;
+  closedAt: string | null;
+  discardedReason: string | null;
+  allowedTransitions: RubiSuggestionStatus[];
+}
+
+export interface RubiSuggestionsResponse {
+  sugerencias: RubiSuggestion[];
+}
+
+export interface RubiSuggestionAnalysisResult {
+  detected: number;
+  asociacionId: number | null;
+  results: Array<{ id: number; created: boolean }>;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RubiAdminService {
   constructor(
@@ -300,6 +360,38 @@ export class RubiAdminService {
   setToolBlocked(toolName: string, blocked: boolean): Observable<{ blockedTools: string[] }> {
     return this.http.put<{ blockedTools: string[] }>(`${this.apiUrl.secretariaBasePath}/admin/rubi/tools/${toolName}`, { blocked }, {
       headers: this.adminHeaders()
+    });
+  }
+
+  listSuggestions(params: { status?: RubiSuggestionStatus } = {}): Observable<RubiSuggestionsResponse> {
+    const query: Record<string, string> = {};
+    if (params.status) query['status'] = params.status;
+    return this.http.get<RubiSuggestionsResponse>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias`, {
+      headers: this.adminHeaders(), params: query
+    });
+  }
+
+  getSuggestion(id: number): Observable<RubiSuggestion> {
+    return this.http.get<RubiSuggestion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias/${id}`, {
+      headers: this.adminHeaders()
+    });
+  }
+
+  // 3.5/criterio de 1.11.0: siempre una accion administrativa explicita
+  // (Marcar en revision/Aceptar/Descartar/Marcar implementada/Cerrar);
+  // Rubi nunca aplica estas transiciones por si solo.
+  setSuggestionStatus(id: number, status: RubiSuggestionStatus, reason?: string): Observable<RubiSuggestion> {
+    return this.http.put<RubiSuggestion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias/${id}/estado`, {
+      status, ...(reason ? { reason } : {})
+    }, { headers: this.adminHeaders() });
+  }
+
+  runSuggestionAnalysis(params: { days?: 7 | 30; asociacionId?: number } = {}): Observable<RubiSuggestionAnalysisResult> {
+    const query: Record<string, string> = {};
+    if (params.days) query['days'] = String(params.days);
+    if (params.asociacionId) query['asociacionId'] = String(params.asociacionId);
+    return this.http.post<RubiSuggestionAnalysisResult>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias/analizar`, {}, {
+      headers: this.adminHeaders(), params: query
     });
   }
 
