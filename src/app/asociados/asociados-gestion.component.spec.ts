@@ -1,4 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { ActivatedRoute } from '@angular/router';
 import { RouterTestingModule } from '@angular/router/testing';
 import { BehaviorSubject, of } from 'rxjs';
 import { FfsjDialogAlertService } from 'ffsj-web-components';
@@ -36,7 +37,11 @@ describe('AsociadosGestionComponent', () => {
     tipo: 'adulto' as const
   };
 
-  beforeEach(async () => {
+  // G (form-diagnostics, visibilidad real): permite reconstruir el TestBed
+  // con un query param `tab` distinto para reproducir tanto la entrada SIN
+  // `?tab=altas` (el bug real en DEV) como la entrada CON el parametro
+  // explicito, sin depender de setTab()/patchValue() para simularlo.
+  async function configurarTestBed(routeQueryParams: Record<string, string> = {}): Promise<void> {
     secretariaService = jasmine.createSpyObj<SecretariaService>('SecretariaService', [
       'getRegistroPendiente',
       'getSolicitudes',
@@ -115,13 +120,21 @@ describe('AsociadosGestionComponent', () => {
         { provide: CensoService, useValue: censoService },
         { provide: PermissionsService, useValue: { hasPermission: () => true } },
         { provide: EjercicioService, useValue: ejercicioServiceMock },
-        { provide: FfsjDialogAlertService, useValue: { openDialogAlert: () => ({ afterClosed: () => of(null) }) } }
+        { provide: FfsjDialogAlertService, useValue: { openDialogAlert: () => ({ afterClosed: () => of(null) }) } },
+        {
+          provide: ActivatedRoute,
+          useValue: { snapshot: { queryParamMap: { get: (key: string) => routeQueryParams[key] ?? null } } }
+        }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AsociadosGestionComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
+  }
+
+  beforeEach(async () => {
+    await configurarTestBed();
   });
 
   it('abre selector de sustituto cuando una baja afecta a un cargo obligatorio', () => {
@@ -322,6 +335,100 @@ describe('AsociadosGestionComponent', () => {
       const diagnostics = rubiScreenContext.current?.state?.formDiagnostics;
       expect(diagnostics?.valid).toBeTrue();
       expect(diagnostics?.issues).toEqual([]);
+    });
+  });
+
+  // G (form-diagnostics, visibilidad real - bug real en DEV tras el merge de
+  // fix/rubi-normal-form-diagnostics): `mostrarFormMod` NO es "hay un
+  // formulario visible", solo controla la visibilidad del formulario de
+  // Modificacion. En Altas, la plantilla muestra el formulario SIEMPRE que
+  // no se este viendo el listado de pendientes, sin comprobar
+  // `mostrarFormMod` en ningun momento. Estos tests reproducen el escenario
+  // real: entrar a /asociados/gestion sin `?tab=altas` y sin llamar a
+  // setTab()/patchValue()/una sincronizacion manual.
+  describe('visibilidad real del formulario (bug real: entrada inicial sin ?tab=altas)', () => {
+    let rubiScreenContext: RubiScreenContextService;
+
+    beforeEach(() => {
+      rubiScreenContext = TestBed.inject(RubiScreenContextService);
+    });
+
+    it('CASO 1 (bug real): entrada normal a /asociados/gestion SIN query param ya publica formDiagnostics presente', () => {
+      // No se llama a setTab(), no se parchea estado, no hay sync manual:
+      // esto es exactamente lo que hace ngOnInit() con la ActivatedRoute por
+      // defecto (sin ?tab=altas). Este test debe fallar con el guard
+      // anterior (`if (!this.mostrarFormMod) return undefined;`), porque
+      // mostrarFormMod solo se pone a true dentro del `if` de query param.
+      expect(component.activeTab).toBe('altas');
+      const context = rubiScreenContext.current;
+      expect(context?.module).toBe('asociados');
+      expect(context?.view).toBe('gestion');
+      expect(context?.tab).toBe('altas');
+      expect(context?.state?.formDiagnostics?.present).toBeTrue();
+    });
+
+    it('payload de regresion: la entrada real sin ?tab=altas produce el payload completo esperado', () => {
+      const context = rubiScreenContext.current;
+      expect(context).toEqual(jasmine.objectContaining({ version: 1, module: 'asociados', view: 'gestion', tab: 'altas' }));
+      expect(context?.state?.formDiagnostics?.present).toBeTrue();
+      expect(context?.state?.formDiagnostics?.issues.length).toBeGreaterThan(0);
+    });
+
+    it('CASO 2: entrada explicita con ?tab=altas tambien publica formDiagnostics presente', async () => {
+      TestBed.resetTestingModule();
+      await configurarTestBed({ tab: 'altas' });
+      const contextConParam = TestBed.inject(RubiScreenContextService);
+      expect(component.activeTab).toBe('altas');
+      expect(contextConParam.current?.tab).toBe('altas');
+      expect(contextConParam.current?.state?.formDiagnostics?.present).toBeTrue();
+    });
+
+    it('CASO 3: abrir pendientes de Alta hace desaparecer formDiagnostics de inmediato, sin sync manual', () => {
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.present).toBeTrue();
+      component.abrirPendientes('alta');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+    });
+
+    it('CASO 4: volver desde pendientes de Alta hace reaparecer formDiagnostics de inmediato', () => {
+      component.abrirPendientes('alta');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+      component.volverDesdePendientes();
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.present).toBeTrue();
+    });
+
+    it('CASO 5: pestana Modificaciones sin persona seleccionada no publica formDiagnostics', () => {
+      component.setTab('modificaciones');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+    });
+
+    it('CASO 6: Modificacion abierta (persona seleccionada) publica formDiagnostics presente', () => {
+      component.setTab('modificaciones');
+      component.mostrarFormMod = true;
+      // setTab() ya sincroniza; forzamos una nueva emision de valueChanges
+      // (via un metodo publico, sin tocar el metodo privado de sync) para
+      // que el screenContext recoja el mostrarFormMod=true recien puesto,
+      // igual que hace la app cuando el formulario reacciona a cualquier
+      // cambio real.
+      component.altaForm.patchValue({});
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.present).toBeTrue();
+    });
+
+    it('CASO 7: con la modificacion abierta, abrir pendientes de cambio hace desaparecer formDiagnostics; volver la restaura porque mostrarFormMod sigue en true', () => {
+      component.setTab('modificaciones');
+      component.mostrarFormMod = true;
+      component.altaForm.patchValue({});
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.present).toBeTrue();
+
+      component.abrirPendientes('cambio');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+
+      // Comportamiento real: volverDesdePendientes() solo cierra el listado
+      // de pendientes; no reabre ni cierra la modificacion por su cuenta.
+      // Como mostrarFormMod sigue en true (nadie lo cambio), el formulario
+      // de Modificacion vuelve a ser el visible y el diagnostico reaparece.
+      component.volverDesdePendientes();
+      expect(component.mostrarFormMod).toBeTrue();
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.present).toBeTrue();
     });
   });
 });
