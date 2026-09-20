@@ -12,9 +12,29 @@ export interface RubiHistoryEntry {
   role: 'user' | 'assistant'; text: string; intent?: string; tool?: string;
   destination?: string; topic?: string; module?: RubiModule; activityId?: string; inscriptionId?: string;
 }
+// G (form-diagnostics): metadatos de validacion del formulario activo, nunca
+// datos introducidos por el usuario. `field` es un path estable del control
+// (p.ej. "telefono" o "campos.telefonoResponsable"), `code` es el nombre del
+// validador que ha fallado (required, pattern, minItems...) y `label`, cuando
+// se incluye, procede siempre de metadata real del formulario (nunca del DOM).
+export type RubiFormDiagnosticSource = 'client' | 'server';
+export interface RubiFormDiagnosticIssue {
+  field?: string;
+  label?: string;
+  code: string;
+  source: RubiFormDiagnosticSource;
+  required?: number | boolean;
+  current?: number;
+}
+export interface RubiFormDiagnostics {
+  present: boolean;
+  valid: boolean;
+  submitted?: boolean;
+  issues: RubiFormDiagnosticIssue[];
+}
 export interface RubiScreenContext {
   version: 1; module: RubiModule; view?: string; tab?: string;
-  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; hasOpenDocumentacion?: boolean; hasOpenComunicacion?: boolean; missingRequiredFields?: string[]; selectedActivityId?: string; selectedInscriptionId?: string };
+  state?: { canCreate?: boolean; hasOpenRegistration?: boolean; hasOpenModification?: boolean; hasOpenBaja?: boolean; hasOpenDocumentacion?: boolean; hasOpenComunicacion?: boolean; missingRequiredFields?: string[]; selectedActivityId?: string; selectedInscriptionId?: string; formDiagnostics?: RubiFormDiagnostics };
 }
 export interface RubiConversationState {
   intent: string; tool: string; destination?: string; topic?: string; module?: RubiModule;

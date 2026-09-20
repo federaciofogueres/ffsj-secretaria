@@ -1,4 +1,7 @@
-<button *ngIf="accessGranted" #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
+<!-- Launcher (post-auditoria A-06): nunca se renderiza mientras el panel esta
+     abierto, para que no quede flotando sobre la cabecera/composer. Se cierra
+     el panel solo con la X de la cabecera; al cerrarlo, el launcher reaparece. -->
+<button *ngIf="accessGranted && !open" #launcher class="rubi-launcher" type="button" (click)="toggle()" [attr.aria-expanded]="open" aria-controls="rubi-panel" [attr.aria-label]="'rubi.open' | t">
   <span class="rubi-avatar rubi-avatar--launcher" aria-hidden="true"></span>
   <span class="rubi-launcher-copy"><strong>Rubi</strong><small>{{ 'rubi.launcher.help' | t }}</small></span>
 </button>

@@ -58,6 +58,27 @@ describe('RubiBajaComponent', () => {
     expect(component.errorKey).not.toContain('secret');
   });
 
+  it('formDiagnostics reporta el required de la persona sin exponer nombres reales', () => {
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.valid).toBe(false);
+    expect(diagnostics.issues).toContain(jasmine.objectContaining({ field: 'asociadoId', code: 'required', source: 'client' }));
+    expect(JSON.stringify(diagnostics)).not.toContain('Ana');
+  });
+
+  it('formDiagnostics incluye un codigo seguro de backend (persona ya no disponible) como issue de servidor, y lo limpia al editar', () => {
+    api.prepararBaja.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { details: { code: 'BAJA_PERSONA_NO_DISPONIBLE' } } })));
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson(); component.prepare();
+    expect(component.formDiagnostics().issues).toContain({ code: 'BAJA_PERSONA_NO_DISPONIBLE', source: 'server' });
+    component.edit();
+    expect(component.formDiagnostics().issues.some(issue => issue.source === 'server')).toBeFalse();
+  });
+
+  it('formDiagnostics no filtra codigos de backend ajenos al formulario (p.ej. duplicada)', () => {
+    api.prepararBaja.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { details: { code: 'BAJA_DUPLICADA' } } })));
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson(); component.prepare();
+    expect(component.formDiagnostics().issues.some(issue => issue.source === 'server')).toBeFalse();
+  });
+
   it('deriva al flujo normal cuando hay un cargo obligatorio implicado', () => {
     api.prepararBaja.and.returnValue(of({ estado: 'requiere_flujo_normal', asociacionId: 12, ejercicio: { id: 7, ejercicio: 2027 }, persona: { id: 91, nombre: 'Ana', apellidos: 'Prueba' }, conflictosComplejos: [{ code: 'CARGO_OBLIGATORIO_REQUIERE_SUSTITUCION', cargoIds: [8] }], siguientePaso: 'derivar_flujo_normal', efectos: { creaSolicitud: true, escribeEnCenso: false, requiereFirma: true, circuito: 'ordinario' } }));
     component.form.patchValue({ asociadoId: 91 }); component.selectPerson(); component.prepare();

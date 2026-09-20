@@ -61,6 +61,36 @@ describe('RubiModificacionComponent', () => {
     expect(component.errorKey).not.toContain('secret');
   });
 
+  it('formDiagnostics reporta errores de Angular con la etiqueta real y sin el valor del campo', () => {
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson();
+    component.form.patchValue({ telefono: 'abc' });
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.valid).toBe(false);
+    const issue = diagnostics.issues.find(item => item.field === 'telefono');
+    expect(issue).toEqual({ field: 'telefono', label: component.i18n.t('rubi.alta.field.phone'), code: 'pattern', source: 'client' });
+    expect(JSON.stringify(diagnostics)).not.toContain('abc');
+  });
+
+  // CASO G3-like: nada que corregir sin cambios pendientes -> formulario visto como sin problema de Angular.
+  it('formDiagnostics marca un issue de negocio (sin cambios) cuando prepare() detecta que nada cambio', () => {
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson();
+    component.prepare();
+    expect(component.errorKey).toBe('rubi.mod.error.noChanges');
+    expect(component.formDiagnostics().issues).toEqual([{ code: 'MODIFICACION_SIN_CAMBIOS', source: 'client' }]);
+  });
+
+  it('formDiagnostics incluye un codigo seguro de backend (persona ya no disponible) como issue de servidor', () => {
+    api.prepararModificacion.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { details: { code: 'MODIFICACION_PERSONA_NO_DISPONIBLE' } } })));
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson(); component.form.patchValue({ telefono: '611111111' }); component.prepare();
+    expect(component.formDiagnostics().issues).toContain({ code: 'MODIFICACION_PERSONA_NO_DISPONIBLE', source: 'server' });
+  });
+
+  it('formDiagnostics nunca filtra codigos de backend ajenos al formulario (p.ej. duplicada)', () => {
+    api.prepararModificacion.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { details: { code: 'MODIFICACION_DUPLICADA' } } })));
+    component.form.patchValue({ asociadoId: 91 }); component.selectPerson(); component.form.patchValue({ telefono: '611111111' }); component.prepare();
+    expect(component.formDiagnostics().issues.length).toBe(0);
+  });
+
   it('incluye los textos nuevos en ES VA y EN', () => {
     const i18n = TestBed.inject(I18nService);
     for (const language of ['es', 'va', 'en'] as const) {

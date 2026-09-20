@@ -122,6 +122,34 @@ describe('RubiRegistroComponent', () => {
     expect(component.errorKey).not.toContain('secret');
   });
 
+  it('formDiagnostics reporta required (Angular) y adjunto obligatorio (negocio) sin exponer el mensaje', () => {
+    setup('documentacion');
+    component.form.patchValue({ destinatarioId: 3, titulo: 'Un titulo', mensaje: 'Secreto de al menos diez' });
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.valid).toBe(false);
+    expect(diagnostics.issues).toContain({ code: 'REGISTRO_ADJUNTO_REQUERIDO', source: 'client' });
+    expect(JSON.stringify(diagnostics)).not.toContain('Secreto');
+  });
+
+  it('formDiagnostics no exige adjunto para comunicacion, pero marca el ejercicio no activo como issue', () => {
+    setup('comunicacion', false);
+    component.form.patchValue({ destinatarioId: 3, titulo: 'Un titulo', mensaje: 'Un mensaje de al menos diez caracteres' });
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.issues).toContain({ code: 'REGISTRO_EJERCICIO_NO_ACTIVO', source: 'client' });
+    expect(diagnostics.issues.some(issue => issue.code === 'REGISTRO_ADJUNTO_REQUERIDO')).toBeFalse();
+  });
+
+  it('formDiagnostics incluye un codigo seguro de backend (destinatario invalido) y lo limpia al editar', () => {
+    setup('documentacion');
+    api.prepararRegistro.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { details: { code: 'REGISTRO_DESTINATARIO_NO_VALIDO' } } })));
+    component.form.patchValue({ destinatarioId: 3, titulo: 'Un titulo', mensaje: 'Un mensaje de al menos diez caracteres' });
+    component.adjuntos = [new File(['contenido'], 'a.pdf', { type: 'application/pdf' })];
+    component.prepare();
+    expect(component.formDiagnostics().issues).toContain({ code: 'REGISTRO_DESTINATARIO_NO_VALIDO', source: 'server' });
+    component.edit();
+    expect(component.formDiagnostics().issues.some(issue => issue.source === 'server')).toBeFalse();
+  });
+
   it('incluye los textos nuevos en ES, VA y EN', () => {
     setup('documentacion');
     const i18n = TestBed.inject(I18nService);

@@ -118,6 +118,50 @@ describe('RubiAltaComponent', () => {
     }
   });
 
+  // G (form-diagnostics): CASO G1 (pattern + required combinados).
+  it('formDiagnostics reports the real Angular validation errors with real field labels, never the field value', () => {
+    component.form.patchValue({ telefono: 'abc' });
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.present).toBe(true);
+    expect(diagnostics.valid).toBe(false);
+    const telefonoIssue = diagnostics.issues.find(issue => issue.field === 'telefono');
+    expect(telefonoIssue).toEqual({ field: 'telefono', label: component.i18n.t('rubi.alta.field.phone'), code: 'pattern', source: 'client' });
+    expect(JSON.stringify(diagnostics)).not.toContain('abc');
+  });
+
+  it('formDiagnostics reports present=true valid=true and no issues on a valid, untouched form', () => {
+    fillValidAdult();
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics).toEqual({ present: true, valid: true, submitted: false, issues: [] });
+  });
+
+  it('formDiagnostics surfaces a safe backend code (e.g. cargo no longer available) as a server issue', () => {
+    fillValidAdult();
+    api.prepararAlta.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { details: { code: 'ALTA_CARGO_NO_DISPONIBLE' } } })));
+    component.prepare();
+    const diagnostics = component.formDiagnostics();
+    expect(diagnostics.valid).toBe(false);
+    expect(diagnostics.issues).toContain({ code: 'ALTA_CARGO_NO_DISPONIBLE', source: 'server' });
+  });
+
+  it('formDiagnostics drops the server issue once the draft is edited again', () => {
+    fillValidAdult();
+    api.prepararAlta.and.returnValue(throwError(() => new HttpErrorResponse({ status: 400, error: { details: { code: 'ALTA_CARGO_NO_DISPONIBLE' } } })));
+    component.prepare();
+    expect(component.formDiagnostics().issues.some(issue => issue.source === 'server')).toBeTrue();
+    api.prepararAlta.and.returnValue(of(prepared()));
+    fillValidAdult();
+    component.prepare();
+    expect(component.formDiagnostics().issues.some(issue => issue.source === 'server')).toBeFalse();
+  });
+
+  it('formDiagnostics never leaks unrelated backend codes (permission/expiry/duplicate) as form issues', () => {
+    fillValidAdult();
+    api.prepararAlta.and.returnValue(throwError(() => new HttpErrorResponse({ status: 409, error: { details: { code: 'REGISTRO_ALTA_DUPLICADO' } } })));
+    component.prepare();
+    expect(component.formDiagnostics().issues.length).toBe(0);
+  });
+
   it('invalidates and clears a prepared draft when editing or cancelling', () => {
     api.prepararAlta.and.returnValue(of(prepared()));
     fillValidAdult();

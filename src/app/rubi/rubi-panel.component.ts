@@ -449,11 +449,23 @@ export class RubiPanelComponent implements OnInit, OnDestroy {
     };
     const module = moduleByRoute[routeKey];
     const current = this.screenContext.current;
-    const state = this.altaActive ? { hasOpenRegistration: this.altaPrepared }
+    const workflowState = this.altaActive ? { hasOpenRegistration: this.altaPrepared }
       : this.modificationActive ? { hasOpenModification: this.modificationPrepared }
       : this.bajaActive ? { hasOpenBaja: this.bajaPrepared }
       : this.registroActive && this.registroTipo === 'documentacion' ? { hasOpenDocumentacion: this.registroPrepared }
       : this.registroActive && this.registroTipo === 'comunicacion' ? { hasOpenComunicacion: this.registroPrepared } : undefined;
+    // G (form-diagnostics): solo el flujo Rubi realmente activo aporta su
+    // diagnostico. En cuanto el usuario cambia de flujo o lo cierra, el
+    // ViewChild correspondiente deja de estar activo y el diagnostico
+    // anterior no puede filtrarse al siguiente turno.
+    const workflowDiagnostics = this.altaActive ? this.altaFlow?.formDiagnostics()
+      : this.modificationActive ? this.modificacionFlow?.formDiagnostics()
+      : this.bajaActive ? this.bajaFlow?.formDiagnostics()
+      : this.registroActive ? this.registroFlow?.formDiagnostics()
+      : undefined;
+    const state = (workflowState || workflowDiagnostics?.present)
+      ? { ...(workflowState || {}), ...(workflowDiagnostics?.present ? { formDiagnostics: workflowDiagnostics } : {}) }
+      : undefined;
     const path = this.router.url.split(/[?#]/, 1)[0];
     const inscriptionMatch = routeKey === 'inscripciones' ? path.match(/^\/inscripciones\/([A-Za-z0-9._:-]{1,128})$/) : null;
     const routeState = inscriptionMatch ? { selectedInscriptionId: inscriptionMatch[1] } : undefined;
