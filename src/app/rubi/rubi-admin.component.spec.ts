@@ -50,7 +50,7 @@ describe('RubiAdminComponent', () => {
   beforeEach(async () => {
     api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', [
       'getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked',
-      'listSuggestions', 'getSuggestion', 'setSuggestionStatus', 'runSuggestionAnalysis'
+      'listSuggestions', 'getSuggestion', 'setSuggestionStatus', 'runSuggestionAnalysis', 'attachSuggestionBenchmark'
     ]);
     api.getConfig.and.returnValue(of(configResponse));
     api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
@@ -263,6 +263,7 @@ describe('RubiAdminComponent', () => {
         periodFrom: '2026-01-01T00:00:00.000Z', periodTo: '2026-01-08T00:00:00.000Z', timesDetected: 3,
         reviewedAt: null, acceptedAt: null, implementedAt: null, measurementWindowEndsAt: null,
         measurementBaseline: null, measurementResult: null, closedAt: null, discardedReason: null,
+        benchmarkEvidence: null,
         allowedTransitions: ['EN_REVISION', 'ACEPTADA', 'DESCARTADA'],
         ...overrides
       };
@@ -340,6 +341,93 @@ describe('RubiAdminComponent', () => {
       fixture.detectChanges();
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('82');
+    });
+
+    // 1.12.0#RUBI (8.7): evidencia de benchmark adjuntada manualmente.
+    describe('Benchmark evidence', () => {
+      it('shows a "not attached yet" message when the suggestion has no benchmark evidence', () => {
+        api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion()] }));
+        fixture.detectChanges();
+        component.selectSuggestion(component.suggestions[0]);
+        fixture.detectChanges();
+        const i18n = TestBed.inject(I18nService);
+        expect(fixture.nativeElement.textContent).toContain(i18n.t('rubi.admin.suggestions.detail.benchmarkNone'));
+      });
+
+      it('renders the baseline/candidate/metric when benchmark evidence is present', () => {
+        const withEvidence = suggestion({
+          benchmarkEvidence: {
+            baseline: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
+            candidate: { provider: 'openai', model: 'gpt-5.6-luna' },
+            metric: 'not_understood_rate', baselineValue: 0.23, candidateValue: 0, costDeltaPercent: 8,
+            notes: 'Benchmark controlado offline.', attachedAt: '2026-01-01T00:00:00.000Z'
+          }
+        });
+        api.listSuggestions.and.returnValue(of({ sugerencias: [withEvidence] }));
+        fixture.detectChanges();
+        component.selectSuggestion(component.suggestions[0]);
+        fixture.detectChanges();
+        const text = fixture.nativeElement.textContent;
+        expect(text).toContain('gemini-3.5-flash-lite');
+        expect(text).toContain('gpt-5.6-luna');
+        expect(text).toContain('not_understood_rate');
+      });
+
+      it('does not submit the attach form while any of the required identity fields is empty', () => {
+        api.listSuggestions.and.returnValue(of({ sugerencias: [suggestion()] }));
+        fixture.detectChanges();
+        component.selectSuggestion(component.suggestions[0]);
+        component.toggleBenchmarkForm();
+        component.attachBenchmark(component.suggestions[0]);
+        expect(api.attachSuggestionBenchmark).not.toHaveBeenCalled();
+      });
+
+      it('attaches the benchmark evidence and refreshes the row from the server response, never guessing it locally', () => {
+        const target = suggestion();
+        api.listSuggestions.and.returnValue(of({ sugerencias: [target] }));
+        fixture.detectChanges();
+        component.selectSuggestion(component.suggestions[0]);
+        component.toggleBenchmarkForm();
+        component.benchmarkDraft = {
+          baselineProvider: 'gemini', baselineModel: 'gemini-3.5-flash-lite',
+          candidateProvider: 'openai', candidateModel: 'gpt-5.6-luna',
+          metric: 'not_understood_rate', baselineValue: 0.23, candidateValue: 0, costDeltaPercent: 8, notes: ''
+        };
+        const updated = suggestion({
+          benchmarkEvidence: {
+            baseline: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
+            candidate: { provider: 'openai', model: 'gpt-5.6-luna' },
+            metric: 'not_understood_rate', baselineValue: 0.23, candidateValue: 0, costDeltaPercent: 8,
+            notes: null, attachedAt: '2026-01-01T00:00:00.000Z'
+          }
+        });
+        api.attachSuggestionBenchmark.and.returnValue(of(updated));
+        component.attachBenchmark(target);
+        expect(api.attachSuggestionBenchmark).toHaveBeenCalledWith(7, {
+          baseline: { provider: 'gemini', model: 'gemini-3.5-flash-lite' },
+          candidate: { provider: 'openai', model: 'gpt-5.6-luna' },
+          metric: 'not_understood_rate', baselineValue: 0.23, candidateValue: 0, costDeltaPercent: 8, notes: undefined
+        });
+        expect(component.suggestions[0].benchmarkEvidence).toEqual(updated.benchmarkEvidence);
+        expect(component.benchmarkFormOpen).toBeFalse();
+      });
+
+      it('surfaces a stable error message and keeps the form open when attaching fails', () => {
+        const target = suggestion();
+        api.listSuggestions.and.returnValue(of({ sugerencias: [target] }));
+        fixture.detectChanges();
+        component.selectSuggestion(component.suggestions[0]);
+        component.toggleBenchmarkForm();
+        component.benchmarkDraft = {
+          baselineProvider: 'gemini', baselineModel: 'gemini-3.5-flash-lite',
+          candidateProvider: 'openai', candidateModel: 'gpt-5.6-luna',
+          metric: 'not_understood_rate', baselineValue: null, candidateValue: null, costDeltaPercent: null, notes: ''
+        };
+        api.attachSuggestionBenchmark.and.returnValue(throwError(() => new Error('fail')));
+        component.attachBenchmark(target);
+        expect(component.benchmarkError).toBe('rubi.admin.error.suggestionBenchmark');
+        expect(component.benchmarkFormOpen).toBeTrue();
+      });
     });
   });
 
