@@ -1,6 +1,6 @@
 # Changelog
 
-## fix/rubi-normal-form-diagnostics — diagnóstico de formularios normales de Secretaría (EN DESARROLLO, NO mergeada a develop)
+## fix/rubi-normal-form-diagnostics — diagnóstico de formularios normales de Secretaría (INTEGRADA en develop, merge `--no-ff`)
 
 > Corrige un fallo funcional confirmado en la validación manual en DEV: Rubi no sabía diagnosticar formularios normales de Secretaría (fuera del panel de Rubi), solo los workflows embebidos e Inscripciones. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
 
@@ -11,6 +11,12 @@
 - Cambiar de pestaña, o de Altas a Modificaciones, limpia el diagnóstico anterior de inmediato (nunca lo arrastra). Labels de campo estáticos (el mismo texto ya visible en la plantilla), sin i18n (este componente no lo usa) y sin scraping del DOM.
 - `SoporteComponent` (formulario de nueva incidencia) gana el mismo patrón desde cero (antes sin ningún wiring a Rubi): `syncRubiScreenContext()`, `valueChanges`, y ausencia de diagnóstico mientras se ve el detalle de un ticket existente.
 - 17 tests nuevos (`asociados-gestion.component.spec.ts`, `soporte.component.spec.ts`, `rubi-panel.component.spec.ts`), incluido un test de regresión que reproduce el payload real del bug y confirma que ahora incluye `state.formDiagnostics`.
+
+### Bug de contexto: cambio de ejercicio global sin tocar el formulario
+
+- Causa: `accionesBloqueadasPorEjercicio` (y por tanto `ALTA_EJERCICIO_NO_DISPONIBLE`) depende del selector global de ejercicio, pero el componente nunca se suscribía a `EjercicioService.selectedChanges`. Cambiar a un ejercicio histórico sin tocar el formulario ni la pestaña podía dejar un `formDiagnostics` obsoleto hasta el siguiente evento local.
+- Corrección: `formDiagnosticsSub` pasa a ser una única bolsa `Subscription` que agrupa `altaForm.valueChanges` y la nueva suscripción a `selectedChanges`; limpieza única en `ngOnDestroy`. Sin llamadas HTTP nuevas.
+- 3 tests nuevos con un `EjercicioService` respaldado por un `BehaviorSubject` real: reproducen el caso exacto (emitir un ejercicio no activo por `selectedChanges`, sin `setTab`/`patchValue`/sync manual) más un test de limpieza de la suscripción.
 
 ### Lenguaje natural ampliado, sin secuestrar Soporte
 
@@ -23,8 +29,8 @@
 
 ### Contrato y pruebas
 
-- 225/225 pruebas de frontend (17 nuevas), build `development` correcto, `git diff --check` limpio.
-- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+- 228/228 pruebas de frontend (20 nuevas sobre el cierre de `feat/rubi-form-diagnostics`), build `development` correcto, `git diff --check` limpio. Revalidado desde cero antes y después del merge `--no-ff` a `develop`; `git merge-base --is-ancestor` confirma la rama íntegramente contenida.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
 
 ## feat/rubi-form-diagnostics — diagnóstico contextual de formularios (INTEGRADA en develop, merge `--no-ff`)
 
