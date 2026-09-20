@@ -1,16 +1,17 @@
 # Changelog
 
-## feat/rubi-form-diagnostics — diagnóstico contextual de formularios (EN DESARROLLO, NO mergeada a develop)
+## feat/rubi-form-diagnostics — diagnóstico contextual de formularios (INTEGRADA en develop, merge `--no-ff`)
 
-> Última mejora funcional/UX de Rubi antes del piloto, más dos correcciones UX detectadas en la validación manual post-auditoría (30 pruebas: 29 OK, 1 fallo menor de UX, 0 bloqueadas). Implementado y validado técnicamente; validación manual pendiente. Sin deploy, sin migraciones ejecutadas, sin Gemini real.
+> Última mejora funcional/UX de Rubi antes del piloto, más dos correcciones UX detectadas en la validación manual post-auditoría (30 pruebas: 29 OK, 1 fallo menor de UX, 0 bloqueadas). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
 
 ### G — Diagnóstico contextual de formularios
 
-- Rubi ahora puede explicar el estado funcional del formulario activo ("¿qué me falta?", "¿por qué no me deja enviar esto?", reformulaciones equivalentes en ES/VA/EN) a partir de metadatos de validación estructurados, nunca de los valores introducidos por el usuario. Ver `docs/rubi/RUBI.md` para la arquitectura y el contrato completos.
+- Rubi ahora puede explicar el estado funcional del formulario activo ("¿qué me falta?", "¿por qué no me deja enviar esto?", reformulaciones equivalentes en ES/VA/EN) a partir de metadatos de validación estructurados, nunca de los valores introducidos por el usuario. Diagnóstico 100% determinista (plantillas locales, sin llamar al provider). Ver `docs/rubi/RUBI.md` para la arquitectura y el contrato completos.
 - Nuevo extractor genérico y reutilizable `form-diagnostics.util.ts` (`buildFormDiagnostics`) que traduce el resultado de los validadores de Angular (`required`, `requiredTrue`, `pattern`, `email`, `minlength`/`maxlength`, `min`/`max`, `minItems`/`maxItems`, validadores custom ya usados por Secretaría) a un contrato pequeño (`RubiFormDiagnostics`/`RubiFormDiagnosticIssue`), sin depender de scraping del DOM ni de una nueva biblioteca de formularios.
 - Cobertura: formulario dinámico de Inscripciones (`InscripcionesComponent`) y los cuatro workflows Rubi (alta, modificación, baja, documentación/comunicación). Cada uno aporta también, cuando aplica, condiciones de negocio conocidas que bloquean el envío sin ser un error de Angular (participantes insuficientes, adjunto obligatorio, ejercicio no activo, plazo de inscripción cerrado) y códigos funcionales seguros ya devueltos por el backend (`ALTA_CARGO_NO_DISPONIBLE`, `INSCRIPCION_PLAZO_CERRADO`...).
 - El diagnóstico se limpia por completo al cambiar de inscripción, de workflow o al cancelarlo; nunca sobrevive al siguiente turno.
 - Extiende `RubiScreenContext.state` con `formDiagnostics` (opcional); actualizado el test cerrado de "el contexto nunca incluye PII" (`rubi-panel.component.spec.ts`) para incluir la nueva clave.
+- **Corrección (`totalIssues`/`truncated`)**: `issues` sigue capado a 8 (privacidad/tamaño de contexto/tokens), pero `buildFormDiagnostics()` calcula ahora `totalIssues` ANTES de recortar y `truncated = totalIssues > issues.length`. Sin esto, un formulario con 12 errores reales solo enviaba 8, y Rubi podía acabar afirmando "te faltan 8 cosas" cuando en realidad faltaban 12. Ambos campos son solo un recuento (metadata segura, nunca un dato de usuario) y son opcionales para no romper compatibilidad.
 
 ### Correcciones UX (validación manual post-auditoría)
 
@@ -19,8 +20,8 @@
 
 ### Contrato y pruebas
 
-- 205/205 pruebas de frontend (34 nuevas), build `development` correcto, `git diff --check` limpio.
-- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+- 208/208 pruebas de frontend (37 nuevas sobre el cierre anterior), build `development` correcto, `git diff --check` limpio. Revalidado desde cero antes y después del merge `--no-ff` a `develop`; `git merge-base --is-ancestor` confirma la rama íntegramente contenida.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción.
 
 ## fix/rubi-post-auditoria — revisión técnica final (EN DESARROLLO, NO mergeada a develop)
 
