@@ -1,5 +1,31 @@
 # Changelog
 
+## fix/rubi-normal-form-diagnostics — diagnóstico de formularios normales de Secretaría (EN DESARROLLO, NO mergeada a develop)
+
+> Corrige un fallo funcional confirmado en la validación manual en DEV: Rubi no sabía diagnosticar formularios normales de Secretaría (fuera del panel de Rubi), solo los workflows embebidos e Inscripciones. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
+
+### Bug confirmado: `/asociados/gestion` (Altas) respondía "no veo ningún formulario abierto"
+
+- Causa: `AsociadosGestionComponent.updateRubiScreenContext()` solo publicaba `{ module, view, tab }`, nunca `state.formDiagnostics`; el formulario de alta real (`altaForm`) nunca pasaba por `buildFormDiagnostics()`.
+- Corrección: nuevo `syncRubiScreenContext()` (sustituye a `updateRubiScreenContext()`), único punto que construye el contexto completo. Publica `formDiagnostics` solo cuando el formulario está realmente visible (`mostrarFormMod`), suscrito a `altaForm.valueChanges` para reflejar cada tecla sin esperar a cambiar de pestaña. Incluye `extraIssues` para las condiciones reales de `guardarRegistroAltaOCambio()` que no son errores de Angular: cargo obligatorio no seleccionado (`ALTA_CARGO_REQUERIDO`, nuevo), representación legal incompleta para un menor (`ALTA_REPRESENTACION_REQUERIDA`, ya existente) y ejercicio no activo (`ALTA_EJERCICIO_NO_DISPONIBLE`, nuevo).
+- Cambiar de pestaña, o de Altas a Modificaciones, limpia el diagnóstico anterior de inmediato (nunca lo arrastra). Labels de campo estáticos (el mismo texto ya visible en la plantilla), sin i18n (este componente no lo usa) y sin scraping del DOM.
+- `SoporteComponent` (formulario de nueva incidencia) gana el mismo patrón desde cero (antes sin ningún wiring a Rubi): `syncRubiScreenContext()`, `valueChanges`, y ausencia de diagnóstico mientras se ve el detalle de un ticket existente.
+- 17 tests nuevos (`asociados-gestion.component.spec.ts`, `soporte.component.spec.ts`, `rubi-panel.component.spec.ts`), incluido un test de regresión que reproduce el payload real del bug y confirma que ahora incluye `state.formDiagnostics`.
+
+### Lenguaje natural ampliado, sin secuestrar Soporte
+
+- Nuevas frases ES/VA/EN ("no puedo enviar el formulario", "no me deja guardar", "el formulario no funciona"...) reconocidas como pregunta de diagnóstico — ver CHANGELOG de `ffsj-secretaria-api` para el detalle del router determinista. Estas frases se solapan a propósito con la orientación hacia Soporte, así que solo se resuelven como diagnóstico cuando hay un formulario realmente activo; sin él, siguen el routing normal.
+
+### Pendiente (documentado, no incluido en esta rama)
+
+- `RegistroComponent`: ya publica `state.canCreate` pero no `formDiagnostics`; requiere antes auditar su reutilización de componente entre `/registro/documentacion` y `/registro/comunicacion` para no publicar un diagnóstico obsoleto al cambiar de modo sin recrear el componente.
+- `AsociacionComponent`: no tiene módulo Rubi asignado hoy; ampliarlo exige un módulo nuevo en `RubiModule` y sus allowlists de backend, fuera de alcance de esta corrección puntual.
+
+### Contrato y pruebas
+
+- 225/225 pruebas de frontend (17 nuevas), build `development` correcto, `git diff --check` limpio.
+- Sin deploy, sin migraciones, sin cambios en Azure ni en producción. No mergeado a `develop`.
+
 ## feat/rubi-form-diagnostics — diagnóstico contextual de formularios (INTEGRADA en develop, merge `--no-ff`)
 
 > Última mejora funcional/UX de Rubi antes del piloto, más dos correcciones UX detectadas en la validación manual post-auditoría (30 pruebas: 29 OK, 1 fallo menor de UX, 0 bloqueadas). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.

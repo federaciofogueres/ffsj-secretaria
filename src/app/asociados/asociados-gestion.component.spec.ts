@@ -7,6 +7,7 @@ import { CensoService } from '../core/censo.service';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
+import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 import { AsociadosService } from './asociados.service';
 import { AsociadosGestionComponent } from './asociados-gestion.component';
 
@@ -175,5 +176,105 @@ describe('AsociadosGestionComponent', () => {
     } as any];
 
     expect(component.asociadoBloqueado(presidente)).toBeFalse();
+  });
+
+  // G (form-diagnostics, formulario normal): reproduce exactamente el bug
+  // confirmado en DEV - el formulario NORMAL de alta (no el embebido de Rubi)
+  // no publicaba ningun diagnostico en RubiScreenContextService.
+  describe('form-diagnostics del formulario normal (bug confirmado en DEV)', () => {
+    let rubiScreenContext: RubiScreenContextService;
+
+    beforeEach(() => {
+      rubiScreenContext = TestBed.inject(RubiScreenContextService);
+    });
+
+    it('CASO A: publica formDiagnostics presente e invalido cuando el formulario de Altas esta visible con datos incompletos', () => {
+      component.setTab('altas');
+      const context = rubiScreenContext.current;
+      expect(context?.module).toBe('asociados');
+      expect(context?.view).toBe('gestion');
+      expect(context?.tab).toBe('altas');
+      expect(context?.state?.formDiagnostics?.present).toBeTrue();
+      expect(context?.state?.formDiagnostics?.valid).toBeFalse();
+      expect(context?.state?.formDiagnostics?.issues.length).toBeGreaterThan(0);
+    });
+
+    it('payload de regresion: el caso real (/asociados/gestion, tab altas, formulario visible) ya no genera un screenContext sin state.formDiagnostics', () => {
+      component.setTab('altas');
+      const context = rubiScreenContext.current;
+      expect(context).toEqual(jasmine.objectContaining({
+        version: 1, module: 'asociados', view: 'gestion', tab: 'altas'
+      }));
+      expect(context?.state?.formDiagnostics).toBeDefined();
+    });
+
+    it('CASO B: corregir un campo actualiza el diagnostico en el siguiente mensaje (valueChanges), sin esperar a cambiar de pestana', () => {
+      component.setTab('altas');
+      let issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+      expect(issues.some(issue => issue.field === 'nombre')).toBeTrue();
+      component.altaForm.patchValue({ nombre: 'Ana', apellidos: 'Prueba', nacimiento: '1990-01-01' });
+      issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+      expect(issues.some(issue => issue.field === 'nombre')).toBeFalse();
+      expect(issues.some(issue => issue.field === 'nacimiento')).toBeFalse();
+    });
+
+    it('CASO C: sin cargo seleccionado, formDiagnostics explica que falta seleccionar un cargo (condicion real de guardarRegistroAltaOCambio)', () => {
+      component.setTab('altas');
+      component.cargosSeleccionadosIds.clear();
+      component.quitarCargoSeleccionado(999);
+      const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+      expect(issues).toContain(jasmine.objectContaining({ code: 'ALTA_CARGO_REQUERIDO', source: 'client' }));
+    });
+
+    it('explica el ejercicio no activo como issue, igual que ya bloquea el envio real', () => {
+      const ejercicioService = TestBed.inject(EjercicioService) as any;
+      ejercicioService.isSelectedActive = false;
+      component.setTab('altas');
+      const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+      expect(issues).toContain(jasmine.objectContaining({ code: 'ALTA_EJERCICIO_NO_DISPONIBLE', source: 'client' }));
+    });
+
+    it('CASO D: cambiar de Altas a Solicitudes hace desaparecer formDiagnostics de inmediato', () => {
+      component.setTab('altas');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeDefined();
+      component.setTab('solicitudes');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+    });
+
+    it('CASO E: cambiar de Altas a Modificaciones no arrastra el diagnostico del alta', () => {
+      component.setTab('altas');
+      component.altaForm.patchValue({ telefono: 'no-es-un-telefono-valido' });
+      expect(rubiScreenContext.current?.state?.formDiagnostics?.issues.some(issue => issue.field === 'telefono')).toBeTrue();
+      component.setTab('modificaciones');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+    });
+
+    it('CASO F: nunca incluye ningun valor introducido en el formulario (PII) en el screenContext publicado', () => {
+      component.setTab('altas');
+      component.altaForm.patchValue({
+        nombre: 'Persona Privada', apellidos: 'Confidencial', telefono: '600123456',
+        email: 'persona.privada@example.invalid', identificacion: 'X1234567Z', direccion: 'Calle Falsa 123'
+      });
+      const raw = JSON.stringify(rubiScreenContext.current);
+      for (const secret of ['Persona Privada', 'Confidencial', '600123456', 'persona.privada@example.invalid', 'X1234567Z', 'Calle Falsa 123']) {
+        expect(raw).not.toContain(secret);
+      }
+    });
+
+    it('pestana Bajas nunca inventa un formDiagnostics (no existe un formulario equivalente)', () => {
+      component.setTab('bajas');
+      expect(rubiScreenContext.current?.state?.formDiagnostics).toBeUndefined();
+    });
+
+    it('el formulario valido y completo no reporta ningun issue', () => {
+      component.setTab('altas');
+      component.altaForm.patchValue({
+        identificacion: 'X1234567L', nombre: 'Ana', apellidos: 'Prueba', nacimiento: '1990-01-01',
+        cp: '03001', telefono: '600111222', email: 'ana@example.invalid'
+      });
+      const diagnostics = rubiScreenContext.current?.state?.formDiagnostics;
+      expect(diagnostics?.valid).toBeTrue();
+      expect(diagnostics?.issues).toEqual([]);
+    });
   });
 });

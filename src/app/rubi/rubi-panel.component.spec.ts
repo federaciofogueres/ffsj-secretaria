@@ -178,6 +178,27 @@ describe('RubiPanelComponent', () => {
     expect(api.message.calls.mostRecent().args[4]?.state?.formDiagnostics).toEqual(bajaDiagnostics);
   });
 
+  // G (form-diagnostics, formulario normal): un formulario NORMAL de
+  // Secretaria (p.ej. AsociadosGestionComponent) puede haber publicado su
+  // propio formDiagnostics en RubiScreenContextService; si ADEMAS hay un
+  // workflow Rubi embebido activo, el del workflow gana siempre y nunca se
+  // mezclan ambos diagnosticos.
+  it('CASO G: an active Rubi workflow always takes priority over a screen-published formDiagnostics, never mixed', () => {
+    api.message.and.returnValue(of({ message: 'ok', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    setRouterUrl(router, '/asociados/gestion');
+    const screenContext = TestBed.inject(RubiScreenContextService);
+    screenContext.set({
+      version: 1, module: 'asociados', view: 'gestion', tab: 'altas',
+      state: { formDiagnostics: { present: true, valid: false, issues: [{ field: 'nombre', code: 'required', source: 'client' as const }] } }
+    });
+    const workflowDiagnostics = { present: true, valid: false, issues: [{ field: 'telefono', code: 'pattern', source: 'client' as const }] };
+    (component as any).altaFlow = { formDiagnostics: () => workflowDiagnostics };
+    component.executeAction({ type: 'start_flow', flow: 'alta' });
+    component.draft = '¿Qué me falta?';
+    component.send();
+    expect(api.message.calls.mostRecent().args[4]?.state?.formDiagnostics).toEqual(workflowDiagnostics);
+  });
+
   it('sends only abstract baja preparation state to the screen context', () => {
     api.message.and.returnValue(of({ message: 'Usa el control del formulario', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
     component.executeAction({ type: 'start_flow', flow: 'baja' });
