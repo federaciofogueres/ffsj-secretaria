@@ -21,6 +21,9 @@ export interface RubiMessage {
   // 1.9.0#RUBI (Pilot Instrumentation, 5.3): tras pulsar 👎 se muestra el
   // selector de motivo (catalogo cerrado) antes de enviar el feedback.
   feedbackReasonPending?: boolean;
+  // 1.10.0#RUBI (Product Analytics, 6.4): si esta respuesta fue determinista
+  // o via provider (metadata.source), para poder calificarla con ese dato.
+  source?: 'deterministic' | 'provider';
 }
 
 @Injectable({ providedIn: 'root' })

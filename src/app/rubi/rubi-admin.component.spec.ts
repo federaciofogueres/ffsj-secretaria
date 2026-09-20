@@ -4,7 +4,36 @@ import { of, throwError } from 'rxjs';
 import { I18nService } from '../core/i18n.service';
 import { PermissionsService } from '../core/permissions.service';
 import { RubiAdminComponent } from './rubi-admin.component';
-import { RubiAdminService } from './rubi-admin.service';
+import { RubiAdminAnalytics, RubiAdminService } from './rubi-admin.service';
+
+// 1.10.0#RUBI: factory con todos los bloques nuevos (flujos/feedback
+// extendido/reformulaciones/usoAcciones/conversacional/calidad/
+// comparacionPeriodoAnterior) para no repetir el objeto completo en cada
+// test; cada test sobreescribe solo lo que necesita.
+function analyticsFixture(overrides: Partial<RubiAdminAnalytics> = {}): RubiAdminAnalytics {
+  const rate = { rate: null, n: 0 };
+  return {
+    periodo: { desde: '', hasta: '' },
+    operacion: { llamadas: 3, exitosas: 3, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] },
+    provider: { llamadas: 0, inputTokens: 10, outputTokens: 5, costeUsd: 0.01 },
+    flujos: [],
+    feedback: { helpful: 0, notHelpful: 0, porMotivo: [], porIntent: [], porTool: [], motivoPorIntent: [], motivoPorTool: [], motivoPorFlow: [] },
+    reformulaciones: { posibles: 0 },
+    usoAcciones: { navigation: { ofrecidas: 0, usadas: 0 }, flow: { ofrecidas: 0, usadas: 0 } },
+    conversacional: { porIntent: [], porTool: [], porSource: [] },
+    calidad: {
+      conversacion: { resolutionProxyRate: rate, possibleReformulationRate: rate, unknownIntentRate: rate, helpfulRate: rate, notUnderstoodRate: rate },
+      workflows: { flowCompletionRate: rate, flowCancellationRate: rate, flowFailureRate: rate, preparedToConfirmedRate: rate },
+      provider: { providerUsageRate: rate, averageCostPerProviderCall: null, tokensPerCall: null, providerLatencyMs: { value: null, n: 0 } }
+    },
+    comparacionPeriodoAnterior: {
+      periodo: { desde: '', hasta: '' }, unknownIntentRate: { actual: rate, anterior: rate, deltaPuntosPorcentuales: null },
+      cancelacionPorFlow: [], satisfaccionPorIntent: [],
+      latenciaProvider: { actual: { value: null, n: 0 }, anterior: { value: null, n: 0 }, deltaPorcentual: null }
+    },
+    ...overrides
+  };
+}
 
 describe('RubiAdminComponent', () => {
   let fixture: ComponentFixture<RubiAdminComponent>;
@@ -22,11 +51,7 @@ describe('RubiAdminComponent', () => {
     api = jasmine.createSpyObj<RubiAdminService>('RubiAdminService', ['getConfig', 'updateConfig', 'listAssociations', 'setAssociationAuthorized', 'getAnalytics', 'getTools', 'setToolBlocked']);
     api.getConfig.and.returnValue(of(configResponse));
     api.listAssociations.and.returnValue(of({ total: 2, items: [{ id: 1, nombre: 'Doctor Bergez - Carolinas', authorized: true }, { id: 2, nombre: 'Pio XII', authorized: false }] }));
-    api.getAnalytics.and.returnValue(of({
-      periodo: { desde: '', hasta: '' },
-      operacion: { llamadas: 3, exitosas: 3, fallidas: 0, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: null, porTool: [], fallosPorCodigo: [], porAsociacion: [] },
-      provider: { llamadas: 0, inputTokens: 10, outputTokens: 5, costeUsd: 0.01 }
-    }));
+    api.getAnalytics.and.returnValue(of(analyticsFixture()));
     api.getTools.and.returnValue(of({
       tools: [
         { name: 'start_baja', description: 'Abre el flujo de baja.', domain: 'personas', available: true, blockedByAdmin: false, blockedByInfra: false },
@@ -119,8 +144,7 @@ describe('RubiAdminComponent', () => {
     });
 
     it('renders the breakdown by tool, failure code and association', () => {
-      api.getAnalytics.and.returnValue(of({
-        periodo: { desde: '', hasta: '' },
+      api.getAnalytics.and.returnValue(of(analyticsFixture({
         operacion: {
           llamadas: 5, exitosas: 4, fallidas: 1, actoresUnicos: 1, asociacionesUnicas: 1, latenciaMediaMs: 200,
           porTool: [{ tool: 'list_actividades', llamadas: 4, fallidas: 0 }],
@@ -128,13 +152,104 @@ describe('RubiAdminComponent', () => {
           porAsociacion: [{ asociacionId: 25, llamadas: 5 }]
         },
         provider: { llamadas: 0, inputTokens: 1, outputTokens: 1, costeUsd: 0 }
-      }));
+      })));
       fixture.detectChanges();
       const text = fixture.nativeElement.textContent;
       expect(text).toContain('list_actividades');
       expect(text).toContain('RUBI_TOOL_NOT_AUTHORIZED');
       expect(text).toContain('#25');
     });
+
+    // 1.10.0#RUBI: cobertura minima de las secciones nuevas (funnel,
+    // conversacional, feedback con motivo, calidad, tendencias), reutilizando
+    // el mismo patron de la suite existente.
+    it('renders the funnel by workflow with absolute numbers and percentages', () => {
+      api.getAnalytics.and.returnValue(of(analyticsFixture({
+        flujos: [{
+          flow: 'alta', iniciados: 10, preparados: 8, completados: 6, confirmados: 6, cancelados: 3, fallidos: 1,
+          derivadosFlujoNormal: 0, expirados: 0,
+          preparationRate: 0.8, completionRate: 0.6, cancellationRate: 0.3, failureRate: 0.1, normalFlowRedirectRate: 0
+        }]
+      })));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('alta');
+      expect(text).toContain('10');
+      expect(text).toContain('6');
+    });
+
+    it('renders conversational analytics by intent/tool/source and feedback reason breakdown', () => {
+      api.getAnalytics.and.returnValue(of(analyticsFixture({
+        conversacional: {
+          porIntent: [{ intent: 'help', llamadas: 20, latenciaMediaMs: 100, feedbackPositivo: 15, feedbackNegativo: 2, posiblesReformulaciones: 1 }],
+          porTool: [{ tool: 'search_help', llamadas: 20, fallidas: 1, feedbackPositivo: 15, feedbackNegativo: 2, failureRate: 0.05, helpfulRate: 0.88 }],
+          porSource: [{ source: 'deterministic', llamadas: 18, latenciaMediaMs: 10, feedbackPositivo: 14, feedbackNegativo: 1 }]
+        },
+        feedback: {
+          helpful: 15, notHelpful: 2, porMotivo: [{ motivo: 'not_understood', total: 2 }],
+          porIntent: [], porTool: [],
+          motivoPorIntent: [{ intent: 'help', motivo: 'not_understood', total: 2 }],
+          motivoPorTool: [{ tool: 'search_help', motivo: 'not_understood', total: 2 }],
+          motivoPorFlow: []
+        }
+      })));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('help');
+      expect(text).toContain('search_help');
+      expect(text).toContain('deterministic');
+      expect(text).toContain('not_understood');
+    });
+
+    it('renders quality metrics always with their sample size (n), never a bare rate', () => {
+      api.getAnalytics.and.returnValue(of(analyticsFixture({
+        calidad: {
+          conversacion: {
+            resolutionProxyRate: { rate: 0.9, n: 100 }, possibleReformulationRate: { rate: 0.1, n: 100 },
+            unknownIntentRate: { rate: 0.05, n: 100 }, helpfulRate: { rate: 0.85, n: 40 }, notUnderstoodRate: { rate: 0.2, n: 5 }
+          },
+          workflows: {
+            flowCompletionRate: { rate: 0.6, n: 10 }, flowCancellationRate: { rate: 0.3, n: 10 },
+            flowFailureRate: { rate: 0.1, n: 10 }, preparedToConfirmedRate: { rate: 0.75, n: 8 }
+          },
+          provider: { providerUsageRate: { rate: 0.2, n: 100 }, averageCostPerProviderCall: 0.05, tokensPerCall: 120, providerLatencyMs: { value: 800, n: 20 } }
+        }
+      })));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('n=100');
+      expect(text).toContain('n=10');
+    });
+
+    it('renders trends comparing the current period against the immediately previous one, with both absolute samples', () => {
+      api.getAnalytics.and.returnValue(of(analyticsFixture({
+        comparacionPeriodoAnterior: {
+          periodo: { desde: '2026-01-01T00:00:00Z', hasta: '2026-01-08T00:00:00Z' },
+          unknownIntentRate: { actual: { rate: 0.1, n: 100 }, anterior: { rate: 0.05, n: 90 }, deltaPuntosPorcentuales: 5 },
+          cancelacionPorFlow: [{ flow: 'alta', actual: { rate: 0.3, n: 10 }, anterior: { rate: 0.1, n: 9 }, deltaPuntosPorcentuales: 20 }],
+          satisfaccionPorIntent: [{ intent: 'help', actual: { rate: 0.9, n: 20 }, anterior: { rate: 0.7, n: 18 }, deltaPuntosPorcentuales: 20 }],
+          latenciaProvider: { actual: { value: 900, n: 10 }, anterior: { value: 700, n: 8 }, deltaPorcentual: 28.57 }
+        }
+      })));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.textContent;
+      expect(text).toContain('alta');
+      expect(text).toContain('+20 pp');
+    });
+
+    it('shows a "no data yet" message when there are no funnels for the period, instead of an empty table', () => {
+      fixture.detectChanges();
+      const i18n = TestBed.inject(I18nService);
+      expect(fixture.nativeElement.textContent).toContain(i18n.t('rubi.admin.analytics.noData'));
+    });
+  });
+
+  it('shows the disabled Sugerencias stub with the exact roadmap message, without fabricating any suggestion', () => {
+    fixture.detectChanges();
+    const i18n = TestBed.inject(I18nService);
+    const text = fixture.nativeElement.textContent;
+    expect(text).toContain(i18n.t('rubi.admin.suggestions.title'));
+    expect(text).toContain(i18n.t('rubi.admin.suggestions.disabled'));
   });
 
   it('provides the new admin labels in ES, VA and EN', () => {

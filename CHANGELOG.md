@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.10.0#RUBI — Product Analytics
+
+> Segunda versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): convierte los eventos de 1.9.0#RUBI en analítica comprensible para Administración. La mayor parte del trabajo vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la nueva sección de Analytics en Configuración → Rubi, el stub de Sugerencias y `metadata.source`/`source` de feedback de punta a punta. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.
+
+### Configuración → Rubi: sección "Analytics" ampliada y stub "Sugerencias"
+
+- La sección de Analíticas ya existente (7/30 días, filtro por asociación) gana: funnel por workflow con números absolutos y porcentajes; analytics conversacional por intent/tool/source; desglose de motivos del 👎 por intent/tool/flow; métricas de calidad (siempre con su muestra `n` visible, nunca una tasa sola); tendencias frente al periodo inmediatamente anterior, con ambos valores absolutos junto al delta. Un mensaje explícito ("todavía no hay datos suficientes") sustituye a una tabla vacía sin explicación.
+- Nueva sección "Sugerencias" (6.1 de roadmap/RUBI-v2.md), deshabilitada con el mensaje exacto del roadmap: no se fabrica ninguna sugerencia en esta versión (eso es 1.11.0#RUBI).
+- `RubiAdminService`/`RubiAdminAnalytics` (tipos TS) se extienden con `flujos`, `feedback` ampliado, `conversacional`, `calidad` y `comparacionPeriodoAnterior`, reflejando exactamente el contrato nuevo del backend.
+
+### `metadata.source` de punta a punta
+
+- `RubiMessage` guarda `source` (`deterministic`/`provider`) de la respuesta que representa; `RubiPanelComponent.submitFeedback()` lo incluye en el feedback cuando está disponible, permitiendo comparar satisfacción por source en el panel de administración. Nunca se expone el nombre real del proveedor de IA, solo si fue determinista o no.
+
+### Contrato y pruebas
+
+- 251/251 pruebas de frontend (8 nuevas: 6 en `rubi-admin.component.spec.ts` para las secciones nuevas y el stub de Sugerencias, 2 en `rubi-panel.component.spec.ts` para `metadata.source`/feedback), build `development` correcto, `git diff --check` limpio.
+
 ## 1.9.0#RUBI — Pilot Instrumentation
 
 > Primera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): instrumentación necesaria para que el piloto produzca información fiable. La mayor parte de esta versión vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la distinción real cancelado/caducado/derivado-a-flujo-normal en el tracking de eventos y el selector de motivo del 👎. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.

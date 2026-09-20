@@ -374,6 +374,24 @@ describe('RubiPanelComponent', () => {
     expect(answer.text).toBe('Respuesta segura');
   });
 
+  it('1.10.0#RUBI: guarda metadata.source en el mensaje y lo incluye al calificarlo, sin revelar el nombre real del provider', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true, source: 'provider' } }));
+    component.send('Pregunta');
+    const answer = component.messages[component.messages.length - 1];
+    expect(answer.source).toBe('provider');
+    component.sendFeedback(answer, 'helpful');
+    expect(api.feedback).toHaveBeenCalledWith('helpful', { intent: 'help', tool: 'search_help', source: 'provider' });
+  });
+
+  it('1.10.0#RUBI: un mensaje sin metadata.source (respuestas antiguas o sin dato) no envia el campo source en el feedback', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
+    component.send('Pregunta');
+    const answer = component.messages[component.messages.length - 1];
+    expect(answer.source).toBeUndefined();
+    component.sendFeedback(answer, 'helpful');
+    expect(api.feedback).toHaveBeenCalledWith('helpful', { intent: 'help', tool: 'search_help' });
+  });
+
   it('1.9.0#RUBI: un 👎 muestra el selector de motivo y NO envia feedback hasta elegir uno', () => {
     api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
     component.send('Pregunta');
