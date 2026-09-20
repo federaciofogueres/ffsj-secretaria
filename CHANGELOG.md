@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.12.0#RUBI — Conversational Quality & Model Evaluation
+
+> Cuarta versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): el grueso del trabajo (banco de evaluación, comparación de modelos, capa de redacción natural) vive en `ffsj-secretaria-api` (ver su CHANGELOG). Este repositorio aporta la superficie administrativa para incorporar los resultados de un benchmark controlado como evidencia de una sugerencia. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin activación real de ningún proveedor/modelo nuevo.
+
+### Ficha de sugerencia: "Evidencia de benchmark" (8.7)
+
+- Nueva sección en la ficha de sugerencia (Configuración → Rubi → Sugerencias): muestra el modelo base y el candidato comparados, la métrica y sus valores, la variación de coste estimada y notas breves, cuando existen; en caso contrario, un mensaje explícito de que todavía no se ha adjuntado ningún benchmark.
+- Nuevo formulario "Adjuntar evidencia de benchmark": siempre una acción administrativa explícita — el benchmark se ejecuta antes y aparte, en local (`npm run rubi:eval:matrix` en `ffsj-secretaria-api`); esta pantalla solo adjunta el resumen ya calculado, nunca dispara un proveedor ni cambia el estado o la prioridad de la sugerencia. El envío exige los 4 campos de identidad (proveedor/modelo base y candidato) y la métrica; el resto son opcionales.
+- `RubiAdminService` gana `RubiBenchmarkEvidence`/`RubiBenchmarkParticipant` (tipos) y `attachSuggestionBenchmark()` (`PUT /admin/rubi/sugerencias/{id}/benchmark`); `RubiSuggestion.benchmarkEvidence` refleja exactamente el contrato nuevo del backend.
+
+### Contrato y pruebas
+
+- 263/263 pruebas de frontend (5 nuevas en `rubi-admin.component.spec.ts` para la sección de benchmark), build `development` correcto, `git diff --check` limpio.
+
 ## 1.11.0#RUBI — Improvement Suggestions
 
 > Tercera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): Configuración → Rubi → Sugerencias deja de ser un stub deshabilitado y pasa a mostrar el catálogo real de sugerencias detectadas de forma determinista, con su ficha completa y las acciones administrativas del ciclo de vida. El grueso del cálculo (detectores, prioridad/confianza, persistencia) vive en `ffsj-secretaria-api` (ver su CHANGELOG). **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin cambios automáticos de configuración.

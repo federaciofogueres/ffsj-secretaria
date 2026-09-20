@@ -386,6 +386,76 @@
             <span class="text-muted small" *ngIf="!s.allowedTransitions.length">{{ 'rubi.admin.suggestions.detail.terminal' | t }}</span>
           </div>
           <p class="text-muted small mt-2" *ngIf="s.discardedReason">{{ 'rubi.admin.suggestions.action.discard' | t }}: {{ s.discardedReason }}</p>
+
+          <!-- 1.12.0#RUBI (8.7): evidencia de un benchmark controlado ya ejecutado por separado. -->
+          <h4 class="h6 text-muted mt-3">{{ 'rubi.admin.suggestions.detail.benchmark' | t }}</h4>
+          <div *ngIf="s.benchmarkEvidence as b; else noBenchmark" class="small">
+            <p class="mb-1">
+              <strong>{{ 'rubi.admin.suggestions.benchmark.baseline' | t }}:</strong> {{ b.baseline.provider }} / {{ b.baseline.model }}
+              <ng-container *ngIf="b.baselineValue !== null"> — {{ b.baselineValue }}</ng-container>
+            </p>
+            <p class="mb-1">
+              <strong>{{ 'rubi.admin.suggestions.benchmark.candidate' | t }}:</strong> {{ b.candidate.provider }} / {{ b.candidate.model }}
+              <ng-container *ngIf="b.candidateValue !== null"> — {{ b.candidateValue }}</ng-container>
+            </p>
+            <p class="mb-1"><strong>{{ 'rubi.admin.suggestions.benchmark.metric' | t }}:</strong> {{ b.metric }}</p>
+            <p class="mb-1" *ngIf="b.costDeltaPercent !== null"><strong>{{ 'rubi.admin.suggestions.detail.benchmarkCostDelta' | t }}:</strong> {{ b.costDeltaPercent }}%</p>
+            <p class="mb-1 fst-italic" *ngIf="b.notes">{{ b.notes }}</p>
+            <p class="text-muted mb-0">{{ 'rubi.admin.suggestions.detail.benchmarkAttachedAt' | t }}: {{ b.attachedAt | date: 'short' }}</p>
+          </div>
+          <ng-template #noBenchmark>
+            <p class="text-muted small mb-2">{{ 'rubi.admin.suggestions.detail.benchmarkNone' | t }}</p>
+          </ng-template>
+
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="toggleBenchmarkForm()">
+            {{ (benchmarkFormOpen ? 'rubi.admin.suggestions.action.cancelBenchmark' : 'rubi.admin.suggestions.action.attachBenchmark') | t }}
+          </button>
+          <div *ngIf="benchmarkFormOpen" class="rubi-benchmark-form mt-2 small">
+            <p class="text-muted">{{ 'rubi.admin.suggestions.benchmark.hint' | t }}</p>
+            <div class="alert alert-danger" *ngIf="benchmarkError">{{ benchmarkError | t }}</div>
+            <div class="row g-2">
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baseline' | t }} — {{ 'rubi.admin.suggestions.benchmark.provider' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.baselineProvider" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baseline' | t }} — {{ 'rubi.admin.suggestions.benchmark.model' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.baselineModel" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidate' | t }} — {{ 'rubi.admin.suggestions.benchmark.provider' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.candidateProvider" />
+              </div>
+              <div class="col-6">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidate' | t }} — {{ 'rubi.admin.suggestions.benchmark.model' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.candidateModel" />
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.metric' | t }}</label>
+                <input class="form-control form-control-sm" type="text" [(ngModel)]="benchmarkDraft.metric" [placeholder]="'rubi.admin.suggestions.benchmark.metricPlaceholder' | t" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.baselineValue' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.baselineValue" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.candidateValue' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.candidateValue" />
+              </div>
+              <div class="col-4">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.costDelta' | t }}</label>
+                <input class="form-control form-control-sm" type="number" [(ngModel)]="benchmarkDraft.costDeltaPercent" />
+              </div>
+              <div class="col-12">
+                <label class="form-label mb-0">{{ 'rubi.admin.suggestions.benchmark.notes' | t }}</label>
+                <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="benchmarkDraft.notes"></textarea>
+              </div>
+            </div>
+            <button class="btn btn-sm btn-foc-rojo mt-2" type="button" [disabled]="savingBenchmark" (click)="attachBenchmark(s)">
+              <span *ngIf="savingBenchmark" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+              {{ 'rubi.admin.suggestions.benchmark.save' | t }}
+            </button>
+          </div>
         </div>
       </section>
     </ng-container>

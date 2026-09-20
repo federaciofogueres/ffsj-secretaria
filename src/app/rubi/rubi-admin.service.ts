@@ -264,6 +264,25 @@ export interface RubiSuggestionMeasurementResult {
   measuredAt: string;
 }
 
+// 1.12.0#RUBI (8.7): resumen acotado de un benchmark controlado (ver
+// scripts/rubi-eval-matrix.js), adjuntado manualmente por un administrador.
+// Nunca el informe completo del banco de evaluacion ni ninguna credencial.
+export interface RubiBenchmarkParticipant {
+  provider: string;
+  model: string;
+}
+
+export interface RubiBenchmarkEvidence {
+  baseline: RubiBenchmarkParticipant;
+  candidate: RubiBenchmarkParticipant;
+  metric: string;
+  baselineValue: number | null;
+  candidateValue: number | null;
+  costDeltaPercent: number | null;
+  notes: string | null;
+  attachedAt: string;
+}
+
 export interface RubiSuggestion {
   id: number;
   type: string;
@@ -293,6 +312,7 @@ export interface RubiSuggestion {
   measurementResult: RubiSuggestionMeasurementResult | null;
   closedAt: string | null;
   discardedReason: string | null;
+  benchmarkEvidence: RubiBenchmarkEvidence | null;
   allowedTransitions: RubiSuggestionStatus[];
 }
 
@@ -384,6 +404,18 @@ export class RubiAdminService {
     return this.http.put<RubiSuggestion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias/${id}/estado`, {
       status, ...(reason ? { reason } : {})
     }, { headers: this.adminHeaders() });
+  }
+
+  // 1.12.0#RUBI (8.7): adjunta la evidencia de un benchmark ya ejecutado
+  // (offline, fuera de esta peticion) a una sugerencia. Accion administrativa
+  // explicita: nunca activa ningun proveedor ni cambia status/prioridad.
+  attachSuggestionBenchmark(id: number, evidence: {
+    baseline: RubiBenchmarkParticipant; candidate: RubiBenchmarkParticipant; metric: string;
+    baselineValue?: number | null; candidateValue?: number | null; costDeltaPercent?: number | null; notes?: string;
+  }): Observable<RubiSuggestion> {
+    return this.http.put<RubiSuggestion>(`${this.apiUrl.secretariaBasePath}/admin/rubi/sugerencias/${id}/benchmark`, evidence, {
+      headers: this.adminHeaders()
+    });
   }
 
   runSuggestionAnalysis(params: { days?: 7 | 30; asociacionId?: number } = {}): Observable<RubiSuggestionAnalysisResult> {

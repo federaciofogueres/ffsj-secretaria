@@ -10,6 +10,24 @@ import {
   RubiAdminProviderStatus, RubiAdminService, RubiAdminTool, RubiSuggestion, RubiSuggestionStatus
 } from './rubi-admin.service';
 
+// 1.12.0#RUBI (8.7): borrador del formulario para adjuntar evidencia de un
+// benchmark ya ejecutado (offline) a una sugerencia. Solo texto/numeros
+// simples: nunca el informe completo del banco de evaluacion.
+interface BenchmarkEvidenceDraft {
+  baselineProvider: string; baselineModel: string;
+  candidateProvider: string; candidateModel: string;
+  metric: string;
+  baselineValue: number | null; candidateValue: number | null; costDeltaPercent: number | null;
+  notes: string;
+}
+
+function emptyBenchmarkDraft(): BenchmarkEvidenceDraft {
+  return {
+    baselineProvider: '', baselineModel: '', candidateProvider: '', candidateModel: '',
+    metric: '', baselineValue: null, candidateValue: null, costDeltaPercent: null, notes: ''
+  };
+}
+
 type AsociacionFiltro = 'all' | 'authorized' | 'unauthorized';
 type SuggestionFiltro = 'abiertas' | RubiSuggestionStatus;
 
@@ -69,6 +87,14 @@ export class RubiAdminComponent implements OnInit {
   suggestionActionError = '';
   discardReasonDraft = '';
   private readonly savingSuggestionIds = new Set<number>();
+
+  // 1.12.0#RUBI (8.7): formulario para adjuntar evidencia de un benchmark
+  // ya ejecutado por separado (npm run rubi:eval:matrix). Nunca dispara un
+  // proveedor ni cambia el estado de la sugerencia.
+  benchmarkFormOpen = false;
+  benchmarkDraft: BenchmarkEvidenceDraft = emptyBenchmarkDraft();
+  benchmarkError = '';
+  savingBenchmark = false;
 
   readonly suggestionActionLabels = SUGGESTION_ACTION_LABELS;
 
@@ -215,6 +241,9 @@ export class RubiAdminComponent implements OnInit {
     this.selectedSuggestion = suggestion;
     this.discardReasonDraft = '';
     this.suggestionActionError = '';
+    this.benchmarkFormOpen = false;
+    this.benchmarkDraft = emptyBenchmarkDraft();
+    this.benchmarkError = '';
   }
 
   closeSuggestionDetail(): void {
@@ -255,6 +284,44 @@ export class RubiAdminComponent implements OnInit {
           this.selectedSuggestion = stillVisible && this.selectedSuggestion?.id === updated.id ? updated : null;
         },
         error: () => { this.suggestionActionError = 'rubi.admin.error.suggestionAction'; }
+      });
+  }
+
+  toggleBenchmarkForm(): void {
+    this.benchmarkFormOpen = !this.benchmarkFormOpen;
+    this.benchmarkError = '';
+    if (this.benchmarkFormOpen) this.benchmarkDraft = emptyBenchmarkDraft();
+  }
+
+  // 1.12.0#RUBI (8.7): siempre una accion administrativa explicita; el
+  // benchmark ya se ejecuto por separado (npm run rubi:eval:matrix), aqui
+  // solo se adjunta el resumen ya calculado a la sugerencia.
+  attachBenchmark(suggestion: RubiSuggestion): void {
+    const draft = this.benchmarkDraft;
+    if (!draft.baselineProvider.trim() || !draft.baselineModel.trim()
+      || !draft.candidateProvider.trim() || !draft.candidateModel.trim() || !draft.metric.trim()) {
+      return;
+    }
+    this.benchmarkError = '';
+    this.savingBenchmark = true;
+    this.api.attachSuggestionBenchmark(suggestion.id, {
+      baseline: { provider: draft.baselineProvider.trim(), model: draft.baselineModel.trim() },
+      candidate: { provider: draft.candidateProvider.trim(), model: draft.candidateModel.trim() },
+      metric: draft.metric.trim(),
+      baselineValue: draft.baselineValue,
+      candidateValue: draft.candidateValue,
+      costDeltaPercent: draft.costDeltaPercent,
+      notes: draft.notes.trim() || undefined
+    })
+      .pipe(finalize(() => this.savingBenchmark = false))
+      .subscribe({
+        next: updated => {
+          this.suggestions = this.suggestions.map(item => item.id === updated.id ? updated : item);
+          this.selectedSuggestion = updated;
+          this.benchmarkFormOpen = false;
+          this.benchmarkDraft = emptyBenchmarkDraft();
+        },
+        error: () => { this.benchmarkError = 'rubi.admin.error.suggestionBenchmark'; }
       });
   }
 }
