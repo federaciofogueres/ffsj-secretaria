@@ -313,17 +313,37 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
     });
   }
 
-  // G (form-diagnostics, formulario normal): nunca inventa un formulario
-  // activo solo por estar en la pestana de Altas/Modificaciones - exige que
-  // `mostrarFormMod` sea real (el mismo flag que ya controla si el formulario
-  // esta visible en pantalla, `*ngIf="mostrarFormMod"` en la plantilla).
+  // G (form-diagnostics, formulario normal - bug real corregido): unica
+  // fuente de verdad de si el formulario funcional (Alta o Modificacion) esta
+  // REALMENTE visible en pantalla. Debe coincidir EXACTAMENTE con las
+  // condiciones de asociados-gestion.component.html:
+  //   Altas          -> *ngIf="activeTab === 'altas'" y, dentro,
+  //                      *ngIf="estaViendoPendientes('alta'); else altaFormView"
+  //                      (el formulario se muestra en el "else", SIEMPRE que
+  //                      no se este viendo el listado de pendientes -
+  //                      `mostrarFormMod` NUNCA se comprueba aqui).
+  //   Modificaciones -> *ngIf="activeTab === 'modificaciones'" y, dentro (una
+  //                      vez descartado el listado de pendientes), solo
+  //                      *ngIf="mostrarFormMod" muestra el formulario (antes
+  //                      hay que elegir una persona con iniciarModificacion()).
+  // `mostrarFormMod` por si solo NO representa la visibilidad real del
+  // formulario de Altas: era la causa exacta del bug reproducido en DEV
+  // (entrada normal a /asociados/gestion sin ?tab=altas: activeTab='altas' por
+  // defecto, mostrarFormMod=false por defecto, formulario visualmente
+  // abierto, Rubi creia que no habia ninguno).
+  private isCurrentFormVisible(): boolean {
+    if (this.activeTab === 'altas') return !this.estaViendoPendientes('alta');
+    if (this.activeTab === 'modificaciones') return !this.estaViendoPendientes('cambio') && this.mostrarFormMod;
+    return false;
+  }
+
   // Reutiliza el extractor generico buildFormDiagnostics() ya existente y
   // anade, como extraIssues, las condiciones reales de
   // guardarRegistroAltaOCambio() que no viven en control.errors: cargo
   // obligatorio no seleccionado, representacion legal incompleta (solo alta)
   // y ejercicio no activo. Nunca incluye datos de la persona.
   private currentFormDiagnostics(): RubiFormDiagnostics | undefined {
-    if (!this.mostrarFormMod) return undefined;
+    if (!this.isCurrentFormVisible()) return undefined;
     const fieldMeta: Record<string, FormDiagnosticFieldMeta> = {};
     Object.entries(FIELD_LABELS).forEach(([field, label]) => fieldMeta[field] = { label });
     const extraIssues: RubiFormDiagnosticIssue[] = [];
@@ -343,15 +363,23 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
     return buildFormDiagnostics(this.altaForm, { submitted: this.submitted, fieldMeta, extraIssues });
   }
 
+  // G (form-diagnostics, formulario normal - bug relacionado): abrir/cerrar
+  // el listado de pendientes sustituye el formulario en pantalla
+  // (`estaViendoPendientes()` forma parte de `isCurrentFormVisible()`), asi
+  // que debe sincronizar el contexto de inmediato en los dos sentidos: nunca
+  // debe quedar un `formDiagnostics` de un formulario que ya no esta visible,
+  // ni faltar el de uno que acaba de reaparecer.
   abrirPendientes(tipo: SolicitudTipo): void {
     this.pendingViewTipo = tipo;
     this.seleccionRegistro.clear();
     this.cargarRegistroPendiente();
+    this.syncRubiScreenContext();
   }
 
   volverDesdePendientes(): void {
     this.pendingViewTipo = null;
     this.seleccionRegistro.clear();
+    this.syncRubiScreenContext();
   }
 
   estaViendoPendientes(tipo: SolicitudTipo): boolean {
@@ -1142,6 +1170,7 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
           this.solicitudDetalle = solicitud;
           this.activeTab = 'solicitudes';
           this.pendingViewTipo = null;
+          this.syncRubiScreenContext();
           this.loading = false;
           this.dialog.openDialogAlert({
             title: 'Solicitud registrada',
@@ -1180,6 +1209,7 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
     const solicitud = this.solicitudes.find(item => Number(item.id) === Number(solicitudId));
     this.activeTab = 'solicitudes';
     this.pendingViewTipo = null;
+    this.syncRubiScreenContext();
     if (solicitud) {
       this.verSolicitud(solicitud);
       return;
