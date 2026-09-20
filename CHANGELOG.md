@@ -1,5 +1,16 @@
 # Changelog
 
+## fix/rubi-normal-form-visibility — corrige la visibilidad real del formulario de Altas (INTEGRADA en develop, merge `--no-ff`)
+
+> Bug real detectado en la validación manual en DEV sobre el fix anterior (`fix/rubi-normal-form-diagnostics`): la validación seguía fallando. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real. No requiere cambios en la API.
+
+### Bug real: entrar a `/asociados/gestion` sin `?tab=altas` seguía sin publicar `formDiagnostics`
+
+- Causa: `mostrarFormMod` no representa "hay un formulario visible" — la plantilla solo la usa para condicionar el formulario de Modificación. El de Altas se muestra siempre que no se esté viendo el listado de pendientes, sin comprobar `mostrarFormMod` en ningún momento. Como `mostrarFormMod` solo se ponía a `true` dentro del bloque que procesa el query param `?tab=altas`, la navegación normal (sin ese parámetro) dejaba el formulario de Altas visible en pantalla pero `currentFormDiagnostics()` devolvía `undefined`.
+- Corrección: nuevo `isCurrentFormVisible()`, fuente de verdad única que replica las condiciones reales de la plantilla por pestaña (Altas: `!estaViendoPendientes('alta')`; Modificaciones: `!estaViendoPendientes('cambio') && mostrarFormMod`), sustituye el guard antiguo basado solo en `mostrarFormMod`.
+- `abrirPendientes()`/`volverDesdePendientes()` ahora llaman a `syncRubiScreenContext()` de inmediato (antes podían dejar un `formDiagnostics` obsoleto o ausente al alternar entre el formulario y el listado de pendientes). Se cubren además dos puntos donde `activeTab` pasaba a `'solicitudes'` sin sincronizar.
+- 9 tests nuevos (`asociados-gestion.component.spec.ts`) que reproducen el bug real sin `setTab()`/`patchValue()`/sync manual: entrada sin `?tab=altas` (verificado que falla contra el código anterior), entrada con `?tab=altas` explícito, apertura/cierre de pendientes de Alta y de Modificación, y el payload de regresión completo.
+
 ## fix/rubi-normal-form-diagnostics — diagnóstico de formularios normales de Secretaría (INTEGRADA en develop, merge `--no-ff`)
 
 > Corrige un fallo funcional confirmado en la validación manual en DEV: Rubi no sabía diagnosticar formularios normales de Secretaría (fuera del panel de Rubi), solo los workflows embebidos e Inscripciones. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones ejecutadas, sin Gemini real.
