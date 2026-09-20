@@ -114,7 +114,12 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
   asociadoEnEdicion: Asociado | null = null;
   tipoAsociacion: number | null = null;
   submitted = false;
-  private formDiagnosticsSub?: Subscription;
+  // G (form-diagnostics, formulario normal): bolsa unica para todas las
+  // suscripciones que deben mantener el diagnostico al dia sin que el
+  // usuario toque el formulario (valueChanges del propio altaForm y
+  // cualquier dependencia externa relevante, p.ej. el ejercicio
+  // seleccionado). Una unica limpieza en ngOnDestroy.
+  private readonly formDiagnosticsSub = new Subscription();
 
   readonly tipoOpciones = ['Hoguera adulta', 'Hoguera infantil'];
   readonly pageSize = 10;
@@ -167,7 +172,14 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
     // G (form-diagnostics, formulario normal): reacciona a cada tecla del
     // formulario real de Secretaria (no solo al abrir/cambiar de pestana),
     // igual que ya hace InscripcionesComponent.watchFormDiagnostics().
-    this.formDiagnosticsSub = this.altaForm.valueChanges.subscribe(() => this.syncRubiScreenContext());
+    this.formDiagnosticsSub.add(this.altaForm.valueChanges.subscribe(() => this.syncRubiScreenContext()));
+    // Bug real (validacion manual DEV): `accionesBloqueadasPorEjercicio` (y
+    // por tanto el issue ALTA_EJERCICIO_NO_DISPONIBLE) depende del ejercicio
+    // GLOBAL seleccionado, que el usuario puede cambiar sin tocar el
+    // formulario ni cambiar de pestana. Sin esta suscripcion, cambiar a un
+    // ejercicio historico dejaria un formDiagnostics obsoleto hasta el
+    // siguiente evento local.
+    this.formDiagnosticsSub.add(this.ejercicioService.selectedChanges.subscribe(() => this.syncRubiScreenContext()));
     this.syncRubiScreenContext();
 
     if (this.asociacionId) {
@@ -193,7 +205,7 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.formDiagnosticsSub?.unsubscribe();
+    this.formDiagnosticsSub.unsubscribe();
     this.rubiScreenContext.clear('asociados');
   }
 

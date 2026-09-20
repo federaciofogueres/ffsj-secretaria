@@ -1,6 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { RouterTestingModule } from '@angular/router/testing';
-import { of } from 'rxjs';
+import { BehaviorSubject, of } from 'rxjs';
 import { FfsjDialogAlertService } from 'ffsj-web-components';
 
 import { CensoService } from '../core/censo.service';
@@ -16,6 +16,10 @@ describe('AsociadosGestionComponent', () => {
   let fixture: ComponentFixture<AsociadosGestionComponent>;
   let secretariaService: jasmine.SpyObj<SecretariaService>;
   let asociadosService: jasmine.SpyObj<AsociadosService>;
+  // G (form-diagnostics, cambio de ejercicio): backed por un BehaviorSubject
+  // real para poder reproducir en los tests un cambio de ejercicio emitido
+  // por selectedChanges (el selector global), no solo un valor estatico.
+  let ejercicioSeleccionado: BehaviorSubject<{ ejercicio: number; activo: boolean } | null>;
 
   const presidente = {
     id: 100,
@@ -96,6 +100,13 @@ describe('AsociadosGestionComponent', () => {
     censoService.getCargos.and.returnValue(of([{ id: 1, nombre: 'Presidente', requerido: 1 } as any]));
     censoService.getAsociacion.and.returnValue(of({ tipo_asociacion: 2 } as any));
 
+    ejercicioSeleccionado = new BehaviorSubject<{ ejercicio: number; activo: boolean } | null>({ ejercicio: new Date().getFullYear(), activo: true });
+    const ejercicioServiceMock = {
+      selectedChanges: ejercicioSeleccionado.asObservable(),
+      get selectedSnapshot() { return ejercicioSeleccionado.value; },
+      get isSelectedActive() { return Boolean(ejercicioSeleccionado.value?.activo); }
+    };
+
     await TestBed.configureTestingModule({
       imports: [RouterTestingModule, AsociadosGestionComponent],
       providers: [
@@ -103,7 +114,7 @@ describe('AsociadosGestionComponent', () => {
         { provide: AsociadosService, useValue: asociadosService },
         { provide: CensoService, useValue: censoService },
         { provide: PermissionsService, useValue: { hasPermission: () => true } },
-        { provide: EjercicioService, useValue: { isSelectedActive: true, selectedSnapshot: { ejercicio: new Date().getFullYear(), activo: true } } },
+        { provide: EjercicioService, useValue: ejercicioServiceMock },
         { provide: FfsjDialogAlertService, useValue: { openDialogAlert: () => ({ afterClosed: () => of(null) }) } }
       ]
     }).compileComponents();
@@ -226,12 +237,48 @@ describe('AsociadosGestionComponent', () => {
       expect(issues).toContain(jasmine.objectContaining({ code: 'ALTA_CARGO_REQUERIDO', source: 'client' }));
     });
 
-    it('explica el ejercicio no activo como issue, igual que ya bloquea el envio real', () => {
-      const ejercicioService = TestBed.inject(EjercicioService) as any;
-      ejercicioService.isSelectedActive = false;
-      component.setTab('altas');
-      const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
-      expect(issues).toContain(jasmine.objectContaining({ code: 'ALTA_EJERCICIO_NO_DISPONIBLE', source: 'client' }));
+    // Bug de contexto (validacion manual DEV): `accionesBloqueadasPorEjercicio`
+    // depende del selector GLOBAL de ejercicio, que el usuario puede cambiar
+    // sin tocar el formulario, sin cambiar de pestana y sin pulsar ningun
+    // boton. Esta suite usa unicamente `ejercicioSeleccionado.next(...)` (el
+    // mismo Observable real que consume el componente via
+    // `selectedChanges`), nunca `setTab()`/`patchValue()`/una llamada manual
+    // a sync, para reproducir exactamente el caso real.
+    describe('cambio de ejercicio via selectedChanges (sin tocar el formulario)', () => {
+      it('con el formulario de Altas visible y el ejercicio activo, no hay ALTA_EJERCICIO_NO_DISPONIBLE', () => {
+        component.setTab('altas');
+        const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+        expect(issues.some(issue => issue.code === 'ALTA_EJERCICIO_NO_DISPONIBLE')).toBeFalse();
+      });
+
+      it('emitir un ejercicio NO activo por selectedChanges anade ALTA_EJERCICIO_NO_DISPONIBLE de inmediato, sin ninguna otra accion', () => {
+        component.setTab('altas');
+        expect(rubiScreenContext.current?.state?.formDiagnostics?.issues.some(issue => issue.code === 'ALTA_EJERCICIO_NO_DISPONIBLE')).toBeFalse();
+
+        ejercicioSeleccionado.next({ ejercicio: 2020, activo: false });
+
+        const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+        expect(issues).toContain(jasmine.objectContaining({ code: 'ALTA_EJERCICIO_NO_DISPONIBLE', source: 'client' }));
+      });
+
+      it('volver a emitir un ejercicio activo hace desaparecer ALTA_EJERCICIO_NO_DISPONIBLE de inmediato', () => {
+        component.setTab('altas');
+        ejercicioSeleccionado.next({ ejercicio: 2020, activo: false });
+        expect(rubiScreenContext.current?.state?.formDiagnostics?.issues.some(issue => issue.code === 'ALTA_EJERCICIO_NO_DISPONIBLE')).toBeTrue();
+
+        ejercicioSeleccionado.next({ ejercicio: new Date().getFullYear(), activo: true });
+
+        const issues = rubiScreenContext.current?.state?.formDiagnostics?.issues || [];
+        expect(issues.some(issue => issue.code === 'ALTA_EJERCICIO_NO_DISPONIBLE')).toBeFalse();
+      });
+
+      it('limpieza: ngOnDestroy desuscribe de selectedChanges (un evento posterior ya no toca el screenContext)', () => {
+        component.setTab('altas');
+        fixture.destroy();
+        rubiScreenContext.clear();
+        ejercicioSeleccionado.next({ ejercicio: 2020, activo: false });
+        expect(rubiScreenContext.current).toBeNull();
+      });
     });
 
     it('CASO D: cambiar de Altas a Solicitudes hace desaparecer formDiagnostics de inmediato', () => {
