@@ -132,7 +132,7 @@ describe('RubiAltaComponent', () => {
   it('formDiagnostics reports present=true valid=true and no issues on a valid, untouched form', () => {
     fillValidAdult();
     const diagnostics = component.formDiagnostics();
-    expect(diagnostics).toEqual({ present: true, valid: true, submitted: false, issues: [] });
+    expect(diagnostics).toEqual({ present: true, valid: true, submitted: false, issues: [], totalIssues: 0, truncated: false });
   });
 
   it('formDiagnostics surfaces a safe backend code (e.g. cargo no longer available) as a server issue', () => {

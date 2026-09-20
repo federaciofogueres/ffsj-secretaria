@@ -32,12 +32,20 @@ export function buildFormDiagnostics(
   const clientIssues: RubiFormDiagnosticIssue[] = [];
   collect(root, '', fieldMeta, clientIssues);
   const maxIssues = options.maxIssues ?? DEFAULT_MAX_ISSUES;
-  const issues = [...clientIssues, ...extraIssues].slice(0, maxIssues);
+  // G (form-diagnostics, correccion): `totalIssues` se calcula SIEMPRE antes
+  // de recortar, para que Rubi nunca afirme un numero de problemas menor que
+  // el real cuando hay mas de `maxIssues`. Es solo un recuento (metadata
+  // segura, nunca un dato de usuario), igual que `current` ya lo era.
+  const combined = [...clientIssues, ...extraIssues];
+  const totalIssues = combined.length;
+  const issues = combined.slice(0, maxIssues);
   return {
     present: true,
     valid: root.valid && !extraIssues.length,
     ...(options.submitted !== undefined ? { submitted: options.submitted } : {}),
-    issues
+    issues,
+    totalIssues,
+    truncated: totalIssues > issues.length
   };
 }
 

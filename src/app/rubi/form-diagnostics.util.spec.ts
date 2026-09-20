@@ -10,7 +10,7 @@ describe('buildFormDiagnostics', () => {
   it('reports a valid form with no issues', () => {
     const form = new FormGroup({ nombre: new FormControl('Ana', Validators.required) });
     const diagnostics = buildFormDiagnostics(form);
-    expect(diagnostics).toEqual({ present: true, valid: true, issues: [] });
+    expect(diagnostics).toEqual({ present: true, valid: true, issues: [], totalIssues: 0, truncated: false });
   });
 
   it('extracts required, without ever including the field value', () => {
@@ -122,6 +122,39 @@ describe('buildFormDiagnostics', () => {
     for (let index = 0; index < 20; index += 1) controls[`campo${index}`] = new FormControl('', Validators.required);
     const form = new FormGroup(controls);
     expect(buildFormDiagnostics(form, { maxIssues: 3 }).issues.length).toBe(3);
+  });
+
+  // Correccion (rubi-auditoria-resultados.json): totalIssues se calcula SIEMPRE
+  // antes de recortar, para que Rubi nunca afirme un numero de problemas menor
+  // que el real cuando hay mas de maxIssues.
+  function formWithErrors(count: number): FormGroup {
+    const controls: Record<string, FormControl> = {};
+    for (let index = 0; index < count; index += 1) controls[`campo${index}`] = new FormControl('', Validators.required);
+    return new FormGroup(controls);
+  }
+
+  it('reports totalIssues=issues.length and truncated=false when everything fits under the limit', () => {
+    const diagnostics = buildFormDiagnostics(formWithErrors(3));
+    expect(diagnostics.issues.length).toBe(3);
+    expect(diagnostics.totalIssues).toBe(3);
+    expect(diagnostics.truncated).toBe(false);
+  });
+
+  it('reports the real totalIssues and truncated=true when there are more errors than maxIssues', () => {
+    const diagnostics = buildFormDiagnostics(formWithErrors(12));
+    expect(diagnostics.issues.length).toBe(8);
+    expect(diagnostics.totalIssues).toBe(12);
+    expect(diagnostics.truncated).toBe(true);
+  });
+
+  it('never exposes a control value anywhere in the diagnostics, truncated or not', () => {
+    const form = new FormGroup({
+      ...Object.fromEntries(Array.from({ length: 12 }, (_, index) => [`campo${index}`, new FormControl('', Validators.required)])),
+      telefono: new FormControl('600123456', Validators.pattern(/^[0-9]{5}$/))
+    });
+    const diagnostics = buildFormDiagnostics(form, { fieldMeta: { telefono: { label: 'Telefono' } } });
+    expect(diagnostics.truncated).toBe(true);
+    expect(JSON.stringify(diagnostics)).not.toContain('600123456');
   });
 
   it('includes the submitted flag only when explicitly provided', () => {

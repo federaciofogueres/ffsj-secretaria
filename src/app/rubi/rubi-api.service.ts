@@ -31,6 +31,12 @@ export interface RubiFormDiagnostics {
   valid: boolean;
   submitted?: boolean;
   issues: RubiFormDiagnosticIssue[];
+  // G (form-diagnostics, correccion): `totalIssues` es el recuento real ANTES
+  // de recortar a `issues` (metadata segura, nunca un dato de usuario);
+  // `truncated` indica si `issues` no los contiene todos. Sin ellos (contrato
+  // previo) se asume el comportamiento antiguo: `issues` es todo lo que hay.
+  totalIssues?: number;
+  truncated?: boolean;
 }
 export interface RubiScreenContext {
   version: 1; module: RubiModule; view?: string; tab?: string;
