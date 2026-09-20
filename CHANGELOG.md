@@ -1,5 +1,24 @@
 # Changelog
 
+## 1.9.0#RUBI — Pilot Instrumentation
+
+> Primera versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): instrumentación necesaria para que el piloto produzca información fiable. La mayor parte de esta versión vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio aporta la distinción real cancelado/caducado/derivado-a-flujo-normal en el tracking de eventos y el selector de motivo del 👎. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real.
+
+### El feedback negativo ahora deja elegir el motivo real (antes se fijaba siempre a "no útil")
+
+- `rubi-panel.component.ts`/`.html`: al pulsar 👎 se muestra un selector con las 4 opciones ya soportadas por el backend (`incorrect`/`not_understood`/`not_useful`/`technical_issue`, i18n ES/VA/EN) en vez de enviar el feedback de inmediato con un motivo fijo. El feedback también incluye ahora el `flow` activo (alta/modificación/baja/documentación/comunicación) cuando hay un workflow de Rubi abierto en ese momento.
+- `RubiApiService.feedback()` deja de forzar `reason: 'not_useful'`; el motivo (y el `flow`) los decide quien llama.
+
+### Distinción real entre cancelado, caducado y derivado al flujo normal
+
+- Causa: `onAltaClosed`/`onModificacionClosed`/`onBajaClosed`/`onRegistroClosed` reportaban siempre `flow_cancelled` al backend, incluso cuando el motivo real era `'expired'` (la preparación caducó) — la métrica "expirados" del funnel (roadmap/RUBI-v2.md 5.1/5.2) era imposible de calcular con ese dato. Además, usar el botón "usar el flujo normal" (`openNormalAltaFlow()` y equivalentes) no se reportaba en absoluto.
+- Corrección: se reporta `flow_expired` cuando el motivo es `'expired'` (nunca ya `flow_cancelled` en ese caso), y `flow_redirected` al elegir el flujo normal existente. Ver `ffsj-secretaria-api` para cómo se persiste y se calcula el funnel a partir de estos eventos.
+
+### Contrato y pruebas
+
+- 243/243 pruebas de frontend (10 nuevas en `rubi-panel.component.spec.ts`, 1 actualizada en `rubi-api.service.spec.ts` para reflejar que el motivo ya no es fijo), build `development` correcto, `git diff --check` limpio.
+- Privacidad sin cambios: el feedback nunca incluye el texto del mensaje ni de la respuesta (verificado en test), solo la clasificación estructurada ya existente más el motivo elegido.
+
 ## fix/rubi-normal-form-visibility — corrige la visibilidad real del formulario de Altas (INTEGRADA en develop, merge `--no-ff`)
 
 > Bug real detectado en la validación manual en DEV sobre el fix anterior (`fix/rubi-normal-form-diagnostics`): la validación seguía fallando. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin Gemini real. No requiere cambios en la API.

@@ -35,6 +35,7 @@ const translations: Record<AppLanguage, Record<string, string>> = {
 
 Object.assign(translations.es, {
   'rubi.pilot': 'Piloto interno', 'rubi.feedback.question': '¿Te ha resultado útil?', 'rubi.feedback.helpful': 'Útil', 'rubi.feedback.notHelpful': 'No útil', 'rubi.feedback.thanks': 'Gracias por tu feedback',
+  'rubi.feedback.reasonQuestion': '¿Qué ha ocurrido?', 'rubi.feedback.reason.notUnderstood': 'No ha entendido mi pregunta.', 'rubi.feedback.reason.incorrect': 'La respuesta era incorrecta.', 'rubi.feedback.reason.notUseful': 'No me ha resultado útil.', 'rubi.feedback.reason.technicalIssue': 'Ha habido un problema técnico.', 'rubi.feedback.reasonCancel': 'Cancelar',
   'rubi.alta.error.cargo': 'El cargo seleccionado no está disponible. Revisa la selección o utiliza el flujo normal.',
   'rubi.alta.error.normalFlow': 'Este caso requiere revisión mediante el flujo normal de altas.',
   'rubi.alta.error.expired': 'La preparación ya no está vigente. Vuelve a preparar el alta.',
@@ -54,6 +55,7 @@ Object.assign(translations.es, {
 });
 Object.assign(translations.va, {
   'rubi.pilot': 'Pilot intern', 'rubi.feedback.question': 'T’ha resultat útil?', 'rubi.feedback.helpful': 'Útil', 'rubi.feedback.notHelpful': 'No útil', 'rubi.feedback.thanks': 'Gràcies pel teu feedback',
+  'rubi.feedback.reasonQuestion': 'Què ha passat?', 'rubi.feedback.reason.notUnderstood': 'No ha entès la meua pregunta.', 'rubi.feedback.reason.incorrect': 'La resposta era incorrecta.', 'rubi.feedback.reason.notUseful': 'No m’ha resultat útil.', 'rubi.feedback.reason.technicalIssue': 'Hi ha hagut un problema tècnic.', 'rubi.feedback.reasonCancel': 'Cancel·lar',
   'rubi.alta.error.cargo': 'El càrrec seleccionat no està disponible. Revisa la selecció o utilitza el flux normal.',
   'rubi.alta.error.normalFlow': "Este cas requerix revisió mitjançant el flux normal d'altes.",
   'rubi.alta.error.expired': "La preparació ja no està vigent. Torna a preparar l'alta.",
@@ -73,6 +75,7 @@ Object.assign(translations.va, {
 });
 Object.assign(translations.en, {
   'rubi.pilot': 'Internal pilot', 'rubi.feedback.question': 'Was this helpful?', 'rubi.feedback.helpful': 'Helpful', 'rubi.feedback.notHelpful': 'Not helpful', 'rubi.feedback.thanks': 'Thank you for your feedback',
+  'rubi.feedback.reasonQuestion': 'What happened?', 'rubi.feedback.reason.notUnderstood': 'It did not understand my question.', 'rubi.feedback.reason.incorrect': 'The answer was incorrect.', 'rubi.feedback.reason.notUseful': 'It was not useful to me.', 'rubi.feedback.reason.technicalIssue': 'There was a technical problem.', 'rubi.feedback.reasonCancel': 'Cancel',
   'rubi.alta.error.cargo': 'The selected role is unavailable. Review the selection or use the standard flow.',
   'rubi.alta.error.normalFlow': 'This case requires review through the standard registration flow.',
   'rubi.alta.error.expired': 'The preparation is no longer valid. Prepare the registration again.',

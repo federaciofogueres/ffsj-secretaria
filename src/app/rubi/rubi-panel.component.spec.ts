@@ -6,7 +6,7 @@ import { AuthService } from 'ffsj-web-components';
 import { BehaviorSubject, of, throwError } from 'rxjs';
 
 import { I18nService } from '../core/i18n.service';
-import { RubiApiService, RubiResponse } from './rubi-api.service';
+import { RubiAction, RubiApiService, RubiResponse } from './rubi-api.service';
 import { RubiConversationService } from './rubi-conversation.service';
 import { RubiPanelComponent } from './rubi-panel.component';
 import { RubiScreenContextService } from './rubi-screen-context.service';
@@ -372,6 +372,63 @@ describe('RubiPanelComponent', () => {
     expect(api.feedback).toHaveBeenCalledWith('helpful', { intent: 'help', tool: 'search_help' });
     expect(JSON.stringify(api.feedback.calls.mostRecent().args)).not.toContain('Pregunta con datos');
     expect(answer.text).toBe('Respuesta segura');
+  });
+
+  it('1.9.0#RUBI: un 👎 muestra el selector de motivo y NO envia feedback hasta elegir uno', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
+    component.send('Pregunta');
+    const answer = component.messages[component.messages.length - 1];
+    component.sendFeedback(answer, 'not_helpful');
+    const updated = component.messages.find(message => message.id === answer.id)!;
+    expect(updated.feedbackReasonPending).toBeTrue();
+    expect(api.feedback).not.toHaveBeenCalled();
+  });
+
+  it('1.9.0#RUBI: elegir un motivo envia el feedback con ese motivo exacto (nunca uno fijo)', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
+    component.send('Pregunta');
+    const answer = component.messages[component.messages.length - 1];
+    component.submitFeedback(answer, 'not_helpful', 'technical_issue');
+    expect(api.feedback).toHaveBeenCalledWith('not_helpful', { reason: 'technical_issue', intent: 'help', tool: 'search_help' });
+    const updated = component.messages.find(message => message.id === answer.id)!;
+    expect(updated.feedbackReasonPending).toBeFalse();
+  });
+
+  it('1.9.0#RUBI: submitFeedback incluye el flow activo cuando hay un workflow de Rubi abierto', () => {
+    api.message.and.returnValue(of({
+      message: 'Respuesta', intent: 'start_alta', actions: [{ type: 'start_flow', flow: 'alta' } as RubiAction], tool: { name: 'start_alta', status: 'completed' }, errors: [], metadata: { success: true }
+    }));
+    component.send('Quiero dar de alta a alguien');
+    component.executeAction({ type: 'start_flow', flow: 'alta' } as RubiAction);
+    const answer = component.messages.find(message => message.author === 'rubi')!;
+    component.submitFeedback(answer, 'not_helpful', 'incorrect');
+    expect(api.feedback).toHaveBeenCalledWith('not_helpful', { reason: 'incorrect', intent: 'start_alta', tool: 'start_alta', flow: 'alta' });
+  });
+
+  it('1.9.0#RUBI: cancelFeedbackReason oculta el selector sin llamar a la API', () => {
+    api.message.and.returnValue(of({ message: 'Respuesta', intent: 'help', actions: [], tool: { name: 'search_help', status: 'completed' }, errors: [], metadata: { success: true } }));
+    component.send('Pregunta');
+    const answer = component.messages[component.messages.length - 1];
+    component.sendFeedback(answer, 'not_helpful');
+    component.cancelFeedbackReason(answer);
+    const updated = component.messages.find(message => message.id === answer.id)!;
+    expect(updated.feedbackReasonPending).toBeFalse();
+    expect(api.feedback).not.toHaveBeenCalled();
+  });
+
+  it('1.9.0#RUBI: cerrar el alta por caducidad reporta flow_expired, no flow_cancelled (funnel de 5.1/5.2)', () => {
+    component.onAltaClosed('expired');
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_expired', stage: 'alta' });
+  });
+
+  it('1.9.0#RUBI: cerrar el alta por cancelacion del usuario sigue reportando flow_cancelled', () => {
+    component.onAltaClosed('cancelled');
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_cancelled', stage: 'alta' });
+  });
+
+  it('1.9.0#RUBI: usar el flujo normal de alta reporta flow_redirected (derivados al flujo normal)', () => {
+    component.openNormalAltaFlow();
+    expect(api.trackEvent).toHaveBeenCalledWith({ event: 'flow_redirected', stage: 'alta' });
   });
 
   it('RUBI-20 an association actor never sees the target association picker', () => {

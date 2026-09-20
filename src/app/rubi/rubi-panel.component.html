@@ -55,11 +55,19 @@
         <div *ngIf="item.actions?.length" class="rubi-actions">
           <button *ngFor="let action of item.actions" type="button" [disabled]="loading" (click)="executeAction(action)">{{ actionLabel(action) }}<i class="bi bi-arrow-right" aria-hidden="true"></i></button>
         </div>
-        <div *ngIf="item.author === 'rubi' && (item.intent || item.tool)" class="rubi-feedback" [attr.aria-label]="'rubi.feedback.question' | t">
+        <div *ngIf="item.author === 'rubi' && (item.intent || item.tool) && !item.feedbackReasonPending" class="rubi-feedback" [attr.aria-label]="'rubi.feedback.question' | t">
           <span *ngIf="!item.feedback">{{ 'rubi.feedback.question' | t }}</span>
           <button type="button" [disabled]="item.feedbackPending || !!item.feedback" [class.is-selected]="item.feedback === 'helpful'" (click)="sendFeedback(item, 'helpful')" [attr.aria-label]="'rubi.feedback.helpful' | t"><i class="bi bi-hand-thumbs-up" aria-hidden="true"></i></button>
           <button type="button" [disabled]="item.feedbackPending || !!item.feedback" [class.is-selected]="item.feedback === 'not_helpful'" (click)="sendFeedback(item, 'not_helpful')" [attr.aria-label]="'rubi.feedback.notHelpful' | t"><i class="bi bi-hand-thumbs-down" aria-hidden="true"></i></button>
           <span *ngIf="item.feedback">{{ 'rubi.feedback.thanks' | t }}</span>
+        </div>
+        <div *ngIf="item.feedbackReasonPending" class="rubi-feedback-reason">
+          <span>{{ 'rubi.feedback.reasonQuestion' | t }}</span>
+          <button type="button" (click)="submitFeedback(item, 'not_helpful', 'not_understood')">{{ 'rubi.feedback.reason.notUnderstood' | t }}</button>
+          <button type="button" (click)="submitFeedback(item, 'not_helpful', 'incorrect')">{{ 'rubi.feedback.reason.incorrect' | t }}</button>
+          <button type="button" (click)="submitFeedback(item, 'not_helpful', 'not_useful')">{{ 'rubi.feedback.reason.notUseful' | t }}</button>
+          <button type="button" (click)="submitFeedback(item, 'not_helpful', 'technical_issue')">{{ 'rubi.feedback.reason.technicalIssue' | t }}</button>
+          <button type="button" class="rubi-feedback-reason-cancel" (click)="cancelFeedbackReason(item)">{{ 'rubi.feedback.reasonCancel' | t }}</button>
         </div>
       </div>
     </article>
