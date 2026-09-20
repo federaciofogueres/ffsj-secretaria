@@ -5,12 +5,22 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Subscription, finalize, forkJoin } from 'rxjs';
 
 import { EjercicioService } from '../core/ejercicio.service';
+import { I18nService } from '../core/i18n.service';
 import { RegistroDestinatario } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { RegistroAsistidoResultado, RegistroAsistidoPreparacion, RubiApiService } from './rubi-api.service';
+import { buildFormDiagnostics, FormDiagnosticFieldMeta } from './form-diagnostics.util';
+import { RegistroAsistidoResultado, RegistroAsistidoPreparacion, RubiApiService, RubiFormDiagnosticIssue, RubiFormDiagnostics } from './rubi-api.service';
+
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  destinatarioId: 'rubi.registro.step.destinatario', titulo: 'rubi.registro.field.titulo', mensaje: 'rubi.registro.field.mensaje'
+};
+
+// Unicos codigos de backend con valor "de formulario" (adjunto o destinatario
+// invalidos); el resto (permisos, caducidad) no es corregible en el formulario.
+const SERVER_DIAGNOSTIC_CODES = new Set(['REGISTRO_DESTINATARIO_NO_VALIDO', 'REGISTRO_ADJUNTO_NO_VALIDO', 'REGISTRO_ADJUNTO_REQUERIDO']);
 
 @Component({
   selector: 'app-rubi-registro',
@@ -43,6 +53,7 @@ export class RubiRegistroComponent implements OnInit, OnDestroy {
   confirmationAccepted = false;
   errorKey = '';
   exerciseBlocked = false;
+  private lastServerIssue: RubiFormDiagnosticIssue | null = null;
   private expiryTimer?: ReturnType<typeof setTimeout>;
   private readonly discarded = new Set<string>();
   private readonly subscriptions = new Subscription();
@@ -52,7 +63,8 @@ export class RubiRegistroComponent implements OnInit, OnDestroy {
     private readonly api: RubiApiService,
     private readonly secretaria: SecretariaService,
     private readonly permissions: PermissionsService,
-    private readonly ejercicios: EjercicioService
+    private readonly ejercicios: EjercicioService,
+    readonly i18n: I18nService
   ) {}
 
   get requiereAdjunto(): boolean { return this.tipo === 'documentacion'; }
@@ -81,8 +93,29 @@ export class RubiRegistroComponent implements OnInit, OnDestroy {
     return this.form.valid && !this.exerciseBlocked && (!this.requiereAdjunto || this.adjuntos.length > 0);
   }
 
+  // G (form-diagnostics): unico punto de lectura para Rubi; nunca expone
+  // `form.value` ni los ficheros adjuntos, solo metadatos de validacion.
+  // Incluye, ademas de los errores de Angular, las dos condiciones de negocio
+  // que tambien bloquean el envio sin ser errores de un FormControl: falta de
+  // adjunto obligatorio y ejercicio no activo (comunicacion).
+  formDiagnostics(): RubiFormDiagnostics {
+    const fieldMeta: Record<string, FormDiagnosticFieldMeta> = {};
+    Object.entries(FIELD_LABEL_KEYS).forEach(([field, key]) => fieldMeta[field] = { label: this.i18n.t(key) });
+    const extraIssues: RubiFormDiagnosticIssue[] = [];
+    if (this.requiereAdjunto && !this.adjuntos.length) extraIssues.push({ code: 'REGISTRO_ADJUNTO_REQUERIDO', source: 'client' });
+    if (this.exerciseBlocked) extraIssues.push({ code: 'REGISTRO_EJERCICIO_NO_ACTIVO', source: 'client' });
+    if (this.lastServerIssue) extraIssues.push(this.lastServerIssue);
+    return buildFormDiagnostics(this.form, { submitted: this.submitted, fieldMeta, extraIssues });
+  }
+
+  private diagnosticIssueFor(error: unknown): RubiFormDiagnosticIssue | null {
+    if (!(error instanceof HttpErrorResponse)) return null;
+    const code = String(error.error?.details?.code || '');
+    return SERVER_DIAGNOSTIC_CODES.has(code) ? { code, source: 'server' } : null;
+  }
+
   prepare(): void {
-    this.submitted = true; this.errorKey = '';
+    this.submitted = true; this.errorKey = ''; this.lastServerIssue = null;
     if (!this.canSubmit) { this.form.markAllAsTouched(); this.errorKey = 'rubi.registro.error.form'; return; }
     const { destinatarioId, titulo, mensaje } = this.form.getRawValue();
     this.loading = true;
@@ -93,11 +126,11 @@ export class RubiRegistroComponent implements OnInit, OnDestroy {
           this.prepared = result; this.confirmationAccepted = false;
           if (result.confirmacion) { this.preparationStateChanged.emit(true); this.scheduleExpiry(result.confirmacion.expiraAt); }
         },
-        error: error => this.errorKey = this.errorFor(error)
+        error: error => { this.errorKey = this.errorFor(error); this.lastServerIssue = this.diagnosticIssueFor(error); }
       }));
   }
 
-  edit(): void { this.discardPrepared(); this.prepared = null; this.confirmationAccepted = false; this.clearTimer(); this.preparationStateChanged.emit(false); }
+  edit(): void { this.discardPrepared(); this.prepared = null; this.lastServerIssue = null; this.confirmationAccepted = false; this.clearTimer(); this.preparationStateChanged.emit(false); }
   cancel(): void { this.discardPrepared(); this.clearSensitive(); this.closed.emit('cancelled'); }
   continueInNormalFlow(): void { this.discardPrepared(); this.clearSensitive(); this.openNormalFlow.emit(); }
 
@@ -155,6 +188,6 @@ export class RubiRegistroComponent implements OnInit, OnDestroy {
     if (!reference || this.discarded.has(reference)) return;
     this.discarded.add(reference); this.api.cancelarPreparacionRegistro(reference).subscribe({ error: () => undefined });
   }
-  private clearSensitive(): void { this.form.reset(); this.adjuntos = []; this.prepared = null; this.confirmationAccepted = false; this.clearTimer(); this.preparationStateChanged.emit(false); }
+  private clearSensitive(): void { this.form.reset(); this.adjuntos = []; this.prepared = null; this.lastServerIssue = null; this.confirmationAccepted = false; this.clearTimer(); this.preparationStateChanged.emit(false); }
   private clearTimer(): void { if (this.expiryTimer) clearTimeout(this.expiryTimer); this.expiryTimer = undefined; }
 }

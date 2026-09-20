@@ -58,6 +58,18 @@ describe('RubiPanelComponent', () => {
     expect(component.messages.length).toBe(1);
   });
 
+  // A-06 (post-auditoria, hallazgo visual manual): el launcher flotante no debe
+  // quedar visible/solapado encima del propio panel mientras esta abierto.
+  it('hides the floating launcher while the panel is open and shows it again once closed', () => {
+    expect(fixture.nativeElement.querySelector('.rubi-launcher')).toBeTruthy();
+    component.show();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.rubi-launcher')).toBeFalsy();
+    component.close();
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.rubi-launcher')).toBeTruthy();
+  });
+
   it('keeps the launcher unavailable for a user outside the pilot', () => {
     api.access.and.returnValue(of({ enabled: true, authorized: false, scope: 'association', canSelectTargetAssociation: false }));
     const deniedFixture = TestBed.createComponent(RubiPanelComponent);
@@ -132,6 +144,38 @@ describe('RubiPanelComponent', () => {
     const args = api.message.calls.mostRecent().args;
     expect(args[4]?.state).toEqual({ hasOpenRegistration: true });
     expect(JSON.stringify(args[4])).not.toContain('Persona');
+  });
+
+  // G (form-diagnostics): CASO G6/G7 - el diagnostico de un flujo nunca debe
+  // sobrevivir a un cambio de flujo o a su cancelacion.
+  it('propagates the active workflow formDiagnostics into the screen context, and drops it once the workflow is no longer active', () => {
+    api.message.and.returnValue(of({ message: 'ok', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    const diagnostics = { present: true, valid: false, submitted: true, issues: [{ field: 'telefono', code: 'pattern', source: 'client' as const }] };
+    (component as any).altaFlow = { formDiagnostics: () => diagnostics };
+    component.executeAction({ type: 'start_flow', flow: 'alta' });
+    component.draft = '¿Qué me falta?';
+    component.send();
+    const withAlta = api.message.calls.mostRecent().args[4];
+    expect(withAlta?.state?.formDiagnostics).toEqual(diagnostics);
+
+    component.altaActive = false;
+    component.draft = 'otra pregunta';
+    component.send();
+    const afterClosed = api.message.calls.mostRecent().args[4];
+    expect(afterClosed?.state?.formDiagnostics).toBeUndefined();
+  });
+
+  it('never mixes the formDiagnostics of two different workflows (switching alta -> baja)', () => {
+    api.message.and.returnValue(of({ message: 'ok', intent: 'help', actions: [], errors: [], metadata: { success: true } }));
+    (component as any).altaFlow = { formDiagnostics: () => ({ present: true, valid: false, issues: [{ code: 'required', source: 'client' as const }] }) };
+    component.executeAction({ type: 'start_flow', flow: 'alta' });
+    component.altaActive = false;
+    const bajaDiagnostics = { present: true, valid: false, issues: [{ field: 'motivo', code: 'maxlength', source: 'client' as const }] };
+    (component as any).bajaFlow = { formDiagnostics: () => bajaDiagnostics };
+    component.executeAction({ type: 'start_flow', flow: 'baja' });
+    component.draft = '¿Qué me falta?';
+    component.send();
+    expect(api.message.calls.mostRecent().args[4]?.state?.formDiagnostics).toEqual(bajaDiagnostics);
   });
 
   it('sends only abstract baja preparation state to the screen context', () => {
@@ -554,7 +598,7 @@ describe('RubiPanelComponent', () => {
       component.send('¿Qué estoy viendo?');
       const sent = JSON.stringify(api.message.calls.mostRecent().args[4]);
       expect(sent).not.toMatch(/nombre|apellidos|nif|dni|email|telefono|direccion/i);
-      const allowedKeys = new Set(['version', 'module', 'view', 'tab', 'state', 'canCreate', 'hasOpenRegistration', 'hasOpenModification', 'hasOpenBaja', 'hasOpenDocumentacion', 'hasOpenComunicacion', 'missingRequiredFields', 'selectedActivityId', 'selectedInscriptionId']);
+      const allowedKeys = new Set(['version', 'module', 'view', 'tab', 'state', 'canCreate', 'hasOpenRegistration', 'hasOpenModification', 'hasOpenBaja', 'hasOpenDocumentacion', 'hasOpenComunicacion', 'missingRequiredFields', 'selectedActivityId', 'selectedInscriptionId', 'formDiagnostics']);
       const context = api.message.calls.mostRecent().args[4] as unknown as Record<string, unknown>;
       for (const key of Object.keys(context)) expect(allowedKeys.has(key)).toBeTrue();
       for (const key of Object.keys((context['state'] as Record<string, unknown>) || {})) expect(allowedKeys.has(key)).toBeTrue();

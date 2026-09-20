@@ -17,7 +17,26 @@ import { CargoCupoSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { TranslatePipe } from '../shared/translate.pipe';
-import { AltaConfirmacionResultado, AltaPreparacion, RubiApiService } from './rubi-api.service';
+import { buildFormDiagnostics, FormDiagnosticFieldMeta } from './form-diagnostics.util';
+import { AltaConfirmacionResultado, AltaPreparacion, RubiApiService, RubiFormDiagnosticIssue, RubiFormDiagnostics } from './rubi-api.service';
+
+// G (form-diagnostics): mismas claves i18n que usa la plantilla junto a cada
+// campo (metadata real del formulario, nunca DOM scraping) para que el label
+// que recibe Rubi sea exactamente el que ve la persona en pantalla.
+const FIELD_LABEL_KEYS: Record<string, string> = {
+  tipo: 'rubi.alta.field.type', identificacion: 'rubi.alta.field.identification', nacimiento: 'rubi.alta.field.birthDate',
+  nombre: 'rubi.alta.field.name', apellidos: 'rubi.alta.field.surnames', direccion: 'rubi.alta.field.address',
+  cp: 'rubi.alta.field.postcode', localidad: 'rubi.alta.field.city', provincia: 'rubi.alta.field.province',
+  telefono: 'rubi.alta.field.phone', email: 'rubi.alta.field.email',
+  representante1Nombre: 'rubi.alta.field.representativeName', representante1Telefono: 'rubi.alta.field.representativePhone',
+  representante2Nombre: 'rubi.alta.field.secondRepresentativeName', representante2Telefono: 'rubi.alta.field.secondRepresentativePhone'
+};
+
+// Unicos codigos de backend con valor para explicar por que un alta no se
+// puede enviar aunque el formulario este completo; el resto (permisos,
+// caducidad, duplicados) ya tiene su propio mensaje y no es informacion "de
+// formulario" que deba viajar en formDiagnostics.
+const SERVER_DIAGNOSTIC_CODES = new Set(['ALTA_CARGO_NO_DISPONIBLE', 'ALTA_REPRESENTACION_REQUERIDA']);
 
 @Component({
   selector: 'app-rubi-alta',
@@ -62,6 +81,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
   confirmed: AltaConfirmacionResultado | null = null;
   confirmationAccepted = false;
   expired = false;
+  private lastServerIssue: RubiFormDiagnosticIssue | null = null;
   private expiryTimer?: ReturnType<typeof setTimeout>;
   private readonly discardedReferences = new Set<string>();
   private readonly subscriptions = new Subscription();
@@ -127,6 +147,24 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     return this.cargos.filter(cargo => Boolean(cargo.esInfantil) === infantil);
   }
 
+  // G (form-diagnostics): unico punto de lectura para Rubi. Nunca expone
+  // `form.value`; solo metadatos de validacion ya calculados por Angular.
+  formDiagnostics(): RubiFormDiagnostics {
+    const fieldMeta: Record<string, FormDiagnosticFieldMeta> = {};
+    Object.entries(FIELD_LABEL_KEYS).forEach(([field, key]) => fieldMeta[field] = { label: this.i18n.t(key) });
+    return buildFormDiagnostics(this.form, {
+      submitted: this.submitted,
+      fieldMeta,
+      extraIssues: this.lastServerIssue ? [this.lastServerIssue] : []
+    });
+  }
+
+  private diagnosticIssueFor(error: unknown): RubiFormDiagnosticIssue | null {
+    if (!(error instanceof HttpErrorResponse)) return null;
+    const code = String(error.error?.details?.code || '');
+    return SERVER_DIAGNOSTIC_CODES.has(code) ? { code, source: 'server' } : null;
+  }
+
   controlInvalid(name: keyof typeof this.form.controls): boolean {
     const control = this.form.controls[name];
     return control.invalid && (control.touched || this.submitted);
@@ -144,6 +182,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
   prepare(): void {
     this.submitted = true;
     this.errorKey = '';
+    this.lastServerIssue = null;
     this.focusFirstControl();
     if (this.form.invalid || !this.selectedCargoIds.size) {
       this.form.markAllAsTouched();
@@ -203,7 +242,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
           this.preparationStateChanged.emit(true);
         }
       },
-      error: error => this.errorKey = this.errorFor(error)
+      error: error => { this.errorKey = this.errorFor(error); this.lastServerIssue = this.diagnosticIssueFor(error); }
     }));
   }
 
@@ -211,6 +250,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     this.discardPrepared();
     this.clearExpiryTimer();
     this.prepared = null;
+    this.lastServerIssue = null;
     this.confirmationAccepted = false;
     this.preparationStateChanged.emit(false);
     this.expired = false;
@@ -351,6 +391,7 @@ export class RubiAltaComponent implements OnInit, OnDestroy {
     this.form.reset({ tipo: 'Hoguera adulta' });
     this.selectedCargoIds.clear();
     this.prepared = null;
+    this.lastServerIssue = null;
   }
 
   private invalidateForContextChange(): void {
