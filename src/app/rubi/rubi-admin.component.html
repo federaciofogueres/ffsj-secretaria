@@ -289,13 +289,104 @@
         </ng-container>
       </section>
 
-      <!-- 6.1 de roadmap/RUBI-v2.md: subarea "Sugerencias" ya visible en la
-           navegacion de Configuracion -> Rubi, deshabilitada hasta 1.11.0#RUBI
-           (Improvement Suggestions). No se fabrica ningun dato ni sugerencia
-           en 1.10.0#RUBI. -->
+      <!-- 1.11.0#RUBI (Improvement Suggestions, 7.6/7.7): Fase A (deteccion)
+           y Fase B (redaccion) son responsabilidad del backend; esta seccion
+           solo muestra el resultado y permite las acciones administrativas
+           explicitas del ciclo de vida (7.7). Nunca se autoaplica nada. -->
       <section class="section-panel">
         <h2 class="h5">{{ 'rubi.admin.suggestions.title' | t }}</h2>
-        <p class="text-muted small mb-0">{{ 'rubi.admin.suggestions.disabled' | t }}</p>
+        <p class="text-muted small">{{ 'rubi.admin.suggestions.hint' | t }}</p>
+        <div class="d-flex gap-2 mb-2 align-items-center flex-wrap">
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'abiertas'" [class.btn-outline-secondary]="suggestionsFiltro !== 'abiertas'" (click)="setSuggestionsFiltro('abiertas')">{{ 'rubi.admin.suggestions.filter.open' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'DESCARTADA'" [class.btn-outline-secondary]="suggestionsFiltro !== 'DESCARTADA'" (click)="setSuggestionsFiltro('DESCARTADA')">{{ 'rubi.admin.suggestions.filter.discarded' | t }}</button>
+          <button class="btn btn-sm" [class.btn-foc-rojo]="suggestionsFiltro === 'CERRADA'" [class.btn-outline-secondary]="suggestionsFiltro !== 'CERRADA'" (click)="setSuggestionsFiltro('CERRADA')">{{ 'rubi.admin.suggestions.filter.closed' | t }}</button>
+          <button class="btn btn-sm btn-outline-secondary" type="button" (click)="loadSuggestions()">{{ 'rubi.admin.associations.refresh' | t }}</button>
+          <button class="btn btn-sm btn-foc-rojo ms-auto" type="button" [disabled]="analyzingSuggestions" (click)="runSuggestionAnalysis()">
+            <span *ngIf="analyzingSuggestions" class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            {{ 'rubi.admin.suggestions.analyze' | t }}
+          </button>
+        </div>
+        <p *ngIf="suggestionsLoading" class="rubi-admin-status" role="status"><span class="spinner-border spinner-border-sm"></span> {{ 'common.loading' | t }}</p>
+        <div class="alert alert-danger" *ngIf="suggestionsError">{{ suggestionsError | t }}</div>
+
+        <table class="table table-sm" *ngIf="!suggestionsLoading && suggestions.length">
+          <thead>
+            <tr>
+              <th>{{ 'rubi.admin.suggestions.col.status' | t }}</th>
+              <th>{{ 'rubi.admin.suggestions.col.suggestion' | t }}</th>
+              <th>{{ 'rubi.admin.suggestions.col.evidence' | t }}</th>
+              <th class="text-end">{{ 'rubi.admin.suggestions.col.priority' | t }}</th>
+              <th class="text-end">{{ 'rubi.admin.suggestions.col.confidence' | t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let suggestion of suggestions" class="rubi-suggestion-row" (click)="selectSuggestion(suggestion)">
+              <td><span class="badge" [class]="'rubi-suggestion-status--' + suggestion.status">{{ suggestion.status }}</span></td>
+              <td>{{ suggestion.title }}</td>
+              <td class="text-muted small">{{ suggestion.summary }}</td>
+              <td class="text-end">{{ suggestion.priority }}</td>
+              <td class="text-end">{{ suggestion.confidence | percent: '1.0-0' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="text-muted" *ngIf="!suggestionsLoading && !suggestions.length">{{ 'rubi.admin.suggestions.empty' | t }}</p>
+
+        <!-- 7.7: ficha de sugerencia. -->
+        <div class="rubi-suggestion-detail" *ngIf="selectedSuggestion as s">
+          <div class="d-flex justify-content-between align-items-start">
+            <h3 class="h6 mb-2">{{ s.title }}</h3>
+            <button class="btn btn-sm btn-outline-secondary" type="button" (click)="closeSuggestionDetail()">{{ 'rubi.admin.suggestions.detail.close' | t }}</button>
+          </div>
+          <div class="alert alert-danger" *ngIf="suggestionActionError">{{ suggestionActionError | t }}</div>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.whatDetected' | t }}</h4>
+          <p>{{ s.summary }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.why' | t }}</h4>
+          <ul class="list-unstyled small mb-0">
+            <li>{{ 'rubi.admin.suggestions.detail.sample' | t }}: {{ s.sampleSize }}</li>
+            <li>{{ 'rubi.admin.suggestions.detail.timesDetected' | t }}: {{ s.timesDetected }}</li>
+            <li *ngIf="s.dimensionValue">{{ s.dimensionType }}: {{ s.dimensionValue }}</li>
+          </ul>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.comparison' | t }}</h4>
+          <p class="small mb-0">
+            {{ 'rubi.admin.suggestions.detail.current' | t }}: {{ s.evidence.currentRate !== null && s.evidence.currentRate !== undefined ? (s.evidence.currentRate | percent: '1.0-1') : ('rubi.admin.suggestions.detail.noData' | t) }}
+            <ng-container *ngIf="s.evidence.baselineRate !== null && s.evidence.baselineRate !== undefined">
+              {{ 'rubi.admin.analytics.trends.vs' | t }} {{ s.evidence.baselineRate | percent: '1.0-1' }} ({{ 'rubi.admin.suggestions.detail.baseline' | t }})
+            </ng-container>
+          </p>
+
+          <ng-container *ngIf="s.measurementResult as m">
+            <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.measurement' | t }}</h4>
+            <p class="small mb-0">
+              {{ 'rubi.admin.suggestions.detail.before' | t }}: {{ m.before !== null ? (m.before | percent: '1.0-1') : '—' }} ·
+              {{ 'rubi.admin.suggestions.detail.after' | t }}: {{ m.after !== null ? (m.after | percent: '1.0-1') : '—' }} ·
+              {{ 'rubi.admin.suggestions.detail.change' | t }}: {{ m.difference !== null ? (m.difference | percent: '1.0-1') : '—' }}
+            </p>
+            <p class="text-muted small">{{ 'rubi.admin.suggestions.detail.measurementHint' | t }}</p>
+          </ng-container>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.proposal' | t }}</h4>
+          <p>{{ s.recommendation }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.impact' | t }}</h4>
+          <p class="fst-italic">{{ s.possibleImpact }}</p>
+
+          <h4 class="h6 text-muted mt-2">{{ 'rubi.admin.suggestions.detail.actions' | t }}</h4>
+          <div class="d-flex gap-2 flex-wrap align-items-center">
+            <button *ngIf="s.allowedTransitions.includes('EN_REVISION')" class="btn btn-sm btn-outline-secondary" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'EN_REVISION')">{{ 'rubi.admin.suggestions.action.review' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('ACEPTADA')" class="btn btn-sm btn-foc-rojo" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'ACEPTADA')">{{ 'rubi.admin.suggestions.action.accept' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('IMPLEMENTADA')" class="btn btn-sm btn-foc-rojo" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'IMPLEMENTADA')">{{ 'rubi.admin.suggestions.action.implement' | t }}</button>
+            <button *ngIf="s.allowedTransitions.includes('CERRADA')" class="btn btn-sm btn-outline-secondary" [disabled]="isSavingSuggestion(s.id)" (click)="setSuggestionStatus(s, 'CERRADA')">{{ 'rubi.admin.suggestions.action.close' | t }}</button>
+            <ng-container *ngIf="s.allowedTransitions.includes('DESCARTADA')">
+              <input class="form-control form-control-sm rubi-suggestion-discard-input" type="text" [(ngModel)]="discardReasonDraft" [placeholder]="'rubi.admin.suggestions.action.discardReasonPlaceholder' | t" />
+              <button class="btn btn-sm btn-outline-danger" [disabled]="isSavingSuggestion(s.id) || !discardReasonDraft.trim()" (click)="setSuggestionStatus(s, 'DESCARTADA', discardReasonDraft.trim())">{{ 'rubi.admin.suggestions.action.discard' | t }}</button>
+            </ng-container>
+            <span class="text-muted small" *ngIf="!s.allowedTransitions.length">{{ 'rubi.admin.suggestions.detail.terminal' | t }}</span>
+          </div>
+          <p class="text-muted small mt-2" *ngIf="s.discardedReason">{{ 'rubi.admin.suggestions.action.discard' | t }}: {{ s.discardedReason }}</p>
+        </div>
       </section>
     </ng-container>
   </ng-container>
