@@ -2,6 +2,16 @@
 
 > Este archivo describe el estado actual. Si contradice al código, prevalece el código.
 
+## Integración en `main` y Dark Launch (post-cierre de 1.12.0#RUBI)
+
+`develop` (RUBI 1.9.0→1.12.0 completo) está integrado en `main` en ambos repositorios (`ffsj-secretaria`, `ffsj-secretaria-api`), mediante `merge --no-ff`, sin conflictos. Todas las migraciones RUBI (`055`→`066`) están aplicadas tanto en DEV como en PROD.
+
+**PROD está en DARK LAUNCH**: `secretaria_rubi_config` con `enabled=0`, `real_provider_enabled=0`, `transactional_enabled=0`, `federation_authorized=0`; ninguna fila en `secretaria_rubi_asociacion_config` (0 asociaciones autorizadas). Rubi es inaccesible para cualquier usuario de producción (verificado a través de `RubiPilotAccess.resolveEffectiveAccess`, la única puerta de entrada para conversación/altas/modificaciones/bajas). `RUBI_NATURAL_REDACTION_ENABLED` sigue en `false` por defecto en código si no está configurada.
+
+**No se ha desplegado ningún código** (frontend ni API) a ningún entorno como parte de esta operación: el contenido de `main` está listo, pero el deploy es manual y queda pendiente de ejecución por el equipo.
+
+DEV conserva su configuración operativa de pruebas (Rubi habilitada, 1 asociación autorizada) sin cambios.
+
 ## Versión y alcance
 
 - **`1.12.0#RUBI` — Conversational Quality & Model Evaluation (INTEGRADA en `develop`, merge `--no-ff`)**. Cuarta versión de RUBI v2 (`roadmap/RUBI-v2.md`): responde de forma objetiva a "¿podría RUBI hablar y entender de forma más natural?", sin partir de la premisa de que un modelo más caro es mejor. Extiende el banco/harness de evaluación ya existentes en vez de sustituirlos. La mayor parte del trabajo vive en `ffsj-secretaria-api`; ver su CHANGELOG para el detalle completo.

@@ -1,5 +1,12 @@
 # Changelog
 
+## Integración de RUBI v2 en `main` y Dark Launch (post-cierre de 1.12.0#RUBI)
+
+> `develop` (con RUBI 1.9.0→1.12.0 íntegro) se ha integrado en `main` mediante `merge --no-ff`. `main` no tenía ningún commit propio no contenido ya en `develop`, así que el merge fue automático, sin conflictos. El grueso de esta operación (migraciones de base de datos, dark launch) vive en `ffsj-secretaria-api`; ver su CHANGELOG para el detalle completo. No se ha desplegado código a ningún entorno; el deploy de frontend/API sigue siendo manual y pendiente.
+
+- `main` build `production` correcto (263/263 pruebas), `git diff --check` limpio.
+- Sin cambios de código en este repositorio: la integración fue puramente de control de versiones (merge de `develop`).
+
 ## 1.12.0#RUBI — Conversational Quality & Model Evaluation
 
 > Cuarta versión de RUBI v2 (ver `roadmap/RUBI-v2.md`): el grueso del trabajo (banco de evaluación, comparación de modelos, capa de redacción natural) vive en `ffsj-secretaria-api` (ver su CHANGELOG). Este repositorio aporta la superficie administrativa para incorporar los resultados de un benchmark controlado como evidencia de una sugerencia. **Validación técnica completada; validación manual DEV pendiente.** Sin deploy, sin migraciones, sin Azure, sin producción, sin activación real de ningún proveedor/modelo nuevo.
