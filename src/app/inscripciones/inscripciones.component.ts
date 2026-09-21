@@ -17,6 +17,8 @@ import { EjercicioService } from '../core/ejercicio.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { MarkdownEditorComponent } from '../shared/markdown-editor.component';
+import { MarkdownPipe } from '../shared/markdown.pipe';
 import { FormulariosComponent } from '../formularios/formularios.component';
 import { InscripcionDraftState, InscripcionDraftStateService } from './inscripcion-draft-state.service';
 import { buildFormDiagnostics, FormDiagnosticFieldMeta } from '../rubi/form-diagnostics.util';
@@ -40,7 +42,7 @@ type AssociationMode = 'edit' | 'view' | 'summary';
 @Component({
   selector: 'app-inscripciones',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent, FfsjSpinnerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, IncidenciasPanelComponent, ConfirmDialogComponent, EstadoBadgeComponent, FormulariosComponent, FfsjSpinnerComponent, MarkdownEditorComponent, MarkdownPipe],
   templateUrl: './inscripciones.component.html',
   styleUrls: ['./inscripciones.component.scss']
 })

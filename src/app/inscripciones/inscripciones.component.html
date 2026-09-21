@@ -107,7 +107,13 @@
             </select>
             <label class="form-label mt-2">Responsable de la inscripción</label>
             <select class="form-select" formControlName="propietarioId"><option value="">Selecciona responsable</option><option *ngFor="let responsable of responsablesInscripcion" [value]="responsable.id">{{ responsable.nombreCompleto }}</option></select>
-            <label class="form-label mt-2">Información general<textarea class="form-control" rows="4" formControlName="informacion"></textarea></label>
+            <div class="mt-2">
+              <app-markdown-editor
+                formControlName="informacion"
+                label="Instrucciones para la asociación (opcional, admite Markdown)"
+                placeholder="Contexto, requisitos, documentación necesaria u otra información para la asociación..."
+              ></app-markdown-editor>
+            </div>
             <label class="form-label mt-2">Documentación adjunta<input class="form-control" type="file" multiple (change)="seleccionarAdjuntosNuevaInscripcion($event)" /></label>
             <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosInscripcionSeleccionados.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosInscripcionSeleccionados; let i = index" (click)="quitarAdjuntoNuevaInscripcion(i)">{{ adjunto.name }} ×</button></div>
             <div class="row g-2 mt-1">
@@ -143,11 +149,15 @@
                 <p class="ux-overline mb-1">Formulario</p>
                 <h3 class="detail-title mb-1">{{ inscription.titulo }}</h3>
                 <p class="text-muted mb-0">{{ actividadDe(inscription)?.titulo || 'Inscripcion sin actividad vinculada' }}</p>
-                <p class="mt-2 mb-0" *ngIf="inscription.informacion">{{ inscription.informacion }}</p>
               </div>
               <span class="type-badge">
                 {{ inscription.tiposPermitidos.length ? inscription.tiposPermitidos.join(', ') : 'Sin asociados configurados' }}
               </span>
+            </div>
+
+            <div class="inscription-instructions mt-3" *ngIf="inscription.informacion">
+              <p class="ux-overline mb-1">Instrucciones de la inscripción</p>
+              <div class="markdown-body" [innerHTML]="inscription.informacion | markdown"></div>
             </div>
 
             <div class="alert alert-warning mt-3 mb-0" *ngIf="!isAdminMode && mensajeDisponibilidadInscripcion(inscription)">
@@ -238,7 +248,13 @@
               </select>
               <label class="form-label mt-2">Responsable de la inscripción</label>
               <select class="form-select" formControlName="propietarioId"><option value="">Selecciona responsable</option><option *ngFor="let responsable of responsablesInscripcion" [value]="responsable.id">{{ responsable.nombreCompleto }}</option></select>
-              <label class="form-label mt-2">Información general<textarea class="form-control" rows="4" formControlName="informacion"></textarea></label>
+              <div class="mt-2">
+                <app-markdown-editor
+                  formControlName="informacion"
+                  label="Instrucciones para la asociación (opcional, admite Markdown)"
+                  placeholder="Contexto, requisitos, documentación necesaria u otra información para la asociación..."
+                ></app-markdown-editor>
+              </div>
               <div class="row g-2 mt-1">
                 <div class="col">
                   <label class="form-label">Publicacion</label>

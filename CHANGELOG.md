@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.30.0#ESMERALDA — Contexto e instrucciones de Inscripciones
+
+> Permite a Administración añadir a cada Inscripción un contexto/instrucciones opcional en Markdown (requisitos, documentación necesaria, observaciones) para la asociación. El campo (`informacion`) ya existía y se persistía en `ffsj-secretaria-api` (ver su CHANGELOG); esta versión aporta el editor Markdown grande y el renderizado seguro, ninguno de los cuales existía en el proyecto. **Validación técnica completada** (274/274 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+- **Nuevo editor Markdown reutilizable** (`src/app/shared/markdown-editor.component.ts`, `app-markdown-editor`): `ControlValueAccessor` estándar (funciona con `formControlName` igual que un input nativo), con pestañas "Editar"/"Vista previa" y ayuda de sintaxis. No existía ningún editor Markdown en el proyecto; se ha creado en lugar de asumir que había uno que reutilizar.
+- **Nuevo pipe `markdown`** (`src/app/shared/markdown.pipe.ts`, usa `marked`, única dependencia nueva): convierte Markdown a HTML como *string* plano, para que el saneador HTML de Angular lo sanitice automáticamente al enlazarlo vía `[innerHTML]` (sin necesidad de `DomSanitizer.bypassSecurityTrustHtml` ni de una segunda librería de sanitizado).
+- **Inscripciones — Administración**: el campo "Información general" (`<textarea>`) de los formularios de creación y de gestión se sustituye por el nuevo editor Markdown, etiquetado como instrucciones para la asociación. Se puede editar en cualquier momento posterior desde el paso de Gestión.
+- **Inscripciones — Asociación**: cuando la inscripción tiene instrucciones, se muestran renderizadas como Markdown (de forma segura) en un bloque destacado "Instrucciones de la inscripción", antes de las pestañas de documentación/formulario/participantes. Cuando no hay contenido, no se muestra ningún bloque (compatibilidad con inscripciones existentes).
+- Pruebas nuevas: `markdown.pipe.spec.ts`, `markdown-editor.component.spec.ts` (incluye un caso de intento de XSS vía `<script>`, que queda eliminado por el saneador de Angular) e incorporaciones en `inscripciones.component.spec.ts` (creación con instrucciones, edición posterior, inscripción sin instrucciones, renderizado seguro antes del contenido operativo).
+
 ## Integración de RUBI v2 en `main` y Dark Launch (post-cierre de 1.12.0#RUBI)
 
 > `develop` (con RUBI 1.9.0→1.12.0 íntegro) se ha integrado en `main` mediante `merge --no-ff`. `main` no tenía ningún commit propio no contenido ya en `develop`, así que el merge fue automático, sin conflictos. El grueso de esta operación (migraciones de base de datos, dark launch) vive en `ffsj-secretaria-api`; ver su CHANGELOG para el detalle completo. No se ha desplegado código a ningún entorno; el deploy de frontend/API sigue siendo manual y pendiente.

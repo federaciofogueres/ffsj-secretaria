@@ -13,7 +13,7 @@ import { InscripcionesComponent } from './inscripciones.component';
 import { InscripcionDraftStateService } from './inscripcion-draft-state.service';
 
 describe('InscripcionesComponent', () => {
-  function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any): InscripcionesComponent {
+  function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any, isAdmin = false): InscripcionesComponent {
     const secretaria = jasmine.createSpyObj('SecretariaService', [
       'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion'
     ]);
@@ -27,7 +27,7 @@ describe('InscripcionesComponent', () => {
       secretaria,
       { asociacionId: 1 } as any,
       {} as any,
-      { isAdmin: () => false } as any,
+      { isAdmin: () => isAdmin } as any,
       { snapshot: { paramMap: { get: () => routeId }, queryParamMap: { get: () => null }, routeConfig: null } } as any,
       { navigate: () => Promise.resolve(true) } as any,
       { hasPermission: () => true } as any,
@@ -143,6 +143,87 @@ describe('InscripcionesComponent', () => {
     expect((recovered as any).buildDatosFormulario()).toEqual(expectedPersistedValues('edicion'));
   });
 
+  // 0.30.0#ESMERALDA: instrucciones de Administracion (campo `informacion`).
+  describe('instrucciones de la inscripción (0.30.0#ESMERALDA)', () => {
+    it('una inscripción sin instrucciones no muestra ningún bloque (compatibilidad con inscripciones existentes)', async () => {
+      const fixture = await createRenderedComponent();
+      const component = fixture.componentInstance;
+      component.detailMode = true;
+      component.selectInscription({ id: 'ins-1', titulo: 'Sin instrucciones', tiposPermitidos: [], campos: [] } as any);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.detail-header')).withContext('detalle de la inscripción visible').toBeTruthy();
+      expect(fixture.nativeElement.querySelector('.inscription-instructions')).toBeNull();
+    });
+
+    it('muestra las instrucciones de la inscripción renderizadas como Markdown de forma segura, antes del contenido operativo', async () => {
+      const fixture = await createRenderedComponent();
+      const component = fixture.componentInstance;
+      component.detailMode = true;
+      component.selectInscription({
+        id: 'ins-2', titulo: 'Con instrucciones', tiposPermitidos: [], campos: [],
+        informacion: '**Importante**: trae el DNI.<script>window.__pwn = true;</script>'
+      } as any);
+      fixture.detectChanges();
+      const bloque = fixture.nativeElement.querySelector('.inscription-instructions');
+      expect(bloque).withContext('bloque de instrucciones visible').toBeTruthy();
+      expect(bloque.innerHTML).toContain('<strong>Importante</strong>');
+      expect(bloque.innerHTML).not.toContain('<script');
+      expect((window as any).__pwn).toBeUndefined();
+
+      const pasos = fixture.nativeElement.querySelector('.inscription-steps');
+      expect(pasos).withContext('pasos de la asociación presentes').toBeTruthy();
+      expect(bloque.compareDocumentPosition(pasos) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it('Administración puede escribir instrucciones en Markdown al crear una inscripción y persisten en el payload de creación', async () => {
+      const fixture = await createRenderedComponent(true);
+      const component = fixture.componentInstance;
+      component.crearNuevaInscripcion();
+      fixture.detectChanges();
+
+      component.inscripcionAdminForm.patchValue({
+        titulo: 'Nueva inscripción', propietarioId: '1', fechaLimite: '2026-12-31'
+      });
+      const textarea: HTMLTextAreaElement = fixture.nativeElement.querySelector('.admin-panel textarea.markdown-editor-textarea');
+      expect(textarea).withContext('editor Markdown visible en el primer paso').toBeTruthy();
+      textarea.value = '## Documentación requerida\n\n- DNI\n- Justificante';
+      textarea.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      component.crearInscripcion();
+
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      expect(secretaria.crearInscripcion).toHaveBeenCalledWith(jasmine.objectContaining({
+        informacion: '## Documentación requerida\n\n- DNI\n- Justificante'
+      }));
+    });
+
+    it('Administración puede editar posteriormente las instrucciones de una inscripción existente', async () => {
+      const fixture = await createRenderedComponent(true);
+      const component = fixture.componentInstance;
+      component.detailMode = true;
+      component.selectInscription({
+        id: 'ins-3', titulo: 'Existente', tiposPermitidos: [], campos: [], informacion: 'Instrucciones originales',
+        fechaPublicacion: '2026-01-01', fechaLimite: '2026-12-31', propietarioId: 1
+      } as any);
+      component.adminTab = 'gestion';
+      fixture.detectChanges();
+
+      const textarea: HTMLTextAreaElement = fixture.nativeElement.querySelector('.admin-panel textarea.markdown-editor-textarea');
+      expect(textarea.value).toBe('Instrucciones originales');
+      textarea.value = 'Instrucciones actualizadas';
+      textarea.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+
+      component.crearInscripcion();
+
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      expect(secretaria.actualizarInscripcion).toHaveBeenCalledWith('ins-3', jasmine.objectContaining({
+        informacion: 'Instrucciones actualizadas'
+      }));
+    });
+  });
+
   for (const mode of ['creacion', 'edicion'] as const) {
     it(`mantiene visibles los controles dinamicos en DOM al volver de otra pestana (${mode})`, async () => {
       const fixture = await createRenderedComponent();
@@ -202,10 +283,11 @@ describe('InscripcionesComponent', () => {
     });
   }
 
-  async function createRenderedComponent(): Promise<ComponentFixture<InscripcionesComponent>> {
+  async function createRenderedComponent(isAdmin = false): Promise<ComponentFixture<InscripcionesComponent>> {
     const secretaria = jasmine.createSpyObj<SecretariaService>('SecretariaService', [
       'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion',
-      'getActividades', 'getInscripciones'
+      'getActividades', 'getInscripciones', 'getResponsablesInscripcion', 'getFormularios',
+      'crearInscripcion', 'actualizarInscripcion', 'getInscripcionEntradas'
     ]);
     secretaria.getAdjuntosInscripcion.and.returnValue(of({ adjuntos: [] }));
     secretaria.getAdjuntos.and.returnValue(of({ adjuntos: [] }));
@@ -213,6 +295,15 @@ describe('InscripcionesComponent', () => {
     secretaria.enviarInscripcion.and.returnValue(of({ id: 1 }));
     secretaria.getActividades.and.returnValue(of({ actividades: [] }));
     secretaria.getInscripciones.and.returnValue(of({ inscripciones: [], paginacion: { page: 1, pageSize: 20, total: 0, totalPages: 1 } }));
+    secretaria.getResponsablesInscripcion.and.returnValue(of({ responsables: [] }));
+    secretaria.getFormularios.and.returnValue(of({ formularios: [], paginacion: { page: 1, pageSize: 20, total: 0, totalPages: 1 } }));
+    secretaria.getInscripcionEntradas.and.returnValue(of({ entradas: [] }));
+    const inscripcionGuardada = (id: string, informacion: string): any => ({
+      id, titulo: 'Guardada', estado: 'abierta', fechaPublicacion: '2026-01-01', fechaLimite: '2026-12-31',
+      informacion, tiposPermitidos: [], campos: []
+    });
+    secretaria.crearInscripcion.and.callFake((payload: any) => of(inscripcionGuardada('ins-nueva', payload?.informacion || '')));
+    secretaria.actualizarInscripcion.and.callFake((id: any, payload: any) => of(inscripcionGuardada(String(id), payload?.informacion || '')));
 
     await TestBed.configureTestingModule({
       imports: [InscripcionesComponent],
@@ -220,7 +311,7 @@ describe('InscripcionesComponent', () => {
         { provide: SecretariaService, useValue: secretaria },
         { provide: CensoService, useValue: { asociacionId: 1, getAsociadosByAsociacion: () => of([]) } },
         { provide: ApiUrlService, useValue: {} },
-        { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+        { provide: AdminAccessService, useValue: { isAdmin: () => isAdmin } },
         { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => null }, queryParamMap: { get: () => null }, routeConfig: null } } },
         { provide: Router, useValue: { navigate: () => Promise.resolve(true) } },
         { provide: PermissionsService, useValue: { hasPermission: () => true } },
