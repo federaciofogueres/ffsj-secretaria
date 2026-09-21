@@ -8,7 +8,7 @@ import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroMensajeSecretaria, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -21,7 +21,7 @@ type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas' | 'archivadas';
 type ComunicacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas';
 type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
-type DetailTab = 'informacion' | 'trazabilidad' | 'incidencias';
+type DetailTab = 'informacion' | 'conversacion' | 'trazabilidad' | 'incidencias';
 
 @Component({
   selector: 'app-registro',
@@ -37,11 +37,18 @@ export class RegistroComponent implements OnInit, OnDestroy {
   docBandeja: DocumentacionBandeja = 'recibidas';
   detailTab: DetailTab = 'informacion';
   incidenciasCount = 0;
-  readonly detailTabs: Array<{ id: DetailTab; label: string }> = [
-    { id: 'informacion', label: 'Información' },
-    { id: 'trazabilidad', label: 'Trazabilidad' },
-    { id: 'incidencias', label: 'Incidencias' }
+  // 0.40.3#ESMERALDA: "Conversación" solo tiene sentido para Comunicaciones
+  // (Documentación no tiene hilo de mensajes en la UI actual).
+  private readonly detailTabsBase: Array<{ id: DetailTab; label: string; icon: string; modes?: Array<Exclude<RegistroMode, null>> }> = [
+    { id: 'informacion', label: 'Información', icon: 'bi-file-earmark-text' },
+    { id: 'conversacion', label: 'Conversación', icon: 'bi-chat-dots', modes: ['comunicacion'] },
+    { id: 'trazabilidad', label: 'Trazabilidad', icon: 'bi-clock-history' },
+    { id: 'incidencias', label: 'Incidencias', icon: 'bi-exclamation-triangle' }
   ];
+
+  get detailTabs(): Array<{ id: DetailTab; label: string; icon: string; modes?: Array<Exclude<RegistroMode, null>> }> {
+    return this.detailTabsBase.filter(tab => !tab.modes || (this.mode && tab.modes.includes(this.mode)));
+  }
 
   destinatarios: RegistroDestinatario[] = [];
   accesoGlobalRegistro = false;
@@ -547,6 +554,38 @@ export class RegistroComponent implements OnInit, OnDestroy {
 
   emisorMensaje(actor: 'asociacion' | 'administracion', persona?: string | null): string {
     return `${actor === 'administracion' ? 'Administracion / FFSJ' : 'Asociacion'} · ${persona || 'Usuario no disponible'}`;
+  }
+
+  // 0.40.3#ESMERALDA: adjuntos "iniciales" de una Comunicación viven en el
+  // primer mensaje del hilo (scope registro_mensaje, ver submitComm/
+  // lastMensajeId), no en registro.adjuntos (eso solo lo usa Documentación,
+  // via subirAdjunto('registro', ...) en submitDoc). Centralizado aqui para
+  // no repetir la distinción en cabecera/Información/panel lateral.
+  adjuntosIniciales(registro: RegistroSecretaria): AdjuntoSecretaria[] {
+    if (registro.tipo === 'comunicacion') {
+      return registro.mensajes?.[0]?.adjuntos || [];
+    }
+    return registro.adjuntos || [];
+  }
+
+  mensajeAutorNombre(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    return mensaje.actor === 'administracion' ? 'Administracion' : this.asociacionNombreById(registro.asociacionId);
+  }
+
+  mensajeAutorCompleto(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    return `${this.mensajeAutorNombre(mensaje, registro)} · ${mensaje.emisorPersona || 'Usuario no disponible'}`;
+  }
+
+  mensajeIniciales(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    if (mensaje.actor === 'administracion') return 'AD';
+    const palabras = this.asociacionNombreById(registro.asociacionId).split(/\s+/).filter(Boolean);
+    const iniciales = palabras.slice(0, 2).map(palabra => palabra[0]).join('').toUpperCase();
+    return iniciales || 'AS';
+  }
+
+  tamanoAdjunto(bytes: number): string {
+    if (!bytes) return '';
+    return bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 
   fechaCreacionRegistro(registro: RegistroSecretaria): string {

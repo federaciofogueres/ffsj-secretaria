@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.40.3#ESMERALDA — Rediseño del detalle de Comunicaciones y nueva pestaña Conversación
+
+> Implementado contra un mock visual aprobado (capturas Información/Conversación), reproducido con alta fidelidad tras validación explícita en navegador a varios anchos. Puramente visual: sin cambios de API, sin tocar la autorización por buzones. Aplica a Documentación y Comunicaciones por compartir el mismo componente; el hilo/pestaña Conversación es exclusivo de Comunicaciones.
+
+- Cabecera con icono, código, selector de estado (único, real — ver nota) y "Marcar como no leído" trasladado desde el contenido.
+- `Información` deja de mostrar el hilo completo y el formulario de respuesta: ahora son tarjetas "Resumen", "Participantes" y "Adjuntos iniciales", más un aviso discreto "Esta comunicación tiene un hilo de conversación → Ir a Conversación" cuando existe.
+- Nueva pestaña `Conversación` (solo Comunicaciones): mensajes como burbujas con avatar de iniciales, asociación a la izquierda / Administración a la derecha, adjuntos dentro de cada burbuja (icono, nombre, tamaño real, descarga) y el mismo composer de siempre ("Responder en esta conversación", adjuntar, límites reales, botón Responder) reutilizando `responderComunicacion()` sin cambios.
+- Panel lateral ampliado con Emisor/Receptor y una sección "Acciones rápidas" con "Imprimir resguardo" (única acción real disponible; ver nota sobre el mock).
+- **Nota sobre el estado**: el mock mostraba en la cabecera un valor "CONTESTADA"/"NUEVA" que resulta ser un estado *visual calculado* en el cliente (`estadoVisibleComunicacion`, derivado de quién envió el último mensaje) sin contraparte editable en backend — no es uno de los estados reales (`enviada`, `recibido`, `leido`, `incidencia`, `rechazado`, `finalizada`). Usarlo en un selector habría creado una segunda máquina de estados o un selector que no persiste lo que muestra. Se usa en su lugar el estado administrativo real (`resultado.estado`) como única fuente e interacción, evitando duplicar selectores tal como exige el alcance.
+- **Nota sobre "Acciones rápidas"**: el mock mostraba también "Reenviar" y "Eliminar"; no existe backend para ninguna de las dos en Registro, así que no se han implementado (no inventar funcionalidad no existente).
+
 ## 0.40.2#ESMERALDA — Rediseño del detalle de Registro con tabs y separación de contenidos
 
 > Rediseño puramente visual del detalle de Registro (Documentación y Comunicaciones): sin cambios de API, sin tocar la autorización por buzones de `0.40.0#ESMERALDA`. Validado en navegador (capturas de escritorio y ancho reducido) además de build y suite de tests completa.
