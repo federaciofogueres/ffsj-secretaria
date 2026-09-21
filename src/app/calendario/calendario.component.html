@@ -38,7 +38,8 @@
       <p class="text-muted" *ngIf="!propuestasFiltradas.length">No hay propuestas para mostrar.</p>
       <article class="border rounded p-3 mb-2" *ngFor="let propuesta of propuestasPaginadas">
         <div class="d-flex justify-content-between gap-2"><strong>{{ propuesta.titulo }}</strong><app-estado-badge [estado]="propuesta.estadoPropuesta || 'pendiente_revision'"></app-estado-badge></div>
-        <div class="small text-muted">{{ propuesta.fechaInicio | date: 'dd/MM/y HH:mm' }} <span *ngIf="propuesta.fechaFin && propuesta.fechaFin !== propuesta.fechaInicio">– {{ propuesta.fechaFin | date: 'dd/MM/y HH:mm' }}</span><span *ngIf="isAdminMode"> · {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
+        <div class="small text-muted">{{ propuesta.fechaInicio | madridDate: 'dd/MM/y HH:mm' }} <span *ngIf="propuesta.fechaFin && propuesta.fechaFin !== propuesta.fechaInicio">– {{ propuesta.fechaFin | madridDate: 'dd/MM/y HH:mm' }}</span><span *ngIf="isAdminMode"> · {{ propuesta.asociacionNombre || 'Asociacion' }}</span></div>
+        <p class="small text-muted mb-1" *ngIf="propuesta.lugar"><strong>Lugar:</strong> {{ propuesta.lugar }}</p>
         <p class="mb-1" *ngIf="propuesta.descripcion">{{ propuesta.descripcion }}</p>
         <p class="text-danger mb-1" *ngIf="propuesta.motivoRechazo">{{ propuesta.motivoRechazo }}</p>
         <button class="btn btn-outline-secondary btn-sm mt-2" type="button" (click)="abrirDetallePropuesta(propuesta)">Ver detalle</button>
@@ -127,16 +128,20 @@
 
         <ng-container *ngIf="selected; else empty">
           <div class="detail-block">
-          <p class="overline text-uppercase text-muted fw-bold mb-1">Detalle de actividad</p>
-          <div class="d-flex align-items-start justify-content-between gap-2">
-            <h2 class="detail-title mb-1">{{ selected.titulo }}</h2>
+          <div class="activity-header">
+            <h2 class="detail-title mb-0">{{ selected.titulo }}</h2>
             <app-estado-badge [estado]="selected.estado"></app-estado-badge>
           </div>
-          <p class="text-muted mb-2">
-            {{ selected.fechaInicio | date: 'dd/MM/y' }} - {{ selected.fechaFin | date: 'dd/MM/y' }}
-          </p>
-          <p class="text-muted mb-2" *ngIf="selected.responsable"><strong>Responsable:</strong> {{ selected.responsable }}</p>
-          <p *ngIf="selected.descripcion">{{ selected.descripcion }}</p>
+          <div class="activity-meta">
+            <span class="activity-meta-item">
+              <i class="bi bi-clock" aria-hidden="true"></i>
+              {{ selected.fechaInicio | madridDate: 'dd/MM/y HH:mm' }}<ng-container *ngIf="selected.fechaFin && selected.fechaFin !== selected.fechaInicio"> – {{ selected.fechaFin | madridDate: 'dd/MM/y HH:mm' }}</ng-container>
+            </span>
+            <span class="activity-meta-item" *ngIf="selected.lugar"><i class="bi bi-geo-alt" aria-hidden="true"></i>{{ selected.lugar }}</span>
+            <span class="activity-meta-item" *ngIf="selected.responsable"><i class="bi bi-person" aria-hidden="true"></i>{{ selected.responsable }}</span>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm mt-2" type="button" (click)="abrirDetalleActividad(selected)">Ver detalle completo</button>
+          <div class="activity-description" *ngIf="selected.descripcion" [innerHTML]="selected.descripcion | markdown"></div>
           <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
           <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="adjuntosActividad.length">
             <button type="button" class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of adjuntosActividad" (click)="descargarAdjunto(adjunto.id)">{{ adjunto.originalName || adjunto.fileName }}</button>
@@ -177,8 +182,12 @@
                   <input type="datetime-local" class="form-control" formControlName="fechaFin" />
                 </div>
               </div>
-              <label class="form-label mt-2">Descripcion</label>
-              <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+              <div class="mt-2">
+                <app-location-picker label="Lugar de la actividad" [value]="ubicacionEditar" (locationChange)="onUbicacionChange($event, 'editar')"></app-location-picker>
+              </div>
+              <div class="mt-2">
+                <app-markdown-editor formControlName="descripcion" label="Descripción (admite Markdown)"></app-markdown-editor>
+              </div>
               <label class="form-label mt-2">Categoría visual
                 <select class="form-select" formControlName="colorEtiqueta">
                   <option value="ffsj">FFSJ</option>
@@ -291,7 +300,7 @@
   <p class="text-muted" *ngIf="!selectedDayActividades.length">No hay actividades en este día.</p>
   <div class="event-list" *ngIf="selectedDayActividades.length">
     <button class="event-item" type="button" *ngFor="let actividad of selectedDayActividades" (click)="abrirDetalleActividad(actividad)">
-      <span><strong>{{ actividad.titulo }}</strong><small>{{ actividad.fechaInicio | date:'HH:mm' }} · {{ actividad.responsable || 'Sin responsable' }}</small></span>
+      <span><strong>{{ actividad.titulo }}</strong><small>{{ actividad.fechaInicio | madridDate:'HH:mm' }} · {{ actividad.responsable || 'Sin responsable' }}</small></span>
       <app-estado-badge [estado]="actividad.estado"></app-estado-badge>
     </button>
   </div>
@@ -300,20 +309,86 @@
 
 <div class="modal-backdrop-custom" *ngIf="showActividadDetail" (click)="cerrarDetalleActividad()"></div>
 <section class="modal-panel activity-detail-modal" *ngIf="showActividadDetail && selected" role="dialog" aria-modal="true" aria-label="Detalle de actividad">
-  <div class="modal-header-custom">
-    <div><p class="ux-overline mb-2">Detalle de actividad</p><h2 class="h5 mb-1 text-rojo">{{ selected.titulo }}</h2><app-estado-badge [estado]="selected.estado"></app-estado-badge></div>
-    <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarDetalleActividad()">Cerrar</button>
+  <div class="modal-header-custom activity-header">
+    <h2 class="h5 mb-0 text-rojo">{{ selected.titulo }}</h2>
+    <div class="d-flex align-items-center gap-2">
+      <app-estado-badge [estado]="selected.estado"></app-estado-badge>
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="cerrarDetalleActividad()">Cerrar</button>
+    </div>
   </div>
-  <dl class="propuesta-data">
-    <div><dt>Fecha y hora</dt><dd>{{ selected.fechaInicio | date:'dd/MM/y HH:mm' }}<span *ngIf="selected.fechaFin && selected.fechaFin !== selected.fechaInicio"> – {{ selected.fechaFin | date:'dd/MM/y HH:mm' }}</span></dd></div>
-    <div *ngIf="selected.responsable"><dt>Responsable</dt><dd>{{ selected.responsable }}</dd></div>
-    <div *ngIf="selected.descripcion"><dt>Descripción</dt><dd>{{ selected.descripcion }}</dd></div>
-  </dl>
-  <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
-  <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="adjuntosActividad.length">
-    <button type="button" class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of adjuntosActividad" (click)="descargarAdjunto(adjunto.id)">{{ adjunto.originalName || adjunto.fileName }}</button>
+  <div class="activity-meta mb-3">
+    <span class="activity-meta-item">
+      <i class="bi bi-clock" aria-hidden="true"></i>
+      {{ selected.fechaInicio | madridDate:'dd/MM/y HH:mm' }}<ng-container *ngIf="selected.fechaFin && selected.fechaFin !== selected.fechaInicio"> – {{ selected.fechaFin | madridDate:'dd/MM/y HH:mm' }}</ng-container>
+    </span>
+    <span class="activity-meta-item" *ngIf="selected.lugar"><i class="bi bi-geo-alt" aria-hidden="true"></i>{{ selected.lugar }}</span>
+    <span class="activity-meta-item" *ngIf="selected.responsable"><i class="bi bi-person" aria-hidden="true"></i>{{ selected.responsable }}</span>
   </div>
-  <div class="linked" *ngIf="selected.inscripciones?.length"><h3 class="h6">Inscripciones vinculadas</h3><a class="linked-item" [routerLink]="['/inscripciones', inscripcion.id]" *ngFor="let inscripcion of selected.inscripciones" (click)="cerrarDetalleActividad()">{{ inscripcion.titulo }}</a></div>
+
+  <nav class="activity-detail-tabs" aria-label="Secciones del detalle de actividad">
+    <button type="button" [class.active]="detailTab === 'informacion'" (click)="setDetailTab('informacion')">Información del evento</button>
+    <button type="button" [class.active]="detailTab === 'ubicacion'" (click)="setDetailTab('ubicacion')">Ubicación del evento</button>
+    <button type="button" [class.active]="detailTab === 'documentacion'" (click)="setDetailTab('documentacion')">Documentación</button>
+  </nav>
+
+  <div class="activity-detail-panel" *ngIf="detailTab === 'informacion'">
+    <div class="activity-description mb-2" *ngIf="selected.descripcion" [innerHTML]="selected.descripcion | markdown"></div>
+    <p class="text-muted mb-2" *ngIf="!selected.descripcion">No hay descripción para esta actividad.</p>
+    <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-2" [src]="imagenActividadUrl" [alt]="'Imagen de ' + selected.titulo" />
+    <div class="linked" *ngIf="selected.inscripciones?.length">
+      <h3 class="h6">Inscripciones vinculadas</h3>
+      <a class="linked-item" [routerLink]="['/inscripciones', inscripcion.id]" *ngFor="let inscripcion of selected.inscripciones" (click)="cerrarDetalleActividad()">{{ inscripcion.titulo }}</a>
+    </div>
+  </div>
+
+  <div class="activity-detail-panel" *ngIf="detailTab === 'ubicacion'">
+    <ng-container *ngIf="selected.lugar; else sinLugar">
+      <p class="mb-2">
+        {{ selected.lugar }}
+        <ng-container *ngIf="selected.lugarLocalidad">· {{ selected.lugarCodigoPostal }} {{ selected.lugarLocalidad }} {{ selected.lugarProvincia }}</ng-container>
+      </p>
+      <app-mini-map
+        *ngIf="selected.lugarLatitud !== null && selected.lugarLatitud !== undefined && selected.lugarLongitud !== null && selected.lugarLongitud !== undefined"
+        [latitud]="selected.lugarLatitud"
+        [longitud]="selected.lugarLongitud"
+        [label]="selected.lugar"
+      ></app-mini-map>
+      <p class="text-muted small mb-0 mt-2" *ngIf="selected.lugarLatitud === null || selected.lugarLatitud === undefined">
+        Esta actividad todavía no tiene coordenadas guardadas; no se puede mostrar un mapa.
+      </p>
+    </ng-container>
+    <ng-template #sinLugar>
+      <p class="text-muted mb-0">No se ha indicado ningún lugar para esta actividad.</p>
+    </ng-template>
+  </div>
+
+  <div class="activity-detail-panel" *ngIf="detailTab === 'documentacion'">
+    <p class="text-muted mb-2" *ngIf="!adjuntosActividad.length">No hay documentación adjunta para esta actividad.</p>
+    <div class="d-flex flex-wrap gap-2 mb-2" *ngIf="adjuntosActividad.length">
+      <span class="d-inline-flex align-items-center gap-1" *ngFor="let adjunto of adjuntosActividad">
+        <button type="button" class="btn btn-outline-secondary btn-sm" (click)="descargarAdjunto(adjunto.id)">{{ adjunto.originalName || adjunto.fileName }}</button>
+        <button
+          type="button"
+          class="btn btn-outline-danger btn-sm"
+          *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')"
+          [disabled]="loading"
+          (click)="borrarDocumentoActividad(adjunto.id)"
+          aria-label="Eliminar documento"
+        >×</button>
+      </span>
+    </div>
+    <div class="border-top pt-3 mt-3" *ngIf="isAdminMode && permissions.hasPermission('inscripciones:write')">
+      <app-adjuntos-selector
+        label="Añadir documentación"
+        [files]="nuevosDocumentosActividad"
+        (filesChange)="nuevosDocumentosActividad = $event"
+        [maxFiles]="5"
+        [maxBytes]="maxImagenBytes"
+        [accept]="documentacionAccept"
+      ></app-adjuntos-selector>
+      <button class="ux-btn ux-btn-sm mt-2" type="button" [disabled]="loading || !nuevosDocumentosActividad.length" (click)="subirDocumentacionActividad()">Subir documentación</button>
+    </div>
+  </div>
 </section>
 
 <app-confirm-dialog
@@ -348,11 +423,16 @@
         <input type="datetime-local" class="form-control" formControlName="fechaFin" />
       </div>
     </div>
-    <label class="form-label mt-2">Descripcion</label>
-    <textarea class="form-control" rows="3" formControlName="descripcion"></textarea>
+    <div class="mt-2">
+      <app-location-picker label="Lugar de la actividad" [value]="ubicacionCrear" (locationChange)="onUbicacionChange($event, 'crear')"></app-location-picker>
+    </div>
+    <div class="mt-2">
+      <app-markdown-editor formControlName="descripcion" label="Descripción (admite Markdown)"></app-markdown-editor>
+    </div>
     <label class="form-label mt-2">Imagen del evento (JPG, PNG, WEBP o GIF; máximo 10 MB)<input class="form-control" type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="seleccionarImagenActividad($event)" /></label>
-    <label class="form-label mt-2">Documentación adjunta (opcional)<input class="form-control" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,application/pdf,text/plain,.doc,.docx,.xls,.xlsx" (change)="seleccionarAdjuntosActividad($event)" /></label>
-    <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="adjuntosActividadSeleccionados.length"><button class="btn btn-outline-secondary btn-sm" type="button" *ngFor="let adjunto of adjuntosActividadSeleccionados; let i = index" (click)="quitarAdjuntoActividadSeleccionado(i)">{{ adjunto.name }} ×</button></div>
+    <div class="mt-2">
+      <app-adjuntos-selector label="Documentación adjunta (opcional)" [files]="adjuntosActividadSeleccionados" (filesChange)="adjuntosActividadSeleccionados = $event" [maxFiles]="5" [maxBytes]="maxImagenBytes" [accept]="documentacionAccept"></app-adjuntos-selector>
+    </div>
     <label class="form-label mt-2" *ngIf="isAdminMode">Categoría visual<select class="form-select" formControlName="colorEtiqueta"><option value="ffsj">FFSJ</option><option value="asociacion">Entidad asociada</option><option value="ayuntamiento">Ayuntamiento</option><option value="otra">Otras entidades</option></select></label>
     <label class="form-check mt-2" *ngIf="isAdminMode"><input class="form-check-input" type="checkbox" formControlName="visiblePublico" /> Visible para asociaciones</label>
     <div class="d-flex gap-2 mt-3">
@@ -386,9 +466,10 @@
   </div>
   <dl class="propuesta-data">
     <div><dt>Responsable</dt><dd>{{ propuestaDetalle.responsable || propuestaDetalle.asociacionNombre || '-' }}</dd></div>
-    <div><dt>Fecha y hora</dt><dd>{{ propuestaDetalle.fechaInicio | date:'dd/MM/y HH:mm' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | date:'dd/MM/y HH:mm' }}</span></dd></div>
-    <div *ngIf="propuestaDetalle.descripcion"><dt>Descripción</dt><dd>{{ propuestaDetalle.descripcion }}</dd></div>
+    <div><dt>Fecha y hora</dt><dd>{{ propuestaDetalle.fechaInicio | madridDate:'dd/MM/y HH:mm' }}<span *ngIf="propuestaDetalle.fechaFin && propuestaDetalle.fechaFin !== propuestaDetalle.fechaInicio"> – {{ propuestaDetalle.fechaFin | madridDate:'dd/MM/y HH:mm' }}</span></dd></div>
+    <div *ngIf="propuestaDetalle.lugar"><dt>Lugar</dt><dd>{{ propuestaDetalle.lugar }}</dd></div>
   </dl>
+  <div class="activity-description mb-2" *ngIf="propuestaDetalle.descripcion" [innerHTML]="propuestaDetalle.descripcion | markdown"></div>
   <img *ngIf="imagenActividadUrl" class="img-fluid rounded mb-3" [src]="imagenActividadUrl" [alt]="'Imagen de ' + propuestaDetalle.titulo" />
   <div class="d-flex flex-wrap gap-2 mb-3" *ngIf="adjuntosActividad.length">
     <button type="button" class="btn btn-outline-secondary btn-sm" *ngFor="let adjunto of adjuntosActividad" (click)="descargarAdjunto(adjunto.id)">{{ adjunto.originalName || adjunto.fileName }}</button>

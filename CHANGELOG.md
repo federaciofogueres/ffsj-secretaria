@@ -1,5 +1,149 @@
 # Changelog
 
+## 0.40.3#ESMERALDA — Rediseño del detalle de Comunicaciones y nueva pestaña Conversación
+
+> Implementado contra un mock visual aprobado (capturas Información/Conversación), reproducido con alta fidelidad tras validación explícita en navegador a varios anchos. Puramente visual: sin cambios de API, sin tocar la autorización por buzones. Aplica a Documentación y Comunicaciones por compartir el mismo componente; el hilo/pestaña Conversación es exclusivo de Comunicaciones.
+
+- Cabecera con icono, código, selector de estado (único, real — ver nota) y "Marcar como no leído" trasladado desde el contenido.
+- `Información` deja de mostrar el hilo completo y el formulario de respuesta: ahora son tarjetas "Resumen", "Participantes" y "Adjuntos iniciales", más un aviso discreto "Esta comunicación tiene un hilo de conversación → Ir a Conversación" cuando existe.
+- Nueva pestaña `Conversación` (solo Comunicaciones): mensajes como burbujas con avatar de iniciales, asociación a la izquierda / Administración a la derecha, adjuntos dentro de cada burbuja (icono, nombre, tamaño real, descarga) y el mismo composer de siempre ("Responder en esta conversación", adjuntar, límites reales, botón Responder) reutilizando `responderComunicacion()` sin cambios.
+- Panel lateral ampliado con Emisor/Receptor y una sección "Acciones rápidas" con "Imprimir resguardo" (única acción real disponible; ver nota sobre el mock).
+- **Nota sobre el estado**: el mock mostraba en la cabecera un valor "CONTESTADA"/"NUEVA" que resulta ser un estado *visual calculado* en el cliente (`estadoVisibleComunicacion`, derivado de quién envió el último mensaje) sin contraparte editable en backend — no es uno de los estados reales (`enviada`, `recibido`, `leido`, `incidencia`, `rechazado`, `finalizada`). Usarlo en un selector habría creado una segunda máquina de estados o un selector que no persiste lo que muestra. Se usa en su lugar el estado administrativo real (`resultado.estado`) como única fuente e interacción, evitando duplicar selectores tal como exige el alcance.
+- **Nota sobre "Acciones rápidas"**: el mock mostraba también "Reenviar" y "Eliminar"; no existe backend para ninguna de las dos en Registro, así que no se han implementado (no inventar funcionalidad no existente).
+
+## 0.40.2#ESMERALDA — Rediseño del detalle de Registro con tabs y separación de contenidos
+
+> Rediseño puramente visual del detalle de Registro (Documentación y Comunicaciones): sin cambios de API, sin tocar la autorización por buzones de `0.40.0#ESMERALDA`. Validado en navegador (capturas de escritorio y ancho reducido) además de build y suite de tests completa.
+
+- El detalle deja de mostrar la barra de filtros del listado (`.registro-filters` ahora oculta cuando `isDetailView`) y el botón "Volver" pasa a decir "Volver al listado" en ese contexto.
+- Nueva cabecera compacta: código + estado, título, emisor/dirigida a/área/destinatario, fecha de creación y adjunto principal con acceso directo de descarga.
+- Contenido reorganizado en tabs accesibles (`role="tablist"`/`"tab"`/`"tabpanel"`, navegación con flechas/Home/End, mismo patrón ya usado en `asociados-gestion`): **Información** (mensaje, adjuntos, marcar no leído, archivar, estado administrativo, hilo de comunicación y respuesta), **Trazabilidad** (eventos como timeline cronológico con icono y etiqueta legible por tipo) e **Incidencias** (`app-incidencias-panel` sin cambios de comportamiento).
+- Panel lateral persistente (se apila debajo del contenido en anchos menores a 900px) con estado, código, tipo, año, fecha de creación, última actualización y adjunto principal.
+- `IncidenciasPanelComponent` gana un `@Output() countChange` (aditivo, sin romper sus otros 4 usos existentes) para mostrar el contador de incidencias en la pestaña sin duplicar la carga de datos.
+- Ninguna funcionalidad perdida: marcar leído/no leído, cambio de estado, archivado, descarga de adjuntos, hilo y respuesta de comunicaciones, e incidencias siguen operando igual que antes, solo reorganizados visualmente.
+
+## 0.40.1#ESMERALDA — Rediseño del listado de Registro y filtros compactos
+
+> Rediseño puramente visual de la pantalla principal de Registro (Documentación y Comunicaciones): sin cambios de API, sin cambios en la autorización por buzones de `0.40.0#ESMERALDA`, sin tocar todavía el detalle (eso es `0.40.2#ESMERALDA`). Validado en navegador (capturas a distintos anchos) además de build y suite de tests completa.
+
+- Barra de filtros compacta en una sola línea principal (buscador, buzón, estado) con "Limpiar filtros" (visible solo cuando hay algún filtro activo) y "Más filtros" para año/orden: en escritorio se ven siempre en la misma línea; en pantallas estrechas "Más filtros" pasa a ser un desplegable real, no decorativo.
+- Cada fila de Documentación/Comunicaciones (y la de certificaciones pendientes) se reorganiza en formato tarjeta: código + estado en cabecera, título, y una línea de metadatos con icono (emisor, dirigida a/receptor, área, destinatario, fecha, adjunto principal cuando existe) y una acción "Ver detalle" explícita al final de la fila.
+- Corrige un solape real detectado en la propia verificación visual: la etiqueta de estado más larga ("Pendiente de certificación") no envolvía en pantallas estrechas y podía desbordar la fila; ahora envuelve correctamente.
+- Sin cambios funcionales: mismos filtros, misma paginación, mismo scope de buzón, misma navegación al detalle — verificado con la suite completa de tests (317/317) y con las capturas de escritorio/tablet/móvil.
+
+## 0.40.0#ESMERALDA — Corrección real del filtrado y autorización por buzones en Registro
+
+> Causa real del fallo reportado ("la API sigue devolviendo todos los registros al filtrar por buzón"): `SecretariaService.getRegistros()` calculaba correctamente `destinatarioId` a partir del selector de buzón de Webmaster, pero no lo incluía en los `HttpParams` de la petición HTTP — se perdía silenciosamente antes de llegar a la API, que respondía (correctamente) con el scope completo del usuario al no recibir ningún filtro. Selector visualmente correcto, filtro real ausente. Sin migraciones ni despliegue.
+
+- `getRegistros()` añade `destinatarioId` a los parámetros de la petición cuando Webmaster tiene un buzón seleccionado; sin selección ("Todos"), sigue sin enviarlo.
+- Nuevo `secretaria.service.spec.ts`: fija por contrato HTTP (con `HttpClientTestingModule`) que `destinatarioId` viaja en la query cuando corresponde y que no viaja cuando no hay buzón seleccionado, para que una regresión de este tipo rompa el build en vez de pasar inadvertida.
+- No se ha tocado la lógica de autorización de backend (`0.38.0#ESMERALDA`): ya limitaba correctamente el acceso de administradores ordinarios; el problema estaba aislado al envío del filtro desde el frontend.
+
+## 0.39.0#ESMERALDA — Gestión de versión y novedades desde Configuración
+
+> La etiqueta de versión visible en Secretaría deja de estar fija en un componente: ahora lee la release activa publicada por Webmaster desde Configuración. Requiere migración `069_secretaria_release.sql` en `ffsj-secretaria-api`.
+
+- Nueva pestaña "Versión" en Configuración (solo Webmaster): permite crear una versión con novedades en Markdown, guardarla como borrador o publicarla directamente, y publicar cualquier versión anterior ya registrada.
+- La cabecera muestra la versión activa junto a un icono de información que abre las novedades (Markdown, renderizado de forma segura); si no hay novedades no se muestra un bloque vacío.
+- Si no hay ninguna versión publicada o falla la carga, la aplicación recae automáticamente en la versión técnica derivada de `package.json` (`app-version.ts`, sin cambios) y nunca bloquea ni muestra `undefined`.
+
+## 0.38.0#ESMERALDA — Buzones privados de Registro y gestión de estados
+
+> Registro obtiene de la API los buzones autorizados para la sesión. Webmaster recibe un selector alimentado por esos buzones reales; Administración ordinaria no puede seleccionar ni visualizar buzones ajenos. Sin migraciones ni despliegue.
+
+- Documentación y Comunicaciones recargan listado, filtros, búsqueda, ordenación y paginación al cambiar el buzón de Webmaster.
+- El detalle de ambos tipos de Registro muestra el estado actual y permite al administrador autorizado actualizarlo con feedback de guardado; la API valida y audita la transición.
+
+## 0.37.0#ESMERALDA — Validación excepcional de altas históricas de menores
+
+> Administración recibe un aviso al validar excepcionalmente una alta histórica de menor sin representación legal. Desde el detalle selecciona el buzón de Registro y genera una Comunicación predefinida a la asociación; no hay formulario nuevo ni redacción manual. El criterio y la operación se protegen en `ffsj-secretaria-api`. Sin migraciones ni despliegue.
+
+## 0.36.0#ESMERALDA — Control manual del envío tras certificaciones
+
+> El aviso del alta con certificación previa ya no anuncia un envío automático: tras completarse las certificaciones, la asociación puede adjuntar la documentación pendiente y remitir la solicitud manualmente a Secretaría. El cambio de transición se aplica y prueba en `ffsj-secretaria-api`; no hay migraciones ni despliegue.
+
+## 0.34.0#ESMERALDA — Ubicación estructurada y detalle enriquecido de Actividades
+
+> Sustituye el campo libre "Lugar" de Actividades por el mismo selector de ubicación ya usado en "Datos", y reorganiza el detalle en tres pestañas (Información/Ubicación/Documentación) manteniendo la cabecera compacta de 0.33.0#ESMERALDA. **Validación técnica completada** (314/314 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Ubicación estructurada (reutiliza el selector de "Datos", sin segundo sistema de mapas)
+
+- Creación y edición de Actividad usan ahora `app-location-picker` (el mismo `LocationPickerComponent` — Leaflet + OpenStreetMap/Nominatim, sin API key — que ya usa `asociacion.component.ts` en "Datos") en vez de un `<input>` de texto libre. Cero dependencias nuevas.
+- El picker no es un `ControlValueAccessor`; se integra con el mismo patrón getter/setter (`ubicacionCrear`/`ubicacionEditar` + `onUbicacionChange()`) que ya usa `asociacion.component.ts` para su propio selector — no se ha duplicado esa lógica de integración, se ha replicado el patrón ya validado.
+- `ActividadSecretaria` gana `lugarLatitud`/`lugarLongitud`/`lugarCodigoPostal`/`lugarLocalidad`/`lugarProvincia` (opcionales). Actividades históricas con solo `lugar` textual siguen funcionando: el picker recibe `latitud`/`longitud` a `null` sin romperse.
+
+### Nuevo detalle por pestañas
+
+- El modal de detalle de actividad pasa a tener tres pestañas: **Información del evento** (descripción Markdown + imagen de portada + inscripciones vinculadas), **Ubicación del evento** (dirección legible + mini mapa) y **Documentación** (adjuntos existentes + alta de nuevos documentos).
+- Nuevo `MiniMapComponent` (`app-mini-map`, en `src/app/shared/`): mapa de solo lectura, reutiliza el mismo proveedor (Leaflet + teselas OpenStreetMap) que `LocationPickerComponent` — no es un segundo sistema de mapas, es una variante de presentación sin buscador ni edición. Cuando la actividad no tiene coordenadas (caso histórico), no se muestra ningún mapa y aparece un mensaje de estado vacío claro en su lugar.
+- Se mantiene la cabecera compacta de 0.33.0#ESMERALDA (título + chip de estado + fila de metadatos con iconos) por encima de las pestañas.
+- El panel lateral (vista compacta) no se ha convertido en pestañas — mantiene su formato resumido de 0.33.0#ESMERALDA y suma un botón "Ver detalle completo" para abrir el modal con las pestañas nuevas.
+
+### Documentación en creación y edición
+
+- El input manual de "Documentación adjunta" del formulario de creación se sustituye por `app-adjuntos-selector` (componente ya existente, usado en Registro/Soporte/Rubi-registro) — no se ha creado un segundo selector de adjuntos.
+- Nueva capacidad: administración puede añadir documentación a una actividad ya creada desde la pestaña "Documentación" del detalle (antes solo era posible al crearla), reutilizando el mismo endpoint/scope `'actividad'`. Respeta permisos (`inscripciones:write` + modo administración), límites (10 MB, máx. 5 archivos) y tipos permitidos ya establecidos.
+
+### Compatibilidad RUBI
+
+Sin cambios en este repositorio: RUBI no tiene ningún componente de mapas ni de UI; la exposición de `location` (latitud/longitud) vive enteramente en `ffsj-secretaria-api` (ver su CHANGELOG).
+
+### Pruebas nuevas
+
+`calendario.component.spec.ts`: ubicación estructurada en el selector (con y sin coordenadas), persistencia en creación/edición, las tres pestañas y su contenido, mini mapa con y sin coordenadas (estado de fallback), permisos de subida de documentación (admin con/sin permiso de escritura, asociación), adjuntos existentes (imágenes y documentos) con descarga, imagen de portada en la pestaña Información, y compatibilidad del payload enviado al crear. `mini-map.component.spec.ts`: no se rompe sin coordenadas, inicializa el mapa con coordenadas, actualiza el punto al cambiar el `@Input`.
+
+## 0.33.0#ESMERALDA — Experiencia de edición y lectura de Actividades
+
+> Mejora la creación/edición de Actividades con un editor Markdown para la descripción, y rediseña de forma compacta las dos vistas de detalle (panel lateral y modal), sin tocar el flujo funcional. **Validación técnica completada** (296/296 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Descripción con Markdown
+
+- El campo "Descripción" de creación/edición de Actividad pasa de `<textarea>` a `app-markdown-editor` (el mismo componente ya introducido en 0.30.0#ESMERALDA para las instrucciones de Inscripciones) — no se ha creado ningún editor ni dependencia nueva.
+- El detalle (panel lateral, modal de detalle de actividad y modal de detalle de propuesta) renderiza la descripción con el pipe `markdown` ya existente, de forma segura (saneador HTML de Angular).
+- Actividades con descripción guardada como texto plano (todas las existentes hasta ahora) se siguen mostrando correctamente: el pipe `markdown` trata el texto plano como un único párrafo.
+
+### Rediseño compacto del detalle de Actividad
+
+- Se elimina el texto redundante "Detalle de actividad" del panel lateral y del modal de detalle.
+- El título y el chip de estado comparten ahora la misma cabecera (`.activity-header`), alineados en la misma línea.
+- Fecha/hora, lugar y responsable se agrupan en una sola fila de metadatos (`.activity-meta`) con iconos de Bootstrap Icons ya usados en el resto de la aplicación (`bi-clock`, `bi-geo-alt`, `bi-person` — sin iconos ni dependencias nuevas), que en pantallas estrechas (≤480px) pasan a apilarse verticalmente sin perder jerarquía visual.
+- El modal de detalle de propuesta también renderiza su descripción con el pipe `markdown`, por consistencia (mismo campo de datos), sin tocar su cabecera ni su disposición general.
+- Sin tabs, sin mapa, sin selector de ubicación ni gestión documental nueva — eso corresponde a `0.34.0#ESMERALDA`.
+
+### Pruebas nuevas (`calendario.component.spec.ts`)
+
+Persistencia de la descripción Markdown en creación/edición, renderizado seguro en las dos vistas de detalle (incluye un intento de XSS vía `<script>`, eliminado por el saneador), compatibilidad con descripciones antiguas en texto plano, ausencia de bloque vacío sin descripción, desaparición del texto "Detalle de actividad", título y chip en la misma cabecera, y presencia de los tres iconos de metadatos con su contenido.
+
+## 0.31.0#ESMERALDA — Horarios y lugar de actividades
+
+> Corrige el desfase horario (~2h) del calendario de Actividades y añade `lugar` (texto libre, opcional). El grueso del hallazgo de causa raíz vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio deja de reconvertir la hora usando la zona del navegador y muestra siempre la hora local de Madrid. **Validación técnica completada** (286/286 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Corrección del desfase horario
+
+- **Nueva utilidad `src/app/shared/madrid-time.util.ts`** (sin dependencias nuevas, usa `Intl.DateTimeFormat` con `timeZone: 'Europe/Madrid'`): sustituye la lógica anterior de `calendario.component.ts` que reconvertía la hora recibida usando `date.getTimezoneOffset()` del navegador — precisamente el punto donde se materializaba el "+2h" visible, sobre todo si quien mira la pantalla no está en la zona de Madrid.
+  - `toMadridDateTimeInputValue()`: rellena los `<input type="datetime-local">` de crear/editar con la hora local de Madrid, no la del navegador.
+  - `madridDateOnly()`: determina en qué día del calendario cae una actividad según Madrid, no según UTC ni el navegador (corrige también un desplazamiento de día posible de madrugada).
+  - `formatMadridDate()` / pipe `madridDate` (`src/app/shared/madrid-date.pipe.ts`): sustituye al pipe `date` de Angular en las 5 vistas que mostraban `fechaInicio`/`fechaFin` de una actividad — el pipe `date` de Angular no es DST-aware (su parámetro `timezone` no admite zonas IANA como `Europe/Madrid`, solo offsets fijos).
+- Al crear/editar, el `<input type="datetime-local">` sigue enviando el mismo valor naive de siempre (sin cambios): el contrato temporal completo se resuelve en `ffsj-secretaria-api`.
+- Pruebas de regresión (`madrid-time.util.spec.ts`, `calendario.component.spec.ts`): verano, invierno, y una actividad de madrugada que cambia de día entre UTC y Madrid, comprobando que el calendario la coloca en el día correcto.
+
+### Lugar de la actividad
+
+- `ActividadSecretaria.lugar` (nuevo campo opcional) en `core/models.ts`.
+- Nuevo campo de texto "Lugar" en los formularios de creación y gestión de `calendario.component`, junto a las fechas (patrón igual al de "Responsable": texto simple, sin editor enriquecido).
+- Se muestra en el detalle lateral, en el modal de detalle de actividad, en el listado de propuestas y en el modal de detalle de propuesta — solo cuando tiene contenido; sin placeholder cuando está vacío.
+- Actividades existentes sin lugar mantienen su comportamiento actual.
+
+## 0.30.0#ESMERALDA — Contexto e instrucciones de Inscripciones
+
+> Permite a Administración añadir a cada Inscripción un contexto/instrucciones opcional en Markdown (requisitos, documentación necesaria, observaciones) para la asociación. El campo (`informacion`) ya existía y se persistía en `ffsj-secretaria-api` (ver su CHANGELOG); esta versión aporta el editor Markdown grande y el renderizado seguro, ninguno de los cuales existía en el proyecto. **Validación técnica completada** (274/274 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+- **Nuevo editor Markdown reutilizable** (`src/app/shared/markdown-editor.component.ts`, `app-markdown-editor`): `ControlValueAccessor` estándar (funciona con `formControlName` igual que un input nativo), con pestañas "Editar"/"Vista previa" y ayuda de sintaxis. No existía ningún editor Markdown en el proyecto; se ha creado en lugar de asumir que había uno que reutilizar.
+- **Nuevo pipe `markdown`** (`src/app/shared/markdown.pipe.ts`, usa `marked`, única dependencia nueva): convierte Markdown a HTML como *string* plano, para que el saneador HTML de Angular lo sanitice automáticamente al enlazarlo vía `[innerHTML]` (sin necesidad de `DomSanitizer.bypassSecurityTrustHtml` ni de una segunda librería de sanitizado).
+- **Inscripciones — Administración**: el campo "Información general" (`<textarea>`) de los formularios de creación y de gestión se sustituye por el nuevo editor Markdown, etiquetado como instrucciones para la asociación. Se puede editar en cualquier momento posterior desde el paso de Gestión.
+- **Inscripciones — Asociación**: cuando la inscripción tiene instrucciones, se muestran renderizadas como Markdown (de forma segura) en un bloque destacado "Instrucciones de la inscripción", antes de las pestañas de documentación/formulario/participantes. Cuando no hay contenido, no se muestra ningún bloque (compatibilidad con inscripciones existentes).
+- Pruebas nuevas: `markdown.pipe.spec.ts`, `markdown-editor.component.spec.ts` (incluye un caso de intento de XSS vía `<script>`, que queda eliminado por el saneador de Angular) e incorporaciones en `inscripciones.component.spec.ts` (creación con instrucciones, edición posterior, inscripción sin instrucciones, renderizado seguro antes del contenido operativo).
+
 ## Integración de RUBI v2 en `main` y Dark Launch (post-cierre de 1.12.0#RUBI)
 
 > `develop` (con RUBI 1.9.0→1.12.0 íntegro) se ha integrado en `main` mediante `merge --no-ff`. `main` no tenía ningún commit propio no contenido ya en `develop`, así que el merge fue automático, sin conflictos. El grueso de esta operación (migraciones de base de datos, dark launch) vive en `ffsj-secretaria-api`; ver su CHANGELOG para el detalle completo. No se ha desplegado código a ningún entorno; el deploy de frontend/API sigue siendo manual y pendiente.

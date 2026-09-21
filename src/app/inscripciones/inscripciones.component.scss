@@ -148,6 +148,18 @@
   padding-bottom: 0.8rem;
 }
 
+.inscription-instructions {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+
+  .markdown-body {
+    :first-child { margin-top: 0; }
+    :last-child { margin-bottom: 0; }
+  }
+}
+
 .admin-tabs,
 .participant-tabs {
   display: flex;

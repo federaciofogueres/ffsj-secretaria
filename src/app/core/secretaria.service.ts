@@ -25,6 +25,8 @@ import {
   RegistroResponsable,
   RegistroPendiente,
   RegistroSecretaria,
+  Release,
+  ReleaseCreatePayload,
   ResponsableInscripcion,
   PaginacionSecretaria,
   SolicitudModificacionAsociacion,
@@ -258,6 +260,20 @@ export class SecretariaService {
     });
   }
 
+  solicitarInformacionRepresentacionLegal(id: number, destinatarioId: number): Observable<{
+    solicitud: SolicitudSecretaria;
+    comunicacion: RegistroSecretaria;
+    duplicada: boolean;
+  }> {
+    return this.http.post<{
+      solicitud: SolicitudSecretaria;
+      comunicacion: RegistroSecretaria;
+      duplicada: boolean;
+    }>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/solicitar-representacion-legal`, { destinatarioId }, {
+      headers: this.authHeaders()
+    });
+  }
+
   rechazarSolicitud(id: number): Observable<SolicitudSecretaria> {
     return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/rechazar`, {}, {
       headers: this.authHeaders()
@@ -295,11 +311,13 @@ export class SecretariaService {
 
   getAutorizacionesAlta(filters: {
     asociacionId?: number;
+    destinatarioId?: number;
     scope?: 'anterior' | 'nueva';
     estado?: AutorizacionAlta['estado'];
   } = {}): Observable<{ autorizaciones: AutorizacionAlta[] }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.destinatarioId) params = params.set('destinatarioId', filters.destinatarioId);
     if (filters.scope) params = params.set('scope', filters.scope);
     if (filters.estado) params = params.set('estado', filters.estado);
     return this.http.get<{ autorizaciones: AutorizacionAlta[] }>(`${this.apiUrl.secretariaBasePath}/autorizaciones-alta`, {
@@ -334,6 +352,7 @@ export class SecretariaService {
 
   getRegistros(filters: {
     asociacionId?: number;
+    destinatarioId?: number;
     tipo?: string;
     origen?: 'asociacion' | 'administracion';
     anio?: number | string;
@@ -346,6 +365,7 @@ export class SecretariaService {
   } = {}): Observable<{ registros: RegistroSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.destinatarioId) params = params.set('destinatarioId', filters.destinatarioId);
     if (filters.tipo) params = params.set('tipo', filters.tipo);
     if (filters.origen) params = params.set('origen', filters.origen);
     if (filters.anio) params = params.set('anio', filters.anio);
@@ -361,14 +381,38 @@ export class SecretariaService {
     });
   }
 
-  getRegistroDestinatarios(): Observable<{ destinatarios: RegistroDestinatario[] }> {
-    return this.http.get<{ destinatarios: RegistroDestinatario[] }>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, {
+  getRegistroDestinatarios(): Observable<{ destinatarios: RegistroDestinatario[]; accesoGlobal?: boolean }> {
+    return this.http.get<{ destinatarios: RegistroDestinatario[]; accesoGlobal?: boolean }>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, {
       headers: this.authHeaders()
     });
   }
 
   getRegistroResponsables(): Observable<{ responsables: RegistroResponsable[] }> {
     return this.http.get<{ responsables: RegistroResponsable[] }>(`${this.apiUrl.secretariaBasePath}/registros/responsables`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getReleaseActiva(): Observable<{ release: Release | null }> {
+    return this.http.get<{ release: Release | null }>(`${this.apiUrl.secretariaBasePath}/release/activa`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getReleases(): Observable<{ releases: Release[] }> {
+    return this.http.get<{ releases: Release[] }>(`${this.apiUrl.secretariaBasePath}/admin/release`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearRelease(payload: ReleaseCreatePayload): Observable<{ release: Release }> {
+    return this.http.post<{ release: Release }>(`${this.apiUrl.secretariaBasePath}/admin/release`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  activarRelease(id: number): Observable<{ release: Release }> {
+    return this.http.post<{ release: Release }>(`${this.apiUrl.secretariaBasePath}/admin/release/${id}/activar`, {}, {
       headers: this.authHeaders()
     });
   }

@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
+import { FfsjDialogAlertService } from 'ffsj-web-components';
 
 import { SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
@@ -44,10 +45,15 @@ describe('SolicitudesComponent', () => {
       'rechazarSolicitud',
       'finalizarSolicitud',
       'cancelarEnvioSolicitud',
-      'getIncidencias'
+      'getIncidencias',
+      'getRegistroDestinatarios',
+      'solicitarInformacionRepresentacionLegal'
     ]);
     secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes, paginacion: { page: 1, pageSize: 20, total: 25, totalPages: 2 } }));
     secretariaService.getIncidencias.and.returnValue(of({ incidencias: [] }));
+    secretariaService.getRegistroDestinatarios.and.returnValue(of({ destinatarios: [{
+      id: 9, nombre: 'Registro', departamentoNombre: 'Secretaría', departamentoId: 1, departamentoCodigo: 'secretaria'
+    }] }));
     secretariaService.getSolicitud.and.returnValue(of({
       ...solicitudes[0],
       items: [
@@ -62,6 +68,11 @@ describe('SolicitudesComponent', () => {
       ]
     }));
     secretariaService.validarSolicitud.and.returnValue(of({ ...solicitudes[0], estado: 'validada' }));
+    secretariaService.solicitarInformacionRepresentacionLegal.and.returnValue(of({
+      solicitud: { ...solicitudes[0], estado: 'validada' },
+      comunicacion: { id: 4, numero: 'REG-4', asociacionId: 25, tipo: 'comunicacion', origen: 'administracion', titulo: 'Representación legal', estado: 'enviada', fechaEntrada: '', adjuntos: [] },
+      duplicada: false
+    }));
     censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion']);
     censoService.getAsociacion.and.callFake((id: number) => of({
       id,
@@ -74,6 +85,7 @@ describe('SolicitudesComponent', () => {
       providers: [
         { provide: SecretariaService, useValue: secretariaService },
         { provide: CensoService, useValue: censoService }
+        , { provide: FfsjDialogAlertService, useValue: { openDialogAlert: () => ({ afterClosed: () => of(null) }) } }
       ]
     }).compileComponents();
 
@@ -119,6 +131,20 @@ describe('SolicitudesComponent', () => {
 
     expect(secretariaService.validarSolicitud).toHaveBeenCalledWith(1);
     expect(component.detalle?.estado).toBe('validada');
+  });
+
+  it('ofrece solicitar información tras una validación excepcional', () => {
+    secretariaService.validarSolicitud.and.returnValue(of({
+      ...solicitudes[0], estado: 'validada', validacionExcepcionalRepresentacionLegal: {
+        menores: [{ itemId: 10, nombre: 'Maria', apellidos: 'Prueba' }]
+      }
+    }));
+    component.verSolicitud(solicitudes[0]);
+    component.validar();
+
+    expect(component.solicitudConRepresentacionPendiente?.id).toBe(1);
+    component.solicitarInformacionRepresentacionLegal();
+    expect(secretariaService.solicitarInformacionRepresentacionLegal).toHaveBeenCalledWith(1, 9);
   });
 
   it('permite cerrar el dialogo de detalle', () => {

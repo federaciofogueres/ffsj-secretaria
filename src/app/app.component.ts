@@ -12,7 +12,9 @@ import { DashboardSummaryService } from './core/dashboard-summary.service';
 import { SecretariaService } from './core/secretaria.service';
 import { AppLanguage, I18nService } from './core/i18n.service';
 import { TranslatePipe } from './shared/translate.pipe';
+import { MarkdownPipe } from './shared/markdown.pipe';
 import { APP_VERSION } from './core/app-version';
+import { ReleaseService } from './core/release.service';
 import { RubiConversationService } from './rubi/rubi-conversation.service';
 import { RubiPanelComponent } from './rubi/rubi-panel.component';
 
@@ -27,13 +29,16 @@ interface PendingTask {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, FfsjSpinnerComponent, TranslatePipe, RubiPanelComponent],
+  imports: [CommonModule, FormsModule, RouterOutlet, RouterLink, RouterLinkActive, FfsjAlertComponent, FfsjSpinnerComponent, TranslatePipe, MarkdownPipe, RubiPanelComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
 export class AppComponent implements OnInit, OnDestroy {
   readonly title = 'ffsj-secretaria';
-  readonly version = APP_VERSION;
+  version = APP_VERSION;
+  versionNovedades: string | null = null;
+  versionFechaPublicacion: string | null = null;
+  versionInfoOpen = false;
 
   readonly navLinks = [
     { path: '/', label: 'nav.home', icon: 'bi-house-fill' },
@@ -87,6 +92,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private tareasSubscription?: Subscription;
   private tareasLoadingSubscription?: Subscription;
   private tareasErrorSubscription?: Subscription;
+  private releaseSubscription?: Subscription;
   private rubiContextKey: string | null = null;
 
   constructor(
@@ -98,6 +104,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private readonly secretariaService: SecretariaService,
     private readonly dashboardSummary: DashboardSummaryService,
     private readonly rubiConversation: RubiConversationService,
+    private readonly releaseService: ReleaseService,
     readonly i18n: I18nService
   ) {}
 
@@ -106,7 +113,13 @@ export class AppComponent implements OnInit, OnDestroy {
     this.isAdmin = this.isLoggedIn && this.adminAccess.isAdmin();
     if (this.isLoggedIn) {
       this.permissions.loadContext().subscribe();
+      this.releaseService.load();
     }
+    this.releaseSubscription = this.releaseService.releaseChanges.subscribe(() => {
+      this.version = this.releaseService.versionLabel;
+      this.versionNovedades = this.releaseService.novedades;
+      this.versionFechaPublicacion = this.releaseService.fechaPublicacion;
+    });
     this.contextSubscription = this.permissions.contextChanges.subscribe(context => {
       const nextRubiContextKey = context ? `${context.asociacionId}:${context.ejercicioActivo?.id ?? ''}` : null;
       if (this.rubiContextKey && nextRubiContextKey && this.rubiContextKey !== nextRubiContextKey) {
@@ -140,10 +153,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.isAdmin = isLogged && this.adminAccess.isAdmin();
       if (isLogged) {
         this.permissions.loadContext().subscribe();
+        this.releaseService.load();
       } else {
         this.permissions.clear();
         this.dashboardSummary.clear();
         this.rubiConversation.clear();
+        this.releaseService.clear();
       }
     });
     this.routerSubscription = this.router.events
@@ -164,6 +179,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.tareasSubscription?.unsubscribe();
     this.tareasLoadingSubscription?.unsubscribe();
     this.tareasErrorSubscription?.unsubscribe();
+    this.releaseSubscription?.unsubscribe();
   }
 
   toggleMenu(): void {
@@ -304,6 +320,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.ejercicioSearch = '';
   }
 
+  toggleVersionInfo(): void {
+    this.versionInfoOpen = !this.versionInfoOpen;
+  }
+
   toggleTareas(): void {
     this.tareasOpen = !this.tareasOpen;
     this.associationSelectorOpen = false;
@@ -342,5 +362,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.tareasOpen = false;
     this.exerciseListOpen = false;
     this.ejercicioSearch = '';
+    this.versionInfoOpen = false;
   }
 }

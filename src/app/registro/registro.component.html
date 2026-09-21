@@ -54,7 +54,7 @@
         </div>
         <button class="ux-btn ux-btn-secondary" type="button" (click)="resetMode()">
           <i class="bi bi-arrow-left"></i>
-          Volver
+          {{ isDetailView ? 'Volver al listado' : 'Volver' }}
         </button>
       </div>
 
@@ -64,28 +64,46 @@
           <strong>Ejercicio solo consulta.</strong> {{ mensajeComunicacionBloqueada }}
         </div>
         <lib-ffsj-spinner *ngIf="loadingRegistros" [fullscreen]="true"></lib-ffsj-spinner>
-        <div class="year-filter mb-3" *ngIf="mode !== null">
-          <label class="form-label mb-0">Año
-          <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
-            <option [ngValue]="''">Todos</option>
-            <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
-          </select></label>
-          <label class="form-label mb-0">Buscar
-          <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" /></label>
-          <label class="form-label mb-0">Estado
-          <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
-            <option value="">Todos los estados</option>
-            <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
-          </select></label>
-          <label class="form-label mb-0">Ordenar
-          <select class="form-select form-select-sm" [(ngModel)]="ordenRegistros" (ngModelChange)="aplicarFiltros()" aria-label="Ordenar registros">
-            <option value="fecha_desc">Actualizados primero</option>
-            <option value="fecha_asc">Actualizados al final</option>
-            <option value="estado">Estado</option>
-            <option value="titulo">Título</option>
-          </select></label>
-          <div class="filter-action"><span class="form-label">Acción</span><button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button></div>
+        <div class="registro-filters mb-3" *ngIf="mode !== null && !isDetailView">
+          <div class="filters-primary">
+            <label class="filter-search mb-0">
+              <span class="visually-hidden">Buscar</span>
+              <i class="bi bi-search"></i>
+              <input class="form-control form-control-sm" type="search" [(ngModel)]="filtroTexto" (keyup.enter)="aplicarFiltros()" placeholder="Buscar número, título o texto" />
+            </label>
+            <select class="form-select form-select-sm filter-buzon" *ngIf="isAdminMode && accesoGlobalRegistro" [(ngModel)]="destinatarioFiltro" (ngModelChange)="cambiarBuzon()" aria-label="Seleccionar buzón">
+              <option [ngValue]="''">Todos los buzones</option>
+              <option *ngFor="let destinatario of destinatarios" [ngValue]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
+            </select>
+            <select class="form-select form-select-sm" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()" aria-label="Filtrar por estado">
+              <option value="">Todos los estados</option>
+              <option *ngFor="let estado of estadosRegistro" [value]="estado">{{ estadoLabel(estado) }}</option>
+            </select>
+            <button class="ux-btn ux-btn-secondary ux-btn-sm filters-toggle" type="button" (click)="toggleMasFiltros()" [attr.aria-expanded]="masFiltrosAbierto">
+              <i class="bi bi-sliders"></i>
+              Más filtros
+            </button>
+            <button class="btn btn-link btn-sm filters-clear" type="button" *ngIf="hayFiltrosActivos" (click)="limpiarFiltros()">
+              <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+            </button>
+          </div>
+          <div class="filters-secondary" [class.open]="masFiltrosAbierto">
+            <label class="form-label mb-0">Año
+            <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
+              <option [ngValue]="''">Todos</option>
+              <option *ngFor="let anio of aniosDisponibles" [ngValue]="anio">{{ anio }}</option>
+            </select></label>
+            <label class="form-label mb-0">Ordenar
+            <select class="form-select form-select-sm" [(ngModel)]="ordenRegistros" (ngModelChange)="aplicarFiltros()" aria-label="Ordenar registros">
+              <option value="fecha_desc">Actualizados primero</option>
+              <option value="fecha_asc">Actualizados al final</option>
+              <option value="estado">Estado</option>
+              <option value="titulo">Título</option>
+            </select></label>
+          </div>
         </div>
+
+        <div class="alert alert-success py-2" *ngIf="estadoFeedback">{{ estadoFeedback }}</div>
 
 
         <section class="list-card" *ngIf="mode === 'documentacion' && !isFormView && !isDetailView">
@@ -123,23 +141,23 @@
           </div>
           <div class="registro-list mb-3" *ngIf="autorizacionesFirmaVisibles.length > 0">
             <article class="registro-row authorization-row" *ngFor="let autorizacion of autorizacionesFirmaVisibles">
-              <span>
-                <strong>{{ autorizacion.solicitudNumero }}</strong>
-                <small>Certificación de alta de {{ autorizacion.asociadoNombre }}</small>
-                <small class="registro-meta">
-                  Procedencia: {{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}
-                  <span>Dirigida a: {{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</span>
-                  <span>Creada: {{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
-                </small>
-              </span>
-              <span class="d-flex align-items-center gap-2">
-                <span class="badge estado" [ngClass]="autorizacion.estado === 'archivada' ? 'archivada' : 'enviada'">
-                  {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de certificaciÃ³n' }}
-                </span>
-                <button class="ux-btn ux-btn-sm" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="abrirDetalleAutorizacion(autorizacion)">
-                  Ver detalles
-                </button>
-              </span>
+              <div class="registro-row-main">
+                <div class="registro-row-top">
+                  <span class="registro-numero">{{ autorizacion.solicitudNumero }}</span>
+                  <span class="badge estado" [ngClass]="autorizacion.estado === 'archivada' ? 'archivada' : 'enviada'">
+                    {{ autorizacion.estado === 'archivada' ? 'Archivada' : 'Pendiente de certificación' }}
+                  </span>
+                </div>
+                <strong class="registro-titulo">Certificación de alta de {{ autorizacion.asociadoNombre }}</strong>
+                <div class="registro-meta">
+                  <span><i class="bi bi-building"></i>Procedencia: {{ autorizacion.asociacionAnteriorNombre || asociacionNombreById(autorizacion.asociacionAnteriorId) }}</span>
+                  <span><i class="bi bi-send"></i>Dirigida a: {{ asociacionNombreById(autorizacion.asociacionNuevaId) }}</span>
+                  <span><i class="bi bi-calendar3"></i>{{ autorizacion.fechaCreacion | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </div>
+              <button class="ux-btn ux-btn-sm registro-row-cta" type="button" *ngIf="autorizacion.estado === 'pendiente_firma'" [disabled]="updatingEstado" (click)="abrirDetalleAutorizacion(autorizacion)">
+                Ver detalles
+              </button>
             </article>
           </div>
           <div class="registro-list" *ngIf="docRefs.length > 0; else emptyDocs">
@@ -150,17 +168,22 @@
               [class.active]="isCurrentRef(ref, 'documentacion')"
               (click)="openReferencia(ref, 'documentacion')"
             >
-              <span>
-                <strong>{{ ref.numero }}</strong>
-                <small>{{ ref.titulo }}</small>
-                <small class="registro-meta">
-                  Emisor: {{ emisorCompleto(ref) }}
-                  <span>Dirigida a: {{ receptorRegistro(ref) }}</span>
-                  <span>Creada: {{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
-                  <span>Actualizada: {{ fechaActualizacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
-                </small>
-              </span>
-              <span class="badge estado" [ngClass]="estadoClass(ref.estado)">{{ estadoLabel(ref.estado) }}</span>
+              <div class="registro-row-main">
+                <div class="registro-row-top">
+                  <span class="registro-numero">{{ ref.numero }}</span>
+                  <span class="badge estado" [ngClass]="estadoClass(ref.estado)">{{ estadoLabel(ref.estado) }}</span>
+                </div>
+                <strong class="registro-titulo">{{ ref.titulo }}</strong>
+                <div class="registro-meta">
+                  <span><i class="bi bi-person"></i>Emisor: {{ emisorCompleto(ref) }}</span>
+                  <span><i class="bi bi-send"></i>Dirigida a: {{ receptorRegistro(ref) }}</span>
+                  <span *ngIf="ref.departamentoNombre"><i class="bi bi-diagram-3"></i>Área: {{ ref.departamentoNombre }}</span>
+                  <span *ngIf="ref.destinatarioNombre"><i class="bi bi-inbox"></i>Destinatario: {{ ref.destinatarioNombre }}</span>
+                  <span><i class="bi bi-calendar3"></i>{{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  <span *ngIf="ref.adjuntos.length"><i class="bi bi-paperclip"></i>{{ ref.adjuntos[0].originalName }}<ng-container *ngIf="ref.adjuntos.length > 1"> +{{ ref.adjuntos.length - 1 }}</ng-container></span>
+                </div>
+              </div>
+              <span class="registro-row-action">Ver detalle<i class="bi bi-chevron-right"></i></span>
             </button>
           </div>
           <ng-template #emptyDocs>
@@ -214,17 +237,22 @@
               [class.active]="isCurrentRef(ref, 'comunicacion')"
               (click)="openReferencia(ref, 'comunicacion')"
             >
-              <span>
-                <strong>{{ ref.numero }}</strong>
-                <small>{{ ref.titulo }}</small>
-                <small class="registro-meta">
-                  Emisor: {{ emisorCompleto(ref) }}
-                  <span>Receptor: {{ receptorRegistro(ref) }}</span>
-                  <span>Creada: {{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
-                  <span>Actualizada: {{ fechaActualizacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
-                </small>
-              </span>
-              <span class="badge estado" [ngClass]="estadoComunicacionClass(ref)">{{ estadoComunicacionLabel(ref) }}</span>
+              <div class="registro-row-main">
+                <div class="registro-row-top">
+                  <span class="registro-numero">{{ ref.numero }}</span>
+                  <span class="badge estado" [ngClass]="estadoComunicacionClass(ref)">{{ estadoComunicacionLabel(ref) }}</span>
+                </div>
+                <strong class="registro-titulo">{{ ref.titulo }}</strong>
+                <div class="registro-meta">
+                  <span><i class="bi bi-person"></i>Emisor: {{ emisorCompleto(ref) }}</span>
+                  <span><i class="bi bi-send"></i>Receptor: {{ receptorRegistro(ref) }}</span>
+                  <span *ngIf="ref.departamentoNombre"><i class="bi bi-diagram-3"></i>Área: {{ ref.departamentoNombre }}</span>
+                  <span *ngIf="ref.destinatarioNombre"><i class="bi bi-inbox"></i>Destinatario: {{ ref.destinatarioNombre }}</span>
+                  <span><i class="bi bi-calendar3"></i>{{ fechaCreacionRegistro(ref) | date: 'dd/MM/yyyy HH:mm' }}</span>
+                  <span *ngIf="ref.adjuntos.length"><i class="bi bi-paperclip"></i>{{ ref.adjuntos[0].originalName }}<ng-container *ngIf="ref.adjuntos.length > 1"> +{{ ref.adjuntos.length - 1 }}</ng-container></span>
+                </div>
+              </div>
+              <span class="registro-row-action">Ver detalle<i class="bi bi-chevron-right"></i></span>
             </button>
           </div>
           <ng-template #emptyComms>
@@ -239,109 +267,297 @@
           </nav>
         </section>
 
-        <section class="status-card" *ngIf="isDetailView && (mode === 'documentacion' ? docResultado : commResultado) as resultado">
-          <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
-            <div>
-              <p class="text-muted mb-1">Registro de entrada</p>
-              <p class="h5 mb-0">{{ resultado.numero }}</p>
+        <section class="registro-detail" *ngIf="isDetailView && (mode === 'documentacion' ? docResultado : commResultado) as resultado">
+          <header class="detail-header">
+            <div class="detail-header-row">
+              <div class="detail-header-icon">
+                <i class="bi" [ngClass]="mode === 'comunicacion' ? 'bi-chat-square-text' : 'bi-file-earmark-text'"></i>
+              </div>
+              <div class="detail-header-main">
+                <div class="detail-header-top">
+                  <span class="registro-numero">{{ resultado.numero }}</span>
+                  <ng-container *ngIf="isAdminMode && permissions.hasPermission('registro:write'); else estadoSoloLectura">
+                    <select
+                      class="detail-estado-select badge estado"
+                      [ngClass]="estadoClass(resultado.estado)"
+                      [disabled]="updatingEstado"
+                      [ngModel]="resultado.estado"
+                      (ngModelChange)="cambiarEstado(resultado, $event)"
+                      aria-label="Cambiar estado del registro"
+                    >
+                      <option *ngFor="let estado of estadosManuales(resultado)" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
+                    </select>
+                  </ng-container>
+                  <ng-template #estadoSoloLectura>
+                    <span class="badge estado" [ngClass]="estadoClass(resultado.estado)">{{ estadoLabel(resultado.estado) }}</span>
+                  </ng-template>
+                </div>
+                <h2 class="detail-title">{{ resultado.titulo }}</h2>
+                <div class="registro-meta">
+                  <span><i class="bi bi-person"></i>Emisor: {{ emisorCompleto(resultado) }}</span>
+                  <ng-container *ngIf="mode === 'comunicacion'; else metaDocumentacion">
+                    <span><i class="bi bi-send"></i>Receptor: {{ receptorRegistro(resultado) }}</span>
+                  </ng-container>
+                  <ng-template #metaDocumentacion>
+                    <span><i class="bi bi-send"></i>Dirigida a: {{ receptorRegistro(resultado) }}</span>
+                    <span *ngIf="resultado.departamentoNombre"><i class="bi bi-diagram-3"></i>Área: {{ resultado.departamentoNombre }}</span>
+                    <span *ngIf="resultado.destinatarioNombre"><i class="bi bi-inbox"></i>Destinatario: {{ resultado.destinatarioNombre }}</span>
+                  </ng-template>
+                  <span><i class="bi bi-calendar3"></i>Creada: {{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</span>
+                </div>
+              </div>
+              <div class="detail-header-actions">
+                <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="updatingEstado" (click)="marcarRegistroNoLeido(resultado)">
+                  <i class="bi bi-envelope me-1"></i>Marcar como no leído
+                </button>
+              </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-              <span class="text-muted">Estado</span>
-              <span
-                class="badge estado"
-                [ngClass]="mode === 'comunicacion' ? estadoComunicacionClass(resultado) : estadoClass(resultado.estado)"
+            <button
+              type="button"
+              class="detail-header-attachment"
+              *ngIf="adjuntosIniciales(resultado).length"
+              (click)="descargarAdjunto(adjuntosIniciales(resultado)[0])"
+            >
+              <i class="bi" [ngClass]="adjuntosIniciales(resultado)[0].mimeType === 'application/pdf' ? 'bi-file-earmark-pdf' : (adjuntosIniciales(resultado)[0].mimeType || '').startsWith('image/') ? 'bi-file-earmark-image' : 'bi-file-earmark'"></i>
+              {{ adjuntosIniciales(resultado)[0].originalName }}
+              <ng-container *ngIf="adjuntosIniciales(resultado).length > 1"> +{{ adjuntosIniciales(resultado).length - 1 }}</ng-container>
+            </button>
+          </header>
+
+          <div class="detail-layout">
+            <div class="detail-main">
+              <nav class="detail-tabs" role="tablist" aria-label="Secciones del registro">
+                <button
+                  *ngFor="let tab of detailTabs; let i = index"
+                  class="detail-tab"
+                  type="button"
+                  role="tab"
+                  [id]="'registro-detail-tab-' + tab.id"
+                  [attr.aria-controls]="'registro-detail-panel-' + tab.id"
+                  [attr.aria-selected]="detailTab === tab.id"
+                  [tabIndex]="detailTab === tab.id ? 0 : -1"
+                  [class.active]="detailTab === tab.id"
+                  (click)="activarDetailTab(tab.id)"
+                  (keydown)="navegarDetailTabs($event, i)"
+                >
+                  <i class="bi" [ngClass]="tab.icon"></i>
+                  {{ tab.label }}
+                  <span class="tab-count" *ngIf="tab.id === 'conversacion' && (resultado.mensajes?.length || 0) > 0">{{ resultado.mensajes?.length }}</span>
+                  <span class="tab-count" *ngIf="tab.id === 'trazabilidad' && (resultado.eventos?.length || 0) > 0">{{ resultado.eventos?.length }}</span>
+                  <span class="tab-count" *ngIf="tab.id === 'incidencias' && incidenciasCount > 0">{{ incidenciasCount }}</span>
+                </button>
+              </nav>
+
+              <section
+                *ngIf="detailTab === 'informacion'"
+                id="registro-detail-panel-informacion"
+                role="tabpanel"
+                aria-labelledby="registro-detail-tab-informacion"
+                class="detail-tab-panel"
               >
-                {{ mode === 'comunicacion' ? estadoComunicacionLabel(resultado) : estadoLabel(resultado.estado) }}
-              </span>
+                <article class="info-card">
+                  <h3 class="info-card-title"><i class="bi bi-file-earmark-text"></i>Resumen</h3>
+                  <div class="info-field">
+                    <span class="info-field-label">Asunto / Título</span>
+                    <p class="info-field-value">{{ resultado.titulo }}</p>
+                  </div>
+                  <div class="info-field" *ngIf="resultado.mensaje">
+                    <span class="info-field-label">{{ mode === 'comunicacion' ? 'Mensaje inicial' : 'Contenido' }}</span>
+                    <p class="info-field-value">{{ resultado.mensaje }}</p>
+                  </div>
+                </article>
+
+                <article class="info-card">
+                  <h3 class="info-card-title"><i class="bi bi-people"></i>Participantes</h3>
+                  <div class="info-participants">
+                    <div>
+                      <span class="info-field-label">Emisor</span>
+                      <p class="info-field-value">{{ emisorRegistro(resultado) }}</p>
+                      <small class="text-muted" *ngIf="resultado.emisorPersona">{{ resultado.emisorPersona }}</small>
+                    </div>
+                    <div>
+                      <span class="info-field-label">{{ mode === 'comunicacion' ? 'Receptor' : 'Dirigida a' }}</span>
+                      <p class="info-field-value">{{ receptorRegistro(resultado) }}</p>
+                    </div>
+                  </div>
+                  <div class="registro-meta mt-2" *ngIf="mode === 'documentacion' && (resultado.departamentoNombre || resultado.destinatarioNombre)">
+                    <span *ngIf="resultado.departamentoNombre"><i class="bi bi-diagram-3"></i>Área: {{ resultado.departamentoNombre }}</span>
+                    <span *ngIf="resultado.destinatarioNombre"><i class="bi bi-inbox"></i>Destinatario: {{ resultado.destinatarioNombre }}</span>
+                  </div>
+                </article>
+
+                <article class="info-card" *ngIf="adjuntosIniciales(resultado).length">
+                  <h3 class="info-card-title"><i class="bi bi-paperclip"></i>Adjuntos iniciales</h3>
+                  <div class="attachments">
+                    <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of adjuntosIniciales(resultado)" (click)="descargarAdjunto(adjunto)">
+                      {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
+                    </button>
+                  </div>
+                </article>
+
+                <button
+                  type="button"
+                  class="info-conversation-cta"
+                  *ngIf="mode === 'comunicacion' && resultado.mensajes?.length"
+                  (click)="activarDetailTab('conversacion')"
+                >
+                  <i class="bi bi-chat-dots"></i>
+                  <span class="info-conversation-cta-text">
+                    <strong>Esta comunicación tiene un hilo de conversación</strong>
+                    <small>{{ resultado.mensajes?.length }} mensaje(s)</small>
+                  </span>
+                  <span class="info-conversation-cta-action">Ir a Conversación <i class="bi bi-arrow-right"></i></span>
+                </button>
+
+                <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="mode === 'documentacion' && permissions.hasPermission('registro:write')">
+                  <button
+                    class="ux-btn ux-btn-secondary ux-btn-sm"
+                    type="button"
+                    [disabled]="updatingEstado || resultado.estado === 'archivada'"
+                    (click)="archivarDocumentacion(resultado)"
+                  >
+                    Archivar
+                  </button>
+                </div>
+              </section>
+
+              <section
+                *ngIf="detailTab === 'conversacion' && mode === 'comunicacion'"
+                id="registro-detail-panel-conversacion"
+                role="tabpanel"
+                aria-labelledby="registro-detail-tab-conversacion"
+                class="detail-tab-panel"
+              >
+                <div class="conversation" *ngIf="resultado.mensajes?.length; else sinConversacion">
+                  <article class="conversation-message" *ngFor="let mensaje of resultado.mensajes" [class.own]="mensaje.actor === 'administracion'">
+                    <span class="conversation-avatar" [class.own]="mensaje.actor === 'administracion'">{{ mensajeIniciales(mensaje, resultado) }}</span>
+                    <div class="conversation-bubble">
+                      <div class="conversation-meta">
+                        <strong>{{ mensajeAutorCompleto(mensaje, resultado) }}</strong>
+                        <small>{{ mensaje.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+                      </div>
+                      <p class="conversation-text mb-0" *ngIf="mensaje.mensaje">{{ mensaje.mensaje }}</p>
+                      <div class="conversation-attachments" *ngIf="mensaje.adjuntos.length">
+                        <button type="button" class="conversation-attachment" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto)">
+                          <i class="bi" [ngClass]="adjunto.mimeType === 'application/pdf' ? 'bi-file-earmark-pdf' : (adjunto.mimeType || '').startsWith('image/') ? 'bi-file-earmark-image' : 'bi-file-earmark'"></i>
+                          <span class="conversation-attachment-info">
+                            <strong>{{ adjunto.originalName }}</strong>
+                            <small>{{ tamanoAdjunto(adjunto.sizeBytes) }}</small>
+                          </span>
+                          <i class="bi bi-download"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                </div>
+                <ng-template #sinConversacion>
+                  <p class="text-muted mb-0">Todavía no hay mensajes en esta conversación.</p>
+                </ng-template>
+
+                <div class="reply-box mt-3" *ngIf="permissions.hasPermission('registro:write')">
+                  <ng-container *ngIf="resultado.estado !== 'finalizada'; else comunicacionFinalizada">
+                    <label class="form-label">Responder en esta conversación</label>
+                    <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe tu respuesta..."></textarea>
+                    <app-adjuntos-selector label="Adjuntar archivos" [files]="respuestaAdjuntos" [disabled]="submittingComm" (filesChange)="respuestaAdjuntos = $event" />
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                      <button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
+                        <i class="bi bi-send me-1"></i>Responder
+                      </button>
+                      <button class="btn btn-outline-danger btn-sm" type="button" *ngIf="puedeCerrarComunicacion(resultado)" [disabled]="submittingComm" (click)="cerrarComunicacion(resultado)">
+                        Cerrar comunicacion
+                      </button>
+                    </div>
+                  </ng-container>
+                  <ng-template #comunicacionFinalizada>
+                    <p class="text-muted mb-0">Esta comunicacion esta finalizada y no admite nuevas respuestas.</p>
+                  </ng-template>
+                </div>
+              </section>
+
+              <section
+                *ngIf="detailTab === 'trazabilidad'"
+                id="registro-detail-panel-trazabilidad"
+                role="tabpanel"
+                aria-labelledby="registro-detail-tab-trazabilidad"
+                class="detail-tab-panel"
+              >
+                <ol class="timeline" *ngIf="resultado.eventos?.length; else sinTrazabilidad">
+                  <li class="timeline-item" *ngFor="let evento of resultado.eventos">
+                    <span class="timeline-marker"><i class="bi" [ngClass]="eventoTipoIcono(evento.tipo)"></i></span>
+                    <div class="timeline-content">
+                      <div class="d-flex justify-content-between gap-2 flex-wrap">
+                        <strong>{{ eventoTipoLabel(evento.tipo) }}</strong>
+                        <small class="text-muted">{{ evento.actor }} · {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+                      </div>
+                      <p class="mb-0" *ngIf="evento.detalle">{{ evento.detalle }}</p>
+                    </div>
+                  </li>
+                </ol>
+                <ng-template #sinTrazabilidad>
+                  <p class="text-muted mb-0">Todavía no hay eventos registrados.</p>
+                </ng-template>
+              </section>
+
+              <section
+                *ngIf="detailTab === 'incidencias'"
+                id="registro-detail-panel-incidencias"
+                role="tabpanel"
+                aria-labelledby="registro-detail-tab-incidencias"
+                class="detail-tab-panel"
+              >
+                <app-incidencias-panel scope="registro" [scopeId]="resultado.id" (countChange)="onIncidenciasCountChange($event)"></app-incidencias-panel>
+              </section>
             </div>
-            <div class="text-muted">{{ resultado.titulo }}</div>
-          </div>
-          <div class="registro-detail-meta mt-2" *ngIf="mode === 'comunicacion'">
-            <span>Emisor: <strong>{{ emisorCompleto(resultado) }}</strong></span>
-            <span>Receptor: <strong>{{ receptorRegistro(resultado) }}</strong></span>
-            <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
-            <span>Ultima actualizacion: <strong>{{ fechaActualizacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
-          </div>
-          <div class="registro-detail-meta mt-2" *ngIf="mode === 'documentacion'">
-            <span>Emisor: <strong>{{ emisorCompleto(resultado) }}</strong></span>
-            <span>Dirigida a: <strong>{{ receptorRegistro(resultado) }}</strong></span>
-            <span *ngIf="resultado.departamentoNombre">Área: <strong>{{ resultado.departamentoNombre }}</strong></span>
-            <span *ngIf="resultado.destinatarioNombre">Destinatario: <strong>{{ resultado.destinatarioNombre }}</strong></span>
-            <span>Creada: <strong>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</strong></span>
-          </div>
 
-          <p class="mb-0 mt-2" *ngIf="resultado.mensaje">{{ resultado.mensaje }}</p>
-
-          <div class="d-flex flex-wrap gap-2 mt-3">
-            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="updatingEstado" (click)="marcarRegistroNoLeido(resultado)">
-              <i class="bi bi-envelope me-1"></i>Marcar como no leido
-            </button>
-          </div>
-
-          <div class="attachments mt-2" *ngIf="resultado.adjuntos.length">
-            <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of resultado.adjuntos" (click)="descargarAdjunto(adjunto)">
-              {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
-            </button>
-          </div>
-
-          <div class="admin-state mt-3" *ngIf="mode !== 'comunicacion' && isAdminMode && permissions.hasPermission('registro:write')">
-            <label class="form-label mb-1">Estado administrativo</label>
-            <select class="form-select form-select-sm" [disabled]="updatingEstado" [ngModel]="resultado.estado" (ngModelChange)="cambiarEstado(resultado, $event)">
-              <option *ngFor="let estado of estadosRegistro" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
-            </select>
-          </div>
-
-          <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="mode === 'documentacion' && permissions.hasPermission('registro:write')">
-            <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="updatingEstado || resultado.estado === 'archivada'" (click)="archivarDocumentacion(resultado)">
-              Archivar
-            </button>
-          </div>
-
-          <div class="thread mt-3" *ngIf="mode === 'comunicacion' && resultado.mensajes?.length">
-            <h2 class="h6 mb-2">Hilo de comunicacion</h2>
-            <article class="thread-message" *ngFor="let mensaje of resultado.mensajes" [class.admin]="mensaje.actor === 'administracion'">
-              <div class="d-flex justify-content-between gap-2 flex-wrap">
-                <strong>{{ emisorMensaje(mensaje.actor, mensaje.emisorPersona) }}</strong>
-                <small class="text-muted">{{ mensaje.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
+            <aside class="detail-side">
+              <div class="side-block">
+                <p class="side-label">Estado</p>
+                <span class="badge estado" [ngClass]="estadoClass(resultado.estado)">{{ estadoLabel(resultado.estado) }}</span>
               </div>
-              <p class="mb-2">{{ mensaje.mensaje }}</p>
-              <div class="attachments" *ngIf="mensaje.adjuntos.length">
-                <button class="btn btn-sm btn-outline-secondary" type="button" *ngFor="let adjunto of mensaje.adjuntos" (click)="descargarAdjunto(adjunto)">
-                  {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName }}
-                </button>
+              <dl class="side-meta">
+                <div>
+                  <dt>Código</dt>
+                  <dd>{{ resultado.numero }}</dd>
+                </div>
+                <div>
+                  <dt>Tipo</dt>
+                  <dd>{{ mode === 'documentacion' ? 'Documentación' : 'Comunicación' }}</dd>
+                </div>
+                <div *ngIf="resultado.ejercicio">
+                  <dt>Año</dt>
+                  <dd>{{ resultado.ejercicio }}</dd>
+                </div>
+                <div>
+                  <dt>Creada</dt>
+                  <dd>{{ fechaCreacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</dd>
+                </div>
+                <div>
+                  <dt>Última actualización</dt>
+                  <dd>{{ fechaActualizacionRegistro(resultado) | date: 'dd/MM/yyyy HH:mm' }}</dd>
+                </div>
+                <div>
+                  <dt>Emisor</dt>
+                  <dd>{{ emisorRegistro(resultado) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ mode === 'comunicacion' ? 'Receptor' : 'Dirigida a' }}</dt>
+                  <dd>{{ receptorRegistro(resultado) }}</dd>
+                </div>
+                <div *ngIf="adjuntosIniciales(resultado).length">
+                  <dt>Adjunto principal</dt>
+                  <dd>{{ adjuntosIniciales(resultado)[0].originalName }}</dd>
+                </div>
+              </dl>
+              <div class="side-block">
+                <p class="side-label">Acciones rápidas</p>
+                <div class="side-actions">
+                  <button class="side-action" type="button" (click)="mode === 'documentacion' ? printDoc() : printComm()">
+                    <i class="bi bi-printer"></i>Imprimir resguardo
+                  </button>
+                </div>
               </div>
-            </article>
+            </aside>
           </div>
-
-          <div class="reply-box mt-3" *ngIf="mode === 'comunicacion' && permissions.hasPermission('registro:write')">
-            <ng-container *ngIf="resultado.estado !== 'finalizada'; else comunicacionFinalizada">
-              <label class="form-label">Responder en este hilo</label>
-              <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe una respuesta"></textarea>
-              <app-adjuntos-selector label="Adjuntos de la respuesta" [files]="respuestaAdjuntos" [disabled]="submittingComm" (filesChange)="respuestaAdjuntos = $event" />
-              <div class="d-flex flex-wrap gap-2 mt-2">
-                <button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
-                  Responder
-                </button>
-                <button class="btn btn-outline-danger btn-sm" type="button" *ngIf="puedeCerrarComunicacion(resultado)" [disabled]="submittingComm" (click)="cerrarComunicacion(resultado)">
-                  Cerrar comunicacion
-                </button>
-              </div>
-            </ng-container>
-            <ng-template #comunicacionFinalizada>
-              <p class="text-muted mb-0">Esta comunicacion esta finalizada y no admite nuevas respuestas.</p>
-            </ng-template>
-          </div>
-
-          <section class="thread mt-3" *ngIf="resultado.eventos?.length">
-            <h2 class="h6 mb-2">Trazabilidad</h2>
-            <article class="thread-message" *ngFor="let evento of resultado.eventos">
-              <strong>{{ evento.tipo }}</strong>
-              <small class="text-muted ms-2">{{ evento.actor }} · {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</small>
-              <p class="mb-0" *ngIf="evento.detalle">{{ evento.detalle }}</p>
-            </article>
-          </section>
-
-          <app-incidencias-panel scope="registro" [scopeId]="resultado.id"></app-incidencias-panel>
         </section>
 
         <div class="alert alert-light border" *ngIf="isAdminMode && !isFormView">

@@ -7,9 +7,11 @@
       <button class="btn" [class.btn-foc-rojo]="tab === 'ejercicios'" [class.btn-outline-secondary]="tab !== 'ejercicios'" (click)="tab = 'ejercicios'">Ejercicios</button>
       <button class="btn" [class.btn-foc-rojo]="tab === 'registro'" [class.btn-outline-secondary]="tab !== 'registro'" (click)="tab = 'registro'">Registro</button>
       <button class="btn" [class.btn-foc-rojo]="tab === 'rubi'" [class.btn-outline-secondary]="tab !== 'rubi'" (click)="tab = 'rubi'">Rubi</button>
+      <button class="btn" [class.btn-foc-rojo]="tab === 'version'" [class.btn-outline-secondary]="tab !== 'version'" (click)="tab = 'version'">Versión</button>
     </nav>
     <app-ejercicios *ngIf="tab === 'ejercicios'"></app-ejercicios>
     <app-rubi-admin *ngIf="tab === 'rubi'"></app-rubi-admin>
+    <app-release-admin *ngIf="tab === 'version'"></app-release-admin>
     <section *ngIf="tab === 'registro'">
       <h2 class="h5">Destinatarios administrativos</h2>
       <p class="text-muted">Asigna cada departamento a un miembro de Federación habilitado para Registro.</p>

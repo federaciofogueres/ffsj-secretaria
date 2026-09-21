@@ -178,6 +178,7 @@
       </div>
 
       <section *ngIf="pestanaDetalle === 'resumen'" id="solicitud-panel-resumen" role="tabpanel" aria-labelledby="solicitud-tab-resumen">
+        <p class="alert alert-info py-2" *ngIf="tieneSolicitudInformacionRepresentacion(detalle)">Ya se ha solicitado a la asociación la información de representación legal. Consulta el historial para ver la trazabilidad.</p>
         <dl class="metadata-grid">
           <div><dt>Asociacion</dt><dd>{{ asociacionLabel(detalle.asociacionId) }}</dd></div>
           <div><dt>Registros</dt><dd>{{ detalle.totalRegistros || 0 }}</dd></div>
@@ -248,6 +249,18 @@
     </div>
 
     <footer class="detail-footer">
+      <section class="w-100 border rounded p-3 mb-2" *ngIf="solicitudConRepresentacionPendiente?.id === detalle.id">
+        <strong>Falta información de representación legal</strong>
+        <p class="mb-2 small">La validación excepcional ya se ha realizado. Envía una comunicación predefinida para solicitar nombre, apellidos y teléfono de los representantes legales.</p>
+        <label class="form-label small" for="destinatario-representacion">Buzón responsable</label>
+        <div class="d-flex flex-wrap gap-2">
+          <select id="destinatario-representacion" class="form-select form-select-sm" style="max-width: 320px" [(ngModel)]="destinatarioRepresentacionId" [disabled]="loading">
+            <option [ngValue]="null">Selecciona un buzón</option>
+            <option *ngFor="let destinatario of destinatariosRegistro" [ngValue]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
+          </select>
+          <button class="btn btn-warning btn-sm" type="button" [disabled]="loading || !destinatarioRepresentacionId" (click)="solicitarInformacionRepresentacionLegal()">Solicitar información a la asociación</button>
+        </div>
+      </section>
       <div class="action-hint" *ngIf="!tieneAccionesDisponibles()">
         No hay acciones disponibles para el estado actual.
       </div>

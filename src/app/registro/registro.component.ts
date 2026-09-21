@@ -8,7 +8,7 @@ import { FfsjSpinnerComponent } from 'ffsj-web-components';
 
 import { CensoService } from '../core/censo.service';
 import { AdminAccessService } from '../core/admin-access.service';
-import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, PaginacionSecretaria, RegistroDestinatario, RegistroMensajeSecretaria, RegistroSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -21,6 +21,7 @@ type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas' | 'archivadas';
 type ComunicacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas';
 type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
+type DetailTab = 'informacion' | 'conversacion' | 'trazabilidad' | 'incidencias';
 
 @Component({
   selector: 'app-registro',
@@ -34,8 +35,24 @@ export class RegistroComponent implements OnInit, OnDestroy {
   formMode: Exclude<RegistroMode, null> | null = null;
   detailMode: Exclude<RegistroMode, null> | null = null;
   docBandeja: DocumentacionBandeja = 'recibidas';
+  detailTab: DetailTab = 'informacion';
+  incidenciasCount = 0;
+  // 0.40.3#ESMERALDA: "Conversación" solo tiene sentido para Comunicaciones
+  // (Documentación no tiene hilo de mensajes en la UI actual).
+  private readonly detailTabsBase: Array<{ id: DetailTab; label: string; icon: string; modes?: Array<Exclude<RegistroMode, null>> }> = [
+    { id: 'informacion', label: 'Información', icon: 'bi-file-earmark-text' },
+    { id: 'conversacion', label: 'Conversación', icon: 'bi-chat-dots', modes: ['comunicacion'] },
+    { id: 'trazabilidad', label: 'Trazabilidad', icon: 'bi-clock-history' },
+    { id: 'incidencias', label: 'Incidencias', icon: 'bi-exclamation-triangle' }
+  ];
+
+  get detailTabs(): Array<{ id: DetailTab; label: string; icon: string; modes?: Array<Exclude<RegistroMode, null>> }> {
+    return this.detailTabsBase.filter(tab => !tab.modes || (this.mode && tab.modes.includes(this.mode)));
+  }
 
   destinatarios: RegistroDestinatario[] = [];
+  accesoGlobalRegistro = false;
+  destinatarioFiltro: number | '' = '';
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -61,6 +78,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   filtroTexto = '';
   filtroEstado = '';
   ordenRegistros: OrdenRegistro = 'fecha_desc';
+  masFiltrosAbierto = false;
   paginaActual = 1;
   tamanoPagina = 20;
   paginacion: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
@@ -71,6 +89,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   respuestaComunicacion = '';
   loadingRegistros = false;
   errorRegistros = '';
+  estadoFeedback = '';
 
   submittingDoc = false;
   submittingComm = false;
@@ -97,7 +116,11 @@ export class RegistroComponent implements OnInit, OnDestroy {
     this.applyRouteState();
     this.cargarRegistros();
     this.secretariaService.getRegistroDestinatarios().subscribe({
-      next: response => this.destinatarios = response.destinatarios,
+      next: response => {
+        this.destinatarios = response.destinatarios;
+        this.accesoGlobalRegistro = Boolean(response.accesoGlobal);
+        if (this.accesoGlobalRegistro) this.cargarRegistros(true);
+      },
       error: () => this.errorRegistros = 'No se han podido cargar los destinatarios de Registro.'
     });
     if (this.isAdminMode) {
@@ -314,6 +337,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
         this.docResultado = registro;
         this.formMode = null;
         this.detailMode = 'documentacion';
+        this.detailTab = 'informacion';
         this.prependRegistro(registro);
         this.lockDocForm();
         this.docAdjuntos = [];
@@ -355,6 +379,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
         this.commResultado = registro;
         this.formMode = null;
         this.detailMode = 'comunicacion';
+        this.detailTab = 'informacion';
         this.prependRegistro(registro);
         this.lockCommForm();
         this.commAdjuntos = [];
@@ -381,6 +406,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   openReferencia(ref: RegistroSecretaria, mode: Exclude<RegistroMode, null>): void {
     this.formMode = null;
     this.detailMode = mode;
+    this.detailTab = 'informacion';
     this.secretariaService.getRegistro(ref.id).subscribe(registro => {
       this.prependRegistro(registro);
       if (mode === 'documentacion') {
@@ -476,6 +502,30 @@ export class RegistroComponent implements OnInit, OnDestroy {
     return estado === 'leido' ? 'leido' : estado;
   }
 
+  eventoTipoLabel(tipo: string): string {
+    const labels: Record<string, string> = {
+      CREADO: 'Creación',
+      ESTADO: 'Cambio de estado',
+      MENSAJE: 'Mensaje',
+      LEIDO: 'Lectura',
+      FINALIZADO: 'Finalizado',
+      ARCHIVADO: 'Archivado'
+    };
+    return labels[tipo] || tipo;
+  }
+
+  eventoTipoIcono(tipo: string): string {
+    const iconos: Record<string, string> = {
+      CREADO: 'bi-plus-circle',
+      ESTADO: 'bi-arrow-repeat',
+      MENSAJE: 'bi-chat-dots',
+      LEIDO: 'bi-eye',
+      FINALIZADO: 'bi-check-circle',
+      ARCHIVADO: 'bi-archive'
+    };
+    return iconos[tipo] || 'bi-circle';
+  }
+
   estadoComunicacionLabel(registro: RegistroSecretaria): string {
     return this.estadoLabel(this.estadoVisibleComunicacion(registro));
   }
@@ -504,6 +554,38 @@ export class RegistroComponent implements OnInit, OnDestroy {
 
   emisorMensaje(actor: 'asociacion' | 'administracion', persona?: string | null): string {
     return `${actor === 'administracion' ? 'Administracion / FFSJ' : 'Asociacion'} · ${persona || 'Usuario no disponible'}`;
+  }
+
+  // 0.40.3#ESMERALDA: adjuntos "iniciales" de una Comunicación viven en el
+  // primer mensaje del hilo (scope registro_mensaje, ver submitComm/
+  // lastMensajeId), no en registro.adjuntos (eso solo lo usa Documentación,
+  // via subirAdjunto('registro', ...) en submitDoc). Centralizado aqui para
+  // no repetir la distinción en cabecera/Información/panel lateral.
+  adjuntosIniciales(registro: RegistroSecretaria): AdjuntoSecretaria[] {
+    if (registro.tipo === 'comunicacion') {
+      return registro.mensajes?.[0]?.adjuntos || [];
+    }
+    return registro.adjuntos || [];
+  }
+
+  mensajeAutorNombre(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    return mensaje.actor === 'administracion' ? 'Administracion' : this.asociacionNombreById(registro.asociacionId);
+  }
+
+  mensajeAutorCompleto(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    return `${this.mensajeAutorNombre(mensaje, registro)} · ${mensaje.emisorPersona || 'Usuario no disponible'}`;
+  }
+
+  mensajeIniciales(mensaje: RegistroMensajeSecretaria, registro: RegistroSecretaria): string {
+    if (mensaje.actor === 'administracion') return 'AD';
+    const palabras = this.asociacionNombreById(registro.asociacionId).split(/\s+/).filter(Boolean);
+    const iniciales = palabras.slice(0, 2).map(palabra => palabra[0]).join('').toUpperCase();
+    return iniciales || 'AS';
+  }
+
+  tamanoAdjunto(bytes: number): string {
+    if (!bytes) return '';
+    return bytes < 1024 * 1024 ? `${Math.ceil(bytes / 1024)} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
   }
 
   fechaCreacionRegistro(registro: RegistroSecretaria): string {
@@ -546,6 +628,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
       return;
     }
     this.updatingEstado = true;
+    this.estadoFeedback = '';
     this.secretariaService.actualizarEstadoRegistro(registro.id, estado).subscribe({
       next: updated => {
         this.prependRegistro(updated);
@@ -555,10 +638,24 @@ export class RegistroComponent implements OnInit, OnDestroy {
         if (this.commResultado?.id === updated.id) {
           this.commResultado = updated;
         }
+        this.estadoFeedback = `Estado actualizado a ${this.estadoLabel(updated.estado)}.`;
         this.updatingEstado = false;
       },
       error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido actualizar el estado.'; }
     });
+  }
+
+  estadosManuales(registro: RegistroSecretaria): RegistroSecretaria['estado'][] {
+    return registro.tipo === 'documentacion'
+      ? ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'archivada']
+      : ['enviada', 'recibido', 'leido', 'incidencia', 'rechazado', 'finalizada'];
+  }
+
+  cambiarBuzon(): void {
+    this.detailMode = null;
+    this.docResultado = null;
+    this.commResultado = null;
+    this.cargarRegistros(true);
   }
 
   responderComunicacion(): void {
@@ -620,6 +717,45 @@ export class RegistroComponent implements OnInit, OnDestroy {
     this.cargarRegistros(true);
   }
 
+  get hayFiltrosActivos(): boolean {
+    return Boolean(
+      this.filtroTexto.trim() || this.filtroEstado || this.filtroAnio || this.ordenRegistros !== 'fecha_desc'
+      || (this.accesoGlobalRegistro && this.destinatarioFiltro)
+    );
+  }
+
+  toggleMasFiltros(): void {
+    this.masFiltrosAbierto = !this.masFiltrosAbierto;
+  }
+
+  activarDetailTab(tab: DetailTab): void {
+    this.detailTab = tab;
+  }
+
+  navegarDetailTabs(event: KeyboardEvent, index: number): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const total = this.detailTabs.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? total - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + total) % total;
+    const tab = this.detailTabs[next];
+    this.activarDetailTab(tab.id);
+    setTimeout(() => document.getElementById(`registro-detail-tab-${tab.id}`)?.focus());
+  }
+
+  onIncidenciasCountChange(count: number): void {
+    this.incidenciasCount = count;
+  }
+
+  limpiarFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroEstado = '';
+    this.filtroAnio = '';
+    this.ordenRegistros = 'fecha_desc';
+    if (this.accesoGlobalRegistro) this.destinatarioFiltro = '';
+    this.cargarRegistros(true);
+  }
+
   cambiarPagina(delta: number): void {
     const page = this.paginaActual + delta;
     if (!this.loadingRegistros && page >= 1 && page <= this.paginacion.totalPages) {
@@ -639,6 +775,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
     this.errorRegistros = '';
     const filters: {
       asociacionId?: number;
+      destinatarioId?: number;
       tipo?: Exclude<RegistroMode, null>;
       origen?: 'asociacion' | 'administracion';
       anio?: number | '';
@@ -654,6 +791,9 @@ export class RegistroComponent implements OnInit, OnDestroy {
       page: this.paginaActual,
       pageSize: this.tamanoPagina
     };
+    if (this.isAdminMode && this.accesoGlobalRegistro && this.destinatarioFiltro) {
+      filters.destinatarioId = Number(this.destinatarioFiltro);
+    }
     this.aplicarBandejaRegistro(filters);
     if (this.filtroAnio) {
       Object.assign(filters, { anio: this.filtroAnio });

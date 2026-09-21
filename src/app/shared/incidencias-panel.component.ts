@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, Input, OnChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, switchMap } from 'rxjs';
 
@@ -109,6 +109,9 @@ import { SecretariaService } from '../core/secretaria.service';
 export class IncidenciasPanelComponent implements OnChanges {
   @Input({ required: true }) scope!: 'solicitud' | 'registro' | 'inscripcion';
   @Input({ required: true }) scopeId!: string | number;
+  // 0.40.2#ESMERALDA: permite mostrar el contador en la pestaña "Incidencias"
+  // del detalle de Registro sin duplicar la carga de datos.
+  @Output() countChange = new EventEmitter<number>();
 
   incidencias: Incidencia[] = [];
   adjuntosByIncidencia: Record<string, AdjuntoSecretaria[]> = {};
@@ -301,10 +304,12 @@ export class IncidenciasPanelComponent implements OnChanges {
     this.secretariaService.getIncidencias(this.scope, String(this.scopeId)).subscribe({
       next: response => {
         this.incidencias = response.incidencias;
+        this.countChange.emit(this.incidencias.length);
       },
       error: () => {
         this.incidencias = [];
         this.error = 'No se han podido cargar las incidencias.';
+        this.countChange.emit(0);
       }
     });
   }

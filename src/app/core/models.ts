@@ -187,6 +187,9 @@ export interface SolicitudSecretaria {
   eventos?: SolicitudEventoSecretaria[];
   autorizacionesAlta?: AutorizacionAlta[];
   adjuntos?: AdjuntoSecretaria[];
+  validacionExcepcionalRepresentacionLegal?: {
+    menores: Array<{ itemId: number; nombre: string; apellidos: string }>;
+  };
 }
 
 export interface SolicitudModificacionAsociacion {
@@ -279,6 +282,21 @@ export interface RegistroSecretaria {
   adjuntos: AdjuntoSecretaria[];
   mensajes?: RegistroMensajeSecretaria[];
   eventos?: RegistroEventoSecretaria[];
+}
+
+export interface Release {
+  id: number;
+  version: string;
+  novedades?: string | null;
+  activa: boolean;
+  fechaPublicacion?: string | null;
+  publicadoPor?: string | null;
+}
+
+export interface ReleaseCreatePayload {
+  version: string;
+  novedades?: string | null;
+  publicar?: boolean;
 }
 
 export interface RegistroDestinatario {
@@ -446,6 +464,12 @@ export interface ActividadSecretaria {
   fechaFin: string;
   descripcion?: string;
   colorEtiqueta?: 'ffsj' | 'asociacion' | 'ayuntamiento' | 'otra';
+  lugar?: string | null;
+  lugarLatitud?: number | null;
+  lugarLongitud?: number | null;
+  lugarCodigoPostal?: string | null;
+  lugarLocalidad?: string | null;
+  lugarProvincia?: string | null;
   inscripciones?: InscripcionSecretaria[];
   origen?: 'administracion' | 'asociacion';
   estadoPropuesta?: 'pendiente_revision' | 'con_incidencias' | 'publicada' | 'rechazada';
