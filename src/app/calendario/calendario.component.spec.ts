@@ -115,4 +115,111 @@ describe('CalendarioComponent', () => {
     expect(day15?.actividades.map((item: ActividadSecretaria) => item.id)).toContain('ACT-MADRUGADA');
     expect(day14?.actividades.map((item: ActividadSecretaria) => item.id) || []).not.toContain('ACT-MADRUGADA');
   });
+
+  // 0.33.0#ESMERALDA: descripcion con Markdown y rediseno compacto del detalle.
+  describe('descripción con Markdown (0.33.0#ESMERALDA)', () => {
+    it('al seleccionar una actividad, la descripción Markdown se rellena en el editor para poder editarla después', async () => {
+      const fixture = await createComponent(true, [actividadVerano({ descripcion: '## Hola\n\nTexto en **negrita**.' })]);
+      fixture.componentInstance.select(actividadVerano({ descripcion: '## Hola\n\nTexto en **negrita**.' }));
+      expect(fixture.componentInstance.editActividadForm.value.descripcion).toBe('## Hola\n\nTexto en **negrita**.');
+    });
+
+    it('guardarActividad persiste la descripción Markdown editada tal cual (sin transformarla)', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      secretaria.actualizarActividad.and.returnValue(of(actividadVerano({ descripcion: '**Nueva** descripción' })));
+      component.select(actividadVerano());
+      component.editActividadForm.patchValue({ descripcion: '**Nueva** descripción' });
+      component.guardarActividad();
+      expect(secretaria.actualizarActividad).toHaveBeenCalledWith('ACT-VERANO', jasmine.objectContaining({
+        descripcion: '**Nueva** descripción'
+      }));
+    });
+
+    it('el detalle lateral renderiza la descripción Markdown de forma segura (sin script)', async () => {
+      const fixture = await createComponent(true, [actividadVerano({ descripcion: '**Importante**<script>window.__pwn = true;</script>' })]);
+      fixture.componentInstance.select(actividadVerano({ descripcion: '**Importante**<script>window.__pwn = true;</script>' }));
+      fixture.detectChanges();
+      const block: HTMLElement = fixture.nativeElement.querySelector('.detail-block .activity-description');
+      expect(block).withContext('bloque de descripción visible').toBeTruthy();
+      expect(block.innerHTML).toContain('<strong>Importante</strong>');
+      expect(block.innerHTML).not.toContain('<script');
+      expect((window as any).__pwn).toBeUndefined();
+    });
+
+    it('el modal de detalle de actividad renderiza la descripción Markdown de forma segura', async () => {
+      const fixture = await createComponent(true, [actividadVerano({ descripcion: '- Uno\n- Dos' })]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano({ descripcion: '- Uno\n- Dos' }));
+      fixture.detectChanges();
+      const block: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-modal .activity-description');
+      expect(block).withContext('bloque de descripción del modal visible').toBeTruthy();
+      expect(block.innerHTML).toContain('<li>Uno</li>');
+      expect(block.innerHTML).toContain('<li>Dos</li>');
+    });
+
+    it('una actividad antigua con descripción en texto plano se sigue mostrando correctamente (compatibilidad)', async () => {
+      const fixture = await createComponent(true, [actividadVerano({ descripcion: 'Descripcion antigua sin formato.' })]);
+      fixture.componentInstance.select(actividadVerano({ descripcion: 'Descripcion antigua sin formato.' }));
+      fixture.detectChanges();
+      const block: HTMLElement = fixture.nativeElement.querySelector('.detail-block .activity-description');
+      expect(block.textContent).toContain('Descripcion antigua sin formato.');
+    });
+
+    it('una actividad sin descripción no muestra ningún bloque (sin regresión)', async () => {
+      const fixture = await createComponent(true, [actividadInvierno({ descripcion: '' })]);
+      fixture.componentInstance.select(actividadInvierno({ descripcion: '' }));
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('.detail-block .activity-description')).toBeNull();
+    });
+  });
+
+  describe('rediseño compacto del detalle (0.33.0#ESMERALDA)', () => {
+    it('el modal de detalle de actividad ya no muestra el texto redundante "Detalle de actividad"', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      fixture.detectChanges();
+      const modal: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-modal');
+      expect(modal.textContent).not.toContain('Detalle de actividad');
+      expect(modal.textContent).toContain('Verbena');
+    });
+
+    it('el modal de detalle muestra el título y el chip de estado en la misma cabecera', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      fixture.detectChanges();
+      const header: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-modal .modal-header-custom.activity-header');
+      expect(header).withContext('cabecera con clase activity-header').toBeTruthy();
+      expect(header.querySelector('h2')).withContext('título en la cabecera').toBeTruthy();
+      expect(header.querySelector('app-estado-badge')).withContext('chip de estado en la cabecera').toBeTruthy();
+    });
+
+    it('el modal de detalle muestra fecha/hora, lugar y responsable en una fila de metadatos con iconos', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      fixture.detectChanges();
+      const meta: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-modal .activity-meta');
+      expect(meta).withContext('fila de metadatos visible').toBeTruthy();
+      expect(meta.querySelector('.bi-clock')).withContext('icono de fecha/hora').toBeTruthy();
+      expect(meta.querySelector('.bi-geo-alt')).withContext('icono de lugar').toBeTruthy();
+      expect(meta.querySelector('.bi-person')).withContext('icono de responsable').toBeTruthy();
+      expect(meta.textContent).toContain('Plaza del Ayuntamiento');
+      expect(meta.textContent).toContain('Secretaria');
+    });
+
+    it('el detalle lateral tampoco muestra el texto redundante y agrupa título y chip', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      fixture.componentInstance.select(actividadVerano());
+      fixture.detectChanges();
+      const block: HTMLElement = fixture.nativeElement.querySelector('.detail-block');
+      expect(block.textContent).not.toContain('Detalle de actividad');
+      const header = block.querySelector('.activity-header');
+      expect(header?.querySelector('h2')).toBeTruthy();
+      expect(header?.querySelector('app-estado-badge')).toBeTruthy();
+    });
+  });
 });
