@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.40.1#ESMERALDA — Rediseño del listado de Registro y filtros compactos
+
+> Rediseño puramente visual de la pantalla principal de Registro (Documentación y Comunicaciones): sin cambios de API, sin cambios en la autorización por buzones de `0.40.0#ESMERALDA`, sin tocar todavía el detalle (eso es `0.40.2#ESMERALDA`). Validado en navegador (capturas a distintos anchos) además de build y suite de tests completa.
+
+- Barra de filtros compacta en una sola línea principal (buscador, buzón, estado) con "Limpiar filtros" (visible solo cuando hay algún filtro activo) y "Más filtros" para año/orden: en escritorio se ven siempre en la misma línea; en pantallas estrechas "Más filtros" pasa a ser un desplegable real, no decorativo.
+- Cada fila de Documentación/Comunicaciones (y la de certificaciones pendientes) se reorganiza en formato tarjeta: código + estado en cabecera, título, y una línea de metadatos con icono (emisor, dirigida a/receptor, área, destinatario, fecha, adjunto principal cuando existe) y una acción "Ver detalle" explícita al final de la fila.
+- Corrige un solape real detectado en la propia verificación visual: la etiqueta de estado más larga ("Pendiente de certificación") no envolvía en pantallas estrechas y podía desbordar la fila; ahora envuelve correctamente.
+- Sin cambios funcionales: mismos filtros, misma paginación, mismo scope de buzón, misma navegación al detalle — verificado con la suite completa de tests (317/317) y con las capturas de escritorio/tablet/móvil.
+
 ## 0.40.0#ESMERALDA — Corrección real del filtrado y autorización por buzones en Registro
 
 > Causa real del fallo reportado ("la API sigue devolviendo todos los registros al filtrar por buzón"): `SecretariaService.getRegistros()` calculaba correctamente `destinatarioId` a partir del selector de buzón de Webmaster, pero no lo incluía en los `HttpParams` de la petición HTTP — se perdía silenciosamente antes de llegar a la API, que respondía (correctamente) con el scope completo del usuario al no recibir ningún filtro. Selector visualmente correcto, filtro real ausente. Sin migraciones ni despliegue.

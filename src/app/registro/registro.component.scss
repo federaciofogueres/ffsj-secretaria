@@ -49,18 +49,79 @@
   gap: 1.15rem;
 }
 
-.year-filter {
-  display: grid;
-  grid-template-columns: minmax(240px, 2fr) minmax(110px, .65fr) minmax(150px, 1fr) minmax(160px, 1fr) auto;
-  align-items: end;
-  gap: .75rem;
-  padding: 1rem;
+// 0.40.1#ESMERALDA: barra de filtros compacta en una unica linea principal
+// (buscador, buzon, estado) con "Mas filtros" (ano, orden) siempre visible en
+// escritorio y colapsable solo en pantallas estrechas; "Limpiar filtros"
+// aparece unicamente cuando hay algun filtro activo.
+.registro-filters {
+  padding: .65rem .85rem;
   border: 1px solid var(--ffsj-line);
   border-radius: 16px;
   background: #fff;
 }
 
-.year-filter .form-label {
+.filters-primary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.filter-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.filter-search i {
+  position: absolute;
+  left: .65rem;
+  color: var(--ffsj-muted);
+  font-size: .85rem;
+  pointer-events: none;
+}
+
+.filter-search input {
+  width: 100%;
+  padding-left: 2rem;
+}
+
+.registro-filters .form-select-sm {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 150px;
+}
+
+.filter-buzon {
+  min-width: 190px;
+}
+
+.filters-toggle {
+  display: none;
+  white-space: nowrap;
+}
+
+.filters-clear {
+  white-space: nowrap;
+  color: var(--ffsj-muted);
+  text-decoration: none;
+}
+
+.filters-clear:hover {
+  color: var(--ffsj-red);
+}
+
+.filters-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: .5rem;
+  margin-top: .5rem;
+}
+
+.filters-secondary .form-label {
   display: grid;
   gap: .3rem;
   color: var(--ffsj-muted);
@@ -68,21 +129,18 @@
   font-weight: 800;
 }
 
-.year-filter > label:nth-child(1) { order: 2; }
-.year-filter > label:nth-child(2) { order: 1; }
-.year-filter > label:nth-child(3) { order: 3; }
-.year-filter > label:nth-child(4) { order: 4; }
-.filter-action { order: 5; display: grid; gap: .3rem; }
-.filter-action .form-label { margin: 0; }
-.filter-action .btn { height: 31px; white-space: nowrap; }
-
-@media (max-width: 980px) {
-  .year-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 860px) {
+  .filters-toggle { display: inline-flex; }
+  .filters-secondary { display: none; margin-top: .6rem; padding-top: .6rem; border-top: 1px dashed var(--ffsj-line); }
+  .filters-secondary.open { display: flex; }
 }
 
 @media (max-width: 560px) {
-  .year-filter { grid-template-columns: 1fr; }
-  .year-filter .btn { width: 100%; }
+  .filters-primary { flex-direction: column; align-items: stretch; }
+  .registro-filters .form-select-sm,
+  .filters-toggle,
+  .filters-clear { width: 100%; }
+  .filters-secondary { flex-direction: column; align-items: stretch; }
 }
 
 .status-card,
@@ -125,22 +183,76 @@
   gap: 0.75rem;
   padding: 0.85rem 1rem;
   text-align: left;
+  transition: border-color .12s ease, box-shadow .12s ease;
 }
 
-.registro-row strong,
-.registro-row small {
+.registro-row:hover {
+  border-color: var(--ffsj-red);
+}
+
+.registro-row-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.registro-row-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: .3rem;
+  gap: .6rem;
+  margin-bottom: .2rem;
+}
+
+.registro-row-top .estado {
+  white-space: normal;
+  text-align: center;
+}
+
+.registro-numero {
+  font-weight: 900;
+  color: var(--ffsj-ink);
+}
+
+.registro-titulo {
   display: block;
+  font-weight: 700;
 }
 
-.registro-row small {
-  color: var(--ffsj-muted);
+.registro-row-action {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  color: var(--ffsj-red);
+  font-weight: 800;
+  font-size: .88rem;
+  white-space: nowrap;
+}
+
+.registro-row-cta {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .registro-meta {
   display: flex !important;
   flex-wrap: wrap;
-  gap: 0.35rem 0.8rem;
+  gap: 0.35rem 1rem;
   margin-top: 0.35rem;
+  color: var(--ffsj-muted);
+  font-size: .86rem;
+}
+
+.registro-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.registro-meta i {
+  color: var(--ffsj-muted);
+  font-size: .82rem;
 }
 
 .registro-detail-meta {
@@ -420,5 +532,15 @@
   .actions .ux-btn,
   .option-card .ux-btn {
     width: 100%;
+  }
+
+  .registro-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .registro-row-action,
+  .registro-row-cta {
+    align-self: flex-end;
   }
 }
