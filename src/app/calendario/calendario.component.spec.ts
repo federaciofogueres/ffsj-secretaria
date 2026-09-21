@@ -34,21 +34,27 @@ function actividadInvierno(overrides: Partial<ActividadSecretaria> = {}): Activi
 }
 
 describe('CalendarioComponent', () => {
-  async function createComponent(isAdmin: boolean, actividades: ActividadSecretaria[]): Promise<ComponentFixture<CalendarioComponent>> {
+  async function createComponent(
+    isAdmin: boolean,
+    actividades: ActividadSecretaria[],
+    options: { hasPermission?: (permission: string) => boolean } = {}
+  ): Promise<ComponentFixture<CalendarioComponent>> {
     const secretaria = jasmine.createSpyObj<SecretariaService>('SecretariaService', [
       'getActividades', 'getInscripciones', 'crearActividad', 'actualizarActividad',
-      'crearPropuestaActividad', 'getAdjuntos'
+      'crearPropuestaActividad', 'getAdjuntos', 'subirAdjunto', 'borrarAdjunto', 'descargarAdjunto'
     ]);
     secretaria.getActividades.and.returnValue(of({ actividades }));
     secretaria.getInscripciones.and.returnValue(of({ inscripciones: [], paginacion: { page: 1, pageSize: 20, total: 0, totalPages: 1 } }));
     secretaria.getAdjuntos.and.returnValue(of({ adjuntos: [] }));
+    secretaria.subirAdjunto.and.returnValue(of({} as any));
+    secretaria.borrarAdjunto.and.returnValue(of({} as any));
 
     await TestBed.configureTestingModule({
       imports: [CalendarioComponent],
       providers: [
         { provide: SecretariaService, useValue: secretaria },
         { provide: AdminAccessService, useValue: { isAdmin: () => isAdmin } },
-        { provide: PermissionsService, useValue: { hasPermission: () => true, contextSnapshot: null } },
+        { provide: PermissionsService, useValue: { hasPermission: options.hasPermission || (() => true), contextSnapshot: null } },
         { provide: (await import('../rubi/rubi-screen-context.service')).RubiScreenContextService, useValue: { set: () => undefined, clear: () => undefined } }
       ]
     }).compileComponents();
@@ -220,6 +226,201 @@ describe('CalendarioComponent', () => {
       const header = block.querySelector('.activity-header');
       expect(header?.querySelector('h2')).toBeTruthy();
       expect(header?.querySelector('app-estado-badge')).toBeTruthy();
+    });
+  });
+
+  // 0.34.0#ESMERALDA: ubicación estructurada, detalle por pestañas y
+  // documentación de Actividades.
+  describe('ubicación estructurada y detalle por pestañas (0.34.0#ESMERALDA)', () => {
+    function actividadConUbicacion(overrides: Partial<ActividadSecretaria> = {}): ActividadSecretaria {
+      return actividadVerano({
+        lugar: 'Plaza del Ayuntamiento', lugarLatitud: 38.3452, lugarLongitud: -0.481,
+        lugarCodigoPostal: '03001', lugarLocalidad: 'Alicante', lugarProvincia: 'Alicante',
+        ...overrides
+      });
+    }
+
+    it('el selector de ubicación de creación/edición refleja el valor actual del formulario (mismo contrato StructuredLocation que "Datos")', async () => {
+      const fixture = await createComponent(true, [actividadConUbicacion()]);
+      const component = fixture.componentInstance;
+      component.select(actividadConUbicacion());
+      expect(component.ubicacionEditar).toEqual({
+        direccion: 'Plaza del Ayuntamiento', codigoPostal: '03001', localidad: 'Alicante', provincia: 'Alicante',
+        latitud: 38.3452, longitud: -0.481
+      });
+    });
+
+    it('una actividad histórica sin coordenadas rellena el selector con latitud/longitud null, sin romper', async () => {
+      const fixture = await createComponent(true, [actividadInvierno()]);
+      const component = fixture.componentInstance;
+      component.select(actividadInvierno());
+      expect(component.ubicacionEditar.latitud).toBeNull();
+      expect(component.ubicacionEditar.longitud).toBeNull();
+    });
+
+    it('onUbicacionChange actualiza el formulario, y guardarActividad envía la ubicación estructurada completa', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      secretaria.actualizarActividad.and.returnValue(of(actividadConUbicacion()));
+      component.select(actividadVerano());
+      component.onUbicacionChange({ direccion: 'Plaza del Ayuntamiento', codigoPostal: '03001', localidad: 'Alicante', provincia: 'Alicante', latitud: 38.3452, longitud: -0.481 }, 'editar');
+      component.guardarActividad();
+      expect(secretaria.actualizarActividad).toHaveBeenCalledWith('ACT-VERANO', jasmine.objectContaining({
+        lugar: 'Plaza del Ayuntamiento', lugarLatitud: 38.3452, lugarLongitud: -0.481,
+        lugarCodigoPostal: '03001', lugarLocalidad: 'Alicante', lugarProvincia: 'Alicante'
+      }));
+    });
+
+    it('el detalle presenta las tres pestañas: Información del evento, Ubicación del evento y Documentación', async () => {
+      const fixture = await createComponent(true, [actividadConUbicacion()]);
+      fixture.componentInstance.abrirDetalleActividad(actividadConUbicacion());
+      fixture.detectChanges();
+      const tabs: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-tabs');
+      const labels = Array.from(tabs.querySelectorAll('button')).map(button => button.textContent?.trim());
+      expect(labels).toEqual(['Información del evento', 'Ubicación del evento', 'Documentación']);
+    });
+
+    it('cambiar de pestaña muestra el panel correspondiente', async () => {
+      const fixture = await createComponent(true, [actividadConUbicacion()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadConUbicacion());
+      fixture.detectChanges();
+      expect(component.detailTab).toBe('informacion');
+
+      component.setDetailTab('ubicacion');
+      fixture.detectChanges();
+      expect(component.detailTab).toBe('ubicacion');
+      expect(fixture.nativeElement.querySelector('app-mini-map')).withContext('mini mapa visible en la pestaña de ubicación').toBeTruthy();
+
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+      expect(component.detailTab).toBe('documentacion');
+      expect(fixture.nativeElement.querySelector('app-mini-map')).withContext('el mini mapa no debe verse fuera de su pestaña').toBeNull();
+    });
+
+    it('mini mapa: se muestra cuando existen coordenadas, con la latitud/longitud correctas', async () => {
+      const fixture = await createComponent(true, [actividadConUbicacion()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadConUbicacion());
+      component.setDetailTab('ubicacion');
+      fixture.detectChanges();
+      const miniMap = fixture.debugElement.query((node: any) => node.name === 'app-mini-map');
+      expect(miniMap).withContext('app-mini-map presente').toBeTruthy();
+      expect(miniMap.componentInstance.latitud).toBe(38.3452);
+      expect(miniMap.componentInstance.longitud).toBe(-0.481);
+    });
+
+    it('mini mapa: actividad histórica sin coordenadas no muestra mapa y da un mensaje de fallback claro', async () => {
+      const fixture = await createComponent(true, [actividadInvierno({ lugar: 'Calle antigua' })]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadInvierno({ lugar: 'Calle antigua' }));
+      component.setDetailTab('ubicacion');
+      fixture.detectChanges();
+      const panel: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-panel');
+      expect(fixture.nativeElement.querySelector('app-mini-map')).toBeNull();
+      expect(panel.textContent).toContain('Calle antigua');
+      expect(panel.textContent).toContain('no tiene coordenadas guardadas');
+    });
+
+    it('mini mapa: actividad sin ningún lugar informado muestra un estado vacío claro (sin romper el detalle)', async () => {
+      const fixture = await createComponent(true, [actividadInvierno({ lugar: null })]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadInvierno({ lugar: null }));
+      component.setDetailTab('ubicacion');
+      fixture.detectChanges();
+      const panel: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-panel');
+      expect(fixture.nativeElement.querySelector('app-mini-map')).toBeNull();
+      expect(panel.textContent).toContain('No se ha indicado ningún lugar');
+    });
+
+    it('documentación: administración con permiso de escritura puede subir un documento nuevo desde el detalle', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      component.abrirDetalleActividad(actividadVerano());
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+
+      const file = new File(['contenido'], 'plano.pdf', { type: 'application/pdf' });
+      component.nuevosDocumentosActividad = [file];
+      component.subirDocumentacionActividad();
+
+      expect(secretaria.subirAdjunto).toHaveBeenCalledWith('actividad', 'ACT-VERANO', file);
+      expect(component.nuevosDocumentosActividad).toEqual([]);
+    });
+
+    it('documentación: sin permiso de escritura no se muestra el control de subida (respeta permisos)', async () => {
+      const fixture = await createComponent(true, [actividadVerano()], { hasPermission: permiso => permiso !== 'inscripciones:write' });
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('app-adjuntos-selector')).withContext('sin permiso de escritura no debe poder subir documentación').toBeNull();
+    });
+
+    it('documentación: una asociación (no admin) tampoco ve el control de subida', async () => {
+      const fixture = await createComponent(false, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('app-adjuntos-selector')).toBeNull();
+    });
+
+    it('documentación: muestra los adjuntos ya existentes (imágenes y documentos) con acción de descarga', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      secretaria.getAdjuntos.and.callFake((scope: string) => scope === 'actividad'
+        ? of({ adjuntos: [{ id: 1, originalName: 'plano.pdf', fileName: 'plano.pdf' } as any, { id: 2, originalName: 'foto.jpg', fileName: 'foto.jpg' } as any] })
+        : of({ adjuntos: [] }));
+      component.abrirDetalleActividad(actividadVerano());
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+      const buttons: HTMLElement[] = Array.from(fixture.nativeElement.querySelectorAll('.activity-detail-panel .btn-outline-secondary'));
+      const labels = buttons.map(button => button.textContent?.trim());
+      expect(labels).toContain('plano.pdf');
+      expect(labels).toContain('foto.jpg');
+    });
+
+    it('documentación: sin adjuntos no muestra ningún botón y da un mensaje claro', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      component.abrirDetalleActividad(actividadVerano());
+      component.setDetailTab('documentacion');
+      fixture.detectChanges();
+      const panel: HTMLElement = fixture.nativeElement.querySelector('.activity-detail-panel');
+      expect(panel.textContent).toContain('No hay documentación adjunta');
+    });
+
+    it('información: la imagen de portada de la actividad se muestra en la pestaña de Información', async () => {
+      const fixture = await createComponent(true, [actividadVerano()]);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      secretaria.getAdjuntos.and.callFake((scope: string) => scope === 'actividad_imagen'
+        ? of({ adjuntos: [{ id: 9 } as any] })
+        : of({ adjuntos: [] }));
+      secretaria.descargarAdjunto.and.returnValue(of(new Blob(['x'])));
+      component.abrirDetalleActividad(actividadVerano());
+      fixture.detectChanges();
+      const img: HTMLImageElement = fixture.nativeElement.querySelector('.activity-detail-panel img');
+      expect(img).withContext('imagen de portada visible en la pestaña Información').toBeTruthy();
+    });
+
+    it('compatibilidad API/frontend: crearActividad envía la ubicación estructurada junto al resto del payload', async () => {
+      const fixture = await createComponent(true, []);
+      const component = fixture.componentInstance;
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<SecretariaService>;
+      secretaria.crearActividad.and.returnValue(of(actividadConUbicacion()));
+      secretaria.getActividades.and.returnValue(of({ actividades: [actividadConUbicacion()] }));
+      component.abrirCrearActividad(new Date(2026, 8, 21));
+      component.actividadForm.patchValue({ titulo: 'Verbena' });
+      component.onUbicacionChange({ direccion: 'Plaza del Ayuntamiento', codigoPostal: '03001', localidad: 'Alicante', provincia: 'Alicante', latitud: 38.3452, longitud: -0.481 }, 'crear');
+      component.crearActividad();
+      expect(secretaria.crearActividad).toHaveBeenCalledWith(jasmine.objectContaining({
+        lugar: 'Plaza del Ayuntamiento', lugarLatitud: 38.3452, lugarLongitud: -0.481
+      }));
     });
   });
 });

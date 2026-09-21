@@ -223,6 +223,37 @@
   }
 }
 
+// 0.34.0#ESMERALDA: pestañas del detalle de actividad (Información/
+// Ubicación/Documentación), mismo patrón visual que `.calendar-tabs`.
+.activity-detail-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  border-bottom: 1px solid var(--ffsj-line);
+  padding-bottom: 0.75rem;
+}
+
+.activity-detail-tabs button {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ffsj-ink);
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0.5rem 0.8rem;
+}
+
+.activity-detail-tabs button.active {
+  border-color: var(--ffsj-red);
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+}
+
+.activity-detail-panel {
+  padding-top: 1rem;
+}
+
 .status {
   border-radius: 999px;
   background: #dcfce7;
