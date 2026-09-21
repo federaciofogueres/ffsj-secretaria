@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.40.0#ESMERALDA — Corrección real del filtrado y autorización por buzones en Registro
+
+> Causa real del fallo reportado ("la API sigue devolviendo todos los registros al filtrar por buzón"): `SecretariaService.getRegistros()` calculaba correctamente `destinatarioId` a partir del selector de buzón de Webmaster, pero no lo incluía en los `HttpParams` de la petición HTTP — se perdía silenciosamente antes de llegar a la API, que respondía (correctamente) con el scope completo del usuario al no recibir ningún filtro. Selector visualmente correcto, filtro real ausente. Sin migraciones ni despliegue.
+
+- `getRegistros()` añade `destinatarioId` a los parámetros de la petición cuando Webmaster tiene un buzón seleccionado; sin selección ("Todos"), sigue sin enviarlo.
+- Nuevo `secretaria.service.spec.ts`: fija por contrato HTTP (con `HttpClientTestingModule`) que `destinatarioId` viaja en la query cuando corresponde y que no viaja cuando no hay buzón seleccionado, para que una regresión de este tipo rompa el build en vez de pasar inadvertida.
+- No se ha tocado la lógica de autorización de backend (`0.38.0#ESMERALDA`): ya limitaba correctamente el acceso de administradores ordinarios; el problema estaba aislado al envío del filtro desde el frontend.
+
 ## 0.39.0#ESMERALDA — Gestión de versión y novedades desde Configuración
 
 > La etiqueta de versión visible en Secretaría deja de estar fija en un componente: ahora lee la release activa publicada por Webmaster desde Configuración. Requiere migración `069_secretaria_release.sql` en `ffsj-secretaria-api`.

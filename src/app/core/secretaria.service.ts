@@ -352,6 +352,7 @@ export class SecretariaService {
 
   getRegistros(filters: {
     asociacionId?: number;
+    destinatarioId?: number;
     tipo?: string;
     origen?: 'asociacion' | 'administracion';
     anio?: number | string;
@@ -364,6 +365,7 @@ export class SecretariaService {
   } = {}): Observable<{ registros: RegistroSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.destinatarioId) params = params.set('destinatarioId', filters.destinatarioId);
     if (filters.tipo) params = params.set('tipo', filters.tipo);
     if (filters.origen) params = params.set('origen', filters.origen);
     if (filters.anio) params = params.set('anio', filters.anio);
