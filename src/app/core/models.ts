@@ -187,6 +187,9 @@ export interface SolicitudSecretaria {
   eventos?: SolicitudEventoSecretaria[];
   autorizacionesAlta?: AutorizacionAlta[];
   adjuntos?: AdjuntoSecretaria[];
+  validacionExcepcionalRepresentacionLegal?: {
+    menores: Array<{ itemId: number; nombre: string; apellidos: string }>;
+  };
 }
 
 export interface SolicitudModificacionAsociacion {

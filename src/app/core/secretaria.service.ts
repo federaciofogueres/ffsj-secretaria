@@ -258,6 +258,20 @@ export class SecretariaService {
     });
   }
 
+  solicitarInformacionRepresentacionLegal(id: number, destinatarioId: number): Observable<{
+    solicitud: SolicitudSecretaria;
+    comunicacion: RegistroSecretaria;
+    duplicada: boolean;
+  }> {
+    return this.http.post<{
+      solicitud: SolicitudSecretaria;
+      comunicacion: RegistroSecretaria;
+      duplicada: boolean;
+    }>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/solicitar-representacion-legal`, { destinatarioId }, {
+      headers: this.authHeaders()
+    });
+  }
+
   rechazarSolicitud(id: number): Observable<SolicitudSecretaria> {
     return this.http.post<SolicitudSecretaria>(`${this.apiUrl.secretariaBasePath}/solicitudes/${id}/rechazar`, {}, {
       headers: this.authHeaders()
