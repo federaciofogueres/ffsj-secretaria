@@ -65,6 +65,11 @@
         </div>
         <lib-ffsj-spinner *ngIf="loadingRegistros" [fullscreen]="true"></lib-ffsj-spinner>
         <div class="year-filter mb-3" *ngIf="mode !== null">
+          <label class="form-label mb-0" *ngIf="isAdminMode && accesoGlobalRegistro">Buzón
+          <select class="form-select form-select-sm" [(ngModel)]="destinatarioFiltro" (ngModelChange)="cambiarBuzon()" aria-label="Seleccionar buzón">
+            <option [ngValue]="''">Todos los buzones</option>
+            <option *ngFor="let destinatario of destinatarios" [ngValue]="destinatario.id">{{ destinatario.departamentoNombre }} · {{ destinatario.nombre }}</option>
+          </select></label>
           <label class="form-label mb-0">Año
           <select class="form-select form-select-sm" [(ngModel)]="filtroAnio" (ngModelChange)="aplicarFiltros()">
             <option [ngValue]="''">Todos</option>
@@ -86,6 +91,8 @@
           </select></label>
           <div class="filter-action"><span class="form-label">Acción</span><button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarFiltros()">Buscar</button></div>
         </div>
+
+        <div class="alert alert-success py-2" *ngIf="estadoFeedback">{{ estadoFeedback }}</div>
 
 
         <section class="list-card" *ngIf="mode === 'documentacion' && !isFormView && !isDetailView">
@@ -284,10 +291,10 @@
             </button>
           </div>
 
-          <div class="admin-state mt-3" *ngIf="mode !== 'comunicacion' && isAdminMode && permissions.hasPermission('registro:write')">
+          <div class="admin-state mt-3" *ngIf="isAdminMode && permissions.hasPermission('registro:write')">
             <label class="form-label mb-1">Estado administrativo</label>
             <select class="form-select form-select-sm" [disabled]="updatingEstado" [ngModel]="resultado.estado" (ngModelChange)="cambiarEstado(resultado, $event)">
-              <option *ngFor="let estado of estadosRegistro" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
+              <option *ngFor="let estado of estadosManuales(resultado)" [ngValue]="estado">{{ estadoLabel(estado) }}</option>
             </select>
           </div>
 

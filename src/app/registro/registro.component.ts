@@ -36,6 +36,8 @@ export class RegistroComponent implements OnInit, OnDestroy {
   docBandeja: DocumentacionBandeja = 'recibidas';
 
   destinatarios: RegistroDestinatario[] = [];
+  accesoGlobalRegistro = false;
+  destinatarioFiltro: number | '' = '';
 
   docForm = this.fb.group({
     responsable: ['', Validators.required],
@@ -71,6 +73,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   respuestaComunicacion = '';
   loadingRegistros = false;
   errorRegistros = '';
+  estadoFeedback = '';
 
   submittingDoc = false;
   submittingComm = false;
@@ -97,7 +100,11 @@ export class RegistroComponent implements OnInit, OnDestroy {
     this.applyRouteState();
     this.cargarRegistros();
     this.secretariaService.getRegistroDestinatarios().subscribe({
-      next: response => this.destinatarios = response.destinatarios,
+      next: response => {
+        this.destinatarios = response.destinatarios;
+        this.accesoGlobalRegistro = Boolean(response.accesoGlobal);
+        if (this.accesoGlobalRegistro) this.cargarRegistros(true);
+      },
       error: () => this.errorRegistros = 'No se han podido cargar los destinatarios de Registro.'
     });
     if (this.isAdminMode) {
@@ -546,6 +553,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
       return;
     }
     this.updatingEstado = true;
+    this.estadoFeedback = '';
     this.secretariaService.actualizarEstadoRegistro(registro.id, estado).subscribe({
       next: updated => {
         this.prependRegistro(updated);
@@ -555,10 +563,24 @@ export class RegistroComponent implements OnInit, OnDestroy {
         if (this.commResultado?.id === updated.id) {
           this.commResultado = updated;
         }
+        this.estadoFeedback = `Estado actualizado a ${this.estadoLabel(updated.estado)}.`;
         this.updatingEstado = false;
       },
       error: (response) => { this.updatingEstado = false; this.errorRegistros = response?.error?.message || 'No se ha podido actualizar el estado.'; }
     });
+  }
+
+  estadosManuales(registro: RegistroSecretaria): RegistroSecretaria['estado'][] {
+    return registro.tipo === 'documentacion'
+      ? ['enviada', 'recibido', 'leido', 'validado', 'incidencia', 'rechazado', 'archivada']
+      : ['enviada', 'recibido', 'leido', 'incidencia', 'rechazado', 'finalizada'];
+  }
+
+  cambiarBuzon(): void {
+    this.detailMode = null;
+    this.docResultado = null;
+    this.commResultado = null;
+    this.cargarRegistros(true);
   }
 
   responderComunicacion(): void {
@@ -639,6 +661,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
     this.errorRegistros = '';
     const filters: {
       asociacionId?: number;
+      destinatarioId?: number;
       tipo?: Exclude<RegistroMode, null>;
       origen?: 'asociacion' | 'administracion';
       anio?: number | '';
@@ -654,6 +677,9 @@ export class RegistroComponent implements OnInit, OnDestroy {
       page: this.paginaActual,
       pageSize: this.tamanoPagina
     };
+    if (this.isAdminMode && this.accesoGlobalRegistro && this.destinatarioFiltro) {
+      filters.destinatarioId = Number(this.destinatarioFiltro);
+    }
     this.aplicarBandejaRegistro(filters);
     if (this.filtroAnio) {
       Object.assign(filters, { anio: this.filtroAnio });

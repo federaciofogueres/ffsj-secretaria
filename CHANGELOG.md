@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.38.0#ESMERALDA — Buzones privados de Registro y gestión de estados
+
+> Registro obtiene de la API los buzones autorizados para la sesión. Webmaster recibe un selector alimentado por esos buzones reales; Administración ordinaria no puede seleccionar ni visualizar buzones ajenos. Sin migraciones ni despliegue.
+
+- Documentación y Comunicaciones recargan listado, filtros, búsqueda, ordenación y paginación al cambiar el buzón de Webmaster.
+- El detalle de ambos tipos de Registro muestra el estado actual y permite al administrador autorizado actualizarlo con feedback de guardado; la API valida y audita la transición.
+
 ## 0.37.0#ESMERALDA — Validación excepcional de altas históricas de menores
 
 > Administración recibe un aviso al validar excepcionalmente una alta histórica de menor sin representación legal. Desde el detalle selecciona el buzón de Registro y genera una Comunicación predefinida a la asociación; no hay formulario nuevo ni redacción manual. El criterio y la operación se protegen en `ffsj-secretaria-api`. Sin migraciones ni despliegue.

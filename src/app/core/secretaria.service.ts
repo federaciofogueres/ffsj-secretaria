@@ -309,11 +309,13 @@ export class SecretariaService {
 
   getAutorizacionesAlta(filters: {
     asociacionId?: number;
+    destinatarioId?: number;
     scope?: 'anterior' | 'nueva';
     estado?: AutorizacionAlta['estado'];
   } = {}): Observable<{ autorizaciones: AutorizacionAlta[] }> {
     let params = new HttpParams();
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.destinatarioId) params = params.set('destinatarioId', filters.destinatarioId);
     if (filters.scope) params = params.set('scope', filters.scope);
     if (filters.estado) params = params.set('estado', filters.estado);
     return this.http.get<{ autorizaciones: AutorizacionAlta[] }>(`${this.apiUrl.secretariaBasePath}/autorizaciones-alta`, {
@@ -375,8 +377,8 @@ export class SecretariaService {
     });
   }
 
-  getRegistroDestinatarios(): Observable<{ destinatarios: RegistroDestinatario[] }> {
-    return this.http.get<{ destinatarios: RegistroDestinatario[] }>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, {
+  getRegistroDestinatarios(): Observable<{ destinatarios: RegistroDestinatario[]; accesoGlobal?: boolean }> {
+    return this.http.get<{ destinatarios: RegistroDestinatario[]; accesoGlobal?: boolean }>(`${this.apiUrl.secretariaBasePath}/registros/destinatarios`, {
       headers: this.authHeaders()
     });
   }
