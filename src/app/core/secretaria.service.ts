@@ -25,6 +25,8 @@ import {
   RegistroResponsable,
   RegistroPendiente,
   RegistroSecretaria,
+  Release,
+  ReleaseCreatePayload,
   ResponsableInscripcion,
   PaginacionSecretaria,
   SolicitudModificacionAsociacion,
@@ -385,6 +387,30 @@ export class SecretariaService {
 
   getRegistroResponsables(): Observable<{ responsables: RegistroResponsable[] }> {
     return this.http.get<{ responsables: RegistroResponsable[] }>(`${this.apiUrl.secretariaBasePath}/registros/responsables`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getReleaseActiva(): Observable<{ release: Release | null }> {
+    return this.http.get<{ release: Release | null }>(`${this.apiUrl.secretariaBasePath}/release/activa`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  getReleases(): Observable<{ releases: Release[] }> {
+    return this.http.get<{ releases: Release[] }>(`${this.apiUrl.secretariaBasePath}/admin/release`, {
+      headers: this.authHeaders()
+    });
+  }
+
+  crearRelease(payload: ReleaseCreatePayload): Observable<{ release: Release }> {
+    return this.http.post<{ release: Release }>(`${this.apiUrl.secretariaBasePath}/admin/release`, payload, {
+      headers: this.authHeaders()
+    });
+  }
+
+  activarRelease(id: number): Observable<{ release: Release }> {
+    return this.http.post<{ release: Release }>(`${this.apiUrl.secretariaBasePath}/admin/release/${id}/activar`, {}, {
       headers: this.authHeaders()
     });
   }

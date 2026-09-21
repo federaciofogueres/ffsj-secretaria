@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.39.0#ESMERALDA — Gestión de versión y novedades desde Configuración
+
+> La etiqueta de versión visible en Secretaría deja de estar fija en un componente: ahora lee la release activa publicada por Webmaster desde Configuración. Requiere migración `069_secretaria_release.sql` en `ffsj-secretaria-api`.
+
+- Nueva pestaña "Versión" en Configuración (solo Webmaster): permite crear una versión con novedades en Markdown, guardarla como borrador o publicarla directamente, y publicar cualquier versión anterior ya registrada.
+- La cabecera muestra la versión activa junto a un icono de información que abre las novedades (Markdown, renderizado de forma segura); si no hay novedades no se muestra un bloque vacío.
+- Si no hay ninguna versión publicada o falla la carga, la aplicación recae automáticamente en la versión técnica derivada de `package.json` (`app-version.ts`, sin cambios) y nunca bloquea ni muestra `undefined`.
+
 ## 0.38.0#ESMERALDA — Buzones privados de Registro y gestión de estados
 
 > Registro obtiene de la API los buzones autorizados para la sesión. Webmaster recibe un selector alimentado por esos buzones reales; Administración ordinaria no puede seleccionar ni visualizar buzones ajenos. Sin migraciones ni despliegue.

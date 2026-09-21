@@ -1,0 +1,43 @@
+<section class="release-admin">
+  <h2 class="h5">Versión publicada</h2>
+  <p class="text-muted">Gestiona la versión y las novedades que ven las asociaciones y Administración en Secretaría.</p>
+  <div class="alert alert-danger" *ngIf="error">{{ error }}</div>
+
+  <article class="release-activa border rounded p-3 mb-4" *ngIf="releaseActiva">
+    <p class="ux-overline mb-1">Versión activa</p>
+    <strong>{{ releaseActiva.version }}</strong>
+    <small class="text-muted d-block" *ngIf="releaseActiva.fechaPublicacion">Publicada el {{ releaseActiva.fechaPublicacion | date: 'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="releaseActiva.publicadoPor"> por {{ releaseActiva.publicadoPor }}</ng-container></small>
+    <div class="markdown-body mt-2" *ngIf="releaseActiva.novedades" [innerHTML]="releaseActiva.novedades | markdown"></div>
+  </article>
+
+  <h3 class="h6">Publicar una nueva versión</h3>
+  <div class="row g-2">
+    <div class="col-md-4">
+      <label class="form-label">Versión</label>
+      <input class="form-control" [(ngModel)]="version" name="release-version" placeholder="0.40.0#ESMERALDA" [disabled]="guardando" />
+    </div>
+  </div>
+  <div class="mt-2">
+    <app-markdown-editor label="Novedades" placeholder="- Nueva funcionalidad..." [rows]="6" [(ngModel)]="novedades" name="release-novedades" [disabled]="guardando"></app-markdown-editor>
+  </div>
+  <div class="d-flex gap-2 mt-2">
+    <button class="btn btn-foc-rojo" type="button" [disabled]="!version.trim() || guardando" (click)="guardar(true)">Guardar y publicar</button>
+    <button class="btn btn-outline-secondary" type="button" [disabled]="!version.trim() || guardando" (click)="guardar(false)">Guardar como borrador</button>
+  </div>
+
+  <h3 class="h6 mt-4">Versiones registradas</h3>
+  <lib-ffsj-spinner *ngIf="loading"></lib-ffsj-spinner>
+  <p class="ux-muted" *ngIf="!loading && !releases.length">Todavía no hay ninguna versión registrada.</p>
+  <div class="mt-2" *ngIf="!loading && releases.length">
+    <article class="border rounded p-3 mb-2" *ngFor="let release of releases">
+      <div class="d-flex justify-content-between align-items-start gap-2">
+        <div>
+          <strong>{{ release.version }}</strong>
+          <span class="badge bg-success ms-2" *ngIf="release.activa">Activa</span>
+          <small class="text-muted d-block" *ngIf="release.fechaPublicacion">Publicada el {{ release.fechaPublicacion | date: 'dd/MM/yyyy HH:mm' }}</small>
+        </div>
+        <button class="btn btn-outline-secondary btn-sm" type="button" *ngIf="!release.activa" [disabled]="activandoId === release.id" (click)="activar(release)">Publicar esta versión</button>
+      </div>
+    </article>
+  </div>
+</section>

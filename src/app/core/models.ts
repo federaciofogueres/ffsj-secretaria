@@ -284,6 +284,21 @@ export interface RegistroSecretaria {
   eventos?: RegistroEventoSecretaria[];
 }
 
+export interface Release {
+  id: number;
+  version: string;
+  novedades?: string | null;
+  activa: boolean;
+  fechaPublicacion?: string | null;
+  publicadoPor?: string | null;
+}
+
+export interface ReleaseCreatePayload {
+  version: string;
+  novedades?: string | null;
+  publicar?: boolean;
+}
+
 export interface RegistroDestinatario {
   id: number;
   responsableId?: number | null;

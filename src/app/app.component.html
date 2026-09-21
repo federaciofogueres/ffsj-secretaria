@@ -128,7 +128,27 @@
                 <i class="bi bi-box-arrow-right"></i>
                 <span>{{ 'common.logout' | t }}</span>
               </button>
-              <small class="app-version">Versión {{ version }}</small>
+              <div class="app-version-row">
+                <small class="app-version">Versión {{ version }}</small>
+                <button
+                  class="app-version-info"
+                  type="button"
+                  (click)="toggleVersionInfo(); $event.stopPropagation()"
+                  [attr.aria-expanded]="versionInfoOpen"
+                  aria-haspopup="dialog"
+                  aria-label="Ver novedades de esta versión"
+                >
+                  <i class="bi bi-info-circle"></i>
+                </button>
+              </div>
+              <div class="app-version-novedades" *ngIf="versionInfoOpen" role="dialog" aria-label="Novedades de la versión">
+                <p class="ux-overline mb-1">Novedades · {{ version }}</p>
+                <small *ngIf="versionFechaPublicacion" class="ux-muted d-block mb-2">Publicada el {{ versionFechaPublicacion | date: 'dd/MM/yyyy' }}</small>
+                <div *ngIf="versionNovedades; else sinNovedades" class="markdown-body" [innerHTML]="versionNovedades | markdown"></div>
+                <ng-template #sinNovedades>
+                  <p class="mb-0 ux-muted">No hay novedades registradas para esta versión.</p>
+                </ng-template>
+              </div>
             </div>
           </section>
 
