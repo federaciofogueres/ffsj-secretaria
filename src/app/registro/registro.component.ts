@@ -21,6 +21,7 @@ type RegistroMode = 'documentacion' | 'comunicacion' | null;
 type DocumentacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas' | 'archivadas';
 type ComunicacionBandeja = 'recibidas' | 'enviadas' | 'nuevas' | 'contestadas';
 type OrdenRegistro = 'fecha_desc' | 'fecha_asc' | 'estado' | 'titulo';
+type DetailTab = 'informacion' | 'trazabilidad' | 'incidencias';
 
 @Component({
   selector: 'app-registro',
@@ -34,6 +35,13 @@ export class RegistroComponent implements OnInit, OnDestroy {
   formMode: Exclude<RegistroMode, null> | null = null;
   detailMode: Exclude<RegistroMode, null> | null = null;
   docBandeja: DocumentacionBandeja = 'recibidas';
+  detailTab: DetailTab = 'informacion';
+  incidenciasCount = 0;
+  readonly detailTabs: Array<{ id: DetailTab; label: string }> = [
+    { id: 'informacion', label: 'Información' },
+    { id: 'trazabilidad', label: 'Trazabilidad' },
+    { id: 'incidencias', label: 'Incidencias' }
+  ];
 
   destinatarios: RegistroDestinatario[] = [];
   accesoGlobalRegistro = false;
@@ -322,6 +330,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
         this.docResultado = registro;
         this.formMode = null;
         this.detailMode = 'documentacion';
+        this.detailTab = 'informacion';
         this.prependRegistro(registro);
         this.lockDocForm();
         this.docAdjuntos = [];
@@ -363,6 +372,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
         this.commResultado = registro;
         this.formMode = null;
         this.detailMode = 'comunicacion';
+        this.detailTab = 'informacion';
         this.prependRegistro(registro);
         this.lockCommForm();
         this.commAdjuntos = [];
@@ -389,6 +399,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   openReferencia(ref: RegistroSecretaria, mode: Exclude<RegistroMode, null>): void {
     this.formMode = null;
     this.detailMode = mode;
+    this.detailTab = 'informacion';
     this.secretariaService.getRegistro(ref.id).subscribe(registro => {
       this.prependRegistro(registro);
       if (mode === 'documentacion') {
@@ -482,6 +493,30 @@ export class RegistroComponent implements OnInit, OnDestroy {
 
   estadoClass(estado: string): string {
     return estado === 'leido' ? 'leido' : estado;
+  }
+
+  eventoTipoLabel(tipo: string): string {
+    const labels: Record<string, string> = {
+      CREADO: 'Creación',
+      ESTADO: 'Cambio de estado',
+      MENSAJE: 'Mensaje',
+      LEIDO: 'Lectura',
+      FINALIZADO: 'Finalizado',
+      ARCHIVADO: 'Archivado'
+    };
+    return labels[tipo] || tipo;
+  }
+
+  eventoTipoIcono(tipo: string): string {
+    const iconos: Record<string, string> = {
+      CREADO: 'bi-plus-circle',
+      ESTADO: 'bi-arrow-repeat',
+      MENSAJE: 'bi-chat-dots',
+      LEIDO: 'bi-eye',
+      FINALIZADO: 'bi-check-circle',
+      ARCHIVADO: 'bi-archive'
+    };
+    return iconos[tipo] || 'bi-circle';
   }
 
   estadoComunicacionLabel(registro: RegistroSecretaria): string {
@@ -652,6 +687,25 @@ export class RegistroComponent implements OnInit, OnDestroy {
 
   toggleMasFiltros(): void {
     this.masFiltrosAbierto = !this.masFiltrosAbierto;
+  }
+
+  activarDetailTab(tab: DetailTab): void {
+    this.detailTab = tab;
+  }
+
+  navegarDetailTabs(event: KeyboardEvent, index: number): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const total = this.detailTabs.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? total - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + total) % total;
+    const tab = this.detailTabs[next];
+    this.activarDetailTab(tab.id);
+    setTimeout(() => document.getElementById(`registro-detail-tab-${tab.id}`)?.focus());
+  }
+
+  onIncidenciasCountChange(count: number): void {
+    this.incidenciasCount = count;
   }
 
   limpiarFiltros(): void {
