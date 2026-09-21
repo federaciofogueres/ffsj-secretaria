@@ -63,6 +63,7 @@ export class RegistroComponent implements OnInit, OnDestroy {
   filtroTexto = '';
   filtroEstado = '';
   ordenRegistros: OrdenRegistro = 'fecha_desc';
+  masFiltrosAbierto = false;
   paginaActual = 1;
   tamanoPagina = 20;
   paginacion: PaginacionSecretaria = { page: 1, pageSize: 20, total: 0, totalPages: 1 };
@@ -639,6 +640,26 @@ export class RegistroComponent implements OnInit, OnDestroy {
   }
 
   aplicarFiltros(): void {
+    this.cargarRegistros(true);
+  }
+
+  get hayFiltrosActivos(): boolean {
+    return Boolean(
+      this.filtroTexto.trim() || this.filtroEstado || this.filtroAnio || this.ordenRegistros !== 'fecha_desc'
+      || (this.accesoGlobalRegistro && this.destinatarioFiltro)
+    );
+  }
+
+  toggleMasFiltros(): void {
+    this.masFiltrosAbierto = !this.masFiltrosAbierto;
+  }
+
+  limpiarFiltros(): void {
+    this.filtroTexto = '';
+    this.filtroEstado = '';
+    this.filtroAnio = '';
+    this.ordenRegistros = 'fecha_desc';
+    if (this.accesoGlobalRegistro) this.destinatarioFiltro = '';
     this.cargarRegistros(true);
   }
 
