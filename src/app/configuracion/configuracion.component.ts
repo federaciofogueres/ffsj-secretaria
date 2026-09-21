@@ -6,14 +6,15 @@ import { RegistroDestinatario, RegistroResponsable } from '../core/models';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { RubiAdminComponent } from '../rubi/rubi-admin.component';
+import { ReleaseAdminComponent } from './release-admin.component';
 
 @Component({
   selector: 'app-configuracion', standalone: true,
-  imports: [CommonModule, FormsModule, EjerciciosComponent, ConfirmDialogComponent, RubiAdminComponent],
+  imports: [CommonModule, FormsModule, EjerciciosComponent, ConfirmDialogComponent, RubiAdminComponent, ReleaseAdminComponent],
   templateUrl: './configuracion.component.html', styleUrls: ['./configuracion.component.scss']
 })
 export class ConfiguracionComponent implements OnInit {
-  tab: 'ejercicios' | 'registro' | 'rubi' = 'ejercicios';
+  tab: 'ejercicios' | 'registro' | 'rubi' | 'version' = 'ejercicios';
   destinatarios: RegistroDestinatario[] = [];
   responsables: RegistroResponsable[] = [];
   departamento = '';
