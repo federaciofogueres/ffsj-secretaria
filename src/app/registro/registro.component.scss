@@ -277,12 +277,59 @@
   background: #fbfcfe;
 }
 
+.detail-header-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .85rem;
+}
+
+.detail-header-icon {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 12px;
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.detail-header-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.detail-header-actions {
+  flex: 0 0 auto;
+}
+
 .detail-header-top {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: .6rem;
   margin-bottom: .3rem;
+}
+
+// 0.40.3#ESMERALDA: select nativo (accesible, sin dependencias nuevas) con
+// apariencia de badge/pill + flecha, unica interaccion para cambiar estado
+// (sustituye al selector grande que antes vivia dentro de Informacion).
+.detail-estado-select {
+  appearance: none;
+  border: 0;
+  cursor: pointer;
+  padding-right: 1.8rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right .5rem center;
+  background-size: .8rem;
+}
+
+.detail-estado-select:disabled {
+  opacity: .65;
+  cursor: not-allowed;
 }
 
 .detail-title {
@@ -399,6 +446,255 @@
   margin: .1rem 0 0;
   font-weight: 700;
   word-break: break-word;
+}
+
+.side-actions {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.side-action {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  border: 1px solid var(--ffsj-line);
+  background: #fff;
+  border-radius: 10px;
+  padding: .55rem .7rem;
+  font-size: .86rem;
+  font-weight: 700;
+  color: var(--ffsj-ink);
+  text-align: left;
+}
+
+.side-action:hover {
+  border-color: var(--ffsj-red);
+  color: var(--ffsj-red);
+}
+
+// --- Tab Informacion: tarjetas de resumen/participantes/adjuntos ---
+
+.info-card {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  padding: .9rem 1rem;
+}
+
+.info-card-title {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: 0 0 .75rem;
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--ffsj-ink);
+}
+
+.info-card-title i {
+  color: var(--ffsj-red);
+}
+
+.info-field + .info-field {
+  margin-top: .75rem;
+  padding-top: .75rem;
+  border-top: 1px solid var(--ffsj-line);
+}
+
+.info-field-label {
+  display: block;
+  color: var(--ffsj-muted);
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.info-field-value {
+  margin: .2rem 0 0;
+  white-space: pre-line;
+}
+
+.info-participants {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.info-conversation-cta {
+  display: flex;
+  align-items: center;
+  gap: .65rem;
+  width: 100%;
+  border: 1px dashed var(--ffsj-line);
+  border-radius: 12px;
+  background: #fbfcfe;
+  padding: .75rem .9rem;
+  text-align: left;
+  color: var(--ffsj-ink);
+}
+
+.info-conversation-cta:hover {
+  border-color: var(--ffsj-red);
+  border-style: solid;
+}
+
+.info-conversation-cta i:first-child {
+  color: var(--ffsj-red);
+  font-size: 1.1rem;
+}
+
+.info-conversation-cta-text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.info-conversation-cta-text small {
+  color: var(--ffsj-muted);
+}
+
+.info-conversation-cta-action {
+  flex: 0 0 auto;
+  color: var(--ffsj-red);
+  font-weight: 800;
+  font-size: .86rem;
+  white-space: nowrap;
+}
+
+// --- Tab Conversacion: hilo tipo chat ---
+
+.conversation {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.conversation-message {
+  display: flex;
+  gap: .65rem;
+  max-width: 85%;
+}
+
+.conversation-message.own {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+
+.conversation-avatar {
+  flex: 0 0 auto;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: var(--ffsj-soft-gray);
+  color: var(--ffsj-ink);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .75rem;
+  font-weight: 900;
+}
+
+.conversation-avatar.own {
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+}
+
+.conversation-bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+  border-radius: 14px;
+  padding: .7rem .85rem;
+  background: var(--ffsj-soft-gray);
+}
+
+.conversation-message.own .conversation-bubble {
+  background: var(--ffsj-soft-red);
+}
+
+.conversation-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: .5rem;
+  flex-wrap: wrap;
+  margin-bottom: .3rem;
+}
+
+.conversation-meta strong {
+  font-size: .86rem;
+}
+
+.conversation-meta small {
+  color: var(--ffsj-muted);
+  font-size: .75rem;
+  white-space: nowrap;
+}
+
+.conversation-text {
+  white-space: pre-line;
+}
+
+.conversation-attachments {
+  display: flex;
+  flex-direction: column;
+  gap: .4rem;
+  margin-top: .5rem;
+}
+
+.conversation-attachment {
+  display: flex;
+  align-items: center;
+  gap: .55rem;
+  border: 1px solid var(--ffsj-line);
+  background: #fff;
+  border-radius: 10px;
+  padding: .45rem .6rem;
+  text-align: left;
+}
+
+.conversation-attachment i:first-child {
+  color: var(--ffsj-red);
+}
+
+.conversation-attachment-info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.conversation-attachment-info strong {
+  font-size: .82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.conversation-attachment-info small {
+  color: var(--ffsj-muted);
+  font-size: .72rem;
+}
+
+@media (max-width: 640px) {
+  .conversation-message {
+    max-width: 100%;
+  }
+
+  .detail-header-row {
+    flex-wrap: wrap;
+  }
+
+  .detail-header-actions {
+    width: 100%;
+  }
+
+  .detail-header-actions .ux-btn {
+    width: 100%;
+  }
+
+  .info-participants {
+    grid-template-columns: 1fr;
+  }
 }
 
 .timeline {
