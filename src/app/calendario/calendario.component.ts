@@ -13,6 +13,8 @@ import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
 import { MadridDatePipe } from '../shared/madrid-date.pipe';
 import { madridDateOnly, toMadridDateTimeInputValue } from '../shared/madrid-time.util';
+import { MarkdownEditorComponent } from '../shared/markdown-editor.component';
+import { MarkdownPipe } from '../shared/markdown.pipe';
 import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 interface CalendarDay {
@@ -26,7 +28,7 @@ type CalendarTab = 'calendario' | 'crear' | 'propuestas';
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent, MadridDatePipe],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent, MadridDatePipe, MarkdownEditorComponent, MarkdownPipe],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })

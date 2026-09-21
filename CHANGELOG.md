@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.33.0#ESMERALDA — Experiencia de edición y lectura de Actividades
+
+> Mejora la creación/edición de Actividades con un editor Markdown para la descripción, y rediseña de forma compacta las dos vistas de detalle (panel lateral y modal), sin tocar el flujo funcional. **Validación técnica completada** (296/296 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Descripción con Markdown
+
+- El campo "Descripción" de creación/edición de Actividad pasa de `<textarea>` a `app-markdown-editor` (el mismo componente ya introducido en 0.30.0#ESMERALDA para las instrucciones de Inscripciones) — no se ha creado ningún editor ni dependencia nueva.
+- El detalle (panel lateral, modal de detalle de actividad y modal de detalle de propuesta) renderiza la descripción con el pipe `markdown` ya existente, de forma segura (saneador HTML de Angular).
+- Actividades con descripción guardada como texto plano (todas las existentes hasta ahora) se siguen mostrando correctamente: el pipe `markdown` trata el texto plano como un único párrafo.
+
+### Rediseño compacto del detalle de Actividad
+
+- Se elimina el texto redundante "Detalle de actividad" del panel lateral y del modal de detalle.
+- El título y el chip de estado comparten ahora la misma cabecera (`.activity-header`), alineados en la misma línea.
+- Fecha/hora, lugar y responsable se agrupan en una sola fila de metadatos (`.activity-meta`) con iconos de Bootstrap Icons ya usados en el resto de la aplicación (`bi-clock`, `bi-geo-alt`, `bi-person` — sin iconos ni dependencias nuevas), que en pantallas estrechas (≤480px) pasan a apilarse verticalmente sin perder jerarquía visual.
+- El modal de detalle de propuesta también renderiza su descripción con el pipe `markdown`, por consistencia (mismo campo de datos), sin tocar su cabecera ni su disposición general.
+- Sin tabs, sin mapa, sin selector de ubicación ni gestión documental nueva — eso corresponde a `0.34.0#ESMERALDA`.
+
+### Pruebas nuevas (`calendario.component.spec.ts`)
+
+Persistencia de la descripción Markdown en creación/edición, renderizado seguro en las dos vistas de detalle (incluye un intento de XSS vía `<script>`, eliminado por el saneador), compatibilidad con descripciones antiguas en texto plano, ausencia de bloque vacío sin descripción, desaparición del texto "Detalle de actividad", título y chip en la misma cabecera, y presencia de los tres iconos de metadatos con su contenido.
+
 ## 0.31.0#ESMERALDA — Horarios y lugar de actividades
 
 > Corrige el desfase horario (~2h) del calendario de Actividades y añade `lugar` (texto libre, opcional). El grueso del hallazgo de causa raíz vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio deja de reconvertir la hora usando la zona del navegador y muestra siempre la hora local de Madrid. **Validación técnica completada** (286/286 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
