@@ -3,9 +3,9 @@ import { Component, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
-import { FfsjSpinnerComponent } from 'ffsj-web-components';
+import { AlertButtonType, FfsjDialogAlertService, FfsjSpinnerComponent } from 'ffsj-web-components';
 
-import { AdjuntoSecretaria, AutorizacionAlta, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
+import { AdjuntoSecretaria, AutorizacionAlta, RegistroDestinatario, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
@@ -56,6 +56,9 @@ export class SolicitudesComponent implements OnInit {
   totalPaginas = 1;
   asociacionNombres: Record<number, string> = {};
   incidenciasAbiertasBySolicitud: Record<number, number> = {};
+  destinatariosRegistro: RegistroDestinatario[] = [];
+  destinatarioRepresentacionId: number | null = null;
+  solicitudConRepresentacionPendiente: SolicitudSecretaria | null = null;
   detalleDialogOpen = false;
   pestanaDetalle: PestanaDetalleSolicitud = 'resumen';
   readonly pestanasDetalle: Array<{ id: PestanaDetalleSolicitud; label: string }> = [
@@ -68,11 +71,19 @@ export class SolicitudesComponent implements OnInit {
 
   constructor(
     private readonly secretariaService: SecretariaService,
-    private readonly censoService: CensoService
+    private readonly censoService: CensoService,
+    private readonly dialog: FfsjDialogAlertService
   ) {}
 
   ngOnInit(): void {
     this.cargarSolicitudes();
+    this.secretariaService.getRegistroDestinatarios().subscribe({
+      next: response => {
+        this.destinatariosRegistro = response.destinatarios;
+        this.destinatarioRepresentacionId = response.destinatarios[0]?.id ?? null;
+      },
+      error: () => this.error = 'No se han podido cargar los destinatarios de Registro.'
+    });
   }
 
   cargarSolicitudes(resetPage = false): void {
@@ -149,11 +160,52 @@ export class SolicitudesComponent implements OnInit {
   validar(): void {
     if (!this.detalle) return;
     const numero = this.detalle.numero;
-    this.cambiarEstado(
-      () => this.secretariaService.validarSolicitud(this.detalle!.id),
-      `Solicitud ${numero} validada correctamente. Los cambios se han aplicado en el censo.`,
-      true
-    );
+    this.loading = true;
+    this.error = '';
+    this.success = '';
+    this.secretariaService.validarSolicitud(this.detalle.id).subscribe({
+      next: updated => {
+        this.detalle = updated;
+        this.solicitudes = this.solicitudes.map(item => item.id === updated.id ? updated : item);
+        this.success = `Solicitud ${numero} validada correctamente. Los cambios se han aplicado en el censo.`;
+        this.cargarSolicitudes();
+        this.loading = false;
+        if (updated.validacionExcepcionalRepresentacionLegal) {
+          this.solicitudConRepresentacionPendiente = updated;
+          this.dialog.openDialogAlert({
+            title: 'Falta información de representación legal',
+            content: 'La solicitud histórica se ha validado excepcionalmente. Puedes solicitar ahora los datos pendientes a la asociación.',
+            buttonsAlert: [AlertButtonType.Entendido]
+          });
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se ha podido cambiar el estado de la solicitud.';
+        this.loading = false;
+      }
+    });
+  }
+
+  solicitarInformacionRepresentacionLegal(): void {
+    const solicitud = this.solicitudConRepresentacionPendiente;
+    if (!solicitud || !this.destinatarioRepresentacionId) return;
+    this.loading = true;
+    this.error = '';
+    this.secretariaService.solicitarInformacionRepresentacionLegal(solicitud.id, this.destinatarioRepresentacionId).subscribe({
+      next: response => {
+        this.detalle = response.solicitud;
+        this.solicitudes = this.solicitudes.map(item => item.id === response.solicitud.id ? response.solicitud : item);
+        this.solicitudConRepresentacionPendiente = null;
+        this.success = response.duplicada
+          ? 'Ya existía una petición de información para esta solicitud.'
+          : `Se ha enviado la comunicación ${response.comunicacion.numero} a la asociación.`;
+        this.loading = false;
+      },
+      error: (error: HttpErrorResponse) => {
+        this.error = error?.error?.message || 'No se ha podido solicitar la información de representación legal.';
+        this.loading = false;
+      }
+    });
   }
 
   rechazar(): void {
@@ -351,8 +403,14 @@ export class SolicitudesComponent implements OnInit {
   labelEvento(evento: SolicitudEventoSecretaria): string {
     if (evento.tipo === 'CREADA') return 'Solicitud registrada';
     if (evento.tipo === 'APLICADA_EN_CENSO') return 'Cambios aplicados en Censo';
+    if (evento.tipo === 'VALIDACION_EXCEPCIONAL_REPRESENTACION_LEGAL') return 'Validación excepcional por falta de representación legal';
+    if (evento.tipo === 'SOLICITUD_INFORMACION_REPRESENTACION_LEGAL') return 'Información de representación legal solicitada a la asociación';
     if (evento.tipo === 'ESTADO') return `Estado: ${this.labelEstado(evento.estadoAnterior || '—')} → ${this.labelEstado(evento.estadoNuevo || '—')}`;
     return evento.tipo;
+  }
+
+  tieneSolicitudInformacionRepresentacion(solicitud: SolicitudSecretaria): boolean {
+    return (solicitud.eventos || []).some(evento => evento.tipo === 'SOLICITUD_INFORMACION_REPRESENTACION_LEGAL');
   }
 
   diferenciasItem(item: SolicitudItemSecretaria): Array<{ campo: string; anterior: string; nuevo: string }> {

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.37.0#ESMERALDA — Validación excepcional de altas históricas de menores
+
+> Administración recibe un aviso al validar excepcionalmente una alta histórica de menor sin representación legal. Desde el detalle selecciona el buzón de Registro y genera una Comunicación predefinida a la asociación; no hay formulario nuevo ni redacción manual. El criterio y la operación se protegen en `ffsj-secretaria-api`. Sin migraciones ni despliegue.
+
 ## 0.36.0#ESMERALDA — Control manual del envío tras certificaciones
 
 > El aviso del alta con certificación previa ya no anuncia un envío automático: tras completarse las certificaciones, la asociación puede adjuntar la documentación pendiente y remitir la solicitud manualmente a Secretaría. El cambio de transición se aplica y prueba en `ffsj-secretaria-api`; no hay migraciones ni despliegue.
