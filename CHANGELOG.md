@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.34.0#ESMERALDA — Ubicación estructurada y detalle enriquecido de Actividades
+
+> Sustituye el campo libre "Lugar" de Actividades por el mismo selector de ubicación ya usado en "Datos", y reorganiza el detalle en tres pestañas (Información/Ubicación/Documentación) manteniendo la cabecera compacta de 0.33.0#ESMERALDA. **Validación técnica completada** (314/314 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Ubicación estructurada (reutiliza el selector de "Datos", sin segundo sistema de mapas)
+
+- Creación y edición de Actividad usan ahora `app-location-picker` (el mismo `LocationPickerComponent` — Leaflet + OpenStreetMap/Nominatim, sin API key — que ya usa `asociacion.component.ts` en "Datos") en vez de un `<input>` de texto libre. Cero dependencias nuevas.
+- El picker no es un `ControlValueAccessor`; se integra con el mismo patrón getter/setter (`ubicacionCrear`/`ubicacionEditar` + `onUbicacionChange()`) que ya usa `asociacion.component.ts` para su propio selector — no se ha duplicado esa lógica de integración, se ha replicado el patrón ya validado.
+- `ActividadSecretaria` gana `lugarLatitud`/`lugarLongitud`/`lugarCodigoPostal`/`lugarLocalidad`/`lugarProvincia` (opcionales). Actividades históricas con solo `lugar` textual siguen funcionando: el picker recibe `latitud`/`longitud` a `null` sin romperse.
+
+### Nuevo detalle por pestañas
+
+- El modal de detalle de actividad pasa a tener tres pestañas: **Información del evento** (descripción Markdown + imagen de portada + inscripciones vinculadas), **Ubicación del evento** (dirección legible + mini mapa) y **Documentación** (adjuntos existentes + alta de nuevos documentos).
+- Nuevo `MiniMapComponent` (`app-mini-map`, en `src/app/shared/`): mapa de solo lectura, reutiliza el mismo proveedor (Leaflet + teselas OpenStreetMap) que `LocationPickerComponent` — no es un segundo sistema de mapas, es una variante de presentación sin buscador ni edición. Cuando la actividad no tiene coordenadas (caso histórico), no se muestra ningún mapa y aparece un mensaje de estado vacío claro en su lugar.
+- Se mantiene la cabecera compacta de 0.33.0#ESMERALDA (título + chip de estado + fila de metadatos con iconos) por encima de las pestañas.
+- El panel lateral (vista compacta) no se ha convertido en pestañas — mantiene su formato resumido de 0.33.0#ESMERALDA y suma un botón "Ver detalle completo" para abrir el modal con las pestañas nuevas.
+
+### Documentación en creación y edición
+
+- El input manual de "Documentación adjunta" del formulario de creación se sustituye por `app-adjuntos-selector` (componente ya existente, usado en Registro/Soporte/Rubi-registro) — no se ha creado un segundo selector de adjuntos.
+- Nueva capacidad: administración puede añadir documentación a una actividad ya creada desde la pestaña "Documentación" del detalle (antes solo era posible al crearla), reutilizando el mismo endpoint/scope `'actividad'`. Respeta permisos (`inscripciones:write` + modo administración), límites (10 MB, máx. 5 archivos) y tipos permitidos ya establecidos.
+
+### Compatibilidad RUBI
+
+Sin cambios en este repositorio: RUBI no tiene ningún componente de mapas ni de UI; la exposición de `location` (latitud/longitud) vive enteramente en `ffsj-secretaria-api` (ver su CHANGELOG).
+
+### Pruebas nuevas
+
+`calendario.component.spec.ts`: ubicación estructurada en el selector (con y sin coordenadas), persistencia en creación/edición, las tres pestañas y su contenido, mini mapa con y sin coordenadas (estado de fallback), permisos de subida de documentación (admin con/sin permiso de escritura, asociación), adjuntos existentes (imágenes y documentos) con descarga, imagen de portada en la pestaña Información, y compatibilidad del payload enviado al crear. `mini-map.component.spec.ts`: no se rompe sin coordenadas, inicializa el mapa con coordenadas, actualiza el punto al cambiar el `@Input`.
+
 ## 0.33.0#ESMERALDA — Experiencia de edición y lectura de Actividades
 
 > Mejora la creación/edición de Actividades con un editor Markdown para la descripción, y rediseña de forma compacta las dos vistas de detalle (panel lateral y modal), sin tocar el flujo funcional. **Validación técnica completada** (296/296 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.

@@ -9,12 +9,15 @@ import { AdminAccessService } from '../core/admin-access.service';
 import { ActividadSecretaria, AdjuntoSecretaria, InscripcionSecretaria } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { LocationPickerComponent, StructuredLocation } from '../shared/location-picker.component';
 import { MadridDatePipe } from '../shared/madrid-date.pipe';
 import { madridDateOnly, toMadridDateTimeInputValue } from '../shared/madrid-time.util';
 import { MarkdownEditorComponent } from '../shared/markdown-editor.component';
 import { MarkdownPipe } from '../shared/markdown.pipe';
+import { MiniMapComponent } from '../shared/mini-map.component';
 import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 interface CalendarDay {
@@ -24,11 +27,16 @@ interface CalendarDay {
 }
 
 type CalendarTab = 'calendario' | 'crear' | 'propuestas';
+type ActividadDetailTab = 'informacion' | 'ubicacion' | 'documentacion';
 
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent, MadridDatePipe, MarkdownEditorComponent, MarkdownPipe],
+  imports: [
+    CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent,
+    FfsjSpinnerComponent, MadridDatePipe, MarkdownEditorComponent, MarkdownPipe,
+    AdjuntosSelectorComponent, LocationPickerComponent, MiniMapComponent
+  ],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })
@@ -61,6 +69,9 @@ export class CalendarioComponent implements OnInit, OnDestroy {
   imagenSeleccionada: File | null = null;
   adjuntosActividad: AdjuntoSecretaria[] = [];
   adjuntosActividadSeleccionados: File[] = [];
+  detailTab: ActividadDetailTab = 'informacion';
+  nuevosDocumentosActividad: File[] = [];
+  readonly documentacionAccept = '.png,.jpg,.jpeg,.webp,.gif,.pdf,.txt,.doc,.docx,.xls,.xlsx';
   propuestaAccion: { id: string; tipo: 'rechazo' | 'incidencia' } | null = null;
   propuestaMensaje = '';
   propuestaDetalle: ActividadSecretaria | null = null;
@@ -77,6 +88,11 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
     , lugar: ['']
+    , lugarLatitud: [null as number | null]
+    , lugarLongitud: [null as number | null]
+    , lugarCodigoPostal: ['']
+    , lugarLocalidad: ['']
+    , lugarProvincia: ['']
   });
 
   editActividadForm = this.fb.group({
@@ -87,6 +103,11 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
     , lugar: ['']
+    , lugarLatitud: [null as number | null]
+    , lugarLongitud: [null as number | null]
+    , lugarCodigoPostal: ['']
+    , lugarLocalidad: ['']
+    , lugarProvincia: ['']
   });
 
   linkInscripcionForm = this.fb.group({
@@ -172,6 +193,45 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     return this.inscripciones.filter(inscripcion => !linkedIds.has(inscripcion.id));
   }
 
+  // 0.34.0#ESMERALDA: integracion del selector de ubicacion reutilizado de
+  // "Datos" (LocationPickerComponent). El picker no es un ControlValueAccessor,
+  // asi que se lee/escribe explicitamente sobre los controles del FormGroup,
+  // igual que hace asociacion.component.ts con `location()`/`setLocation()`.
+  get ubicacionCrear(): StructuredLocation {
+    return this.formToUbicacion(this.actividadForm.value);
+  }
+
+  get ubicacionEditar(): StructuredLocation {
+    return this.formToUbicacion(this.editActividadForm.value);
+  }
+
+  onUbicacionChange(location: StructuredLocation, form: 'crear' | 'editar'): void {
+    const target = form === 'crear' ? this.actividadForm : this.editActividadForm;
+    target.patchValue({
+      lugar: location.direccion || '',
+      lugarLatitud: location.latitud,
+      lugarLongitud: location.longitud,
+      lugarCodigoPostal: location.codigoPostal || '',
+      lugarLocalidad: location.localidad || '',
+      lugarProvincia: location.provincia || ''
+    });
+  }
+
+  private formToUbicacion(value: Record<string, unknown>): StructuredLocation {
+    return {
+      direccion: String(value['lugar'] || ''),
+      codigoPostal: String(value['lugarCodigoPostal'] || ''),
+      localidad: String(value['lugarLocalidad'] || ''),
+      provincia: String(value['lugarProvincia'] || ''),
+      latitud: (value['lugarLatitud'] as number | null) ?? null,
+      longitud: (value['lugarLongitud'] as number | null) ?? null
+    };
+  }
+
+  setDetailTab(tab: ActividadDetailTab): void {
+    this.detailTab = tab;
+  }
+
   previousMonth(): void {
     this.monthCursor = new Date(this.monthCursor.getFullYear(), this.monthCursor.getMonth() - 1, 1);
     this.buildCalendar();
@@ -201,9 +261,16 @@ export class CalendarioComponent implements OnInit, OnDestroy {
       descripcion: hydrated.descripcion || '',
       visiblePublico: hydrated.visiblePublico !== false,
       colorEtiqueta: hydrated.colorEtiqueta || 'ffsj',
-      lugar: hydrated.lugar || ''
+      lugar: hydrated.lugar || '',
+      lugarLatitud: hydrated.lugarLatitud ?? null,
+      lugarLongitud: hydrated.lugarLongitud ?? null,
+      lugarCodigoPostal: hydrated.lugarCodigoPostal || '',
+      lugarLocalidad: hydrated.lugarLocalidad || '',
+      lugarProvincia: hydrated.lugarProvincia || ''
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
+    this.detailTab = 'informacion';
+    this.nuevosDocumentosActividad = [];
     this.cargarImagenActividad(hydrated.id);
     this.cargarAdjuntosActividad(hydrated.id);
   }
@@ -251,6 +318,11 @@ export class CalendarioComponent implements OnInit, OnDestroy {
       descripcion: ''
       , colorEtiqueta: 'ffsj'
       , lugar: ''
+      , lugarLatitud: null
+      , lugarLongitud: null
+      , lugarCodigoPostal: ''
+      , lugarLocalidad: ''
+      , lugarProvincia: ''
     });
     this.imagenSeleccionada = null;
     this.adjuntosActividadSeleccionados = [];
@@ -419,20 +491,6 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     if (file && this.esImagenValida(file)) this.imagenSeleccionada = file;
   }
 
-  seleccionarAdjuntosActividad(event: Event): void {
-    const files = Array.from((event.target as HTMLInputElement).files || []);
-    if (!this.validarAdjuntos(files)) return;
-    if (this.adjuntosActividadSeleccionados.length + files.length > 5) {
-      this.error = 'Puedes adjuntar un máximo de 5 archivos por actividad.';
-      return;
-    }
-    this.adjuntosActividadSeleccionados = [...this.adjuntosActividadSeleccionados, ...files];
-  }
-
-  quitarAdjuntoActividadSeleccionado(index: number): void {
-    this.adjuntosActividadSeleccionados = this.adjuntosActividadSeleccionados.filter((_, current) => current !== index);
-  }
-
   seleccionarAdjuntosRespuestaPropuesta(event: Event): void {
     const files = Array.from((event.target as HTMLInputElement).files || []);
     if (!this.validarAdjuntos(files)) return;
@@ -516,6 +574,38 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     this.secretariaService.borrarAdjunto(this.imagenActividadId).subscribe({
       next: () => { this.imagenActividadId = null; if (this.imagenActividadUrl) URL.revokeObjectURL(this.imagenActividadUrl); this.imagenActividadUrl = ''; this.success = 'Imagen eliminada correctamente.'; this.loading = false; },
       error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido eliminar la imagen.'; }
+    });
+  }
+
+  // 0.34.0#ESMERALDA: pestaña "Documentación" del detalle - permite añadir
+  // documentación a una actividad ya creada (antes solo era posible al
+  // crearla). Reutiliza el mismo endpoint/scope 'actividad' que ya usa la
+  // creación, y el componente compartido de seleccion de adjuntos.
+  subirDocumentacionActividad(): void {
+    if (!this.selected || !this.nuevosDocumentosActividad.length || this.loading) return;
+    this.loading = true;
+    this.error = '';
+    const actividadId = this.selected.id;
+    forkJoin(this.nuevosDocumentosActividad.map(file => this.secretariaService.subirAdjunto('actividad', actividadId, file))).subscribe({
+      next: () => {
+        this.loading = false;
+        this.success = 'Documentación añadida correctamente.';
+        this.nuevosDocumentosActividad = [];
+        this.cargarAdjuntosActividad(actividadId);
+      },
+      error: response => {
+        this.loading = false;
+        this.error = response.error?.message || 'No se ha podido subir la documentación.';
+      }
+    });
+  }
+
+  borrarDocumentoActividad(adjuntoId: number): void {
+    if (!this.selected || this.loading) return;
+    this.loading = true;
+    this.secretariaService.borrarAdjunto(adjuntoId).subscribe({
+      next: () => { this.loading = false; this.success = 'Documento eliminado correctamente.'; this.cargarAdjuntosActividad(this.selected!.id); },
+      error: response => { this.loading = false; this.error = response.error?.message || 'No se ha podido eliminar el documento.'; }
     });
   }
 
