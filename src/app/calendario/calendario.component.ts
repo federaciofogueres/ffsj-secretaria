@@ -11,6 +11,8 @@ import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { ConfirmDialogComponent } from '../shared/confirm-dialog.component';
 import { EstadoBadgeComponent } from '../shared/estado-badge.component';
+import { MadridDatePipe } from '../shared/madrid-date.pipe';
+import { madridDateOnly, toMadridDateTimeInputValue } from '../shared/madrid-time.util';
 import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 interface CalendarDay {
@@ -24,7 +26,7 @@ type CalendarTab = 'calendario' | 'crear' | 'propuestas';
 @Component({
   selector: 'app-calendario',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, ConfirmDialogComponent, EstadoBadgeComponent, FfsjSpinnerComponent, MadridDatePipe],
   templateUrl: './calendario.component.html',
   styleUrls: ['./calendario.component.scss']
 })
@@ -72,6 +74,7 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     fechaFin: [''],
     descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
+    , lugar: ['']
   });
 
   editActividadForm = this.fb.group({
@@ -81,6 +84,7 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     fechaFin: [''],
     descripcion: [''], colorEtiqueta: ['ffsj']
     , visiblePublico: [true]
+    , lugar: ['']
   });
 
   linkInscripcionForm = this.fb.group({
@@ -190,11 +194,12 @@ export class CalendarioComponent implements OnInit, OnDestroy {
     this.editActividadForm.patchValue({
       titulo: hydrated.titulo,
       responsable: hydrated.responsable || '',
-      fechaInicio: this.toDateTimeInput(hydrated.fechaInicio),
-      fechaFin: this.toDateTimeInput(hydrated.fechaFin),
+      fechaInicio: toMadridDateTimeInputValue(hydrated.fechaInicio),
+      fechaFin: toMadridDateTimeInputValue(hydrated.fechaFin),
       descripcion: hydrated.descripcion || '',
       visiblePublico: hydrated.visiblePublico !== false,
-      colorEtiqueta: hydrated.colorEtiqueta || 'ffsj'
+      colorEtiqueta: hydrated.colorEtiqueta || 'ffsj',
+      lugar: hydrated.lugar || ''
     });
     this.linkInscripcionForm.reset({ inscripcionId: '' });
     this.cargarImagenActividad(hydrated.id);
@@ -243,6 +248,7 @@ export class CalendarioComponent implements OnInit, OnDestroy {
       fechaFin: formatted,
       descripcion: ''
       , colorEtiqueta: 'ffsj'
+      , lugar: ''
     });
     this.imagenSeleccionada = null;
     this.adjuntosActividadSeleccionados = [];
@@ -770,21 +776,13 @@ export class CalendarioComponent implements OnInit, OnDestroy {
   }
 
   private isActividadOnDate(actividad: ActividadSecretaria, date: Date): boolean {
-    const start = this.parseDate(actividad.fechaInicio);
+    // 0.31.0#ESMERALDA: compara fechas de calendario (dia de Madrid, no el
+    // dia segun la zona del navegador de quien mire la pantalla).
+    const start = madridDateOnly(actividad.fechaInicio);
     if (!start) return false;
-    const end = this.parseDate(actividad.fechaFin) || start;
-    const target = this.onlyDate(date).getTime();
-    return target >= this.onlyDate(start).getTime() && target <= this.onlyDate(end).getTime();
-  }
-
-  private parseDate(value: string | null | undefined): Date | null {
-    if (!value) return null;
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
-  }
-
-  private onlyDate(date: Date): Date {
-    return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const end = madridDateOnly(actividad.fechaFin) || start;
+    const target = this.formatDate(date);
+    return target >= start && target <= end;
   }
 
   private formatDate(date: Date): string {
@@ -798,13 +796,6 @@ export class CalendarioComponent implements OnInit, OnDestroy {
   private toDateInput(value: string | null | undefined): string {
     if (!value) return '';
     return String(value).slice(0, 10);
-  }
-
-  private toDateTimeInput(value: string | null | undefined): string {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return String(value).slice(0, 16);
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
 
   private actualizarActividadLocal(actividad: ActividadSecretaria, message: string): void {

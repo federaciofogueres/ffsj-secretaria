@@ -446,6 +446,7 @@ export interface ActividadSecretaria {
   fechaFin: string;
   descripcion?: string;
   colorEtiqueta?: 'ffsj' | 'asociacion' | 'ayuntamiento' | 'otra';
+  lugar?: string | null;
   inscripciones?: InscripcionSecretaria[];
   origen?: 'administracion' | 'asociacion';
   estadoPropuesta?: 'pendiente_revision' | 'con_incidencias' | 'publicada' | 'rechazada';

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.31.0#ESMERALDA — Horarios y lugar de actividades
+
+> Corrige el desfase horario (~2h) del calendario de Actividades y añade `lugar` (texto libre, opcional). El grueso del hallazgo de causa raíz vive en `ffsj-secretaria-api` (ver su CHANGELOG); este repositorio deja de reconvertir la hora usando la zona del navegador y muestra siempre la hora local de Madrid. **Validación técnica completada** (286/286 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
+
+### Corrección del desfase horario
+
+- **Nueva utilidad `src/app/shared/madrid-time.util.ts`** (sin dependencias nuevas, usa `Intl.DateTimeFormat` con `timeZone: 'Europe/Madrid'`): sustituye la lógica anterior de `calendario.component.ts` que reconvertía la hora recibida usando `date.getTimezoneOffset()` del navegador — precisamente el punto donde se materializaba el "+2h" visible, sobre todo si quien mira la pantalla no está en la zona de Madrid.
+  - `toMadridDateTimeInputValue()`: rellena los `<input type="datetime-local">` de crear/editar con la hora local de Madrid, no la del navegador.
+  - `madridDateOnly()`: determina en qué día del calendario cae una actividad según Madrid, no según UTC ni el navegador (corrige también un desplazamiento de día posible de madrugada).
+  - `formatMadridDate()` / pipe `madridDate` (`src/app/shared/madrid-date.pipe.ts`): sustituye al pipe `date` de Angular en las 5 vistas que mostraban `fechaInicio`/`fechaFin` de una actividad — el pipe `date` de Angular no es DST-aware (su parámetro `timezone` no admite zonas IANA como `Europe/Madrid`, solo offsets fijos).
+- Al crear/editar, el `<input type="datetime-local">` sigue enviando el mismo valor naive de siempre (sin cambios): el contrato temporal completo se resuelve en `ffsj-secretaria-api`.
+- Pruebas de regresión (`madrid-time.util.spec.ts`, `calendario.component.spec.ts`): verano, invierno, y una actividad de madrugada que cambia de día entre UTC y Madrid, comprobando que el calendario la coloca en el día correcto.
+
+### Lugar de la actividad
+
+- `ActividadSecretaria.lugar` (nuevo campo opcional) en `core/models.ts`.
+- Nuevo campo de texto "Lugar" en los formularios de creación y gestión de `calendario.component`, junto a las fechas (patrón igual al de "Responsable": texto simple, sin editor enriquecido).
+- Se muestra en el detalle lateral, en el modal de detalle de actividad, en el listado de propuestas y en el modal de detalle de propuesta — solo cuando tiene contenido; sin placeholder cuando está vacío.
+- Actividades existentes sin lugar mantienen su comportamiento actual.
+
 ## 0.30.0#ESMERALDA — Contexto e instrucciones de Inscripciones
 
 > Permite a Administración añadir a cada Inscripción un contexto/instrucciones opcional en Markdown (requisitos, documentación necesaria, observaciones) para la asociación. El campo (`informacion`) ya existía y se persistía en `ffsj-secretaria-api` (ver su CHANGELOG); esta versión aporta el editor Markdown grande y el renderizado seguro, ninguno de los cuales existía en el proyecto. **Validación técnica completada** (274/274 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.
