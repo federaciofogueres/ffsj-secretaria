@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.40.2#ESMERALDA — Rediseño del detalle de Registro con tabs y separación de contenidos
+
+> Rediseño puramente visual del detalle de Registro (Documentación y Comunicaciones): sin cambios de API, sin tocar la autorización por buzones de `0.40.0#ESMERALDA`. Validado en navegador (capturas de escritorio y ancho reducido) además de build y suite de tests completa.
+
+- El detalle deja de mostrar la barra de filtros del listado (`.registro-filters` ahora oculta cuando `isDetailView`) y el botón "Volver" pasa a decir "Volver al listado" en ese contexto.
+- Nueva cabecera compacta: código + estado, título, emisor/dirigida a/área/destinatario, fecha de creación y adjunto principal con acceso directo de descarga.
+- Contenido reorganizado en tabs accesibles (`role="tablist"`/`"tab"`/`"tabpanel"`, navegación con flechas/Home/End, mismo patrón ya usado en `asociados-gestion`): **Información** (mensaje, adjuntos, marcar no leído, archivar, estado administrativo, hilo de comunicación y respuesta), **Trazabilidad** (eventos como timeline cronológico con icono y etiqueta legible por tipo) e **Incidencias** (`app-incidencias-panel` sin cambios de comportamiento).
+- Panel lateral persistente (se apila debajo del contenido en anchos menores a 900px) con estado, código, tipo, año, fecha de creación, última actualización y adjunto principal.
+- `IncidenciasPanelComponent` gana un `@Output() countChange` (aditivo, sin romper sus otros 4 usos existentes) para mostrar el contador de incidencias en la pestaña sin duplicar la carga de datos.
+- Ninguna funcionalidad perdida: marcar leído/no leído, cambio de estado, archivado, descarga de adjuntos, hilo y respuesta de comunicaciones, e incidencias siguen operando igual que antes, solo reorganizados visualmente.
+
 ## 0.40.1#ESMERALDA — Rediseño del listado de Registro y filtros compactos
 
 > Rediseño puramente visual de la pantalla principal de Registro (Documentación y Comunicaciones): sin cambios de API, sin cambios en la autorización por buzones de `0.40.0#ESMERALDA`, sin tocar todavía el detalle (eso es `0.40.2#ESMERALDA`). Validado en navegador (capturas a distintos anchos) además de build y suite de tests completa.

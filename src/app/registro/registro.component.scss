@@ -143,7 +143,6 @@
   .filters-secondary { flex-direction: column; align-items: stretch; }
 }
 
-.status-card,
 .list-card,
 .form-grid,
 .reply-box {
@@ -151,10 +150,6 @@
   border-radius: 18px;
   background: #fff;
   padding: 1rem;
-}
-
-.status-card {
-  background: #fbfcfe;
 }
 
 .list-card-head {
@@ -255,14 +250,6 @@
   font-size: .82rem;
 }
 
-.registro-detail-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem 1rem;
-  color: var(--ffsj-muted);
-  font-size: 0.9rem;
-}
-
 .registro-row.active {
   border-color: var(--ffsj-red);
   background: var(--ffsj-soft-red);
@@ -272,6 +259,198 @@
 .authorization-row {
   background: #fff7ed;
   border-color: #fed7aa;
+}
+
+// 0.40.2#ESMERALDA: vista de detalle separada del listado (sin filtros),
+// con cabecera compacta + tabs (Informacion/Trazabilidad/Incidencias) +
+// panel lateral persistente de estado/metadatos.
+.registro-detail {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 18px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.detail-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--ffsj-line);
+  background: #fbfcfe;
+}
+
+.detail-header-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-bottom: .3rem;
+}
+
+.detail-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 0 .4rem;
+  color: var(--ffsj-ink);
+}
+
+.detail-header-attachment {
+  margin-top: .6rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: 1px solid var(--ffsj-line);
+  background: #fff;
+  border-radius: 10px;
+  padding: .4rem .7rem;
+  font-size: .86rem;
+  font-weight: 700;
+  color: var(--ffsj-ink);
+}
+
+.detail-header-attachment:hover {
+  border-color: var(--ffsj-red);
+  color: var(--ffsj-red);
+}
+
+.detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  align-items: start;
+}
+
+.detail-main {
+  min-width: 0;
+}
+
+.detail-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: .35rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.detail-tab {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: .65rem .75rem;
+  background: transparent;
+  color: var(--ffsj-muted);
+  font-weight: 800;
+}
+
+.detail-tab.active {
+  color: var(--ffsj-red);
+  border-bottom-color: var(--ffsj-red);
+}
+
+.detail-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+}
+
+.detail-side {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  padding: 1rem;
+  background: #fbfcfe;
+  position: sticky;
+  top: 1rem;
+}
+
+.side-block {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.side-label {
+  margin: 0;
+  color: var(--ffsj-muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+
+.side-meta {
+  margin: 0;
+  display: grid;
+  gap: .65rem;
+}
+
+.side-meta dt {
+  color: var(--ffsj-muted);
+  font-size: .75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.side-meta dd {
+  margin: .1rem 0 0;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.timeline-item {
+  position: relative;
+  display: flex;
+  gap: .75rem;
+  padding-bottom: 1.1rem;
+}
+
+.timeline-item:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: .6rem;
+  top: 1.6rem;
+  bottom: 0;
+  width: 2px;
+  background: var(--ffsj-line);
+}
+
+.timeline-marker {
+  flex: 0 0 auto;
+  width: 1.3rem;
+  height: 1.3rem;
+  border-radius: 999px;
+  background: var(--ffsj-soft-red);
+  color: var(--ffsj-red);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .72rem;
+  z-index: 1;
+}
+
+.timeline-content {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-side {
+    position: static;
+  }
 }
 
 .referencias {
