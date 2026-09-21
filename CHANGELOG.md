@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.36.0#ESMERALDA — Control manual del envío tras certificaciones
+
+> El aviso del alta con certificación previa ya no anuncia un envío automático: tras completarse las certificaciones, la asociación puede adjuntar la documentación pendiente y remitir la solicitud manualmente a Secretaría. El cambio de transición se aplica y prueba en `ffsj-secretaria-api`; no hay migraciones ni despliegue.
+
 ## 0.34.0#ESMERALDA — Ubicación estructurada y detalle enriquecido de Actividades
 
 > Sustituye el campo libre "Lugar" de Actividades por el mismo selector de ubicación ya usado en "Datos", y reorganiza el detalle en tres pestañas (Información/Ubicación/Documentación) manteniendo la cabecera compacta de 0.33.0#ESMERALDA. **Validación técnica completada** (314/314 pruebas, build `development` OK); **validación manual pendiente**. Sin deploy.

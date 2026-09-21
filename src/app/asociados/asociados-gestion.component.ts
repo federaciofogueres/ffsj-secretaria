@@ -605,7 +605,7 @@ export class AsociadosGestionComponent implements OnInit, OnDestroy {
           content: 'Se ha creado el alta y queda pendiente de certificacion por la asociacion anterior.',
           innerHtml: `
             <p>Se ha creado la solicitud <strong>${solicitud.numero}</strong>.</p>
-            <p>Queda pendiente de certificacion por la asociacion anterior. Cuando se certifique, se enviara automaticamente a Secretaria.</p>
+            <p>Queda pendiente de certificacion por la asociacion anterior. Cuando se complete, podras adjuntar la documentacion pendiente y enviar la solicitud a Secretaria.</p>
           `,
           buttonsAlert: [AlertButtonType.Entendido]
         });
