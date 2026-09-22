@@ -13,7 +13,7 @@ import { InscripcionesComponent } from './inscripciones.component';
 import { InscripcionDraftStateService } from './inscripcion-draft-state.service';
 
 describe('InscripcionesComponent', () => {
-  function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any, isAdmin = false): InscripcionesComponent {
+  function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any, isAdmin = false, overrides: { router?: any } = {}): InscripcionesComponent {
     const secretaria = jasmine.createSpyObj('SecretariaService', [
       'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion'
     ]);
@@ -29,7 +29,7 @@ describe('InscripcionesComponent', () => {
       {} as any,
       { isAdmin: () => isAdmin } as any,
       { snapshot: { paramMap: { get: () => routeId }, queryParamMap: { get: () => null }, routeConfig: null } } as any,
-      { navigate: () => Promise.resolve(true) } as any,
+      overrides.router || { navigate: () => Promise.resolve(true) } as any,
       { hasPermission: () => true } as any,
       { isSelectedActive: true, selectedSnapshot: null } as any,
       new InscripcionDraftStateService(),
@@ -58,6 +58,70 @@ describe('InscripcionesComponent', () => {
     const component = createComponent(undefined, null, rubiScreenContext);
     component.ngOnDestroy();
     expect(rubiScreenContext.clear).toHaveBeenCalledWith('inscripciones');
+  });
+
+  describe('detalle de Asociación en dialog compartido con Administración (0.43.0#ESMERALDA)', () => {
+    function entradaConIncidencias(overrides: any = {}): any {
+      return { id: 55, numero: 'INS-2026-000007', asociacionId: 1, formularioId: 'inscripcion-tipos', estado: 'con_incidencias', fechaEntrada: '2026-09-19T12:09:00Z', ...overrides };
+    }
+
+    it('al recuperar una entrada ya presentada, abre el dialog compartido en vez de la sección plana antigua', () => {
+      const entrada = entradaConIncidencias();
+      const component = createRecoveredComponent(entrada);
+      expect(component.entradaDetalleDialogOpen).toBeTrue();
+      expect(component.selectedEntrada).toEqual(jasmine.objectContaining({ id: 55 }));
+      expect(component.associationMode).toBe('view');
+    });
+
+    it('cerrar el dialog en Asociación navega al listado conservando el contexto de filtros', () => {
+      const router = jasmine.createSpyObj('Router', ['navigate']);
+      router.navigate.and.returnValue(Promise.resolve(true));
+      const component = createRecoveredComponent(entradaConIncidencias(), { router });
+      component.cerrarDetalleEntrada();
+      expect(component.entradaDetalleDialogOpen).toBeFalse();
+      expect(router.navigate).toHaveBeenCalledWith(['/inscripciones'], jasmine.anything());
+    });
+
+    it('cerrar el dialog en Administración NO navega (el listado de inscritos ya está montado detrás)', () => {
+      const router = jasmine.createSpyObj('Router', ['navigate']);
+      router.navigate.and.returnValue(Promise.resolve(true));
+      const component = createComponent(undefined, null, undefined, true, { router });
+      component.abrirDetalleEntrada(entradaConIncidencias());
+      router.navigate.calls.reset();
+      component.cerrarDetalleEntrada();
+      expect(component.entradaDetalleDialogOpen).toBeFalse();
+      expect(router.navigate).not.toHaveBeenCalled();
+    });
+
+    it('modificar la inscripción cierra el dialog antes de pasar al formulario de edición', () => {
+      const component = createRecoveredComponent(entradaConIncidencias({ estado: 'recibida' }));
+      expect(component.entradaDetalleDialogOpen).toBeTrue();
+      component.modificarMiInscripcion();
+      expect(component.entradaDetalleDialogOpen).toBeFalse();
+      expect(component.associationMode).toBe('edit');
+    });
+
+    it('categoriaLabel deriva la categoría de tiposPermitidos reales, sin inventar un campo nuevo', () => {
+      const component = createComponent();
+      expect(component.categoriaLabel(['adulto', 'infantil'])).toBe('Adulto, Infantil');
+      expect(component.categoriaLabel(['adulto'])).toBe('Adulto');
+      expect(component.categoriaLabel([])).toBe('');
+      expect(component.categoriaLabel(undefined)).toBe('');
+    });
+
+    it('RUBI (0.43.0#ESMERALDA): con el dialog abierto, expone la entrada, la pestaña activa y si tiene incidencias, sin datos de formulario', () => {
+      const rubiScreenContext = jasmine.createSpyObj('RubiScreenContextService', ['set', 'clear']);
+      const component = createComponent(undefined, null, rubiScreenContext);
+      component.abrirDetalleEntrada(entradaConIncidencias());
+      const ultimaLlamada = rubiScreenContext.set.calls.mostRecent().args[0];
+      expect(ultimaLlamada.state.entradaId).toBe(55);
+      expect(ultimaLlamada.state.entradaDetalleTab).toBe('informacion');
+      expect(ultimaLlamada.state.entradaConIncidencias).toBeTrue();
+
+      rubiScreenContext.set.calls.reset();
+      component.activarPestanaEntradaDetalle('incidencias');
+      expect(rubiScreenContext.set.calls.mostRecent().args[0].state.entradaDetalleTab).toBe('incidencias');
+    });
   });
 
   it('conserva el estado global al cambiar de pestaña y al volver a seleccionar la inscripción', () => {
@@ -349,8 +413,8 @@ describe('InscripcionesComponent', () => {
     return Array.from(select.selectedOptions).map(option => option.text);
   }
 
-  function createRecoveredComponent(entrada: any): InscripcionesComponent {
-    const component = createComponent(entrada);
+  function createRecoveredComponent(entrada: any, overrides: { router?: any } = {}): InscripcionesComponent {
+    const component = createComponent(entrada, null, undefined, false, overrides);
     component.asociados = asociados();
     (component as any).asociadosCargados = true;
     component.selectInscription(inscriptionWithAllFieldTypes());
