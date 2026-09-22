@@ -56,7 +56,6 @@
             placeholder="Escribe el nombre de la asociación"
             aria-label="Asociación a buscar"
             [(ngModel)]="valorAsociacionTexto"
-            (ngModelChange)="onAsociacionTextoChange($event)"
             (keyup.enter)="aplicarBusqueda()"
           />
           <datalist id="solicitudesAsociacionesDatalist">

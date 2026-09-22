@@ -37,7 +37,7 @@ const SERVER_DIAGNOSTIC_CODES = new Set([
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
 type AssociationTab = 'documentacion' | 'formulario' | 'asociados';
-type AssociationMode = 'edit' | 'view' | 'summary';
+type AssociationMode = 'edit' | 'view';
 // 0.41.0#ESMERALDA: ordenacion del listado de inscritos (client-side: los
 // datos de la entrada ya se cargan completos y el nombre de asociacion
 // proviene de Censo, un servicio externo sin join SQL disponible).
@@ -346,7 +346,6 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   cambiarPaginaInscripciones(delta: number): void { const page = this.paginaInscripciones + delta; if (page >= 1 && page <= this.paginacionInscripciones.totalPages) { this.paginaInscripciones = page; this.cargarFormulariosEInscripciones(); } }
 
   get associationStep(): 1 | 2 | 3 | 4 | 5 {
-    if (this.associationMode === 'summary') return 5;
     if (this.associationMode === 'view') return 4;
     if (this.associationTab === 'documentacion') return 1;
     if (this.associationTab === 'asociados') return 3;
@@ -840,7 +839,13 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       if (pendientes) return;
       input.value = '';
       this.loading = false;
-      this.cargarAdjuntosEntrada(entrada.id);
+      // 0.43.5#ESMERALDA: si mientras subían los adjuntos ya se abrió el
+      // detalle de OTRA entrada, no hay que pisar su lista de adjuntos con
+      // la de esta (una subida lenta terminando tarde no debe mezclar
+      // documentos de una entrada con la vista de otra).
+      if (this.selectedEntrada?.id === entrada.id) {
+        this.cargarAdjuntosEntrada(entrada.id);
+      }
     };
     files.forEach(file => this.secretariaService.subirAdjunto('inscripcion_entrada', entrada.id, file).subscribe({
       next: () => finalizar(),
@@ -1030,9 +1035,14 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       next: entry => {
         this.borrarBorrador(this.selectedInscription?.id);
         this.miEntrada = entry as InscripcionEntradaSecretaria;
-        this.associationMode = 'summary';
+        this.associationMode = 'view';
         this.success = 'Inscripcion enviada correctamente.';
-        this.syncRubiScreenContext();
+        // 0.43.5#ESMERALDA: tras enviar, se abre siempre el mismo dialog de
+        // detalle que usa cargarMiEntrada() para una entrada ya existente
+        // (nunca la antigua sección plana de resumen, que quedaba como único
+        // resultado posible justo después de un envío por no tener aún
+        // incidencias).
+        this.abrirDetalleEntrada(this.miEntrada);
       },
       error: error => {
         this.error = error?.error?.message || 'No se ha podido enviar la inscripción.';
@@ -1145,10 +1155,6 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
-  }
-
-  cerrarResumen(): void {
-    this.router.navigate(['/inscripciones']);
   }
 
   private cargarDatos(): void {

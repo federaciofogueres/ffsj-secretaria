@@ -130,20 +130,39 @@ describe('SolicitudesComponent', () => {
       expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ tipo: 'alta' }));
     });
 
-    it('buscar por Asociación requiere una selección real del listado (no texto libre) y envía "asociacionId"', () => {
+    // 0.43.5#ESMERALDA: la búsqueda por Asociación admite texto libre parcial
+    // (no exige seleccionar una opción exacta del datalist), ya que el
+    // nombre no vive en secretaria_solicitudes y se resuelve aquí contra la
+    // lista ya cargada a una lista de ids candidatos (asociacionIds).
+    it('buscar por Asociación con texto vacío no aplica ningún filtro', () => {
       component.campoBusqueda = 'asociacion';
-      component.valorAsociacionTexto = 'texto sin seleccionar';
+      component.valorAsociacionTexto = '   ';
       component.aplicarBusqueda();
       expect(component.filtroAplicado).toBeNull();
-      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionId: undefined }));
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: undefined }));
+    });
 
-      // En la plantilla real, [(ngModel)] ya deja valorAsociacionTexto con el
-      // texto escrito antes de que (ngModelChange) dispare este handler.
-      component.valorAsociacionTexto = 'Doctor Bergez - Carolinas';
-      component.onAsociacionTextoChange('Doctor Bergez - Carolinas');
+    it('buscar por Asociación con texto parcial resuelve todas las asociaciones cuyo nombre lo contiene', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'doc';
       component.aplicarBusqueda();
-      expect(component.filtroAplicado).toEqual({ campo: 'asociacion', valor: '25', etiqueta: 'Asociación: Doctor Bergez - Carolinas' });
-      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionId: 25 }));
+      expect(component.filtroAplicado).toEqual({ campo: 'asociacion', valor: 'doc', etiqueta: 'Asociación: doc' });
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [25] }));
+    });
+
+    it('buscar por Asociación no distingue mayúsculas/minúsculas', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'CAROL';
+      component.aplicarBusqueda();
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [25] }));
+    });
+
+    it('buscar por Asociación sin ninguna coincidencia real envía un id imposible en vez de ignorar el filtro (evita mostrar todas las solicitudes)', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'nombre que no existe en ninguna asociación';
+      component.aplicarBusqueda();
+      expect(component.filtroAplicado?.etiqueta).toBe('Asociación: nombre que no existe en ninguna asociación');
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [-1] }));
     });
 
     it('buscar por Fecha de alta envía "fechaAlta"', () => {

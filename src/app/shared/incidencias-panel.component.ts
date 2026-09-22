@@ -344,38 +344,54 @@ export class IncidenciasPanelComponent implements OnChanges {
 
   crear(): void {
     if (!this.nuevoMensaje.trim()) return;
+    // 0.43.5#ESMERALDA: se capturan mensaje/adjuntos/recurso AL ENVIAR, no se
+    // vuelven a leer de `this.*` dentro del switchMap (tras el round-trip
+    // HTTP). Si mientras la petición está en vuelo el usuario cambia de
+    // recurso (ngOnChanges resetea selectedFiles/nuevoMensaje) y empieza un
+    // nuevo borrador, una respuesta tardía ya no puede subir ESE nuevo
+    // borrador contra el evento equivocado ni pisarlo al "limpiar" el
+    // composer.
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const mensaje = this.nuevoMensaje.trim();
+    const files = this.selectedFiles;
     this.loading = true;
     this.error = '';
     this.secretariaService.crearIncidencia({
-      scope: this.scope,
-      scopeId: this.scopeId,
-      mensaje: this.nuevoMensaje.trim()
+      scope: requestScope,
+      scopeId: requestScopeId,
+      mensaje
     }).pipe(
       switchMap(incidencia => {
         const eventoId = this.lastEventoId(incidencia);
-        if (!this.selectedFiles.length || !eventoId) return of(incidencia);
-        return forkJoin(this.selectedFiles.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
+        if (!files.length || !eventoId) return of(incidencia);
+        return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
           switchMap(() => of(incidencia))
         );
       })
     ).subscribe({
       next: () => {
-        this.nuevoMensaje = '';
-        this.selectedFiles = [];
-        this.mostrarNuevaIncidencia = false;
         this.loading = false;
-        this.cargar(true);
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.nuevoMensaje = '';
+          this.selectedFiles = [];
+          this.mostrarNuevaIncidencia = false;
+          this.cargar(true);
+        }
       },
       error: () => this.fail('No se ha podido crear la incidencia.')
     });
   }
 
   responder(incidencia: Incidencia): void {
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const mensaje = this.respuestas[incidencia.id];
+    const files = this.responseFiles[incidencia.id] || [];
     this.loading = true;
     this.error = '';
-    this.secretariaService.responderIncidencia(incidencia.id, this.respuestas[incidencia.id]).pipe(
+    this.secretariaService.responderIncidencia(incidencia.id, mensaje).pipe(
       switchMap(updated => {
-        const files = this.responseFiles[incidencia.id] || [];
         const eventoId = this.lastEventoId(updated);
         if (!files.length || !eventoId) return of(updated);
         return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
@@ -384,10 +400,12 @@ export class IncidenciasPanelComponent implements OnChanges {
       })
     ).subscribe({
       next: () => {
-        this.respuestas[incidencia.id] = '';
-        this.responseFiles[incidencia.id] = [];
         this.loading = false;
-        this.cargar();
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.respuestas[incidencia.id] = '';
+          this.responseFiles[incidencia.id] = [];
+          this.cargar();
+        }
       },
       error: () => this.fail('No se ha podido enviar la respuesta.')
     });
@@ -396,11 +414,13 @@ export class IncidenciasPanelComponent implements OnChanges {
   comentar(incidencia: Incidencia): void {
     const mensaje = this.comentarios[incidencia.id]?.trim();
     if (!mensaje) return;
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const files = this.commentFiles[incidencia.id] || [];
     this.loading = true;
     this.error = '';
     this.secretariaService.comentarIncidencia(incidencia.id, mensaje).pipe(
       switchMap(actualizada => {
-        const files = this.commentFiles[incidencia.id] || [];
         const eventoId = this.lastEventoId(actualizada);
         if (!files.length || !eventoId) return of(actualizada);
         return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
@@ -409,10 +429,12 @@ export class IncidenciasPanelComponent implements OnChanges {
       })
     ).subscribe({
       next: () => {
-        this.comentarios[incidencia.id] = '';
-        this.commentFiles[incidencia.id] = [];
         this.loading = false;
-        this.cargar();
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.comentarios[incidencia.id] = '';
+          this.commentFiles[incidencia.id] = [];
+          this.cargar();
+        }
       },
       error: () => this.fail('No se ha podido añadir el comentario.')
     });
