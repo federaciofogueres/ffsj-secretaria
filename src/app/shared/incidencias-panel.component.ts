@@ -121,21 +121,16 @@ interface CierrePendiente {
                 <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="loading" (click)="abrirCierre(incidencia, 'cerrada')">
                   Cerrar sin subsanar
                 </button>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  *ngIf="incidencia.estado === 'respondida'"
+                  [disabled]="loading"
+                  (click)="abrirDevolucion(incidencia)"
+                >
+                  Devolver a asociación
+                </button>
               </div>
-
-              <app-compact-composer
-                *ngIf="incidencia.estado === 'respondida'"
-                class="mt-1"
-                placeholder="Motivo para devolver a la asociación..."
-                attachAriaLabel="Adjuntar archivo a la devolución"
-                sendAriaLabel="Devolver a asociación"
-                [value]="devoluciones[incidencia.id] || ''"
-                (valueChange)="devoluciones[incidencia.id] = $event"
-                [files]="returnFiles[incidencia.id] || []"
-                (filesChange)="returnFiles[incidencia.id] = $event"
-                [loading]="loading"
-                (send)="reabrir(incidencia)"
-              ></app-compact-composer>
             </div>
           </div>
         </li>
@@ -167,6 +162,19 @@ interface CierrePendiente {
       reasonPlaceholder="Escribe un motivo de cierre..."
       (cancel)="cierrePendiente = null"
       (confirmed)="confirmarCierre($event)"
+    ></app-confirm-dialog>
+
+    <app-confirm-dialog
+      *ngIf="devolucionPendiente"
+      title="Devolver a la asociación"
+      message="Indica el motivo de la devolución."
+      confirmLabel="Confirmar"
+      [showReasonField]="true"
+      [requireReason]="true"
+      reasonLabel="Motivo"
+      reasonPlaceholder="Escribe el motivo de la devolución..."
+      (cancel)="devolucionPendiente = null"
+      (confirmed)="confirmarDevolucion($event)"
     ></app-confirm-dialog>
   `,
   styles: [`
@@ -216,10 +224,8 @@ export class IncidenciasPanelComponent implements OnChanges {
 
   incidencias: Incidencia[] = [];
   respuestas: Record<string, string> = {};
-  devoluciones: Record<string, string> = {};
   comentarios: Record<string, string> = {};
   responseFiles: Record<string, File[]> = {};
-  returnFiles: Record<string, File[]> = {};
   commentFiles: Record<string, File[]> = {};
   nuevoMensaje = '';
   selectedFiles: File[] = [];
@@ -229,6 +235,7 @@ export class IncidenciasPanelComponent implements OnChanges {
   mostrarNuevaIncidencia = false;
   expandedIds = new Set<string>();
   cierrePendiente: CierrePendiente | null = null;
+  devolucionPendiente: Incidencia | null = null;
 
   constructor(
     private readonly secretariaService: SecretariaService,
@@ -384,6 +391,15 @@ export class IncidenciasPanelComponent implements OnChanges {
     this.resolver(incidencia, estado, motivo);
   }
 
+  abrirDevolucion(incidencia: Incidencia): void {
+    this.devolucionPendiente = incidencia;
+  }
+
+  confirmarDevolucion(motivo: string): void {
+    if (!this.devolucionPendiente || !motivo.trim()) return;
+    this.reabrir(this.devolucionPendiente, motivo.trim());
+  }
+
   private resolver(incidencia: Incidencia, estado: 'subsanada' | 'cerrada', motivo: string): void {
     this.loading = true;
     this.error = '';
@@ -397,22 +413,12 @@ export class IncidenciasPanelComponent implements OnChanges {
     });
   }
 
-  reabrir(incidencia: Incidencia): void {
+  private reabrir(incidencia: Incidencia, motivo: string): void {
     this.loading = true;
     this.error = '';
-    this.secretariaService.reabrirIncidencia(incidencia.id, this.devoluciones[incidencia.id]).pipe(
-      switchMap(updated => {
-        const files = this.returnFiles[incidencia.id] || [];
-        const eventoId = this.lastEventoId(updated);
-        if (!files.length || !eventoId) return of(updated);
-        return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
-          switchMap(() => of(updated))
-        );
-      })
-    ).subscribe({
+    this.secretariaService.reabrirIncidencia(incidencia.id, motivo).subscribe({
       next: () => {
-        this.devoluciones[incidencia.id] = '';
-        this.returnFiles[incidencia.id] = [];
+        this.devolucionPendiente = null;
         this.loading = false;
         this.cargar();
       },

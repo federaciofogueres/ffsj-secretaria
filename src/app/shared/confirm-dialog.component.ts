@@ -20,13 +20,14 @@ import { TranslatePipe } from './translate.pipe';
           rows="3"
           [maxlength]="reasonMaxLength"
           [attr.placeholder]="reasonPlaceholder"
+          [attr.aria-required]="requireReason ? 'true' : null"
           [(ngModel)]="reason"
         ></textarea>
         <span class="confirm-reason-count">{{ reason.length }}/{{ reasonMaxLength }}</span>
       </div>
       <div class="confirm-actions">
         <button class="ux-btn ux-btn-secondary" type="button" (click)="cancel.emit()">{{ 'common.cancel' | t }}</button>
-        <button class="ux-btn ux-btn-danger" type="button" (click)="onConfirm()">{{ confirmLabel }}</button>
+        <button class="ux-btn ux-btn-danger" type="button" [disabled]="requireReason && !reason.trim()" (click)="onConfirm()">{{ confirmLabel }}</button>
       </div>
     </section>
   `,
@@ -49,6 +50,10 @@ export class ConfirmDialogComponent {
   @Input() reasonLabel = 'Motivo (opcional)';
   @Input() reasonPlaceholder = '';
   @Input() reasonMaxLength = 500;
+  // 0.43.1#ESMERALDA: permite reutilizar este mismo dialog para acciones
+  // donde el motivo es obligatorio (p. ej. devolver una incidencia a la
+  // asociación), sin duplicar el componente.
+  @Input() requireReason = false;
   @Output() cancel = new EventEmitter<void>();
   @Output() confirmed = new EventEmitter<string>();
 
