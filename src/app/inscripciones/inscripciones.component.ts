@@ -10,7 +10,7 @@ import { FfsjSpinnerComponent } from 'ffsj-web-components';
 import { AdminAccessService } from '../core/admin-access.service';
 import { ApiUrlService } from '../core/api-url.service';
 import { CensoService } from '../core/censo.service';
-import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria, ResponsableInscripcion } from '../core/models';
+import { ActividadSecretaria, AdjuntoSecretaria, Asociacion, Asociado, AsociadoTipo, CampoInscripcion, FormularioInscripcion, InscripcionEntradaSecretaria, InscripcionSecretaria, PaginacionSecretaria, ResponsableInscripcion } from '../core/models';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { EjercicioService } from '../core/ejercicio.service';
@@ -37,7 +37,7 @@ const SERVER_DIAGNOSTIC_CODES = new Set([
 type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
 type AssociationTab = 'documentacion' | 'formulario' | 'asociados';
-type AssociationMode = 'edit' | 'view' | 'summary';
+type AssociationMode = 'edit' | 'view';
 // 0.41.0#ESMERALDA: ordenacion del listado de inscritos (client-side: los
 // datos de la entrada ya se cargan completos y el nombre de asociacion
 // proviene de Censo, un servicio externo sin join SQL disponible).
@@ -179,12 +179,23 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   private syncRubiScreenContext(): void {
     const routeId = this.selectedInscription?.id || this.route.snapshot.paramMap.get('id');
     const diagnostics = this.currentFormDiagnostics();
+    // 0.43.0#ESMERALDA: cuando el dialog de detalle de entrada (compartido con
+    // Administración) esta abierto, expone que pestaña se consulta y si esa
+    // entrada concreta tiene incidencias, sin enviar datos del formulario ni
+    // ampliar permisos/tools existentes.
+    const entrada = this.entradaDetalleDialogOpen ? this.selectedEntrada : null;
     this.rubiScreenContext.set({
       version: 1, module: 'inscripciones', view: this.detailMode ? 'detalle' : 'listado',
-      ...((routeId || diagnostics) ? {
+      ...((routeId || diagnostics || entrada) ? {
         state: {
           ...(routeId ? { selectedInscriptionId: routeId } : {}),
-          ...(diagnostics ? { formDiagnostics: diagnostics } : {})
+          ...(diagnostics ? { formDiagnostics: diagnostics } : {}),
+          ...(entrada ? {
+            entradaId: entrada.id,
+            entradaDetalleTab: this.entradaDetalleTab,
+            entradaEstado: entrada.estado,
+            entradaConIncidencias: entrada.estado === 'con_incidencias'
+          } : {})
         }
       } : {})
     });
@@ -335,7 +346,6 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   cambiarPaginaInscripciones(delta: number): void { const page = this.paginaInscripciones + delta; if (page >= 1 && page <= this.paginacionInscripciones.totalPages) { this.paginaInscripciones = page; this.cargarFormulariosEInscripciones(); } }
 
   get associationStep(): 1 | 2 | 3 | 4 | 5 {
-    if (this.associationMode === 'summary') return 5;
     if (this.associationMode === 'view') return 4;
     if (this.associationTab === 'documentacion') return 1;
     if (this.associationTab === 'asociados') return 3;
@@ -767,6 +777,7 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       this.associationTab = 'formulario';
       if (this.miEntrada) {
         this.associationMode = 'view';
+        this.abrirDetalleEntrada(this.miEntrada);
       }
       return;
     }
@@ -782,6 +793,7 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     this.entradaDetalleTab = 'informacion';
     this.cargarAdjuntosEntrada(entrada.id);
     this.entradaDetalleDialogOpen = true;
+    this.syncRubiScreenContext();
   }
 
   cerrarDetalleEntrada(): void {
@@ -789,10 +801,19 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     const trigger = this.entradaDetalleTrigger;
     this.entradaDetalleTrigger = null;
     setTimeout(() => trigger?.focus());
+    // 0.43.0#ESMERALDA: para Asociación el dialog ES el detalle de la entrada
+    // (no queda una sección plana detrás que mostrar), así que cerrarlo
+    // vuelve al listado conservando filtros/orden/página actuales.
+    if (!this.isAdminMode) {
+      this.volverAlListado();
+      return;
+    }
+    this.syncRubiScreenContext();
   }
 
   activarPestanaEntradaDetalle(tab: EntradaDetalleTab): void {
     this.entradaDetalleTab = tab;
+    this.syncRubiScreenContext();
   }
 
   navegarPestanasEntradaDetalle(event: KeyboardEvent, index: number): void {
@@ -818,7 +839,13 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       if (pendientes) return;
       input.value = '';
       this.loading = false;
-      this.cargarAdjuntosEntrada(entrada.id);
+      // 0.43.5#ESMERALDA: si mientras subían los adjuntos ya se abrió el
+      // detalle de OTRA entrada, no hay que pisar su lista de adjuntos con
+      // la de esta (una subida lenta terminando tarde no debe mezclar
+      // documentos de una entrada con la vista de otra).
+      if (this.selectedEntrada?.id === entrada.id) {
+        this.cargarAdjuntosEntrada(entrada.id);
+      }
     };
     files.forEach(file => this.secretariaService.subirAdjunto('inscripcion_entrada', entrada.id, file).subscribe({
       next: () => finalizar(),
@@ -947,6 +974,15 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     return 'bi-card-text';
   }
 
+  // 0.43.0#ESMERALDA: "Categoría" del panel lateral del detalle se deriva del
+  // campo real tiposPermitidos de la inscripción (adulto/infantil), sin
+  // inventar un campo nuevo en el modelo.
+  categoriaLabel(tipos: AsociadoTipo[] | null | undefined): string {
+    if (!tipos?.length) return '';
+    const labels: Record<AsociadoTipo, string> = { adulto: 'Adulto', infantil: 'Infantil' };
+    return tipos.map(tipo => labels[tipo] || tipo).join(', ');
+  }
+
   submit(): void {
     if (!this.selectedInscription) return;
     this.submitted = true;
@@ -999,9 +1035,14 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       next: entry => {
         this.borrarBorrador(this.selectedInscription?.id);
         this.miEntrada = entry as InscripcionEntradaSecretaria;
-        this.associationMode = 'summary';
+        this.associationMode = 'view';
         this.success = 'Inscripcion enviada correctamente.';
-        this.syncRubiScreenContext();
+        // 0.43.5#ESMERALDA: tras enviar, se abre siempre el mismo dialog de
+        // detalle que usa cargarMiEntrada() para una entrada ya existente
+        // (nunca la antigua sección plana de resumen, que quedaba como único
+        // resultado posible justo después de un envío por no tener aún
+        // incidencias).
+        this.abrirDetalleEntrada(this.miEntrada);
       },
       error: error => {
         this.error = error?.error?.message || 'No se ha podido enviar la inscripción.';
@@ -1020,6 +1061,7 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
       this.error = this.miEntrada?.estado === 'validada' ? 'La inscripción está validada y no se puede modificar.' : 'El plazo de inscripcion esta cerrado.';
       return;
     }
+    this.entradaDetalleDialogOpen = false;
     this.associationMode = 'edit';
     this.success = '';
     this.error = '';
@@ -1038,6 +1080,7 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     if (this.miEntrada) {
       this.patchEntradaForm(this.miEntrada);
       this.associationMode = 'view';
+      this.abrirDetalleEntrada(this.miEntrada);
       this.watchFormDiagnostics();
       return;
     }
@@ -1064,6 +1107,7 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
         this.miEntrada = null;
         this.adjuntosEntrada = [];
         this.associationMode = 'edit';
+        this.entradaDetalleDialogOpen = false;
         this.success = 'Inscripción eliminada.';
         this.loading = false;
       },
@@ -1111,10 +1155,6 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     });
-  }
-
-  cerrarResumen(): void {
-    this.router.navigate(['/inscripciones']);
   }
 
   private cargarDatos(): void {
@@ -1255,9 +1295,12 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
           return;
         }
         this.miEntrada = entrada;
-        this.cargarAdjuntosEntrada(entrada.id);
         this.patchEntradaForm(entrada);
         this.associationMode = 'view';
+        // 0.43.0#ESMERALDA: el detalle de una entrada ya presentada se abre
+        // ahora en el mismo dialog con pestañas que Administración (ver
+        // abrirDetalleEntrada), en vez de la antigua sección plana.
+        this.abrirDetalleEntrada(entrada);
       },
       error: error => {
         if (error?.status !== 404) {
@@ -1530,7 +1573,12 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     if (this.loading || !this.puedeSolicitarRetirada(entrada)) return;
     this.loading = true;
     this.secretariaService.solicitarRetiradaInscripcion(entrada.id).subscribe({
-      next: updated => { this.miEntrada = updated; this.success = 'Solicitud de retirada enviada a administración.'; this.loading = false; },
+      next: updated => {
+        this.miEntrada = updated;
+        this.selectedEntrada = this.selectedEntrada?.id === updated.id ? { ...this.selectedEntrada, ...updated } : this.selectedEntrada;
+        this.success = 'Solicitud de retirada enviada a administración.';
+        this.loading = false;
+      },
       error: error => { this.error = error?.error?.message || 'No se ha podido solicitar la retirada.'; this.loading = false; }
     });
   }

@@ -15,6 +15,7 @@ import { EjercicioService } from '../core/ejercicio.service';
 import { DashboardSummaryService } from '../core/dashboard-summary.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
 import { AdjuntosSelectorComponent } from '../shared/adjuntos-selector.component';
+import { CompactComposerComponent } from '../shared/compact-composer.component';
 import { RubiScreenContextService } from '../rubi/rubi-screen-context.service';
 
 type RegistroMode = 'documentacion' | 'comunicacion' | null;
@@ -26,7 +27,7 @@ type DetailTab = 'informacion' | 'conversacion' | 'trazabilidad' | 'incidencias'
 @Component({
   selector: 'app-registro',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent, FfsjSpinnerComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, IncidenciasPanelComponent, AdjuntosSelectorComponent, CompactComposerComponent, FfsjSpinnerComponent],
   templateUrl: './registro.component.html',
   styleUrls: ['./registro.component.scss']
 })

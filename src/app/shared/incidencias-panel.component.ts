@@ -3,128 +3,248 @@ import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core
 import { FormsModule } from '@angular/forms';
 import { forkJoin, of, switchMap } from 'rxjs';
 
-import { AdjuntoSecretaria, Incidencia } from '../core/models';
+import { AdjuntoSecretaria, Incidencia, IncidenciaEvento } from '../core/models';
 import { AdminAccessService } from '../core/admin-access.service';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { CompactComposerComponent } from './compact-composer.component';
+import { ConfirmDialogComponent } from './confirm-dialog.component';
+
+interface CierrePendiente {
+  incidencia: Incidencia;
+  estado: 'subsanada' | 'cerrada';
+}
+
+// 0.43.3#ESMERALDA: única fuente de verdad de qué estados representan una
+// incidencia todavía activa/no terminal. 'abierta' y 'respondida' son
+// activos (la conversación sigue viva, en cualquier dirección); 'subsanada'
+// y 'cerrada' son terminales. Antes el contador de abiertas ya usaba esta
+// lista, pero el composer de Asociación comprobaba solo `=== 'abierta'`:
+// tras responder una vez la incidencia pasaba a 'respondida' (activa según
+// el contador) y el composer desaparecía sin motivo real.
+const ESTADOS_INCIDENCIA_ACTIVOS: ReadonlyArray<Incidencia['estado']> = ['abierta', 'respondida'];
 
 @Component({
   selector: 'app-incidencias-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CompactComposerComponent, ConfirmDialogComponent],
   template: `
     <section class="incidencias-panel">
       <div class="panel-header">
-        <div>
-          <h3 class="h6 mb-1">Incidencias</h3>
-          <p class="text-muted mb-0">{{ abiertas }} abierta(s), {{ incidencias.length }} total.</p>
-        </div>
-        <span class="counter" [class.has-open]="abiertas > 0">{{ abiertas }}</span>
-      </div>
-
-      <div class="new-incidence" *ngIf="isAdminMode && permissions.hasPermission('incidencias:write')">
-        <textarea class="form-control" rows="2" [(ngModel)]="nuevoMensaje" placeholder="Describe la incidencia"></textarea>
-        <div class="d-flex gap-2 flex-wrap">
-          <input class="form-control form-control-sm" type="file" multiple (change)="onFiles($event)" />
-          <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="!nuevoMensaje.trim() || loading" (click)="crear()">
-            Crear incidencia
+        <h3 class="h6 mb-0">Incidencias</h3>
+        <div class="panel-header-actions">
+          <span class="counter-badge" [class.has-open]="abiertas > 0">{{ headerLabel }}</span>
+          <button
+            *ngIf="puedeCrear"
+            type="button"
+            class="btn-add-incidencia"
+            aria-label="Crear nueva incidencia"
+            title="Crear nueva incidencia"
+            [attr.aria-expanded]="mostrarNuevaIncidencia"
+            (click)="mostrarNuevaIncidencia = !mostrarNuevaIncidencia"
+          >
+            <i class="bi bi-plus-lg" aria-hidden="true"></i>
           </button>
         </div>
       </div>
 
-      <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+      <p *ngIf="error" class="panel-error" role="alert">{{ error }}</p>
 
-      <ul class="incidence-list">
-        <li *ngFor="let incidencia of incidencias" [class.open]="incidencia.estado === 'abierta'">
-          <div class="incidence-title">
-            <strong>{{ incidencia.estado }}</strong>
-            <small>{{ incidencia.fechaAlta | date: 'dd/MM/yyyy HH:mm' }}</small>
-          </div>
-          <p>{{ incidencia.mensaje }}</p>
-          <p class="response" *ngIf="incidencia.respuesta">{{ incidencia.respuesta }}</p>
-          <div class="timeline" *ngIf="incidencia.eventos?.length">
-            <article *ngFor="let evento of incidencia.eventos">
-              <div class="event-meta">
-                <strong>{{ labelEvento(evento.tipo) }}</strong>
-                <span>{{ labelActor(evento.actor) }} - {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+      <div class="incidencias-empty" *ngIf="!incidencias.length">
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+        <p class="mb-0 fw-semibold">Sin incidencias.</p>
+        <p class="mb-0 text-muted">Aún no se han registrado incidencias.</p>
+      </div>
+
+      <ul class="incidence-list" *ngIf="incidencias.length">
+        <li class="incidence-item" *ngFor="let incidencia of incidencias" [class.is-open]="esActiva(incidencia)">
+          <button
+            type="button"
+            class="incidence-summary"
+            [attr.aria-expanded]="isExpanded(incidencia)"
+            [attr.aria-controls]="'incidencia-body-' + incidencia.id"
+            (click)="toggle(incidencia)"
+          >
+            <span class="estado-badge" [ngClass]="'estado-' + incidencia.estado">{{ labelEstado(incidencia.estado) }}</span>
+            <time class="incidence-date">{{ incidencia.fechaAlta | date: 'dd/MM/yyyy HH:mm' }}</time>
+            <span class="incidence-preview">{{ incidencia.mensaje }}</span>
+            <i class="bi chevron" [ngClass]="isExpanded(incidencia) ? 'bi-chevron-up' : 'bi-chevron-down'" aria-hidden="true"></i>
+          </button>
+
+          <div class="incidence-body" *ngIf="isExpanded(incidencia)" [id]="'incidencia-body-' + incidencia.id" role="region">
+            <ul class="incidence-timeline" *ngIf="conversacion(incidencia).length">
+              <li *ngFor="let evento of conversacion(incidencia)">
+                <div class="timeline-meta">
+                  <time>{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</time>
+                  <span class="actor-badge" [ngClass]="'actor-' + evento.actor">{{ labelActor(evento.actor) }}</span>
+                </div>
+                <p class="timeline-message">{{ evento.mensaje }}</p>
+                <div class="timeline-attachments" *ngIf="evento.adjuntos?.length">
+                  <button
+                    type="button"
+                    class="attachment-chip"
+                    *ngFor="let adjunto of evento.adjuntos"
+                    [attr.aria-label]="'Descargar ' + adjunto.originalName"
+                    (click)="descargarAdjunto(adjunto)"
+                  >
+                    <i class="bi bi-paperclip" aria-hidden="true"></i>{{ adjunto.originalName }}
+                  </button>
+                </div>
+              </li>
+            </ul>
+            <p class="incidence-empty-thread text-muted small" *ngIf="!conversacion(incidencia).length">
+              Aún no hay más mensajes en esta incidencia.
+            </p>
+
+            <app-compact-composer
+              *ngIf="esActiva(incidencia) && canAssociationRespond"
+              class="mt-2"
+              placeholder="Escribe tu respuesta o subsanación..."
+              attachAriaLabel="Adjuntar archivo a la respuesta"
+              sendAriaLabel="Enviar respuesta"
+              [value]="respuestas[incidencia.id] || ''"
+              (valueChange)="respuestas[incidencia.id] = $event"
+              [files]="responseFiles[incidencia.id] || []"
+              (filesChange)="responseFiles[incidencia.id] = $event"
+              [loading]="loading"
+              (send)="responder(incidencia)"
+            ></app-compact-composer>
+
+            <div class="incidence-admin-actions" *ngIf="canAdminManage(incidencia)">
+              <app-compact-composer
+                placeholder="Añade un comentario para la asociación..."
+                attachAriaLabel="Adjuntar archivo al comentario"
+                sendAriaLabel="Añadir comentario"
+                [value]="comentarios[incidencia.id] || ''"
+                (valueChange)="comentarios[incidencia.id] = $event"
+                [files]="commentFiles[incidencia.id] || []"
+                (filesChange)="commentFiles[incidencia.id] = $event"
+                [loading]="loading"
+                (send)="comentar(incidencia)"
+              ></app-compact-composer>
+
+              <div class="close-actions">
+                <button class="btn btn-success btn-sm" type="button" [disabled]="loading" (click)="abrirCierre(incidencia, 'subsanada')">
+                  Marcar subsanada
+                </button>
+                <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="loading" (click)="abrirCierre(incidencia, 'cerrada')">
+                  Cerrar sin subsanar
+                </button>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  *ngIf="incidencia.estado === 'respondida'"
+                  [disabled]="loading"
+                  (click)="abrirDevolucion(incidencia)"
+                >
+                  Devolver a asociación
+                </button>
               </div>
-              <p>{{ evento.mensaje }}</p>
-              <div class="attachments" *ngIf="evento.adjuntos?.length">
-                <button *ngFor="let adjunto of evento.adjuntos" class="attachment-link" type="button" (click)="descargarAdjunto(adjunto)">{{ adjunto.originalName }}</button>
-              </div>
-            </article>
-          </div>
-          <div class="response-box" *ngIf="incidencia.estado === 'abierta' && canAssociationRespond">
-            <input class="form-control form-control-sm" [(ngModel)]="respuestas[incidencia.id]" placeholder="Respuesta o subsanacion" />
-            <input class="form-control form-control-sm" type="file" multiple (change)="onResponseFiles(incidencia.id, $event)" />
-            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading || !respuestas[incidencia.id]" (click)="responder(incidencia)">
-              Responder
-            </button>
-          </div>
-          <div class="response-box" *ngIf="canAdminManage(incidencia)">
-            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="comentarios[incidencia.id]" placeholder="Añade un comentario para la asociación"></textarea>
-            <input class="form-control form-control-sm" type="file" multiple (change)="onCommentFiles(incidencia.id, $event)" />
-            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading || !comentarios[incidencia.id]?.trim()" (click)="comentar(incidencia)">Añadir comentario</button>
-            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="devoluciones[incidencia.id]" placeholder="Comentario de cierre o motivo si se devuelve a la asociacion"></textarea>
-            <input class="form-control form-control-sm" type="file" multiple (change)="onReturnFiles(incidencia.id, $event)" />
-            <button class="btn btn-success btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'subsanada')">
-              Marcar subsanada
-            </button>
-            <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'cerrada')">
-              Cerrar sin subsanar
-            </button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" *ngIf="incidencia.estado === 'respondida'" [disabled]="loading || !devoluciones[incidencia.id]" (click)="reabrir(incidencia)">
-              Devolver a asociacion
-            </button>
+            </div>
           </div>
         </li>
-        <li *ngIf="!incidencias.length" class="empty">Sin incidencias.</li>
       </ul>
+
+      <div class="new-incidencia-block" *ngIf="mostrarComposerNuevo">
+        <p class="new-incidencia-label mb-2 fw-semibold" *ngIf="incidencias.length">Nueva incidencia</p>
+        <app-compact-composer
+          placeholder="Describe la incidencia..."
+          attachAriaLabel="Adjuntar archivo a la incidencia"
+          sendAriaLabel="Crear incidencia"
+          [value]="nuevoMensaje"
+          (valueChange)="nuevoMensaje = $event"
+          [files]="selectedFiles"
+          (filesChange)="selectedFiles = $event"
+          [loading]="loading"
+          (send)="crear()"
+        ></app-compact-composer>
+      </div>
     </section>
+
+    <app-confirm-dialog
+      *ngIf="cierrePendiente"
+      title="Cerrar incidencia"
+      message="Puedes indicar un motivo de cierre (opcional)."
+      confirmLabel="Confirmar"
+      [showReasonField]="true"
+      reasonLabel="Motivo (opcional)"
+      reasonPlaceholder="Escribe un motivo de cierre..."
+      (cancel)="cierrePendiente = null"
+      (confirmed)="confirmarCierre($event)"
+    ></app-confirm-dialog>
+
+    <app-confirm-dialog
+      *ngIf="devolucionPendiente"
+      title="Devolver a la asociación"
+      message="Indica el motivo de la devolución."
+      confirmLabel="Confirmar"
+      [showReasonField]="true"
+      [requireReason]="true"
+      reasonLabel="Motivo"
+      reasonPlaceholder="Escribe el motivo de la devolución..."
+      (cancel)="devolucionPendiente = null"
+      (confirmed)="confirmarDevolucion($event)"
+    ></app-confirm-dialog>
   `,
   styles: [`
-    .incidencias-panel { border: 1px solid #eceff4; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
-    .panel-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-    .counter { min-width: 28px; height: 28px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #eef0f4; font-weight: 700; }
-    .counter.has-open { background: #fee2e2; color: #991b1b; }
-    .new-incidence { display: grid; gap: .5rem; margin: 1rem 0; }
-    .incidence-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .65rem; }
-    .incidence-list li { border-top: 1px solid #f0f1f4; padding-top: .65rem; }
-    .incidence-list li.open { border-left: 3px solid #c8102e; padding-left: .65rem; }
-    .incidence-title, .response-box { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-    .incidence-title strong { text-transform: capitalize; }
-    .incidence-title small, .response { color: #687386; }
-    .timeline { display: grid; gap: .5rem; margin: .65rem 0; }
-    .timeline article { border: 1px solid #edf0f5; border-radius: 6px; padding: .65rem; background: #fbfcfe; }
-    .timeline p { margin: .35rem 0 0; }
-    .event-meta { display: flex; gap: .5rem; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
-    .event-meta span { color: #687386; font-size: .82rem; }
-    .attachments { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
-    .attachment-link { border: 0; padding: 0; color: #0d6efd; background: transparent; font-size: .85rem; text-decoration: underline; }
-    .attachment-link:hover, .attachment-link:focus-visible { color: #084298; }
-    .error { margin: .75rem 0; color: #991b1b; font-size: .9rem; }
-    .empty { color: #687386; }
+    .incidencias-panel { border: 1px solid var(--ffsj-line); border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+    .panel-header-actions { display: flex; align-items: center; gap: .5rem; }
+    .counter-badge { min-width: 28px; padding: 0 .5rem; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #eef0f4; font-weight: 700; font-size: .85rem; }
+    .counter-badge.has-open { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .btn-add-incidencia { width: 30px; height: 30px; border-radius: 50%; border: 0; background: var(--ffsj-red); color: #fff; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-add-incidencia:hover, .btn-add-incidencia:focus-visible { background: var(--ffsj-red-dark); outline: 2px solid var(--ffsj-red-dark); outline-offset: 1px; }
+    .panel-error { color: var(--ffsj-red-dark); font-size: .9rem; }
+    .incidencias-empty { text-align: center; padding: 1.5rem .5rem; color: var(--ffsj-muted); }
+    .incidencias-empty i { font-size: 1.5rem; margin-bottom: .35rem; display: inline-block; }
+    .incidence-list { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .6rem; }
+    .incidence-item { border: 1px solid var(--ffsj-line); border-radius: 8px; overflow: hidden; }
+    .incidence-item.is-open { border-left: 3px solid var(--ffsj-red); }
+    .incidence-summary { width: 100%; display: flex; align-items: center; gap: .6rem; padding: .55rem .75rem; background: #fff; border: 0; text-align: left; }
+    .incidence-summary:hover, .incidence-summary:focus-visible { background: #f8f9fb; outline: 2px solid var(--ffsj-red); outline-offset: -2px; }
+    .estado-badge { flex: 0 0 auto; border-radius: 999px; padding: .15rem .55rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; background: #eef0f4; color: var(--ffsj-muted); }
+    .estado-badge.estado-abierta { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .estado-badge.estado-respondida { background: #e7f1ff; color: #0b5ed7; }
+    .estado-badge.estado-subsanada { background: #e6f7ec; color: #15803d; }
+    .incidence-date { flex: 0 0 auto; color: var(--ffsj-muted); font-size: .82rem; }
+    .incidence-preview { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #18212f; }
+    .chevron { flex: 0 0 auto; color: var(--ffsj-muted); }
+    .incidence-body { padding: .75rem; border-top: 1px solid var(--ffsj-line); background: #fbfcfe; }
+    .incidence-empty-thread { margin: 0 0 .5rem; }
+    .incidence-timeline { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .55rem; }
+    .incidence-timeline > li { border-left: 2px solid var(--ffsj-line); padding-left: .6rem; }
+    .timeline-meta { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .15rem; }
+    .timeline-meta time { color: var(--ffsj-muted); font-size: .8rem; order: 1; }
+    .actor-badge { border-radius: 999px; padding: .1rem .5rem; font-size: .72rem; font-weight: 700; background: #eef0f4; color: var(--ffsj-muted); order: 0; }
+    .actor-badge.actor-administracion { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .timeline-message { margin: 0 0 .35rem; }
+    .timeline-attachments { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .attachment-chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--ffsj-line); border-radius: 999px; padding: .15rem .55rem; font-size: .78rem; background: #f8f9fb; color: #0d6efd; }
+    .attachment-chip:hover, .attachment-chip:focus-visible { color: #084298; outline: 2px solid #0d6efd; outline-offset: 1px; }
+    .incidence-admin-actions { display: grid; gap: .5rem; margin-top: .6rem; }
+    .close-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .new-incidencia-block { margin-top: 1rem; }
   `]
 })
 export class IncidenciasPanelComponent implements OnChanges {
   @Input({ required: true }) scope!: 'solicitud' | 'registro' | 'inscripcion';
   @Input({ required: true }) scopeId!: string | number;
-  // 0.40.2#ESMERALDA: permite mostrar el contador en la pestaña "Incidencias"
-  // del detalle de Registro sin duplicar la carga de datos.
   @Output() countChange = new EventEmitter<number>();
 
   incidencias: Incidencia[] = [];
-  adjuntosByIncidencia: Record<string, AdjuntoSecretaria[]> = {};
   respuestas: Record<string, string> = {};
-  devoluciones: Record<string, string> = {};
   comentarios: Record<string, string> = {};
   responseFiles: Record<string, File[]> = {};
-  returnFiles: Record<string, File[]> = {};
   commentFiles: Record<string, File[]> = {};
   nuevoMensaje = '';
   selectedFiles: File[] = [];
   loading = false;
   error = '';
+
+  mostrarNuevaIncidencia = false;
+  expandedIds = new Set<string>();
+  cierrePendiente: CierrePendiente | null = null;
+  devolucionPendiente: Incidencia | null = null;
 
   constructor(
     private readonly secretariaService: SecretariaService,
@@ -133,15 +253,52 @@ export class IncidenciasPanelComponent implements OnChanges {
   ) {}
 
   ngOnChanges(): void {
-    this.cargar();
+    // 0.43.2#ESMERALDA: este componente se reutiliza sin destruirse al
+    // cambiar de recurso en varios anfitriones (p. ej. Asociados-Gestión al
+    // ver otra solicitud, Registro al abrir otro registro sin salir de la
+    // pestaña de Incidencias): un `*ngIf` que solo comprueba truthiness, no
+    // identidad, no recrea la instancia. Sin este reset, borradores de
+    // adjuntos/texto de la incidencia anterior (`selectedFiles`,
+    // `responseFiles`, `commentFiles`, etc.) sobrevivían y podían acabar
+    // subidos contra un evento de OTRO scope/asociación al enviar. Como
+    // `scope`/`scopeId` son los únicos @Input, cualquier disparo de
+    // ngOnChanges implica que apuntamos a un recurso distinto (o es la carga
+    // inicial, donde este estado ya está vacío), así que resetear siempre es
+    // correcto.
+    this.incidencias = [];
+    this.respuestas = {};
+    this.comentarios = {};
+    this.responseFiles = {};
+    this.commentFiles = {};
+    this.nuevoMensaje = '';
+    this.selectedFiles = [];
+    this.mostrarNuevaIncidencia = false;
+    this.expandedIds = new Set<string>();
+    this.cierrePendiente = null;
+    this.devolucionPendiente = null;
+    this.error = '';
+    this.cargar(true);
   }
 
   get abiertas(): number {
-    return this.incidencias.filter(item => ['abierta', 'respondida'].includes(item.estado)).length;
+    return this.incidencias.filter(item => this.esActiva(item)).length;
+  }
+
+  get headerLabel(): string {
+    if (!this.incidencias.length) return '0';
+    return `${this.abiertas} abierta${this.abiertas === 1 ? '' : 's'}`;
   }
 
   get isAdminMode(): boolean {
     return this.adminAccess.isAdmin();
+  }
+
+  get puedeCrear(): boolean {
+    return this.isAdminMode && this.permissions.hasPermission('incidencias:write');
+  }
+
+  get mostrarComposerNuevo(): boolean {
+    return this.puedeCrear && (this.mostrarNuevaIncidencia || !this.incidencias.length);
   }
 
   get canAssociationRespond(): boolean {
@@ -149,62 +306,92 @@ export class IncidenciasPanelComponent implements OnChanges {
   }
 
   canAdminManage(incidencia: Incidencia): boolean {
-    return this.isAdminMode && this.permissions.hasPermission('incidencias:write') && ['abierta', 'respondida'].includes(incidencia.estado);
+    return this.isAdminMode && this.permissions.hasPermission('incidencias:write') && this.esActiva(incidencia);
   }
 
-  onFiles(event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.selectedFiles = files ? Array.from(files) : [];
+  esActiva(incidencia: Incidencia): boolean {
+    return ESTADOS_INCIDENCIA_ACTIVOS.includes(incidencia.estado);
   }
 
-  onResponseFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.responseFiles[incidenciaId] = files ? Array.from(files) : [];
+  isExpanded(incidencia: Incidencia): boolean {
+    return this.expandedIds.has(String(incidencia.id));
   }
 
-  onReturnFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.returnFiles[incidenciaId] = files ? Array.from(files) : [];
+  toggle(incidencia: Incidencia): void {
+    const key = String(incidencia.id);
+    if (this.expandedIds.has(key)) this.expandedIds.delete(key);
+    else this.expandedIds.add(key);
   }
 
-  onCommentFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.commentFiles[incidenciaId] = files ? Array.from(files) : [];
+  conversacion(incidencia: Incidencia): IncidenciaEvento[] {
+    const eventos = incidencia.eventos || [];
+    return eventos.length && eventos[0].tipo === 'creada' ? eventos.slice(1) : eventos;
+  }
+
+  labelEstado(estado: string): string {
+    const labels: Record<string, string> = {
+      abierta: 'Abierta',
+      respondida: 'Respondida',
+      subsanada: 'Subsanada',
+      cerrada: 'Cerrada'
+    };
+    return labels[estado] || estado;
+  }
+
+  labelActor(actor: string): string {
+    return actor === 'administracion' ? 'Administración' : actor === 'asociacion' ? 'Asociación' : 'Sistema';
   }
 
   crear(): void {
     if (!this.nuevoMensaje.trim()) return;
+    // 0.43.5#ESMERALDA: se capturan mensaje/adjuntos/recurso AL ENVIAR, no se
+    // vuelven a leer de `this.*` dentro del switchMap (tras el round-trip
+    // HTTP). Si mientras la petición está en vuelo el usuario cambia de
+    // recurso (ngOnChanges resetea selectedFiles/nuevoMensaje) y empieza un
+    // nuevo borrador, una respuesta tardía ya no puede subir ESE nuevo
+    // borrador contra el evento equivocado ni pisarlo al "limpiar" el
+    // composer.
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const mensaje = this.nuevoMensaje.trim();
+    const files = this.selectedFiles;
     this.loading = true;
     this.error = '';
     this.secretariaService.crearIncidencia({
-      scope: this.scope,
-      scopeId: this.scopeId,
-      mensaje: this.nuevoMensaje.trim()
+      scope: requestScope,
+      scopeId: requestScopeId,
+      mensaje
     }).pipe(
       switchMap(incidencia => {
         const eventoId = this.lastEventoId(incidencia);
-        if (!this.selectedFiles.length || !eventoId) return of(incidencia);
-        return forkJoin(this.selectedFiles.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
+        if (!files.length || !eventoId) return of(incidencia);
+        return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
           switchMap(() => of(incidencia))
         );
       })
     ).subscribe({
       next: () => {
-        this.nuevoMensaje = '';
-        this.selectedFiles = [];
         this.loading = false;
-        this.cargar();
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.nuevoMensaje = '';
+          this.selectedFiles = [];
+          this.mostrarNuevaIncidencia = false;
+          this.cargar(true);
+        }
       },
       error: () => this.fail('No se ha podido crear la incidencia.')
     });
   }
 
   responder(incidencia: Incidencia): void {
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const mensaje = this.respuestas[incidencia.id];
+    const files = this.responseFiles[incidencia.id] || [];
     this.loading = true;
     this.error = '';
-    this.secretariaService.responderIncidencia(incidencia.id, this.respuestas[incidencia.id]).pipe(
+    this.secretariaService.responderIncidencia(incidencia.id, mensaje).pipe(
       switchMap(updated => {
-        const files = this.responseFiles[incidencia.id] || [];
         const eventoId = this.lastEventoId(updated);
         if (!files.length || !eventoId) return of(updated);
         return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
@@ -213,10 +400,12 @@ export class IncidenciasPanelComponent implements OnChanges {
       })
     ).subscribe({
       next: () => {
-        this.respuestas[incidencia.id] = '';
-        this.responseFiles[incidencia.id] = [];
         this.loading = false;
-        this.cargar();
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.respuestas[incidencia.id] = '';
+          this.responseFiles[incidencia.id] = [];
+          this.cargar();
+        }
       },
       error: () => this.fail('No se ha podido enviar la respuesta.')
     });
@@ -225,11 +414,13 @@ export class IncidenciasPanelComponent implements OnChanges {
   comentar(incidencia: Incidencia): void {
     const mensaje = this.comentarios[incidencia.id]?.trim();
     if (!mensaje) return;
+    const requestScope = this.scope;
+    const requestScopeId = this.scopeId;
+    const files = this.commentFiles[incidencia.id] || [];
     this.loading = true;
     this.error = '';
     this.secretariaService.comentarIncidencia(incidencia.id, mensaje).pipe(
       switchMap(actualizada => {
-        const files = this.commentFiles[incidencia.id] || [];
         const eventoId = this.lastEventoId(actualizada);
         if (!files.length || !eventoId) return of(actualizada);
         return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
@@ -238,21 +429,42 @@ export class IncidenciasPanelComponent implements OnChanges {
       })
     ).subscribe({
       next: () => {
-        this.comentarios[incidencia.id] = '';
-        this.commentFiles[incidencia.id] = [];
         this.loading = false;
-        this.cargar();
+        if (this.scope === requestScope && this.scopeId === requestScopeId) {
+          this.comentarios[incidencia.id] = '';
+          this.commentFiles[incidencia.id] = [];
+          this.cargar();
+        }
       },
       error: () => this.fail('No se ha podido añadir el comentario.')
     });
   }
 
-  resolver(incidencia: Incidencia, estado: 'subsanada' | 'cerrada'): void {
+  abrirCierre(incidencia: Incidencia, estado: 'subsanada' | 'cerrada'): void {
+    this.cierrePendiente = { incidencia, estado };
+  }
+
+  confirmarCierre(motivo: string): void {
+    if (!this.cierrePendiente) return;
+    const { incidencia, estado } = this.cierrePendiente;
+    this.resolver(incidencia, estado, motivo);
+  }
+
+  abrirDevolucion(incidencia: Incidencia): void {
+    this.devolucionPendiente = incidencia;
+  }
+
+  confirmarDevolucion(motivo: string): void {
+    if (!this.devolucionPendiente || !motivo.trim()) return;
+    this.reabrir(this.devolucionPendiente, motivo.trim());
+  }
+
+  private resolver(incidencia: Incidencia, estado: 'subsanada' | 'cerrada', motivo: string): void {
     this.loading = true;
     this.error = '';
-    this.secretariaService.cerrarIncidencia(incidencia.id, this.devoluciones[incidencia.id] || this.respuestas[incidencia.id], estado).subscribe({
+    this.secretariaService.cerrarIncidencia(incidencia.id, motivo, estado).subscribe({
       next: () => {
-        this.devoluciones[incidencia.id] = '';
+        this.cierrePendiente = null;
         this.loading = false;
         this.cargar();
       },
@@ -260,22 +472,12 @@ export class IncidenciasPanelComponent implements OnChanges {
     });
   }
 
-  reabrir(incidencia: Incidencia): void {
+  private reabrir(incidencia: Incidencia, motivo: string): void {
     this.loading = true;
     this.error = '';
-    this.secretariaService.reabrirIncidencia(incidencia.id, this.devoluciones[incidencia.id]).pipe(
-      switchMap(updated => {
-        const files = this.returnFiles[incidencia.id] || [];
-        const eventoId = this.lastEventoId(updated);
-        if (!files.length || !eventoId) return of(updated);
-        return forkJoin(files.map(file => this.secretariaService.subirAdjunto('incidencia_evento', eventoId, file))).pipe(
-          switchMap(() => of(updated))
-        );
-      })
-    ).subscribe({
+    this.secretariaService.reabrirIncidencia(incidencia.id, motivo).subscribe({
       next: () => {
-        this.devoluciones[incidencia.id] = '';
-        this.returnFiles[incidencia.id] = [];
+        this.devolucionPendiente = null;
         this.loading = false;
         this.cargar();
       },
@@ -283,27 +485,14 @@ export class IncidenciasPanelComponent implements OnChanges {
     });
   }
 
-  labelEvento(tipo: string): string {
-    const labels: Record<string, string> = {
-      creada: 'Incidencia creada',
-      respuesta_asociacion: 'Respuesta de asociacion',
-      comentario_administracion: 'Comentario de administracion',
-      devuelta_admin: 'Devuelta por administracion',
-      subsanada: 'Subsanada',
-      cerrada: 'Cerrada'
-    };
-    return labels[tipo] || tipo;
-  }
-
-  labelActor(actor: string): string {
-    return actor === 'administracion' ? 'Administracion' : actor === 'asociacion' ? 'Asociacion' : 'Sistema';
-  }
-
-  private cargar(): void {
+  private cargar(expandLatest = false): void {
     if (!this.scope || !this.scopeId) return;
     this.secretariaService.getIncidencias(this.scope, String(this.scopeId)).subscribe({
       next: response => {
         this.incidencias = response.incidencias;
+        if (expandLatest && this.incidencias.length) {
+          this.expandedIds.add(String(this.incidencias[0].id));
+        }
         this.countChange.emit(this.incidencias.length);
       },
       error: () => {

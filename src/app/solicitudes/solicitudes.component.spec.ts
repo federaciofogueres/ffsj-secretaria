@@ -73,12 +73,16 @@ describe('SolicitudesComponent', () => {
       comunicacion: { id: 4, numero: 'REG-4', asociacionId: 25, tipo: 'comunicacion', origen: 'administracion', titulo: 'Representación legal', estado: 'enviada', fechaEntrada: '', adjuntos: [] },
       duplicada: false
     }));
-    censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion']);
+    censoService = jasmine.createSpyObj<CensoService>('CensoService', ['getAsociacion', 'getAsociaciones']);
     censoService.getAsociacion.and.callFake((id: number) => of({
       id,
       cif: '',
       nombre: id === 25 ? 'Doctor Bergez - Carolinas' : 'Otra asociacion'
     }));
+    censoService.getAsociaciones.and.returnValue(of([
+      { id: 25, cif: '', nombre: 'Doctor Bergez - Carolinas' },
+      { id: 30, cif: '', nombre: 'Otra asociacion' }
+    ]));
 
     await TestBed.configureTestingModule({
       imports: [SolicitudesComponent],
@@ -101,16 +105,130 @@ describe('SolicitudesComponent', () => {
     expect(component.solicitudes.length).toBe(2);
   });
 
-  it('envía filtros al servidor y reinicia la página', () => {
-    component.filtroTipo = 'alta';
-    component.filtroTexto = '25';
-    component.paginaActual = 2;
-    component.aplicarFiltros();
+  it('la carga inicial aplica por defecto el filtro Estado: Enviada (conserva el comportamiento actual)', () => {
+    expect(component.filtroAplicado).toEqual({ campo: 'estado', valor: 'enviada', etiqueta: 'Estado: Enviada' });
+    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ estado: 'enviada' }));
+  });
 
-    expect(component.paginaActual).toBe(1);
-    expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({
-      page: 1, tipo: 'alta', busqueda: '25'
-    }));
+  describe('0.43.4#ESMERALDA: patrón compacto de búsqueda/filtros', () => {
+    it('buscar por Nº de solicitud envía "busqueda" y reinicia la página', () => {
+      component.campoBusqueda = 'numero';
+      component.valorNumero = '25';
+      component.paginaActual = 2;
+      component.aplicarBusqueda();
+
+      expect(component.paginaActual).toBe(1);
+      expect(component.filtroAplicado).toEqual({ campo: 'numero', valor: '25', etiqueta: 'Nº solicitud: 25' });
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ page: 1, busqueda: '25' }));
+    });
+
+    it('buscar por Tipo envía "tipo" exacto', () => {
+      component.campoBusqueda = 'tipo';
+      component.valorTipo = 'alta';
+      component.aplicarBusqueda();
+
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ tipo: 'alta' }));
+    });
+
+    // 0.43.5#ESMERALDA: la búsqueda por Asociación admite texto libre parcial
+    // (no exige seleccionar una opción exacta del datalist), ya que el
+    // nombre no vive en secretaria_solicitudes y se resuelve aquí contra la
+    // lista ya cargada a una lista de ids candidatos (asociacionIds).
+    it('buscar por Asociación con texto vacío no aplica ningún filtro', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = '   ';
+      component.aplicarBusqueda();
+      expect(component.filtroAplicado).toBeNull();
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: undefined }));
+    });
+
+    it('buscar por Asociación con texto parcial resuelve todas las asociaciones cuyo nombre lo contiene', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'doc';
+      component.aplicarBusqueda();
+      expect(component.filtroAplicado).toEqual({ campo: 'asociacion', valor: 'doc', etiqueta: 'Asociación: doc' });
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [25] }));
+    });
+
+    it('buscar por Asociación no distingue mayúsculas/minúsculas', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'CAROL';
+      component.aplicarBusqueda();
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [25] }));
+    });
+
+    it('buscar por Asociación sin ninguna coincidencia real envía un id imposible en vez de ignorar el filtro (evita mostrar todas las solicitudes)', () => {
+      component.campoBusqueda = 'asociacion';
+      component.valorAsociacionTexto = 'nombre que no existe en ninguna asociación';
+      component.aplicarBusqueda();
+      expect(component.filtroAplicado?.etiqueta).toBe('Asociación: nombre que no existe en ninguna asociación');
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ asociacionIds: [-1] }));
+    });
+
+    it('buscar por Fecha de alta envía "fechaAlta"', () => {
+      component.campoBusqueda = 'fecha_alta';
+      component.valorFechaAlta = '2026-07-11';
+      component.aplicarBusqueda();
+
+      expect(component.filtroAplicado?.etiqueta).toBe('Fecha de alta: 11/07/2026');
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ fechaAlta: '2026-07-11' }));
+    });
+
+    it('quitar el filtro activo recarga sin él', () => {
+      component.quitarFiltro();
+      expect(component.filtroAplicado).toBeNull();
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ estado: undefined, tipo: undefined, busqueda: undefined }));
+    });
+
+    it('Limpiar filtros restablece todo (filtro, solo problemáticas y borradores)', () => {
+      component.soloProblematicas = true;
+      component.campoBusqueda = 'tipo';
+      component.valorTipo = 'baja';
+      component.limpiarFiltros();
+
+      expect(component.filtroAplicado).toBeNull();
+      expect(component.soloProblematicas).toBeFalse();
+      expect(component.campoBusqueda).toBe('numero');
+    });
+
+    it('activar "Solo problemáticas" recarga inmediatamente, sin esperar al botón Buscar', () => {
+      secretariaService.getSolicitudesGlobal.calls.reset();
+      component.soloProblematicas = true;
+      component.cargarSolicitudes(true);
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ soloProblematicas: true }));
+    });
+  });
+
+  describe('0.43.4#ESMERALDA: ordenación por columnas', () => {
+    it('por defecto ordena por fecha de alta descendente', () => {
+      expect(component.ordenCampo).toBe('fecha_alta');
+      expect(component.ordenDireccion).toBe('desc');
+    });
+
+    it('pulsar una columna nueva ordena ascendente por esa columna y reinicia la página', () => {
+      component.paginaActual = 3;
+      component.ordenarPor('numero');
+
+      expect(component.ordenCampo).toBe('numero');
+      expect(component.ordenDireccion).toBe('asc');
+      expect(component.paginaActual).toBe(1);
+      expect(secretariaService.getSolicitudesGlobal).toHaveBeenCalledWith(jasmine.objectContaining({ ordenCampo: 'numero', ordenDireccion: 'asc' }));
+    });
+
+    it('pulsar la misma columna dos veces invierte la dirección', () => {
+      component.ordenarPor('estado');
+      expect(component.ordenDireccion).toBe('asc');
+      component.ordenarPor('estado');
+      expect(component.ordenDireccion).toBe('desc');
+    });
+
+    it('iconoOrden y ariaSort reflejan la columna y dirección activas', () => {
+      component.ordenarPor('tipo');
+      expect(component.iconoOrden('tipo')).toBe('bi-chevron-up');
+      expect(component.ariaSort('tipo')).toBe('ascending');
+      expect(component.iconoOrden('estado')).toBe('bi-chevron-expand');
+      expect(component.ariaSort('estado')).toBe('none');
+    });
   });
 
   it('cambia de página respetando los límites', () => {
@@ -145,6 +263,29 @@ describe('SolicitudesComponent', () => {
     expect(component.solicitudConRepresentacionPendiente?.id).toBe(1);
     component.solicitarInformacionRepresentacionLegal();
     expect(secretariaService.solicitarInformacionRepresentacionLegal).toHaveBeenCalledWith(1, 9);
+  });
+
+  describe('0.43.4#ESMERALDA: errores mediante toast (ya no bloque embebido)', () => {
+    it('no existe ya el bloque de error embebido en el listado', () => {
+      expect(fixture.nativeElement.querySelector('.alert-danger')).toBeNull();
+    });
+
+    it('un error de carga muestra el toast, y cerrarlo (aspa o click) lo retira', () => {
+      secretariaService.getSolicitudesGlobal.and.returnValue(of({ solicitudes: [], paginacion: { page: 1, pageSize: 20, total: 0, totalPages: 1 } }));
+      (component as any).error = 'No se han podido cargar las solicitudes.';
+      fixture.detectChanges();
+
+      const toast: HTMLElement = fixture.nativeElement.querySelector('app-toast');
+      expect(toast).withContext('el toast debe aparecer cuando hay un error').toBeTruthy();
+      expect(toast.textContent).toContain('No se han podido cargar las solicitudes.');
+
+      const cerrar: HTMLButtonElement = toast.querySelector('.ffsj-toast-close')!;
+      cerrar.click();
+      fixture.detectChanges();
+
+      expect(component.error).toBe('');
+      expect(fixture.nativeElement.querySelector('app-toast')).toBeNull();
+    });
   });
 
   it('permite cerrar el dialogo de detalle', () => {

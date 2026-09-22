@@ -63,7 +63,7 @@
                   <span class="ms-2">Limite: {{ item.fechaLimite | date : 'dd/MM/y' }}</span>
                   <app-estado-badge class="ms-2" *ngIf="isAdminMode" [estado]="item.estado"></app-estado-badge>
                 </div>
-                <div class="inscription-badges" *ngIf="!isAdminMode"><span class="availability-badge" [class.closed]="!isInscripcionDisponible(item)">{{ disponibilidadLabel(item) }}</span><span class="participation-badge" [class.registered]="item.inscrito">{{ item.inscrito ? 'Inscrito' : 'No inscrito' }}</span></div>
+                <div class="inscription-badges" *ngIf="!isAdminMode"><span class="availability-badge" [class.closed]="!isInscripcionDisponible(item)">{{ disponibilidadLabel(item) }}</span><span class="participation-badge" [class.registered]="item.inscrito">{{ item.inscrito ? 'Inscrito' : 'No inscrito' }}</span><app-estado-badge *ngIf="item.entradaEstado === 'con_incidencias'" [estado]="item.entradaEstado"></app-estado-badge></div>
               </div>
               <div class="list-actions" *ngIf="isAdminMode" (click)="$event.stopPropagation()">
                 <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="openInscription(item)">Ver detalle</button>
@@ -392,66 +392,12 @@
               </nav>
             </section>
 
-            <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'summary' && miEntrada as entrada">
-              <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
-                <div>
-                  <p class="ux-overline mb-1">Inscripcion registrada</p>
-                  <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
-                  <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
-                </div>
-                <button class="ux-btn" type="button" (click)="cerrarResumen()">Cerrar</button>
-                <button class="ux-btn ux-btn-secondary" type="button" (click)="descargarJustificanteEntrada(entrada)">Justificante PDF</button>
-              </div>
-              <dl class="entry-data">
-                <dt>Responsable</dt>
-                <dd>{{ entrada.responsable || '-' }}</dd>
-                <dt>Participantes</dt>
-                <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
-                <ng-container *ngFor="let field of inscription.campos">
-                  <dt>{{ field.label }}</dt>
-                  <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
-                </ng-container>
-              </dl>
-              <section class="mt-3" *ngIf="adjuntosEntrada.length">
-                <h4 class="h6">Adjuntos de la entrada</h4>
-                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
-              </section>
-            </section>
-
-            <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'view' && miEntrada as entrada">
-              <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
-                <div>
-                  <p class="ux-overline mb-1">Inscripcion presentada</p>
-                  <h3 class="section-title mb-1">{{ inscription.titulo }}</h3>
-                  <p class="text-muted mb-0">{{ entrada.numero }} - {{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</p>
-                </div>
-                <button class="ux-btn" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">
-                  Modificar inscripcion
-                </button>
-                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="loading" (click)="solicitarBorradoMiEntrada()">Borrar inscripción</button>
-                <button class="ux-btn ux-btn-danger" type="button" *ngIf="puedeSolicitarRetirada(entrada)" [disabled]="loading" (click)="solicitarRetirada(entrada)">
-                  Solicitar retirada
-                </button>
-              </div>
-              <dl class="entry-data">
-                <dt>Responsable</dt>
-                <dd>{{ entrada.responsable || '-' }}</dd>
-                <dt>Participantes</dt>
-                <dd>{{ entradaParticipantesLabel(entrada) }}</dd>
-                <ng-container *ngFor="let field of inscription.campos">
-                  <dt>{{ field.label }}</dt>
-                  <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
-                </ng-container>
-              </dl>
-              <section class="mt-3" *ngIf="adjuntosEntrada.length">
-                <h4 class="h6">Adjuntos de la entrada</h4>
-                <div class="document-list"><button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">{{ adjunto.originalName || adjunto.fileName }}</button></div>
-              </section>
-              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'validada'">Validada: no se puede modificar ni borrar.</p>
-              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado !== 'validada' && !isWithinDeadline(inscription)">Plazo cerrado: no se puede modificar ni borrar.</p>
-              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada_solicitada'">Retirada pendiente de validación administrativa.</p>
-              <p class="text-muted mb-0 mt-2" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
-            </section>
+            <!-- 0.43.0#ESMERALDA/0.43.5#ESMERALDA: la vista de una entrada ya presentada
+                 (associationMode === 'view'), incluida justo tras enviarla, se abre siempre
+                 en el dialog compartido con Administración (ver entradaDetalleDialogOpen mas
+                 abajo). Se eliminó la sección plana de resumen que quedaba como único resultado
+                 posible justo después de enviar (nunca tenía incidencias todavía), lo que hacía
+                 parecer que el dialog nuevo dependía de que la entrada tuviera incidencias. -->
 
             <form class="form-grid mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'edit'">
               <h3 class="section-title">Formulario</h3>
@@ -678,10 +624,11 @@
         </div>
         <div class="d-flex gap-2 align-items-start flex-wrap entrada-detalle-header-actions">
           <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-          <ng-container *ngIf="selectedInscription as inscripcionActual">
+          <ng-container *ngIf="isAdminMode && selectedInscription as inscripcionActual">
             <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscripcionActual, 'xlsx')">Excel</button>
             <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscripcionActual, 'pdf')">PDF</button>
           </ng-container>
+          <button class="ux-btn ux-btn-light ux-btn-sm" type="button" *ngIf="!isAdminMode" (click)="descargarJustificanteEntrada(entrada)">Justificante PDF</button>
           <button class="btn-close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalleEntrada()"></button>
         </div>
       </header>
@@ -716,32 +663,56 @@
               </div>
             </div>
             <p class="text-muted small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Esta información corresponde a los datos facilitados en el formulario de inscripción.</p>
+            <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3" *ngIf="entrada.estado === 'con_incidencias'">
+              <span><i class="bi bi-exclamation-triangle me-1"></i><strong>Esta inscripción tiene incidencias</strong><br /><span class="small">Revisa el detalle en la pestaña de Incidencias para ver los comentarios del administrador y realizar las acciones necesarias.</span></span>
+              <button class="ux-btn ux-btn-danger ux-btn-sm" type="button" (click)="activarPestanaEntradaDetalle('incidencias')">Ir a Incidencias <i class="bi bi-arrow-right ms-1"></i></button>
+            </div>
+            <ng-container *ngIf="!isAdminMode">
+              <p class="text-muted mb-0 mt-3" *ngIf="entrada.estado === 'validada'">Validada: no se puede modificar ni borrar.</p>
+              <p class="text-muted mb-0 mt-3" *ngIf="entrada.estado !== 'validada' && !isWithinDeadline(selectedInscription!)">Plazo cerrado: no se puede modificar ni borrar.</p>
+              <p class="text-muted mb-0 mt-3" *ngIf="entrada.estado === 'retirada_solicitada'">Retirada pendiente de validación administrativa.</p>
+              <p class="text-muted mb-0 mt-3" *ngIf="entrada.estado === 'retirada'">Inscripción retirada.</p>
+              <div class="d-flex flex-wrap gap-2 mt-3" *ngIf="puedeModificarMiEntrada() || puedeSolicitarRetirada(entrada)">
+                <button class="ux-btn ux-btn-sm" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="accionesAsociacionBloqueadasPorEjercicio" (click)="modificarMiInscripcion()">Modificar inscripción</button>
+                <button class="ux-btn ux-btn-danger ux-btn-sm" type="button" *ngIf="puedeModificarMiEntrada()" [disabled]="loading" (click)="solicitarBorradoMiEntrada()">Borrar inscripción</button>
+                <button class="ux-btn ux-btn-danger ux-btn-sm" type="button" *ngIf="puedeSolicitarRetirada(entrada)" [disabled]="loading" (click)="solicitarRetirada(entrada)">Solicitar retirada</button>
+              </div>
+            </ng-container>
           </section>
           <aside class="entrada-detalle-side">
             <h4 class="h6 mb-2">Estado de la inscripción</h4>
             <app-estado-badge [estado]="entrada.estado"></app-estado-badge>
-            <label class="form-label mt-2 mb-0 small" for="entradaDetalleEstadoSelect">Cambiar estado</label>
-            <select
-              id="entradaDetalleEstadoSelect"
-              class="form-select form-select-sm mt-1"
-              [ngModel]="entrada.estado"
-              [ngModelOptions]="{ standalone: true }"
-              [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'"
-              (ngModelChange)="cambiarEstadoEntrada(entrada, $event)"
-            >
-              <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
-              <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
-            </select>
-            <div class="d-flex gap-2 mt-2 flex-wrap" *ngIf="entrada.estado === 'retirada_solicitada'">
-              <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
-              <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
-            </div>
+            <ng-container *ngIf="isAdminMode; else asociacionEstadoAviso">
+              <label class="form-label mt-2 mb-0 small" for="entradaDetalleEstadoSelect">Cambiar estado</label>
+              <select
+                id="entradaDetalleEstadoSelect"
+                class="form-select form-select-sm mt-1"
+                [ngModel]="entrada.estado"
+                [ngModelOptions]="{ standalone: true }"
+                [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'"
+                (ngModelChange)="cambiarEstadoEntrada(entrada, $event)"
+              >
+                <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
+                <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
+              </select>
+              <div class="d-flex gap-2 mt-2 flex-wrap" *ngIf="entrada.estado === 'retirada_solicitada'">
+                <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
+                <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
+              </div>
+            </ng-container>
+            <ng-template #asociacionEstadoAviso>
+              <div class="alert alert-warning py-2 px-2 mt-2 mb-0 small" *ngIf="entrada.estado === 'con_incidencias'">
+                <i class="bi bi-exclamation-triangle me-1"></i>Existen incidencias abiertas que requieren tu atención.
+                <button class="ux-btn ux-btn-light ux-btn-sm mt-2" type="button" (click)="activarPestanaEntradaDetalle('incidencias')">Ver en Incidencias <i class="bi bi-arrow-right ms-1"></i></button>
+              </div>
+            </ng-template>
             <dl class="metadata-grid mt-3">
               <div><dt>Fecha de inscripción</dt><dd>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</dd></div>
               <div><dt>Última actualización</dt><dd>{{ entradaUltimaActualizacion(entrada) | date : 'dd/MM/y HH:mm' }}</dd></div>
               <div><dt>Asociación</dt><dd>{{ entrada.asociacionNombre || ('Asociación ' + entrada.asociacionId) }}</dd></div>
               <div><dt>Código de inscripción</dt><dd>{{ entrada.numero }}</dd></div>
               <div><dt>Título</dt><dd>{{ selectedInscription?.titulo }}</dd></div>
+              <div *ngIf="categoriaLabel(selectedInscription?.tiposPermitidos)"><dt>Categoría</dt><dd>{{ categoriaLabel(selectedInscription?.tiposPermitidos) }}</dd></div>
             </dl>
             <div class="entrada-participantes-resumen mt-3" *ngIf="(entrada.participantes || []).length">
               <p class="text-muted small mb-1">Participantes inscritos</p>
@@ -773,8 +744,10 @@
         </section>
 
         <section *ngIf="entradaDetalleTab === 'documentacion'" id="entrada-detalle-panel-documentacion" role="tabpanel" aria-labelledby="entrada-detalle-tab-documentacion">
-          <label class="ux-btn ux-btn-secondary ux-btn-sm mb-3" for="entradaAdjuntoInput"><i class="bi bi-paperclip me-1"></i>Añadir documentación</label>
-          <input id="entradaAdjuntoInput" class="visually-hidden" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
+          <ng-container *ngIf="isAdminMode">
+            <label class="ux-btn ux-btn-secondary ux-btn-sm mb-3" for="entradaAdjuntoInput"><i class="bi bi-paperclip me-1"></i>Añadir documentación</label>
+            <input id="entradaAdjuntoInput" class="visually-hidden" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
+          </ng-container>
           <div class="document-list" *ngIf="adjuntosEntrada.length; else noEntryAttachments">
             <button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">
               {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}

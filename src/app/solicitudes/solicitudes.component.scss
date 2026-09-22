@@ -30,11 +30,102 @@
   font-size: 1.45rem;
 }
 
-.filters {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) 170px 190px;
-  gap: 0.75rem;
-  align-items: end;
+// 0.43.4#ESMERALDA: patrón compacto de búsqueda/filtros, en sustitución de
+// la barra de Tipo/Estado/Orden siempre visibles (.filters, ya sin uso).
+.search-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.search-campo {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 150px;
+}
+
+.search-valor {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.search-toggle {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.5rem 0.25rem 0.7rem;
+  background: #eef0f4;
+  color: #3f4958;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.chip button {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  line-height: 0;
+}
+
+.chip button:hover,
+.chip button:focus-visible {
+  color: #c8102e;
+  outline: 2px solid #c8102e;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.chip-clear {
+  text-decoration: none;
+}
+
+.th-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+}
+
+.th-sort:hover,
+.th-sort:focus-visible {
+  color: #c8102e;
+  outline: 2px solid #c8102e;
+  outline-offset: 2px;
+}
+
+.th-sort .bi {
+  font-size: 0.75rem;
+  color: #9aa4b2;
+}
+
+th[aria-sort="ascending"] .th-sort .bi,
+th[aria-sort="descending"] .th-sort .bi {
+  color: #c8102e;
 }
 
 .registro-table {
@@ -423,8 +514,18 @@
 }
 
 @media (max-width: 760px) {
-  .filters {
-    grid-template-columns: 1fr;
+  .search-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-campo,
+  .search-valor {
+    width: 100%;
+  }
+
+  .search-toggle {
+    margin-left: 0;
   }
 
   .summary-grid {

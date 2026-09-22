@@ -31,65 +31,108 @@
       </div>
     </div>
 
-    <div class="filters mb-4">
-      <div>
-        <label class="form-label" for="filtroTexto">Buscar</label>
+    <div class="search-bar mb-2">
+      <label class="visually-hidden" for="campoBusqueda">Buscar por</label>
+      <select id="campoBusqueda" class="form-select form-select-sm search-campo" [(ngModel)]="campoBusqueda">
+        <option *ngFor="let campo of camposBusquedaSeleccionables" [value]="campo.value">{{ campo.label }}</option>
+      </select>
+
+      <ng-container [ngSwitch]="campoBusqueda">
         <input
-          id="filtroTexto"
-          class="form-control"
+          *ngSwitchCase="'numero'"
+          class="form-control form-control-sm search-valor"
           type="search"
-          placeholder="Numero, asociacion, tipo o estado"
-          [(ngModel)]="filtroTexto"
-          (keyup.enter)="aplicarFiltros()"
+          placeholder="Nº de solicitud"
+          aria-label="Nº de solicitud a buscar"
+          [(ngModel)]="valorNumero"
+          (keyup.enter)="aplicarBusqueda()"
         />
-      </div>
-      <div>
-        <label class="form-label" for="filtroTipo">Tipo</label>
-        <select id="filtroTipo" class="form-select" [(ngModel)]="filtroTipo" (ngModelChange)="aplicarFiltros()">
-          <option *ngFor="let tipo of tipos" [value]="tipo.value">{{ tipo.label }}</option>
+
+        <ng-container *ngSwitchCase="'asociacion'">
+          <input
+            class="form-control form-control-sm search-valor"
+            type="search"
+            list="solicitudesAsociacionesDatalist"
+            placeholder="Escribe el nombre de la asociación"
+            aria-label="Asociación a buscar"
+            [(ngModel)]="valorAsociacionTexto"
+            (keyup.enter)="aplicarBusqueda()"
+          />
+          <datalist id="solicitudesAsociacionesDatalist">
+            <option *ngFor="let asociacion of asociaciones" [value]="asociacionNombreCompleto(asociacion)"></option>
+          </datalist>
+        </ng-container>
+
+        <select *ngSwitchCase="'tipo'" class="form-select form-select-sm search-valor" aria-label="Tipo a buscar" [(ngModel)]="valorTipo">
+          <option *ngFor="let tipo of tiposSeleccionables" [value]="tipo.value">{{ tipo.label }}</option>
         </select>
-      </div>
-      <div>
-        <label class="form-label" for="filtroEstado">Estado</label>
-        <select id="filtroEstado" class="form-select" [(ngModel)]="filtroEstado" (ngModelChange)="aplicarFiltros()">
-          <option *ngFor="let estado of estados" [value]="estado.value">{{ estado.label }}</option>
+
+        <select *ngSwitchCase="'estado'" class="form-select form-select-sm search-valor" aria-label="Estado a buscar" [(ngModel)]="valorEstado">
+          <option *ngFor="let estado of estadosSeleccionables" [value]="estado.value">{{ estado.label }}</option>
         </select>
-      </div>
-      <div>
-        <label class="form-label" for="ordenSolicitudes">Orden</label>
-        <select id="ordenSolicitudes" class="form-select" [(ngModel)]="orden" (ngModelChange)="aplicarFiltros()">
-          <option value="fecha_desc">Más recientes primero</option>
-          <option value="fecha_asc">Más antiguas primero</option>
-          <option value="estado">Por estado</option>
-        </select>
-      </div>
-      <div class="d-flex align-items-end pb-2">
-        <label class="form-check mb-0">
-          <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" (ngModelChange)="aplicarFiltros()" />
-          <span class="form-check-label">Solo problemáticas</span>
-        </label>
-      </div>
-      <div class="d-flex align-items-end">
-        <button class="btn btn-outline-secondary" type="button" (click)="aplicarFiltros()">Buscar</button>
-      </div>
+
+        <input
+          *ngSwitchCase="'fecha_alta'"
+          class="form-control form-control-sm search-valor"
+          type="date"
+          aria-label="Fecha de alta a buscar"
+          [(ngModel)]="valorFechaAlta"
+        />
+      </ng-container>
+
+      <button class="btn btn-outline-secondary btn-sm" type="button" (click)="aplicarBusqueda()">Buscar</button>
+
+      <label class="form-check search-toggle mb-0">
+        <input class="form-check-input" type="checkbox" [(ngModel)]="soloProblematicas" (ngModelChange)="cargarSolicitudes(true)" />
+        <span class="form-check-label">Solo problemáticas</span>
+      </label>
+    </div>
+
+    <div class="filter-chips mb-4" *ngIf="filtroAplicado || soloProblematicas">
+      <span class="chip" *ngIf="filtroAplicado">
+        {{ filtroAplicado.etiqueta }}
+        <button type="button" [attr.aria-label]="'Quitar filtro ' + filtroAplicado.etiqueta" (click)="quitarFiltro()">
+          <i class="bi bi-x" aria-hidden="true"></i>
+        </button>
+      </span>
+      <span class="chip" *ngIf="soloProblematicas">
+        Solo problemáticas
+        <button type="button" aria-label="Quitar filtro Solo problemáticas" (click)="quitarSoloProblematicas()">
+          <i class="bi bi-x" aria-hidden="true"></i>
+        </button>
+      </span>
+      <button class="btn btn-link btn-sm chip-clear" type="button" (click)="limpiarFiltros()">Limpiar filtros</button>
     </div>
 
     <lib-ffsj-spinner *ngIf="loading" [fullscreen]="true"></lib-ffsj-spinner>
     <div *ngIf="success" class="alert alert-success validation-toast" role="status">{{ success }}</div>
-    <div *ngIf="error" class="alert alert-danger">{{ error }}</div>
 
     <div class="registro-table">
       <div class="table-responsive">
         <table class="table align-middle mb-0">
           <thead>
             <tr>
-              <th>N. solicitud</th>
-              <th>Asociacion</th>
-              <th class="text-center">Registros</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th class="text-center">F. alta</th>
-              <th class="text-center">F. entrada</th>
+              <th [attr.aria-sort]="ariaSort('numero')">
+                <button type="button" class="th-sort" (click)="ordenarPor('numero')">N. solicitud <i class="bi" [ngClass]="iconoOrden('numero')" aria-hidden="true"></i></button>
+              </th>
+              <th [attr.aria-sort]="ariaSort('asociacion')">
+                <button type="button" class="th-sort" (click)="ordenarPor('asociacion')">Asociacion <i class="bi" [ngClass]="iconoOrden('asociacion')" aria-hidden="true"></i></button>
+              </th>
+              <th class="text-center" [attr.aria-sort]="ariaSort('registros')">
+                <button type="button" class="th-sort" (click)="ordenarPor('registros')">Registros <i class="bi" [ngClass]="iconoOrden('registros')" aria-hidden="true"></i></button>
+              </th>
+              <th [attr.aria-sort]="ariaSort('tipo')">
+                <button type="button" class="th-sort" (click)="ordenarPor('tipo')">Tipo <i class="bi" [ngClass]="iconoOrden('tipo')" aria-hidden="true"></i></button>
+              </th>
+              <th [attr.aria-sort]="ariaSort('estado')">
+                <button type="button" class="th-sort" (click)="ordenarPor('estado')">Estado <i class="bi" [ngClass]="iconoOrden('estado')" aria-hidden="true"></i></button>
+              </th>
+              <th class="text-center" [attr.aria-sort]="ariaSort('fecha_alta')">
+                <button type="button" class="th-sort" (click)="ordenarPor('fecha_alta')">F. alta <i class="bi" [ngClass]="iconoOrden('fecha_alta')" aria-hidden="true"></i></button>
+              </th>
+              <th class="text-center" [attr.aria-sort]="ariaSort('fecha_entrada')">
+                <button type="button" class="th-sort" (click)="ordenarPor('fecha_entrada')">F. entrada <i class="bi" [ngClass]="iconoOrden('fecha_entrada')" aria-hidden="true"></i></button>
+              </th>
               <th class="text-end">Accion</th>
             </tr>
           </thead>
@@ -139,6 +182,8 @@
     </div>
   </div>
 </section>
+
+<app-toast *ngIf="error" [message]="error" type="error" (closed)="error = ''"></app-toast>
 
 <div *ngIf="detalleDialogOpen && detalle" class="detail-backdrop" role="presentation" (click)="cerrarDetalle()">
   <section class="detail-dialog" role="dialog" aria-modal="true" aria-labelledby="solicitudDetalleTitle" (click)="$event.stopPropagation()">

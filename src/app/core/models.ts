@@ -353,6 +353,10 @@ export interface InscripcionSecretaria {
   tiposPermitidos: AsociadoTipo[];
   campos: CampoInscripcion[];
   inscrito?: boolean;
+  // 0.43.0#ESMERALDA: la API ya calculaba entrada_estado (estado de la ultima
+  // entrada de la asociacion para este formulario) pero el frontend no lo
+  // tipaba ni usaba; permite reflejar "Con incidencias" en el listado.
+  entradaEstado?: string | null;
 }
 
 export interface ResponsableInscripcion {

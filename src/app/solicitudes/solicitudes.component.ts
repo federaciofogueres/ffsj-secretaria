@@ -5,17 +5,30 @@ import { FormsModule } from '@angular/forms';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { AlertButtonType, FfsjDialogAlertService, FfsjSpinnerComponent } from 'ffsj-web-components';
 
-import { AdjuntoSecretaria, AutorizacionAlta, RegistroDestinatario, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
+import { AdjuntoSecretaria, Asociacion, AutorizacionAlta, RegistroDestinatario, SolicitudEventoSecretaria, SolicitudItemSecretaria, SolicitudSecretaria } from '../core/models';
 import { CensoService } from '../core/censo.service';
 import { SecretariaService } from '../core/secretaria.service';
 import { IncidenciasPanelComponent } from '../shared/incidencias-panel.component';
+import { ToastComponent } from '../shared/toast.component';
 
 type PestanaDetalleSolicitud = 'resumen' | 'cambios' | 'incidencias' | 'adjuntos' | 'historial';
+
+// 0.43.4#ESMERALDA: campo por el que se busca en el patrón compacto de
+// búsqueda/filtros (sustituye la antigua barra de filtros separados).
+type CampoBusquedaSolicitud = 'numero' | 'asociacion' | 'tipo' | 'estado' | 'fecha_alta';
+type OrdenCampoSolicitud = 'numero' | 'asociacion' | 'registros' | 'tipo' | 'estado' | 'fecha_alta' | 'fecha_entrada';
+type OrdenDireccionSolicitud = 'asc' | 'desc';
+
+interface FiltroSolicitudAplicado {
+  campo: CampoBusquedaSolicitud;
+  valor: string;
+  etiqueta: string;
+}
 
 @Component({
   selector: 'app-solicitudes',
   standalone: true,
-  imports: [CommonModule, FormsModule, IncidenciasPanelComponent, FfsjSpinnerComponent],
+  imports: [CommonModule, FormsModule, IncidenciasPanelComponent, FfsjSpinnerComponent, ToastComponent],
   templateUrl: './solicitudes.component.html',
   styleUrls: ['./solicitudes.component.scss']
 })
@@ -45,11 +58,35 @@ export class SolicitudesComponent implements OnInit {
   loading = false;
   error = '';
   success = '';
-  filtroTexto = '';
-  filtroEstado = 'enviada';
-  filtroTipo = 'todos';
-  orden: 'fecha_desc' | 'fecha_asc' | 'estado' = 'fecha_desc';
+
+  // 0.43.4#ESMERALDA: patrón compacto de búsqueda/filtros (sustituye la
+  // antigua barra de Tipo/Estado/Orden siempre visibles). Un único filtro
+  // "buscar por" está activo a la vez, como en el concepto aprobado; se
+  // muestra como chip y puede quitarse individualmente o con "Limpiar
+  // filtros". El valor por defecto (Estado: Enviada) conserva el
+  // comportamiento actual de la pantalla al entrar.
+  readonly camposBusqueda: Array<{ value: CampoBusquedaSolicitud; label: string }> = [
+    { value: 'numero', label: 'Nº solicitud' },
+    { value: 'asociacion', label: 'Asociación' },
+    { value: 'tipo', label: 'Tipo' },
+    { value: 'estado', label: 'Estado' },
+    { value: 'fecha_alta', label: 'Fecha de alta' }
+  ];
+  campoBusqueda: CampoBusquedaSolicitud = 'numero';
+  valorNumero = '';
+  valorAsociacionTexto = '';
+  valorTipo = 'alta';
+  valorEstado = 'enviada';
+  valorFechaAlta = '';
+  asociaciones: Asociacion[] = [];
+  filtroAplicado: FiltroSolicitudAplicado | null = { campo: 'estado', valor: 'enviada', etiqueta: 'Estado: Enviada' };
   soloProblematicas = false;
+
+  // 0.43.4#ESMERALDA: ordenación desde las cabeceras de columna, en
+  // sustitución del selector de orden independiente.
+  ordenCampo: OrdenCampoSolicitud = 'fecha_alta';
+  ordenDireccion: OrdenDireccionSolicitud = 'desc';
+
   paginaActual = 1;
   tamanoPagina = 20;
   totalSolicitudes = 0;
@@ -84,19 +121,139 @@ export class SolicitudesComponent implements OnInit {
       },
       error: () => this.error = 'No se han podido cargar los destinatarios de Registro.'
     });
+    // "Buscar por: Asociación" reutiliza la selección ya usada en otras
+    // pantallas (ver Inscripciones), no un texto libre contra Censo.
+    this.censoService.getAsociaciones().subscribe({
+      next: lista => this.asociaciones = [...lista].sort((a, b) => this.asociacionNombreCompleto(a).localeCompare(this.asociacionNombreCompleto(b), 'es')),
+      error: () => this.asociaciones = []
+    });
+  }
+
+  get camposBusquedaSeleccionables(): Array<{ value: string; label: string }> {
+    return this.camposBusqueda;
+  }
+
+  get tiposSeleccionables(): Array<{ value: string; label: string }> {
+    return this.tipos.filter(tipo => tipo.value !== 'todos');
+  }
+
+  get estadosSeleccionables(): Array<{ value: string; label: string }> {
+    return this.estados.filter(estado => estado.value !== 'todos');
+  }
+
+  asociacionNombreCompleto(asociacion: Asociacion): string {
+    return asociacion.nombre || asociacion.name || `Asociación ${asociacion.id}`;
+  }
+
+  // 0.43.5#ESMERALDA: búsqueda parcial por nombre ("doc", "carol"...), no solo
+  // el valor exacto de una opción del datalist. El nombre de asociación no
+  // vive en secretaria_solicitudes, así que se resuelve aquí, contra la lista
+  // ya cargada, a la lista de ids candidatos que se envía al backend.
+  private asociacionesCoincidentes(texto: string): Asociacion[] {
+    const normalizado = texto.trim().toLowerCase();
+    if (!normalizado) return [];
+    return this.asociaciones.filter(asociacion => this.asociacionNombreCompleto(asociacion).toLowerCase().includes(normalizado));
+  }
+
+  private idsParaFiltroAsociacion(texto: string): number[] {
+    const coincidencias = this.asociacionesCoincidentes(texto).map(asociacion => asociacion.id);
+    // Ninguna coincidencia real: se envía un id imposible para que el
+    // backend devuelva 0 resultados en vez de ignorar el filtro (que
+    // mostraría todas las solicitudes, ocultando que la búsqueda no encontró
+    // ninguna asociación con ese texto).
+    return coincidencias.length ? coincidencias : [-1];
+  }
+
+  aplicarBusqueda(): void {
+    this.filtroAplicado = this.construirFiltroActual();
+    this.cargarSolicitudes(true);
+  }
+
+  private construirFiltroActual(): FiltroSolicitudAplicado | null {
+    switch (this.campoBusqueda) {
+      case 'numero': {
+        const valor = this.valorNumero.trim();
+        return valor ? { campo: 'numero', valor, etiqueta: `Nº solicitud: ${valor}` } : null;
+      }
+      case 'asociacion': {
+        const texto = this.valorAsociacionTexto.trim();
+        return texto ? { campo: 'asociacion', valor: texto, etiqueta: `Asociación: ${texto}` } : null;
+      }
+      case 'tipo':
+        return { campo: 'tipo', valor: this.valorTipo, etiqueta: `Tipo: ${this.labelTipo(this.valorTipo)}` };
+      case 'estado':
+        return { campo: 'estado', valor: this.valorEstado, etiqueta: `Estado: ${this.labelEstado(this.valorEstado)}` };
+      case 'fecha_alta':
+        return this.valorFechaAlta
+          ? { campo: 'fecha_alta', valor: this.valorFechaAlta, etiqueta: `Fecha de alta: ${this.formatearFechaFiltro(this.valorFechaAlta)}` }
+          : null;
+      default:
+        return null;
+    }
+  }
+
+  private formatearFechaFiltro(fecha: string): string {
+    const [anio, mes, dia] = fecha.split('-');
+    return anio && mes && dia ? `${dia}/${mes}/${anio}` : fecha;
+  }
+
+  quitarFiltro(): void {
+    this.filtroAplicado = null;
+    this.cargarSolicitudes(true);
+  }
+
+  quitarSoloProblematicas(): void {
+    this.soloProblematicas = false;
+    this.cargarSolicitudes(true);
+  }
+
+  limpiarFiltros(): void {
+    this.filtroAplicado = null;
+    this.soloProblematicas = false;
+    this.campoBusqueda = 'numero';
+    this.valorNumero = '';
+    this.valorAsociacionTexto = '';
+    this.valorTipo = 'alta';
+    this.valorEstado = 'enviada';
+    this.valorFechaAlta = '';
+    this.cargarSolicitudes(true);
+  }
+
+  ordenarPor(campo: OrdenCampoSolicitud): void {
+    if (this.ordenCampo === campo) {
+      this.ordenDireccion = this.ordenDireccion === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.ordenCampo = campo;
+      this.ordenDireccion = 'asc';
+    }
+    this.cargarSolicitudes(true);
+  }
+
+  iconoOrden(campo: OrdenCampoSolicitud): string {
+    if (this.ordenCampo !== campo) return 'bi-chevron-expand';
+    return this.ordenDireccion === 'asc' ? 'bi-chevron-up' : 'bi-chevron-down';
+  }
+
+  ariaSort(campo: OrdenCampoSolicitud): 'ascending' | 'descending' | 'none' {
+    if (this.ordenCampo !== campo) return 'none';
+    return this.ordenDireccion === 'asc' ? 'ascending' : 'descending';
   }
 
   cargarSolicitudes(resetPage = false): void {
     if (resetPage) this.paginaActual = 1;
     this.loading = true;
     this.error = '';
+    const filtro = this.filtroAplicado;
     this.secretariaService.getSolicitudesGlobal({
       page: this.paginaActual,
       pageSize: this.tamanoPagina,
-      tipo: this.filtroTipo === 'todos' ? undefined : this.filtroTipo,
-      estado: this.filtroEstado === 'todos' ? undefined : this.filtroEstado,
-      busqueda: this.filtroTexto.trim() || undefined,
-      orden: this.orden,
+      tipo: filtro?.campo === 'tipo' ? filtro.valor : undefined,
+      estado: filtro?.campo === 'estado' ? filtro.valor : undefined,
+      busqueda: filtro?.campo === 'numero' ? filtro.valor : undefined,
+      asociacionIds: filtro?.campo === 'asociacion' ? this.idsParaFiltroAsociacion(filtro.valor) : undefined,
+      fechaAlta: filtro?.campo === 'fecha_alta' ? filtro.valor : undefined,
+      ordenCampo: this.ordenCampo,
+      ordenDireccion: this.ordenDireccion,
       soloProblematicas: this.soloProblematicas
     }).subscribe({
       next: response => {
