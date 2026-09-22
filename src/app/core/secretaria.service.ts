@@ -211,7 +211,10 @@ export class SecretariaService {
     tipo?: string;
     estado?: string;
     busqueda?: string;
-    orden?: 'fecha_desc' | 'fecha_asc' | 'estado';
+    asociacionId?: number;
+    fechaAlta?: string;
+    ordenCampo?: 'numero' | 'asociacion' | 'registros' | 'tipo' | 'estado' | 'fecha_alta' | 'fecha_entrada';
+    ordenDireccion?: 'asc' | 'desc';
     soloProblematicas?: boolean;
   } = {}): Observable<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }> {
     let params = new HttpParams();
@@ -222,7 +225,10 @@ export class SecretariaService {
     if (filters.tipo) params = params.set('tipo', filters.tipo);
     if (filters.estado) params = params.set('estado', filters.estado);
     if (filters.busqueda) params = params.set('busqueda', filters.busqueda);
-    if (filters.orden) params = params.set('orden', filters.orden);
+    if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.fechaAlta) params = params.set('fechaAlta', filters.fechaAlta);
+    if (filters.ordenCampo) params = params.set('ordenCampo', filters.ordenCampo);
+    if (filters.ordenDireccion) params = params.set('ordenDireccion', filters.ordenDireccion);
     if (filters.soloProblematicas) params = params.set('soloProblematicas', 'true');
     return this.http.get<{ solicitudes: SolicitudSecretaria[]; paginacion?: PaginacionSecretaria }>(`${this.apiUrl.secretariaBasePath}/solicitudes/global`, {
       params,
