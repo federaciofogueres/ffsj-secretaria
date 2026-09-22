@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.43.3#ESMERALDA — Corrección de respuesta continua en Incidencias
+
+> `0.43.2#ESMERALDA` verificó que el composer de Asociación funciona correctamente en una incidencia `abierta`, pero no cubría el paso siguiente: tras responder, la incidencia pasa a `respondida` (el contador de "abiertas" ya la seguía contando como activa) y el composer, que solo comprobaba `estado === 'abierta'`, desaparecía. Asociación podía responder una única vez por incidencia.
+
+- Nueva constante `ESTADOS_INCIDENCIA_ACTIVOS = ['abierta', 'respondida']` y método `esActiva(incidencia)` en `IncidenciasPanelComponent`, única fuente de verdad de qué estados representan una incidencia todavía activa/no terminal (`subsanada`/`cerrada` son terminales). Sustituye tres comprobaciones que antes podían divergir: el contador `abiertas`, `canAdminManage()` (ya usaba la lista correcta, ahora reutiliza el mismo método) y la condición del composer de Asociación (usaba `=== 'abierta'`, la única realmente desalineada).
+- El composer de respuesta de Asociación y el resaltado visual del acordeón (`is-open`) pasan a usar `esActiva(incidencia)` en vez de la comprobación estricta anterior.
+- No se ha tocado ninguna regla de cierre, devolución ni de adjuntos (`0.43.2#ESMERALDA` queda intacto): `Marcar subsanada`/`Cerrar sin subsanar`/`Devolver a asociación` siguen exclusivos de Administración y con sus mismas condiciones.
+- Tests nuevos: flujo completo `abierta → responde → respondida → sigue viendo el composer → vuelve a responder` (con el segundo envío verificado contra el servicio); un estado terminal (`subsanada`/`cerrada`) no muestra el composer ni permite gestión administrativa y no cuenta como abierta; `esActiva` fijado por contrato para los 4 estados reales.
+- Sin cambios de backend: es una condición puramente de presentación en el frontend; el estado real de la incidencia y las reglas de transición en `ffsj-secretaria-api` no se han modificado.
+- Validación técnica: `ng build --configuration=development` correcto y suite completa en verde (**367/367**: 361 previos + 6 nuevos).
+- Validación manual pendiente: confirmación de Fran en navegador de que Asociación puede mantener una conversación de varios turnos en la misma incidencia sin perder el composer.
+
 ## 0.43.2#ESMERALDA — Hotfix crítico de Incidencias: respuesta de Asociación y aislamiento de adjuntos
 
 > Dos regresiones reportadas: (1) Asociación veía sus incidencias pero no podía responderlas, y (2, crítico) adjuntos de otro contexto podían aparecer dentro de una incidencia. Auditoría extremo a extremo (selección → estado frontend → POST → persistencia → `incidencia_evento` → GET → render → descarga, en ambos repos).

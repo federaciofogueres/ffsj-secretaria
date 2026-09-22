@@ -15,6 +15,15 @@ interface CierrePendiente {
   estado: 'subsanada' | 'cerrada';
 }
 
+// 0.43.3#ESMERALDA: única fuente de verdad de qué estados representan una
+// incidencia todavía activa/no terminal. 'abierta' y 'respondida' son
+// activos (la conversación sigue viva, en cualquier dirección); 'subsanada'
+// y 'cerrada' son terminales. Antes el contador de abiertas ya usaba esta
+// lista, pero el composer de Asociación comprobaba solo `=== 'abierta'`:
+// tras responder una vez la incidencia pasaba a 'respondida' (activa según
+// el contador) y el composer desaparecía sin motivo real.
+const ESTADOS_INCIDENCIA_ACTIVOS: ReadonlyArray<Incidencia['estado']> = ['abierta', 'respondida'];
+
 @Component({
   selector: 'app-incidencias-panel',
   standalone: true,
@@ -48,7 +57,7 @@ interface CierrePendiente {
       </div>
 
       <ul class="incidence-list" *ngIf="incidencias.length">
-        <li class="incidence-item" *ngFor="let incidencia of incidencias" [class.is-open]="incidencia.estado === 'abierta'">
+        <li class="incidence-item" *ngFor="let incidencia of incidencias" [class.is-open]="esActiva(incidencia)">
           <button
             type="button"
             class="incidence-summary"
@@ -88,7 +97,7 @@ interface CierrePendiente {
             </p>
 
             <app-compact-composer
-              *ngIf="incidencia.estado === 'abierta' && canAssociationRespond"
+              *ngIf="esActiva(incidencia) && canAssociationRespond"
               class="mt-2"
               placeholder="Escribe tu respuesta o subsanación..."
               attachAriaLabel="Adjuntar archivo a la respuesta"
@@ -272,7 +281,7 @@ export class IncidenciasPanelComponent implements OnChanges {
   }
 
   get abiertas(): number {
-    return this.incidencias.filter(item => ['abierta', 'respondida'].includes(item.estado)).length;
+    return this.incidencias.filter(item => this.esActiva(item)).length;
   }
 
   get headerLabel(): string {
@@ -297,7 +306,11 @@ export class IncidenciasPanelComponent implements OnChanges {
   }
 
   canAdminManage(incidencia: Incidencia): boolean {
-    return this.isAdminMode && this.permissions.hasPermission('incidencias:write') && ['abierta', 'respondida'].includes(incidencia.estado);
+    return this.isAdminMode && this.permissions.hasPermission('incidencias:write') && this.esActiva(incidencia);
+  }
+
+  esActiva(incidencia: Incidencia): boolean {
+    return ESTADOS_INCIDENCIA_ACTIVOS.includes(incidencia.estado);
   }
 
   isExpanded(incidencia: Incidencia): boolean {
