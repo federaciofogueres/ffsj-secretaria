@@ -307,6 +307,130 @@ describe('IncidenciasPanelComponent (0.42.1#ESMERALDA)', () => {
     });
   });
 
+  describe('Estado activo/terminal como fuente de verdad única (0.43.3#ESMERALDA)', () => {
+    it('esActiva: "abierta" y "respondida" son activas; "subsanada" y "cerrada" son terminales', () => {
+      const { component } = createComponent();
+      expect(component.esActiva(incidencia({ estado: 'abierta' }))).toBeTrue();
+      expect(component.esActiva(incidencia({ estado: 'respondida' }))).toBeTrue();
+      expect(component.esActiva(incidencia({ estado: 'subsanada' }))).toBeFalse();
+      expect(component.esActiva(incidencia({ estado: 'cerrada' }))).toBeFalse();
+    });
+
+    it('el contador de abiertas cuenta exactamente las incidencias activas (misma fuente de verdad que esActiva)', () => {
+      const { component } = createComponent();
+      component.incidencias = [
+        incidencia({ id: '1', estado: 'abierta' }),
+        incidencia({ id: '2', estado: 'respondida' }),
+        incidencia({ id: '3', estado: 'subsanada' }),
+        incidencia({ id: '4', estado: 'cerrada' })
+      ];
+      expect(component.abiertas).toBe(2);
+    });
+
+    it('un estado terminal no permite gestión administrativa (canAdminManage usa la misma fuente de verdad)', () => {
+      const { component } = createComponent(true);
+      expect(component.canAdminManage(incidencia({ estado: 'abierta' }))).toBeTrue();
+      expect(component.canAdminManage(incidencia({ estado: 'respondida' }))).toBeTrue();
+      expect(component.canAdminManage(incidencia({ estado: 'subsanada' }))).toBeFalse();
+      expect(component.canAdminManage(incidencia({ estado: 'cerrada' }))).toBeFalse();
+    });
+
+    it('el composer de Asociación no aparece en el DOM para una incidencia en estado terminal', async () => {
+      const secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias']);
+      secretaria.getIncidencias.and.returnValue(of({ incidencias: [incidencia({ id: '1', estado: 'subsanada' })] }));
+      await TestBed.configureTestingModule({
+        imports: [IncidenciasPanelComponent],
+        providers: [
+          { provide: SecretariaService, useValue: secretaria },
+          { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+          { provide: PermissionsService, useValue: { hasPermission: () => true } }
+        ]
+      }).compileComponents();
+      const fixture = TestBed.createComponent(IncidenciasPanelComponent);
+      const component = fixture.componentInstance;
+      component.scope = 'inscripcion';
+      component.scopeId = '10';
+      component.ngOnChanges();
+      // La incidencia está en estado terminal, por lo que no se auto-expande el
+      // acordeón; forzamos su expansión para comprobar que, aun visible, el
+      // composer de respuesta no aparece.
+      component.toggle({ id: '1' } as Incidencia);
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelector('app-compact-composer')).toBeNull();
+    });
+  });
+
+  describe('Respuesta continua de Asociación mientras la incidencia siga activa (0.43.3#ESMERALDA)', () => {
+    it('abierta → Asociación responde → respondida → Asociación sigue viendo el composer → vuelve a responder', async () => {
+      const secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias', 'responderIncidencia', 'subirAdjunto']);
+      const abiertaItem = incidencia({ id: '1', estado: 'abierta' });
+      const respondidaItem = incidencia({ id: '1', estado: 'respondida' });
+      secretaria.getIncidencias.and.returnValues(
+        of({ incidencias: [abiertaItem] }),
+        of({ incidencias: [respondidaItem] }),
+        of({ incidencias: [respondidaItem] })
+      );
+      secretaria.responderIncidencia.and.returnValue(of(respondidaItem));
+
+      await TestBed.configureTestingModule({
+        imports: [IncidenciasPanelComponent],
+        providers: [
+          { provide: SecretariaService, useValue: secretaria },
+          { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+          { provide: PermissionsService, useValue: { hasPermission: () => true } }
+        ]
+      }).compileComponents();
+      const fixture = TestBed.createComponent(IncidenciasPanelComponent);
+      const component = fixture.componentInstance;
+      component.scope = 'inscripcion';
+      component.scopeId = '10';
+      component.ngOnChanges();
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-compact-composer')).withContext('composer visible con la incidencia abierta').toBeTruthy();
+
+      component.respuestas['1'] = 'Primera respuesta';
+      component.responder(abiertaItem);
+      fixture.detectChanges();
+
+      expect(component.incidencias[0].estado).toBe('respondida');
+      expect(component.abiertas).withContext('sigue contando como abierta/activa tras responder').toBe(1);
+      expect(fixture.nativeElement.querySelector('app-compact-composer')).withContext('el composer sigue visible tras pasar a "respondida"').toBeTruthy();
+
+      component.respuestas['1'] = 'Segunda respuesta, la incidencia sigue activa';
+      component.responder(respondidaItem);
+      fixture.detectChanges();
+
+      expect(secretaria.responderIncidencia).toHaveBeenCalledTimes(2);
+      expect(secretaria.responderIncidencia.calls.argsFor(1)[0]).toBe('1');
+      expect(secretaria.responderIncidencia.calls.argsFor(1)[1]).toBe('Segunda respuesta, la incidencia sigue activa');
+    });
+
+    it('una incidencia cerrada/subsanada (terminal) no permite que Asociación responda de nuevo', async () => {
+      const secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias', 'responderIncidencia']);
+      secretaria.getIncidencias.and.returnValue(of({ incidencias: [incidencia({ id: '1', estado: 'subsanada' })] }));
+
+      await TestBed.configureTestingModule({
+        imports: [IncidenciasPanelComponent],
+        providers: [
+          { provide: SecretariaService, useValue: secretaria },
+          { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+          { provide: PermissionsService, useValue: { hasPermission: () => true } }
+        ]
+      }).compileComponents();
+      const fixture = TestBed.createComponent(IncidenciasPanelComponent);
+      const component = fixture.componentInstance;
+      component.scope = 'inscripcion';
+      component.scopeId = '10';
+      component.ngOnChanges();
+      component.toggle({ id: '1' } as Incidencia);
+      fixture.detectChanges();
+
+      expect(fixture.nativeElement.querySelector('app-compact-composer')).toBeNull();
+      expect(component.abiertas).toBe(0);
+    });
+  });
+
   describe('Acciones administrativas se mantienen intactas para Administración (0.43.2#ESMERALDA: sin regresión)', () => {
     it('Administración conserva comentar, marcar subsanada, cerrar sin subsanar y devolver a asociación', async () => {
       const secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias']);
