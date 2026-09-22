@@ -1,6 +1,10 @@
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { of } from 'rxjs';
 import { Incidencia } from '../core/models';
 import { IncidenciasPanelComponent } from './incidencias-panel.component';
+import { SecretariaService } from '../core/secretaria.service';
+import { AdminAccessService } from '../core/admin-access.service';
+import { PermissionsService } from '../core/permissions.service';
 
 function incidencia(overrides: Partial<Incidencia> = {}): Incidencia {
   return {
@@ -161,6 +165,170 @@ describe('IncidenciasPanelComponent (0.42.1#ESMERALDA)', () => {
       component.confirmarDevolucion('Falta documentación adicional');
       expect(secretaria.reabrirIncidencia).toHaveBeenCalledWith('3', 'Falta documentación adicional');
       expect(component.devolucionPendiente).toBeNull();
+    });
+  });
+
+  describe('Aislamiento de estado entre recursos al cambiar scope/scopeId (0.43.2#ESMERALDA)', () => {
+    // Reproduce el escenario real confirmado en la auditoría: Asociados-Gestión y
+    // Registro reutilizan la MISMA instancia de IncidenciasPanelComponent al
+    // cambiar de solicitud/registro (su *ngIf comprueba solo truthiness, no
+    // identidad, así que Angular no destruye el componente). Sin este reset,
+    // un adjunto/borrador dejado a medias en el recurso A podía acabar
+    // subido contra un evento del recurso B al enviar.
+    function simulateScopeChange(component: IncidenciasPanelComponent, scope: 'inscripcion' | 'solicitud' | 'registro', scopeId: string): void {
+      component.scope = scope;
+      component.scopeId = scopeId;
+      component.ngOnChanges();
+    }
+
+    it('cambiar de scopeId sin destruir la instancia limpia los adjuntos/borradores de "nueva incidencia" del recurso anterior', () => {
+      const { component } = createComponent();
+      const archivoA = new File(['a'], 'archivo-de-A.pdf');
+      component.nuevoMensaje = 'Mensaje a medias sobre el recurso A';
+      component.selectedFiles = [archivoA];
+      component.mostrarNuevaIncidencia = true;
+
+      simulateScopeChange(component, 'solicitud', '999'); // recurso B, distinta solicitud/asociación
+
+      expect(component.nuevoMensaje).toBe('');
+      expect(component.selectedFiles).toEqual([]);
+      expect(component.mostrarNuevaIncidencia).toBeFalse();
+    });
+
+    it('cambiar de scopeId limpia los borradores de respuesta/comentario indexados por incidencia del recurso anterior', () => {
+      const { component } = createComponent();
+      const archivoA = new File(['a'], 'archivo-de-A.pdf');
+      component.respuestas['1'] = 'respuesta a medias';
+      component.responseFiles['1'] = [archivoA];
+      component.comentarios['1'] = 'comentario a medias';
+      component.commentFiles['1'] = [archivoA];
+
+      simulateScopeChange(component, 'registro', '888');
+
+      expect(component.respuestas).toEqual({});
+      expect(component.responseFiles).toEqual({});
+      expect(component.comentarios).toEqual({});
+      expect(component.commentFiles).toEqual({});
+    });
+
+    it('cambiar de scopeId limpia el acordeón expandido y cualquier dialog de cierre/devolución pendiente del recurso anterior', () => {
+      const { component } = createComponent();
+      const item = incidencia({ id: '1' });
+      component.toggle(item);
+      component.abrirCierre(item, 'subsanada');
+      expect(component.isExpanded(item)).toBeTrue();
+      expect(component.cierrePendiente).not.toBeNull();
+
+      simulateScopeChange(component, 'inscripcion', '20');
+
+      expect(component.isExpanded(item)).toBeFalse();
+      expect(component.cierrePendiente).toBeNull();
+      expect(component.devolucionPendiente).toBeNull();
+    });
+
+    it('dos incidencias distintas nunca comparten adjuntos: los archivos quedan indexados por su propio id', () => {
+      const { component } = createComponent();
+      const archivoUno = new File(['1'], 'de-la-incidencia-1.pdf');
+      const archivoDos = new File(['2'], 'de-la-incidencia-2.pdf');
+      component.responseFiles['1'] = [archivoUno];
+      component.responseFiles['2'] = [archivoDos];
+      expect(component.responseFiles['1'].length).toBe(1);
+      expect(component.responseFiles['1'][0].name).toBe('de-la-incidencia-1.pdf');
+      expect(component.responseFiles['2'].length).toBe(1);
+      expect(component.responseFiles['2'][0].name).toBe('de-la-incidencia-2.pdf');
+      expect(component.responseFiles['1'].some(file => file === archivoDos)).toBeFalse();
+      expect(component.responseFiles['2'].some(file => file === archivoUno)).toBeFalse();
+    });
+
+    it('un mensaje enviado sin adjuntos nunca hereda archivos de un envío anterior en la misma incidencia', () => {
+      const { component, secretaria } = createComponent();
+      secretaria.responderIncidencia.and.returnValue(of(incidencia({ id: '1', eventos: [{ id: 5, incidenciaId: 1, tipo: 'respuesta_asociacion', actor: 'asociacion', mensaje: 'x', createdAt: '2026-01-01', adjuntos: [] }] })));
+      secretaria.subirAdjunto.and.returnValue(of({} as any));
+      const item = incidencia({ id: '1' });
+
+      component.responseFiles['1'] = [new File(['a'], 'primer-envio.pdf')];
+      component.respuestas['1'] = 'primera respuesta';
+      component.responder(item);
+      expect(component.responseFiles['1']).toEqual([]);
+      expect(secretaria.subirAdjunto).toHaveBeenCalledTimes(1);
+
+      component.respuestas['1'] = 'segunda respuesta, sin adjuntos';
+      component.responder(item);
+      expect(secretaria.subirAdjunto).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Composer de respuesta de Asociación (0.43.2#ESMERALDA: restaurado tras la regresión)', () => {
+    let fixture: ComponentFixture<IncidenciasPanelComponent>;
+    let secretaria: jasmine.SpyObj<Pick<SecretariaService, 'getIncidencias' | 'responderIncidencia' | 'subirAdjunto'>>;
+
+    async function renderAsAssociation(incidencias: Incidencia[]): Promise<void> {
+      secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias', 'responderIncidencia', 'subirAdjunto']);
+      secretaria.getIncidencias.and.returnValue(of({ incidencias }));
+      await TestBed.configureTestingModule({
+        imports: [IncidenciasPanelComponent],
+        providers: [
+          { provide: SecretariaService, useValue: secretaria },
+          { provide: AdminAccessService, useValue: { isAdmin: () => false } },
+          { provide: PermissionsService, useValue: { hasPermission: () => true } }
+        ]
+      }).compileComponents();
+      fixture = TestBed.createComponent(IncidenciasPanelComponent);
+      fixture.componentInstance.scope = 'inscripcion';
+      fixture.componentInstance.scopeId = '10';
+      fixture.componentInstance.ngOnChanges();
+      fixture.detectChanges();
+    }
+
+    it('Asociación ve el composer de respuesta en una incidencia abierta y puede enviar (incluye adjuntos)', () => {
+      return renderAsAssociation([incidencia({ id: '1', estado: 'abierta' })]).then(() => {
+        secretaria.responderIncidencia.and.returnValue(of(incidencia({ id: '1', estado: 'respondida' })));
+        secretaria.subirAdjunto.and.returnValue(of({} as any));
+
+        const composer = fixture.nativeElement.querySelector('app-compact-composer');
+        expect(composer).withContext('el composer de respuesta debe estar presente para Asociación').toBeTruthy();
+
+        const component = fixture.componentInstance;
+        component.respuestas['1'] = 'Aquí tienes el documento solicitado';
+        component.responseFiles['1'] = [new File(['x'], 'documento.pdf')];
+        component.responder({ id: '1' } as Incidencia);
+
+        expect(secretaria.responderIncidencia).toHaveBeenCalledWith('1', 'Aquí tienes el documento solicitado');
+      });
+    });
+
+    it('Asociación NO ve ninguna acción administrativa (marcar subsanada/cerrar/devolver)', () => {
+      return renderAsAssociation([incidencia({ id: '1', estado: 'abierta' })]).then(() => {
+        const html: string = fixture.nativeElement.textContent;
+        expect(html).not.toContain('Marcar subsanada');
+        expect(html).not.toContain('Cerrar sin subsanar');
+        expect(html).not.toContain('Devolver a asociación');
+      });
+    });
+  });
+
+  describe('Acciones administrativas se mantienen intactas para Administración (0.43.2#ESMERALDA: sin regresión)', () => {
+    it('Administración conserva comentar, marcar subsanada, cerrar sin subsanar y devolver a asociación', async () => {
+      const secretaria = jasmine.createSpyObj('SecretariaService', ['getIncidencias']);
+      secretaria.getIncidencias.and.returnValue(of({ incidencias: [incidencia({ id: '1', estado: 'respondida' })] }));
+      await TestBed.configureTestingModule({
+        imports: [IncidenciasPanelComponent],
+        providers: [
+          { provide: SecretariaService, useValue: secretaria },
+          { provide: AdminAccessService, useValue: { isAdmin: () => true } },
+          { provide: PermissionsService, useValue: { hasPermission: () => true } }
+        ]
+      }).compileComponents();
+      const fixture = TestBed.createComponent(IncidenciasPanelComponent);
+      fixture.componentInstance.scope = 'inscripcion';
+      fixture.componentInstance.scopeId = '10';
+      fixture.componentInstance.ngOnChanges();
+      fixture.detectChanges();
+      const html: string = fixture.nativeElement.textContent;
+      expect(html).toContain('Marcar subsanada');
+      expect(html).toContain('Cerrar sin subsanar');
+      expect(html).toContain('Devolver a asociación');
+      expect(fixture.nativeElement.querySelectorAll('app-compact-composer').length).toBeGreaterThanOrEqual(1);
     });
   });
 });
