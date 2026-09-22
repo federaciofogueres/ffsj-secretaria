@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.43.1#ESMERALDA — Simplificación de acciones administrativas de Incidencias
+
+> Dentro de una incidencia abierta sobraba un segundo composer permanente ("Motivo para devolver a la asociación...", introducido en `0.42.1#ESMERALDA` junto con el resto de la reestructuración) que convivía con el composer normal de comentarios. Se elimina y `Devolver a asociación` pasa a comportarse igual que `Marcar subsanada`/`Cerrar sin subsanar`: un botón que abre un dialog de confirmación.
+
+- `IncidenciasPanelComponent`: el bloque de administración de una incidencia abierta vuelve a mostrar un único composer (comentarios) seguido de las 3 acciones (`Marcar subsanada`, `Cerrar sin subsanar`, `Devolver a asociación`) en la misma fila compacta. Se retira el segundo `app-compact-composer` de devolución y los campos `devoluciones`/`returnFiles`, ya sin uso.
+- `Devolver a asociación` abre un `app-confirm-dialog` propio ("Devolver a la asociación") en vez del composer permanente. Reutiliza el flujo existente (`reabrirIncidencia`) sin cambios de API ni de reglas de negocio.
+- `ConfirmDialogComponent` (compartido, ya usado por el dialog de cierre de `0.42.1#ESMERALDA` y por confirmaciones de borrado en Inscripciones/Configuración/Calendario/Formularios) gana `@Input() requireReason`, aditivo y `false` por defecto: cuando es `true`, el botón Confirmar permanece deshabilitado hasta escribir un motivo no vacío. El dialog de devolución lo activa para conservar la obligatoriedad real del motivo (`reabrirIncidencia` sigue exigiéndolo en la API, sin cambios ahí); el de cierre sigue sin activarlo, motivo opcional como en `0.42.1#ESMERALDA`.
+- Aplicado en el componente compartido: los 6 puntos de uso de `app-incidencias-panel` (Solicitudes, Registro, Inscripciones, Asociados-Gestión ×2) heredan el cambio automáticamente, sin parche específico de ningún módulo.
+- Sin cambios en `Marcar subsanada`/`Cerrar sin subsanar` (dialog con motivo opcional) ni en comentarios/adjuntos del composer normal.
+- Validación técnica: `ng build --configuration=development` correcto y suite completa en verde (353/353: 345 previos + 4 tests nuevos sobre el dialog de devolución en `incidencias-panel.component.spec.ts` y 4 sobre `requireReason` en `confirm-dialog.component.spec.ts`).
+- Validación visual en navegador contra el layout esperado: pendiente de que Fran la realice manualmente.
+
 ## 0.43.0#ESMERALDA — Nuevo detalle de Inscripciones para asociaciones e integración de Incidencias
 
 > El detalle de una inscripción ya presentada por Asociación deja de ser una sección plana de página completa (`associationMode === 'view'`, un `<dl>` de texto) y pasa a reutilizar tal cual el dialog con pestañas que Administración ya tenía desde `0.41.0#ESMERALDA` (mismo `entradaDetalleDialogOpen`/`selectedEntrada`, mismas 5 pestañas Información/Participantes/Documentación/Historial/Incidencias), adaptando solo permisos y acciones por rol — no una segunda implementación. Corrige además un IDOR real en la API de Incidencias (ver `ffsj-secretaria-api` `0.43.0#ESMERALDA`): sin ese fix, aunque el frontend mostrara la pestaña, la asociación no podía leer ni responder sus propias incidencias.

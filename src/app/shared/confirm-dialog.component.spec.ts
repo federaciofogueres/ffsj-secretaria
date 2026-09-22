@@ -46,4 +46,42 @@ describe('ConfirmDialogComponent (0.42.1#ESMERALDA: motivo opcional)', () => {
     fixture.nativeElement.querySelector('.confirm-backdrop').click();
     expect(component.cancel.emit).toHaveBeenCalled();
   });
+
+  describe('motivo obligatorio (0.43.1#ESMERALDA: requireReason)', () => {
+    it('con requireReason el botón Confirmar empieza deshabilitado', () => {
+      component.showReasonField = true;
+      component.requireReason = true;
+      fixture.detectChanges();
+      const confirmBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.confirm-actions .ux-btn-danger');
+      expect(confirmBtn.disabled).toBeTrue();
+    });
+
+    it('con requireReason, escribir un motivo habilita Confirmar', () => {
+      component.showReasonField = true;
+      component.requireReason = true;
+      fixture.detectChanges();
+      const textarea: HTMLTextAreaElement = fixture.nativeElement.querySelector('#confirm-dialog-reason');
+      textarea.value = 'Falta documentación';
+      textarea.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      const confirmBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.confirm-actions .ux-btn-danger');
+      expect(confirmBtn.disabled).toBeFalse();
+    });
+
+    it('con requireReason, un motivo solo de espacios no habilita Confirmar', () => {
+      component.showReasonField = true;
+      component.requireReason = true;
+      component.reason = '   ';
+      fixture.detectChanges();
+      const confirmBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.confirm-actions .ux-btn-danger');
+      expect(confirmBtn.disabled).toBeTrue();
+    });
+
+    it('sin requireReason (comportamiento por defecto de 0.42.1), Confirmar nunca se deshabilita por el motivo', () => {
+      component.showReasonField = true;
+      fixture.detectChanges();
+      const confirmBtn: HTMLButtonElement = fixture.nativeElement.querySelector('.confirm-actions .ux-btn-danger');
+      expect(confirmBtn.disabled).toBeFalse();
+    });
+  });
 });

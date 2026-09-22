@@ -128,4 +128,39 @@ describe('IncidenciasPanelComponent (0.42.1#ESMERALDA)', () => {
     component.confirmarCierre('motivo');
     expect(secretaria.cerrarIncidencia).toHaveBeenCalledWith('9', 'motivo', 'cerrada');
   });
+
+  describe('Devolver a asociación mediante dialog (0.43.1#ESMERALDA)', () => {
+    it('abrir el dialog de devolución no ejecuta ninguna llamada hasta confirmar', () => {
+      const { component, secretaria } = createComponent();
+      const item = incidencia({ id: '3', estado: 'respondida' });
+      component.abrirDevolucion(item);
+      expect(component.devolucionPendiente).toBe(item);
+      expect(secretaria.reabrirIncidencia).not.toHaveBeenCalled();
+    });
+
+    it('cancelar el dialog de devolución no ejecuta ninguna llamada', () => {
+      const { component, secretaria } = createComponent();
+      component.abrirDevolucion(incidencia({ id: '3', estado: 'respondida' }));
+      component.devolucionPendiente = null;
+      expect(secretaria.reabrirIncidencia).not.toHaveBeenCalled();
+    });
+
+    it('confirmar sin motivo NO devuelve la incidencia: el motivo sigue siendo obligatorio', () => {
+      const { component, secretaria } = createComponent();
+      component.abrirDevolucion(incidencia({ id: '3', estado: 'respondida' }));
+      component.confirmarDevolucion('');
+      component.confirmarDevolucion('   ');
+      expect(secretaria.reabrirIncidencia).not.toHaveBeenCalled();
+      expect(component.devolucionPendiente).not.toBeNull();
+    });
+
+    it('confirmar con motivo reutiliza el flujo existente de devolución y recarga tras éxito', () => {
+      const { component, secretaria } = createComponent();
+      secretaria.reabrirIncidencia.and.returnValue(of(incidencia({ id: '3', estado: 'abierta' })));
+      component.abrirDevolucion(incidencia({ id: '3', estado: 'respondida' }));
+      component.confirmarDevolucion('Falta documentación adicional');
+      expect(secretaria.reabrirIncidencia).toHaveBeenCalledWith('3', 'Falta documentación adicional');
+      expect(component.devolucionPendiente).toBeNull();
+    });
+  });
 });
