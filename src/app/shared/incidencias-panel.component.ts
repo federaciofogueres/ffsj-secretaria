@@ -7,114 +7,174 @@ import { AdjuntoSecretaria, Incidencia } from '../core/models';
 import { AdminAccessService } from '../core/admin-access.service';
 import { PermissionsService } from '../core/permissions.service';
 import { SecretariaService } from '../core/secretaria.service';
+import { AdjuntosSelectorComponent } from './adjuntos-selector.component';
+import { CompactComposerComponent } from './compact-composer.component';
 
 @Component({
   selector: 'app-incidencias-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CompactComposerComponent, AdjuntosSelectorComponent],
   template: `
     <section class="incidencias-panel">
       <div class="panel-header">
-        <div>
-          <h3 class="h6 mb-1">Incidencias</h3>
-          <p class="text-muted mb-0">{{ abiertas }} abierta(s), {{ incidencias.length }} total.</p>
-        </div>
-        <span class="counter" [class.has-open]="abiertas > 0">{{ abiertas }}</span>
+        <h3 class="h6 mb-0">Incidencias</h3>
+        <span class="counter-badge" [class.has-open]="abiertas > 0">{{ headerLabel }}</span>
       </div>
 
-      <div class="new-incidence" *ngIf="isAdminMode && permissions.hasPermission('incidencias:write')">
-        <textarea class="form-control" rows="2" [(ngModel)]="nuevoMensaje" placeholder="Describe la incidencia"></textarea>
-        <div class="d-flex gap-2 flex-wrap">
-          <input class="form-control form-control-sm" type="file" multiple (change)="onFiles($event)" />
-          <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="!nuevoMensaje.trim() || loading" (click)="crear()">
-            Crear incidencia
-          </button>
-        </div>
+      <p *ngIf="error" class="panel-error" role="alert">{{ error }}</p>
+
+      <div class="incidencias-empty" *ngIf="!incidencias.length">
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+        <p class="mb-0 fw-semibold">Sin incidencias.</p>
+        <p class="mb-0 text-muted">Aún no se han registrado incidencias.</p>
       </div>
 
-      <p *ngIf="error" class="error" role="alert">{{ error }}</p>
+      <ul class="incidence-list" *ngIf="incidencias.length">
+        <li class="incidence-item" *ngFor="let incidencia of incidencias" [class.is-open]="incidencia.estado === 'abierta'">
+          <div class="incidence-head">
+            <span class="estado-badge" [ngClass]="'estado-' + incidencia.estado">{{ labelEstado(incidencia.estado) }}</span>
+            <time class="incidence-date">{{ incidencia.fechaAlta | date: 'dd/MM/yyyy HH:mm' }}</time>
+          </div>
+          <p class="incidence-message">{{ incidencia.mensaje }}</p>
 
-      <ul class="incidence-list">
-        <li *ngFor="let incidencia of incidencias" [class.open]="incidencia.estado === 'abierta'">
-          <div class="incidence-title">
-            <strong>{{ incidencia.estado }}</strong>
-            <small>{{ incidencia.fechaAlta | date: 'dd/MM/yyyy HH:mm' }}</small>
-          </div>
-          <p>{{ incidencia.mensaje }}</p>
-          <p class="response" *ngIf="incidencia.respuesta">{{ incidencia.respuesta }}</p>
-          <div class="timeline" *ngIf="incidencia.eventos?.length">
-            <article *ngFor="let evento of incidencia.eventos">
-              <div class="event-meta">
-                <strong>{{ labelEvento(evento.tipo) }}</strong>
-                <span>{{ labelActor(evento.actor) }} - {{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+          <ul class="incidence-timeline" *ngIf="incidencia.eventos?.length">
+            <li *ngFor="let evento of incidencia.eventos">
+              <div class="timeline-meta">
+                <time>{{ evento.createdAt | date: 'dd/MM/yyyy HH:mm' }}</time>
+                <span class="actor-badge" [ngClass]="'actor-' + evento.actor">{{ labelActor(evento.actor) }}</span>
               </div>
-              <p>{{ evento.mensaje }}</p>
-              <div class="attachments" *ngIf="evento.adjuntos?.length">
-                <button *ngFor="let adjunto of evento.adjuntos" class="attachment-link" type="button" (click)="descargarAdjunto(adjunto)">{{ adjunto.originalName }}</button>
+              <p class="timeline-message">{{ evento.mensaje }}</p>
+              <div class="timeline-attachments" *ngIf="evento.adjuntos?.length">
+                <button
+                  type="button"
+                  class="attachment-chip"
+                  *ngFor="let adjunto of evento.adjuntos"
+                  [attr.aria-label]="'Descargar ' + adjunto.originalName"
+                  (click)="descargarAdjunto(adjunto)"
+                >
+                  <i class="bi bi-paperclip" aria-hidden="true"></i>{{ adjunto.originalName }}
+                </button>
               </div>
-            </article>
-          </div>
-          <div class="response-box" *ngIf="incidencia.estado === 'abierta' && canAssociationRespond">
-            <input class="form-control form-control-sm" [(ngModel)]="respuestas[incidencia.id]" placeholder="Respuesta o subsanacion" />
-            <input class="form-control form-control-sm" type="file" multiple (change)="onResponseFiles(incidencia.id, $event)" />
-            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading || !respuestas[incidencia.id]" (click)="responder(incidencia)">
-              Responder
-            </button>
-          </div>
-          <div class="response-box" *ngIf="canAdminManage(incidencia)">
-            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="comentarios[incidencia.id]" placeholder="Añade un comentario para la asociación"></textarea>
-            <input class="form-control form-control-sm" type="file" multiple (change)="onCommentFiles(incidencia.id, $event)" />
-            <button class="btn btn-outline-secondary btn-sm" type="button" [disabled]="loading || !comentarios[incidencia.id]?.trim()" (click)="comentar(incidencia)">Añadir comentario</button>
-            <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="devoluciones[incidencia.id]" placeholder="Comentario de cierre o motivo si se devuelve a la asociacion"></textarea>
-            <input class="form-control form-control-sm" type="file" multiple (change)="onReturnFiles(incidencia.id, $event)" />
-            <button class="btn btn-success btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'subsanada')">
-              Marcar subsanada
-            </button>
-            <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'cerrada')">
-              Cerrar sin subsanar
-            </button>
-            <button class="btn btn-outline-secondary btn-sm" type="button" *ngIf="incidencia.estado === 'respondida'" [disabled]="loading || !devoluciones[incidencia.id]" (click)="reabrir(incidencia)">
-              Devolver a asociacion
-            </button>
+            </li>
+          </ul>
+
+          <app-compact-composer
+            *ngIf="incidencia.estado === 'abierta' && canAssociationRespond"
+            class="mt-2"
+            placeholder="Escribe tu respuesta o subsanación..."
+            attachAriaLabel="Adjuntar archivo a la respuesta"
+            sendAriaLabel="Enviar respuesta"
+            [value]="respuestas[incidencia.id] || ''"
+            (valueChange)="respuestas[incidencia.id] = $event"
+            [files]="responseFiles[incidencia.id] || []"
+            (filesChange)="responseFiles[incidencia.id] = $event"
+            [loading]="loading"
+            (send)="responder(incidencia)"
+          ></app-compact-composer>
+
+          <div class="incidence-admin-actions" *ngIf="canAdminManage(incidencia)">
+            <app-compact-composer
+              placeholder="Añade un comentario para la asociación..."
+              attachAriaLabel="Adjuntar archivo al comentario"
+              sendAriaLabel="Añadir comentario"
+              [value]="comentarios[incidencia.id] || ''"
+              (valueChange)="comentarios[incidencia.id] = $event"
+              [files]="commentFiles[incidencia.id] || []"
+              (filesChange)="commentFiles[incidencia.id] = $event"
+              [loading]="loading"
+              (send)="comentar(incidencia)"
+            ></app-compact-composer>
+
+            <div class="resolution-box">
+              <textarea
+                class="form-control form-control-sm"
+                rows="2"
+                [(ngModel)]="devoluciones[incidencia.id]"
+                placeholder="Comentario de cierre o motivo si se devuelve a la asociación"
+              ></textarea>
+              <app-adjuntos-selector
+                label="Adjuntar archivos"
+                [files]="returnFiles[incidencia.id] || []"
+                [disabled]="loading"
+                (filesChange)="returnFiles[incidencia.id] = $event"
+              />
+              <div class="resolution-actions">
+                <button class="btn btn-success btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'subsanada')">
+                  Marcar subsanada
+                </button>
+                <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="loading" (click)="resolver(incidencia, 'cerrada')">
+                  Cerrar sin subsanar
+                </button>
+                <button
+                  class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  *ngIf="incidencia.estado === 'respondida'"
+                  [disabled]="loading || !devoluciones[incidencia.id]"
+                  (click)="reabrir(incidencia)"
+                >
+                  Devolver a asociación
+                </button>
+              </div>
+            </div>
           </div>
         </li>
-        <li *ngIf="!incidencias.length" class="empty">Sin incidencias.</li>
       </ul>
+
+      <app-compact-composer
+        *ngIf="isAdminMode && permissions.hasPermission('incidencias:write')"
+        class="mt-3"
+        placeholder="Describe la incidencia..."
+        attachAriaLabel="Adjuntar archivo a la incidencia"
+        sendAriaLabel="Crear incidencia"
+        [value]="nuevoMensaje"
+        (valueChange)="nuevoMensaje = $event"
+        [files]="selectedFiles"
+        (filesChange)="selectedFiles = $event"
+        [loading]="loading"
+        (send)="crear()"
+      ></app-compact-composer>
     </section>
   `,
   styles: [`
-    .incidencias-panel { border: 1px solid #eceff4; border-radius: 8px; padding: 1rem; margin-top: 1rem; }
-    .panel-header { display: flex; justify-content: space-between; gap: 1rem; align-items: flex-start; }
-    .counter { min-width: 28px; height: 28px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #eef0f4; font-weight: 700; }
-    .counter.has-open { background: #fee2e2; color: #991b1b; }
-    .new-incidence { display: grid; gap: .5rem; margin: 1rem 0; }
-    .incidence-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .65rem; }
-    .incidence-list li { border-top: 1px solid #f0f1f4; padding-top: .65rem; }
-    .incidence-list li.open { border-left: 3px solid #c8102e; padding-left: .65rem; }
-    .incidence-title, .response-box { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
-    .incidence-title strong { text-transform: capitalize; }
-    .incidence-title small, .response { color: #687386; }
-    .timeline { display: grid; gap: .5rem; margin: .65rem 0; }
-    .timeline article { border: 1px solid #edf0f5; border-radius: 6px; padding: .65rem; background: #fbfcfe; }
-    .timeline p { margin: .35rem 0 0; }
-    .event-meta { display: flex; gap: .5rem; justify-content: space-between; align-items: baseline; flex-wrap: wrap; }
-    .event-meta span { color: #687386; font-size: .82rem; }
-    .attachments { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
-    .attachment-link { border: 0; padding: 0; color: #0d6efd; background: transparent; font-size: .85rem; text-decoration: underline; }
-    .attachment-link:hover, .attachment-link:focus-visible { color: #084298; }
-    .error { margin: .75rem 0; color: #991b1b; font-size: .9rem; }
-    .empty { color: #687386; }
+    .incidencias-panel { border: 1px solid var(--ffsj-line); border-radius: 8px; padding: 1rem; margin-top: 1rem; }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+    .counter-badge { min-width: 28px; padding: 0 .5rem; height: 26px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: #eef0f4; font-weight: 700; font-size: .85rem; }
+    .counter-badge.has-open { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .panel-error { color: var(--ffsj-red-dark); font-size: .9rem; }
+    .incidencias-empty { text-align: center; padding: 1.5rem .5rem; color: var(--ffsj-muted); }
+    .incidencias-empty i { font-size: 1.5rem; margin-bottom: .35rem; display: inline-block; }
+    .incidence-list { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .85rem; }
+    .incidence-item { border-top: 1px solid var(--ffsj-line); padding-top: .75rem; }
+    .incidence-item:first-child { border-top: 0; padding-top: 0; }
+    .incidence-item.is-open { border-left: 3px solid var(--ffsj-red); padding-left: .6rem; }
+    .incidence-head { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .3rem; }
+    .estado-badge { border-radius: 999px; padding: .15rem .55rem; font-size: .75rem; font-weight: 700; text-transform: uppercase; background: #eef0f4; color: var(--ffsj-muted); }
+    .estado-badge.estado-abierta { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .estado-badge.estado-respondida { background: #e7f1ff; color: #0b5ed7; }
+    .estado-badge.estado-subsanada { background: #e6f7ec; color: #15803d; }
+    .incidence-date { color: var(--ffsj-muted); font-size: .82rem; }
+    .incidence-message { margin: 0 0 .5rem; }
+    .incidence-timeline { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .55rem; }
+    .incidence-timeline > li { border-left: 2px solid var(--ffsj-line); padding-left: .6rem; }
+    .timeline-meta { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .15rem; }
+    .timeline-meta time { color: var(--ffsj-muted); font-size: .8rem; order: 1; }
+    .actor-badge { border-radius: 999px; padding: .1rem .5rem; font-size: .72rem; font-weight: 700; background: #eef0f4; color: var(--ffsj-muted); order: 0; }
+    .actor-badge.actor-administracion { background: var(--ffsj-soft-red); color: var(--ffsj-red-dark); }
+    .timeline-message { margin: 0 0 .35rem; }
+    .timeline-attachments { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .attachment-chip { display: inline-flex; align-items: center; gap: .3rem; border: 1px solid var(--ffsj-line); border-radius: 999px; padding: .15rem .55rem; font-size: .78rem; background: #f8f9fb; color: #0d6efd; }
+    .attachment-chip:hover, .attachment-chip:focus-visible { color: #084298; outline: 2px solid #0d6efd; outline-offset: 1px; }
+    .incidence-admin-actions { display: grid; gap: .6rem; margin-top: .6rem; }
+    .resolution-box { display: grid; gap: .5rem; padding: .6rem; border: 1px dashed var(--ffsj-line); border-radius: 8px; }
+    .resolution-actions { display: flex; gap: .5rem; flex-wrap: wrap; }
   `]
 })
 export class IncidenciasPanelComponent implements OnChanges {
   @Input({ required: true }) scope!: 'solicitud' | 'registro' | 'inscripcion';
   @Input({ required: true }) scopeId!: string | number;
-  // 0.40.2#ESMERALDA: permite mostrar el contador en la pestaña "Incidencias"
-  // del detalle de Registro sin duplicar la carga de datos.
   @Output() countChange = new EventEmitter<number>();
 
   incidencias: Incidencia[] = [];
-  adjuntosByIncidencia: Record<string, AdjuntoSecretaria[]> = {};
   respuestas: Record<string, string> = {};
   devoluciones: Record<string, string> = {};
   comentarios: Record<string, string> = {};
@@ -140,6 +200,11 @@ export class IncidenciasPanelComponent implements OnChanges {
     return this.incidencias.filter(item => ['abierta', 'respondida'].includes(item.estado)).length;
   }
 
+  get headerLabel(): string {
+    if (!this.incidencias.length) return '0';
+    return `${this.abiertas} abierta${this.abiertas === 1 ? '' : 's'}`;
+  }
+
   get isAdminMode(): boolean {
     return this.adminAccess.isAdmin();
   }
@@ -152,24 +217,18 @@ export class IncidenciasPanelComponent implements OnChanges {
     return this.isAdminMode && this.permissions.hasPermission('incidencias:write') && ['abierta', 'respondida'].includes(incidencia.estado);
   }
 
-  onFiles(event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.selectedFiles = files ? Array.from(files) : [];
+  labelEstado(estado: string): string {
+    const labels: Record<string, string> = {
+      abierta: 'Abierta',
+      respondida: 'Respondida',
+      subsanada: 'Subsanada',
+      cerrada: 'Cerrada'
+    };
+    return labels[estado] || estado;
   }
 
-  onResponseFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.responseFiles[incidenciaId] = files ? Array.from(files) : [];
-  }
-
-  onReturnFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.returnFiles[incidenciaId] = files ? Array.from(files) : [];
-  }
-
-  onCommentFiles(incidenciaId: string, event: Event): void {
-    const files = (event.target as HTMLInputElement).files;
-    this.commentFiles[incidenciaId] = files ? Array.from(files) : [];
+  labelActor(actor: string): string {
+    return actor === 'administracion' ? 'Administración' : actor === 'asociacion' ? 'Asociación' : 'Sistema';
   }
 
   crear(): void {
@@ -281,22 +340,6 @@ export class IncidenciasPanelComponent implements OnChanges {
       },
       error: () => this.fail('No se ha podido devolver la incidencia a la asociación.')
     });
-  }
-
-  labelEvento(tipo: string): string {
-    const labels: Record<string, string> = {
-      creada: 'Incidencia creada',
-      respuesta_asociacion: 'Respuesta de asociacion',
-      comentario_administracion: 'Comentario de administracion',
-      devuelta_admin: 'Devuelta por administracion',
-      subsanada: 'Subsanada',
-      cerrada: 'Cerrada'
-    };
-    return labels[tipo] || tipo;
-  }
-
-  labelActor(actor: string): string {
-    return actor === 'administracion' ? 'Administracion' : actor === 'asociacion' ? 'Asociacion' : 'Sistema';
   }
 
   private cargar(): void {
