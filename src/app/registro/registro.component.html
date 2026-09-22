@@ -457,13 +457,19 @@
                 <div class="reply-box mt-3" *ngIf="permissions.hasPermission('registro:write')">
                   <ng-container *ngIf="resultado.estado !== 'finalizada'; else comunicacionFinalizada">
                     <label class="form-label">Responder en esta conversación</label>
-                    <textarea class="form-control" rows="3" [(ngModel)]="respuestaComunicacion" placeholder="Escribe tu respuesta..."></textarea>
-                    <app-adjuntos-selector label="Adjuntar archivos" [files]="respuestaAdjuntos" [disabled]="submittingComm" (filesChange)="respuestaAdjuntos = $event" />
-                    <div class="d-flex flex-wrap gap-2 mt-2">
-                      <button class="btn btn-foc-rojo btn-sm" type="button" [disabled]="submittingComm || !respuestaComunicacion.trim()" (click)="responderComunicacion()">
-                        <i class="bi bi-send me-1"></i>Responder
-                      </button>
-                      <button class="btn btn-outline-danger btn-sm" type="button" *ngIf="puedeCerrarComunicacion(resultado)" [disabled]="submittingComm" (click)="cerrarComunicacion(resultado)">
+                    <app-compact-composer
+                      placeholder="Escribe tu respuesta..."
+                      attachAriaLabel="Adjuntar archivo a la respuesta"
+                      sendAriaLabel="Enviar respuesta"
+                      [value]="respuestaComunicacion"
+                      (valueChange)="respuestaComunicacion = $event"
+                      [files]="respuestaAdjuntos"
+                      (filesChange)="respuestaAdjuntos = $event"
+                      [loading]="submittingComm"
+                      (send)="responderComunicacion()"
+                    ></app-compact-composer>
+                    <div class="d-flex flex-wrap gap-2 mt-2" *ngIf="puedeCerrarComunicacion(resultado)">
+                      <button class="btn btn-outline-danger btn-sm" type="button" [disabled]="submittingComm" (click)="cerrarComunicacion(resultado)">
                         Cerrar comunicacion
                       </button>
                     </div>
