@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { AbstractControl, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, ValidatorFn, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of, Subscription, switchMap } from 'rxjs';
@@ -38,6 +38,11 @@ type ParticipantType = 'adulto' | 'infantil';
 type AdminTab = 'documentacion' | 'gestion' | 'inscritos';
 type AssociationTab = 'documentacion' | 'formulario' | 'asociados';
 type AssociationMode = 'edit' | 'view' | 'summary';
+// 0.41.0#ESMERALDA: ordenacion del listado de inscritos (client-side: los
+// datos de la entrada ya se cargan completos y el nombre de asociacion
+// proviene de Censo, un servicio externo sin join SQL disponible).
+type EntradaOrden = 'fecha_desc' | 'fecha_asc' | 'numero_asc' | 'asociacion_asc' | 'asociacion_desc' | 'estado' | 'responsable_asc';
+type EntradaDetalleTab = 'informacion' | 'participantes' | 'documentacion' | 'historial' | 'incidencias';
 
 @Component({
   selector: 'app-inscripciones',
@@ -92,6 +97,27 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   participantPageSize = 10;
   readonly participantPageSizes = [10, 25, 50, 100];
 
+  // 0.41.0#ESMERALDA: listado de inscritos (entradas) - ordenacion, filtros
+  // compactos y paginacion real sobre los datos ya cargados de la entrada.
+  entradaBusqueda = '';
+  entradaFiltroEstado = '';
+  entradaFiltroAsociacion = '';
+  entradaOrden: EntradaOrden = 'fecha_desc';
+  entradaPage = 1;
+  entradaPageSize = 10;
+  readonly entradaPageSizes = [10, 25, 50, 100];
+  entradaMenuAbiertoId: number | null = null;
+  entradaDetalleDialogOpen = false;
+  entradaDetalleTab: EntradaDetalleTab = 'informacion';
+  private entradaDetalleTrigger: HTMLElement | null = null;
+  readonly entradaDetalleTabs: Array<{ id: EntradaDetalleTab; label: string }> = [
+    { id: 'informacion', label: 'Información' },
+    { id: 'participantes', label: 'Participantes' },
+    { id: 'documentacion', label: 'Documentación' },
+    { id: 'historial', label: 'Historial' },
+    { id: 'incidencias', label: 'Incidencias' }
+  ];
+
   inscripcionAdminForm = this.fb.group({
     titulo: ['', Validators.required],
     formularioId: [''],
@@ -138,6 +164,11 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.formDiagnosticsSub?.unsubscribe();
     this.rubiScreenContext.clear('inscripciones');
+  }
+
+  @HostListener('document:click')
+  cerrarMenuEntradaAlHacerClickFuera(): void {
+    this.entradaMenuAbiertoId = null;
   }
 
   // G (form-diagnostics): unico punto que publica el contexto de Rubi para
@@ -241,6 +272,44 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
   get allTabParticipantsSelected(): boolean {
     const participants = this.filteredParticipants;
     return participants.length > 0 && participants.every(person => this.selectedParticipants.has(String(person.id)));
+  }
+
+  get filteredEntradas(): InscripcionEntradaSecretaria[] {
+    const search = this.normalize(this.entradaBusqueda);
+    const filtered = this.entradas.filter(entrada => {
+      if (this.entradaFiltroEstado && entrada.estado !== this.entradaFiltroEstado) return false;
+      if (this.entradaFiltroAsociacion && String(entrada.asociacionId) !== this.entradaFiltroAsociacion) return false;
+      if (!search) return true;
+      return this.normalize(`${entrada.numero} ${entrada.asociacionNombre || ''} ${entrada.responsable || ''}`).includes(search);
+    });
+    return filtered.sort((a, b) => this.compareEntradas(a, b));
+  }
+
+  get pagedEntradas(): InscripcionEntradaSecretaria[] {
+    const start = (this.entradaPage - 1) * this.entradaPageSize;
+    return this.filteredEntradas.slice(start, start + this.entradaPageSize);
+  }
+
+  get entradaTotalPages(): number {
+    return Math.max(1, Math.ceil(this.filteredEntradas.length / this.entradaPageSize));
+  }
+
+  get entradaRangeStart(): number {
+    return this.filteredEntradas.length ? (this.entradaPage - 1) * this.entradaPageSize + 1 : 0;
+  }
+
+  get entradaRangeEnd(): number {
+    return Math.min(this.entradaPage * this.entradaPageSize, this.filteredEntradas.length);
+  }
+
+  get asociacionesEntradasDisponibles(): { id: number; nombre: string }[] {
+    const map = new Map<number, string>();
+    this.entradas.forEach(entrada => map.set(entrada.asociacionId, entrada.asociacionNombre || `Asociación ${entrada.asociacionId}`));
+    return [...map.entries()].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre));
+  }
+
+  get hayFiltrosEntradasActivos(): boolean {
+    return Boolean(this.entradaBusqueda || this.entradaFiltroEstado || this.entradaFiltroAsociacion);
   }
 
   get requiresParticipants(): boolean {
@@ -582,6 +651,34 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     this.participantPage = Math.min(this.participantTotalPages, this.participantPage + 1);
   }
 
+  onEntradaFiltroChange(): void {
+    this.entradaPage = 1;
+  }
+
+  onEntradaPageSizeChange(): void {
+    this.entradaPage = 1;
+  }
+
+  previousEntradaPage(): void {
+    this.entradaPage = Math.max(1, this.entradaPage - 1);
+  }
+
+  nextEntradaPage(): void {
+    this.entradaPage = Math.min(this.entradaTotalPages, this.entradaPage + 1);
+  }
+
+  limpiarFiltrosEntradas(): void {
+    this.entradaBusqueda = '';
+    this.entradaFiltroEstado = '';
+    this.entradaFiltroAsociacion = '';
+    this.entradaPage = 1;
+  }
+
+  toggleEntradaMenu(entrada: InscripcionEntradaSecretaria, event: Event): void {
+    event.stopPropagation();
+    this.entradaMenuAbiertoId = this.entradaMenuAbiertoId === entrada.id ? null : entrada.id;
+  }
+
   toggleAllTabParticipants(): void {
     const participants = this.filteredParticipants;
     if (this.allTabParticipantsSelected) {
@@ -677,9 +774,36 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     this.associationTab = 'formulario';
   }
 
-  verEntrada(entrada: InscripcionEntradaSecretaria): void {
+  abrirDetalleEntrada(entrada: InscripcionEntradaSecretaria, event?: Event): void {
+    event?.stopPropagation();
+    this.entradaMenuAbiertoId = null;
+    this.entradaDetalleTrigger = event?.currentTarget instanceof HTMLElement ? event.currentTarget : null;
     this.selectedEntrada = entrada;
+    this.entradaDetalleTab = 'informacion';
     this.cargarAdjuntosEntrada(entrada.id);
+    this.entradaDetalleDialogOpen = true;
+  }
+
+  cerrarDetalleEntrada(): void {
+    this.entradaDetalleDialogOpen = false;
+    const trigger = this.entradaDetalleTrigger;
+    this.entradaDetalleTrigger = null;
+    setTimeout(() => trigger?.focus());
+  }
+
+  activarPestanaEntradaDetalle(tab: EntradaDetalleTab): void {
+    this.entradaDetalleTab = tab;
+  }
+
+  navegarPestanasEntradaDetalle(event: KeyboardEvent, index: number): void {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const total = this.entradaDetalleTabs.length;
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? total - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + total) % total;
+    const tab = this.entradaDetalleTabs[next];
+    this.activarPestanaEntradaDetalle(tab.id);
+    setTimeout(() => document.getElementById(`entrada-detalle-tab-${tab.id}`)?.focus());
   }
 
   onAdjuntosEntradaChange(event: Event, entrada: InscripcionEntradaSecretaria): void {
@@ -794,6 +918,33 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
 
   entradaParticipantesLabel(entrada: InscripcionEntradaSecretaria): string {
     return this.idsToAsociadoLabels(entrada, entrada.participantes || []);
+  }
+
+  entradaParticipantesResueltos(entrada: InscripcionEntradaSecretaria): Asociado[] {
+    const ids = (entrada.participantes || []).map(id => String(id));
+    if (!ids.length) return [];
+    const pool = this.entradaAsociados[entrada.asociacionId]?.length ? this.entradaAsociados[entrada.asociacionId] : this.asociados;
+    return ids
+      .map(id => pool.find(person => String(person.id) === id))
+      .filter((person): person is Asociado => Boolean(person));
+  }
+
+  entradaParticipantesPorTipo(entrada: InscripcionEntradaSecretaria, tipo: ParticipantType): Asociado[] {
+    return this.entradaParticipantesResueltos(entrada).filter(person => person.tipo === tipo);
+  }
+
+  entradaUltimaActualizacion(entrada: InscripcionEntradaSecretaria): string {
+    const eventos = entrada.eventos || [];
+    return eventos.length ? eventos[eventos.length - 1].createdAt : entrada.fechaEntrada;
+  }
+
+  campoIcono(field: CampoInscripcion): string {
+    if (['date', 'datetime', 'time'].includes(field.type)) return 'bi-calendar3';
+    if (['asociado', 'asociado_adulto', 'asociado_infantil', 'responsable'].includes(field.type)) return 'bi-people';
+    if (field.type === 'select') return 'bi-tags';
+    if (field.type === 'tel') return 'bi-telephone';
+    if (field.type === 'email') return 'bi-envelope';
+    return 'bi-card-text';
   }
 
   submit(): void {
@@ -1178,6 +1329,13 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
     this.entradas = [];
     this.selectedEntrada = null;
     this.entradaAsociados = {};
+    this.entradaBusqueda = '';
+    this.entradaFiltroEstado = '';
+    this.entradaFiltroAsociacion = '';
+    this.entradaOrden = 'fecha_desc';
+    this.entradaPage = 1;
+    this.entradaMenuAbiertoId = null;
+    this.entradaDetalleDialogOpen = false;
     this.secretariaService.getInscripcionEntradas(inscripcionId).subscribe({
       next: response => {
         this.entradas = response.entradas;
@@ -1595,6 +1753,18 @@ export class InscripcionesComponent implements OnInit, OnDestroy {
 
   private fullName(person: Asociado): string {
     return this.normalize(`${person.nombre} ${person.apellidos}`);
+  }
+
+  private compareEntradas(a: InscripcionEntradaSecretaria, b: InscripcionEntradaSecretaria): number {
+    switch (this.entradaOrden) {
+      case 'fecha_asc': return String(a.fechaEntrada).localeCompare(String(b.fechaEntrada));
+      case 'numero_asc': return a.numero.localeCompare(b.numero);
+      case 'asociacion_asc': return (a.asociacionNombre || '').localeCompare(b.asociacionNombre || '');
+      case 'asociacion_desc': return (b.asociacionNombre || '').localeCompare(a.asociacionNombre || '');
+      case 'estado': return a.estado.localeCompare(b.estado) || String(b.fechaEntrada).localeCompare(String(a.fechaEntrada));
+      case 'responsable_asc': return (a.responsable || '').localeCompare(b.responsable || '');
+      default: return String(b.fechaEntrada).localeCompare(String(a.fechaEntrada));
+    }
   }
 
   private normalize(value: string): string {

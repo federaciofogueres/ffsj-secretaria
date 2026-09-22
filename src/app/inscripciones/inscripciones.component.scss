@@ -23,8 +23,7 @@
 .admin-panel,
 .summary-panel,
 .documents,
-.participants,
-.entry-detail {
+.participants {
   border: 1px solid var(--ffsj-line);
   border-radius: 18px;
   background: #fff;
@@ -45,14 +44,12 @@
 .admin-panel,
 .summary-panel,
 .documents,
-.participants,
-.entry-detail {
+.participants {
   padding: 1rem;
 }
 
 .documents,
-.participants,
-.entry-detail {
+.participants {
   background: #fbfcfe;
 }
 
@@ -125,8 +122,7 @@
   box-shadow: 0 0 0 3px rgba(178, 31, 45, 0.12);
 }
 
-.list-actions,
-.entry-actions {
+.list-actions {
   display: flex;
   gap: 0.4rem;
   flex-wrap: wrap;
@@ -338,32 +334,6 @@
   margin-top: 1rem;
 }
 
-.entries-table {
-  display: grid;
-  border: 1px solid var(--ffsj-line);
-  border-radius: 14px;
-  overflow: hidden;
-}
-
-.entries-row {
-  display: grid;
-  grid-template-columns: minmax(180px, 1.4fr) minmax(120px, 0.8fr) minmax(100px, 0.7fr) minmax(130px, 0.8fr) minmax(280px, 1.4fr);
-  gap: 0.75rem;
-  align-items: center;
-  padding: 0.8rem;
-  border-bottom: 1px solid var(--ffsj-line);
-}
-
-.entries-row:last-child {
-  border-bottom: 0;
-}
-
-.entries-row.header {
-  background: var(--ffsj-soft-gray);
-  color: var(--ffsj-ink);
-  font-weight: 900;
-}
-
 .entry-data {
   display: grid;
   grid-template-columns: minmax(160px, 260px) 1fr;
@@ -442,17 +412,12 @@
     grid-template-columns: 1fr;
   }
 
-  .entries-row {
-    grid-template-columns: 1fr;
-  }
-
   .list-item {
     align-items: flex-start;
     flex-direction: column;
   }
 
-  .list-actions,
-  .entry-actions {
+  .list-actions {
     justify-content: flex-start;
     margin-left: 0;
   }
@@ -489,4 +454,334 @@
   color: #fff;
   font-weight: 700;
   line-height: 1;
+}
+
+// 0.41.0#ESMERALDA: listado de inscritos - filtros compactos, filas tipo
+// tarjeta y menu de acciones agrupado, siguiendo el mismo patron visual que
+// Registro (0.40.1#ESMERALDA).
+.registro-filters {
+  padding: .65rem .85rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.filters-primary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.filter-search {
+  position: relative;
+  flex: 1 1 220px;
+  min-width: 180px;
+  display: flex;
+  align-items: center;
+}
+
+.filter-search i {
+  position: absolute;
+  left: .65rem;
+  color: var(--ffsj-muted);
+  font-size: .85rem;
+  pointer-events: none;
+}
+
+.filter-search input {
+  width: 100%;
+  padding-left: 2rem;
+}
+
+.registro-filters .form-select-sm {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 150px;
+}
+
+.filter-buzon {
+  min-width: 190px;
+}
+
+.filters-clear {
+  white-space: nowrap;
+  color: var(--ffsj-muted);
+  text-decoration: none;
+}
+
+.filters-clear:hover {
+  color: var(--ffsj-red);
+}
+
+.registro-list {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.registro-row {
+  width: 100%;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--ffsj-ink);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  padding: 0.85rem;
+}
+
+.registro-row-main {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.registro-row-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: .3rem;
+  gap: .6rem;
+  margin-bottom: .2rem;
+}
+
+.registro-numero {
+  font-weight: 900;
+  color: var(--ffsj-ink);
+}
+
+.registro-titulo {
+  display: block;
+  font-weight: 700;
+}
+
+.registro-row-cta {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.registro-meta {
+  display: flex !important;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-top: 0.35rem;
+  color: var(--ffsj-muted);
+  font-size: .86rem;
+}
+
+.registro-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.registro-meta i {
+  color: var(--ffsj-muted);
+  font-size: .82rem;
+}
+
+.entrada-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+}
+
+.entry-menu-wrapper {
+  position: relative;
+}
+
+.entry-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(16, 24, 40, 0.16);
+  overflow: hidden;
+}
+
+.entry-menu button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 0.55rem 0.85rem;
+  font-weight: 700;
+  color: var(--ffsj-ink);
+}
+
+.entry-menu button:hover:not(:disabled) {
+  background: var(--ffsj-soft-gray);
+}
+
+.entry-menu button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.entrada-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+// Dialog de detalle de inscrito: mismo patron de backdrop + tabs ARIA que
+// asociados-gestion (solicitudes) y Registro.
+.request-detail-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1080;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, .56);
+}
+
+.request-detail-dialog {
+  width: min(980px, 100%);
+  max-height: min(88vh, 850px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, .35);
+}
+
+.request-detail-header,
+.request-detail-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.request-detail-footer {
+  align-items: center;
+  justify-content: flex-end;
+  border-top: 1px solid var(--ffsj-line);
+  border-bottom: 0;
+}
+
+.request-detail-body {
+  overflow: auto;
+  padding: 1rem 1.25rem;
+}
+
+.detail-tabs {
+  display: flex;
+  overflow-x: auto;
+  gap: .35rem;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--ffsj-line);
+}
+
+.detail-tab {
+  flex: 0 0 auto;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  padding: .65rem .75rem;
+  background: transparent;
+  color: var(--ffsj-muted);
+  font-weight: 800;
+}
+
+.detail-tab.active { color: var(--ffsj-red); border-bottom-color: var(--ffsj-red); }
+
+.metadata-grid { display: grid; grid-template-columns: 1fr; gap: .6rem; }
+.metadata-grid div { border: 1px solid var(--ffsj-line); border-radius: 12px; padding: .6rem .75rem; }
+.metadata-grid dt { color: var(--ffsj-muted); font-size: .8rem; margin: 0; }
+.metadata-grid dd { margin: .15rem 0 0; font-weight: 800; }
+
+.entrada-detalle-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.entrada-detalle-side {
+  border: 1px solid var(--ffsj-line);
+  border-radius: 14px;
+  background: var(--ffsj-soft-gray);
+  padding: 1rem;
+}
+
+.field-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.75rem;
+}
+
+.field-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  border: 1px solid var(--ffsj-line);
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+}
+
+.field-card i {
+  color: var(--ffsj-red);
+  font-size: 1rem;
+  margin-top: 0.15rem;
+}
+
+.field-card dt {
+  color: var(--ffsj-muted);
+  font-size: .8rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.field-card dd {
+  margin: .1rem 0 0;
+  font-weight: 700;
+}
+
+.participant-group h4 {
+  color: var(--ffsj-ink);
+}
+
+.participant-list.read-only .participant-item {
+  cursor: default;
+}
+
+@media (max-width: 860px) {
+  .filters-clear { width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .entrada-detalle-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .request-detail-backdrop { padding: 0; }
+  .request-detail-dialog { width: 100%; max-height: 100vh; min-height: 100vh; border-radius: 0; }
+}
+
+@media (max-width: 700px) {
+  .registro-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .entrada-row-actions {
+    justify-content: flex-end;
+  }
 }

@@ -294,7 +294,7 @@
               <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap mb-3">
                 <div>
                   <h3 class="section-title mb-1">Asociaciones inscritas</h3>
-                  <p class="text-muted mb-0">{{ entradas.length }} entrada(s) registradas.</p>
+                  <p class="text-muted mb-0">{{ filteredEntradas.length }} de {{ entradas.length }} entrada(s).</p>
                 </div>
                 <div class="d-flex gap-2 flex-wrap">
                   <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="!entradas.length" (click)="imprimirTodas(inscription)">Imprimir todas</button>
@@ -303,69 +303,93 @@
                 </div>
               </div>
 
-              <div class="entries-table" *ngIf="entradas.length; else noEntradas">
-                <div class="entries-row header">
-                  <span>Asociacion</span>
-                  <span>Numero</span>
-                  <span>Estado</span>
-                  <span>Fecha</span>
-                  <span>Acciones</span>
+              <div class="registro-filters mb-3" *ngIf="entradas.length">
+                <div class="filters-primary">
+                  <label class="filter-search mb-0">
+                    <span class="visually-hidden">Buscar</span>
+                    <i class="bi bi-search"></i>
+                    <input class="form-control form-control-sm" type="search" [(ngModel)]="entradaBusqueda" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEntradaFiltroChange()" (keyup.enter)="onEntradaFiltroChange()" placeholder="Número o asociación" />
+                  </label>
+                  <select class="form-select form-select-sm filter-buzon" [(ngModel)]="entradaFiltroAsociacion" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEntradaFiltroChange()" aria-label="Filtrar por asociación">
+                    <option value="">Todas las asociaciones</option>
+                    <option *ngFor="let asociacion of asociacionesEntradasDisponibles" [value]="asociacion.id">{{ asociacion.nombre }}</option>
+                  </select>
+                  <select class="form-select form-select-sm" [(ngModel)]="entradaFiltroEstado" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEntradaFiltroChange()" aria-label="Filtrar por estado">
+                    <option value="">Todos los estados</option>
+                    <option value="recibida">Recibida</option>
+                    <option value="en_revision">En revisión</option>
+                    <option value="con_incidencias">Con incidencias</option>
+                    <option value="validada">Validada</option>
+                    <option value="rechazada">Rechazada</option>
+                    <option value="retirada_solicitada">Retirada solicitada</option>
+                    <option value="retirada">Retirada</option>
+                  </select>
+                  <select class="form-select form-select-sm" [(ngModel)]="entradaOrden" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEntradaFiltroChange()" aria-label="Ordenar inscritos">
+                    <option value="fecha_desc">Más recientes primero</option>
+                    <option value="fecha_asc">Más antiguas primero</option>
+                    <option value="numero_asc">Número</option>
+                    <option value="asociacion_asc">Asociación A-Z</option>
+                    <option value="asociacion_desc">Asociación Z-A</option>
+                    <option value="estado">Estado</option>
+                    <option value="responsable_asc">Responsable A-Z</option>
+                  </select>
+                  <button class="btn btn-link btn-sm filters-clear" type="button" *ngIf="hayFiltrosEntradasActivos" (click)="limpiarFiltrosEntradas()">
+                    <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+                  </button>
                 </div>
-                <div class="entries-row" *ngFor="let entrada of entradas">
-                  <span>{{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</span>
-                  <span>{{ entrada.numero }}</span>
-                  <span><select class="form-select form-select-sm" [ngModel]="entrada.estado" [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'" (ngModelChange)="cambiarEstadoEntrada(entrada, $event)">
-                    <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
-                    <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
-                  </select></span>
-                  <span>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
-                  <span class="entry-actions">
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="verEntrada(entrada)">Ver detalle</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'xlsx')">Excel</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'pdf')">PDF</button>
-                    <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
-                  </span>
-                </div>
+              </div>
+
+              <div class="registro-list mb-3" *ngIf="pagedEntradas.length; else noEntradas">
+                <article class="registro-row entrada-row" *ngFor="let entrada of pagedEntradas">
+                  <div class="registro-row-main">
+                    <div class="registro-row-top">
+                      <span class="registro-numero">{{ entrada.numero }}</span>
+                      <app-estado-badge [estado]="entrada.estado"></app-estado-badge>
+                    </div>
+                    <strong class="registro-titulo">{{ entrada.asociacionNombre || ('Asociación ' + entrada.asociacionId) }}</strong>
+                    <div class="registro-meta">
+                      <span><i class="bi bi-calendar3"></i>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</span>
+                      <span *ngIf="entrada.responsable"><i class="bi bi-person"></i>{{ entrada.responsable }}</span>
+                    </div>
+                  </div>
+                  <div class="entrada-row-actions">
+                    <button class="ux-btn ux-btn-sm registro-row-cta" type="button" (click)="abrirDetalleEntrada(entrada, $event)">Ver detalle</button>
+                    <div class="entry-menu-wrapper">
+                      <button class="ux-btn ux-btn-light ux-btn-sm entry-menu-toggle" type="button" aria-haspopup="true" [attr.aria-expanded]="entradaMenuAbiertoId === entrada.id" (click)="toggleEntradaMenu(entrada, $event)">
+                        <i class="bi bi-three-dots-vertical"></i>
+                        Acciones
+                      </button>
+                      <div class="entry-menu" *ngIf="entradaMenuAbiertoId === entrada.id" (click)="$event.stopPropagation()">
+                        <button type="button" (click)="abrirDetalleEntrada(entrada, $event)">Ver detalle</button>
+                        <button type="button" (click)="imprimirEntrada(entrada); entradaMenuAbiertoId = null">Imprimir</button>
+                        <button type="button" (click)="abrirExportacion(inscription, 'xlsx'); entradaMenuAbiertoId = null">Excel</button>
+                        <button type="button" (click)="abrirExportacion(inscription, 'pdf'); entradaMenuAbiertoId = null">PDF</button>
+                        <button type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, true); entradaMenuAbiertoId = null">Aprobar retirada</button>
+                        <button type="button" *ngIf="entrada.estado === 'retirada_solicitada'" [disabled]="loading" (click)="resolverRetirada(entrada, false); entradaMenuAbiertoId = null">Rechazar retirada</button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               </div>
               <ng-template #noEntradas>
-                <p class="text-muted mb-0">Todavia no hay asociaciones inscritas.</p>
+                <p class="text-muted mb-0" *ngIf="!entradas.length">Todavia no hay asociaciones inscritas.</p>
+                <p class="text-muted mb-0" *ngIf="entradas.length">Ningún inscrito coincide con los filtros aplicados.</p>
               </ng-template>
 
-              <div class="entry-detail" *ngIf="selectedEntrada as entrada">
-                <div class="d-flex justify-content-between gap-2 flex-wrap mb-2">
-                  <div>
-                    <p class="ux-overline mb-1">Detalle</p>
-                    <h4 class="h6 mb-0">{{ entrada.numero }} - {{ entrada.asociacionNombre || ('Asociacion ' + entrada.asociacionId) }}</h4>
-                  </div>
-                  <div class="d-flex gap-2 flex-wrap">
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'xlsx')">Excel</button>
-                    <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscription, 'pdf')">PDF</button>
-                  </div>
+              <nav class="entrada-pagination" *ngIf="filteredEntradas.length" aria-label="Paginación de inscritos">
+                <span class="text-muted small">{{ entradaRangeStart }} - {{ entradaRangeEnd }} de {{ filteredEntradas.length }}</span>
+                <label class="page-size">
+                  <span>Por página</span>
+                  <select class="form-select form-select-sm" [(ngModel)]="entradaPageSize" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onEntradaPageSizeChange()">
+                    <option *ngFor="let size of entradaPageSizes" [ngValue]="size">{{ size }}</option>
+                  </select>
+                </label>
+                <div class="page-actions">
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="entradaPage === 1" (click)="previousEntradaPage()">Anterior</button>
+                  <span class="small text-muted">Página {{ entradaPage }} de {{ entradaTotalPages }}</span>
+                  <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="entradaPage === entradaTotalPages" (click)="nextEntradaPage()">Siguiente</button>
                 </div>
-                <dl class="entry-data">
-                  <dt>Responsable</dt>
-                  <dd>{{ entrada.responsable || '-' }}</dd>
-                  <ng-container *ngFor="let field of inscription.campos">
-                    <dt>{{ field.label }}</dt>
-                    <dd>{{ entradaCampoLabel(entrada, field) }}</dd>
-                  </ng-container>
-                </dl>
-                <section class="mt-3">
-                  <h5 class="h6">Adjuntos de la entrada</h5>
-                  <input class="form-control form-control-sm mb-2" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
-                  <div class="document-list" *ngIf="adjuntosEntrada.length; else noEntryAttachments">
-                    <button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">
-                      {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
-                    </button>
-                  </div>
-                  <ng-template #noEntryAttachments><p class="text-muted mb-0">No hay adjuntos para esta entrada.</p></ng-template>
-                </section>
-                <section class="mt-3" *ngIf="entrada.eventos?.length"><h5 class="h6">Historial</h5><ul class="mb-0"><li *ngFor="let evento of entrada.eventos">{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ evento.actor }} · {{ evento.detalle || evento.tipo }}</li></ul></section>
-                <app-incidencias-panel scope="inscripcion" [scopeId]="entrada.id"></app-incidencias-panel>
-              </div>
+              </nav>
             </section>
 
             <section class="summary-panel mt-3" *ngIf="!isAdminMode && associationTab === 'formulario' && associationMode === 'summary' && miEntrada as entrada">
@@ -639,6 +663,146 @@
     <div class="d-flex justify-content-end gap-2 mt-3"><button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarExportacion()">Cancelar</button><button class="ux-btn" type="button" [disabled]="loading || !exportColumnKeys.size" (click)="exportarInscritos()">Exportar</button></div>
   </div>
 </section>
+
+<div *ngIf="entradaDetalleDialogOpen && selectedEntrada" class="request-detail-backdrop" role="presentation" (click)="cerrarDetalleEntrada()">
+  <section class="request-detail-dialog entrada-detalle-dialog" role="dialog" aria-modal="true" aria-labelledby="entradaDetalleTitulo" (click)="$event.stopPropagation()" (keydown.escape)="cerrarDetalleEntrada()">
+    <ng-container *ngIf="selectedEntrada as entrada">
+      <header class="request-detail-header">
+        <div>
+          <div class="d-flex gap-2 flex-wrap align-items-center mb-1">
+            <h2 id="entradaDetalleTitulo" class="h5 mb-0">{{ entrada.numero }}</h2>
+            <app-estado-badge [estado]="entrada.estado"></app-estado-badge>
+          </div>
+          <h3 class="detail-title mb-1">{{ selectedInscription?.titulo }}</h3>
+          <p class="text-muted mb-0 small"><i class="bi bi-building me-1"></i>{{ entrada.asociacionNombre || ('Asociación ' + entrada.asociacionId) }}</p>
+        </div>
+        <div class="d-flex gap-2 align-items-start flex-wrap entrada-detalle-header-actions">
+          <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="imprimirEntrada(entrada)">Imprimir</button>
+          <ng-container *ngIf="selectedInscription as inscripcionActual">
+            <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscripcionActual, 'xlsx')">Excel</button>
+            <button class="ux-btn ux-btn-light ux-btn-sm" type="button" (click)="abrirExportacion(inscripcionActual, 'pdf')">PDF</button>
+          </ng-container>
+          <button class="btn-close" type="button" aria-label="Cerrar detalle" (click)="cerrarDetalleEntrada()"></button>
+        </div>
+      </header>
+      <div class="request-detail-body">
+        <div class="detail-tabs" role="tablist" aria-label="Secciones de la inscripción">
+          <button
+            *ngFor="let pestana of entradaDetalleTabs; let indice = index"
+            class="detail-tab"
+            type="button"
+            role="tab"
+            [id]="'entrada-detalle-tab-' + pestana.id"
+            [attr.aria-controls]="'entrada-detalle-panel-' + pestana.id"
+            [attr.aria-selected]="entradaDetalleTab === pestana.id"
+            [tabIndex]="entradaDetalleTab === pestana.id ? 0 : -1"
+            [class.active]="entradaDetalleTab === pestana.id"
+            (click)="activarPestanaEntradaDetalle(pestana.id)"
+            (keydown)="navegarPestanasEntradaDetalle($event, indice)"
+          >{{ pestana.label }}</button>
+        </div>
+
+        <div class="entrada-detalle-layout" *ngIf="entradaDetalleTab === 'informacion'" id="entrada-detalle-panel-informacion" role="tabpanel" aria-labelledby="entrada-detalle-tab-informacion">
+          <section class="entrada-detalle-main">
+            <h3 class="section-title mb-2">Datos de la inscripción</h3>
+            <div class="field-card-grid">
+              <div class="field-card">
+                <i class="bi bi-person"></i>
+                <div><dt>Responsable</dt><dd>{{ entrada.responsable || '-' }}</dd></div>
+              </div>
+              <div class="field-card" *ngFor="let field of selectedInscription?.campos || []">
+                <i class="bi" [ngClass]="campoIcono(field)"></i>
+                <div><dt>{{ field.label }}</dt><dd>{{ entradaCampoLabel(entrada, field) }}</dd></div>
+              </div>
+            </div>
+            <p class="text-muted small mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Esta información corresponde a los datos facilitados en el formulario de inscripción.</p>
+          </section>
+          <aside class="entrada-detalle-side">
+            <h4 class="h6 mb-2">Estado de la inscripción</h4>
+            <app-estado-badge [estado]="entrada.estado"></app-estado-badge>
+            <label class="form-label mt-2 mb-0 small" for="entradaDetalleEstadoSelect">Cambiar estado</label>
+            <select
+              id="entradaDetalleEstadoSelect"
+              class="form-select form-select-sm mt-1"
+              [ngModel]="entrada.estado"
+              [ngModelOptions]="{ standalone: true }"
+              [disabled]="loading || entrada.estado === 'retirada_solicitada' || entrada.estado === 'retirada'"
+              (ngModelChange)="cambiarEstadoEntrada(entrada, $event)"
+            >
+              <option value="recibida">Recibida</option><option value="en_revision">En revisión</option><option value="con_incidencias">Con incidencias</option><option value="validada">Validada</option><option value="rechazada">Rechazada</option>
+              <option value="retirada_solicitada">Retirada solicitada</option><option value="retirada">Retirada</option>
+            </select>
+            <div class="d-flex gap-2 mt-2 flex-wrap" *ngIf="entrada.estado === 'retirada_solicitada'">
+              <button class="ux-btn ux-btn-secondary ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, true)">Aprobar retirada</button>
+              <button class="ux-btn ux-btn-light ux-btn-sm" type="button" [disabled]="loading" (click)="resolverRetirada(entrada, false)">Rechazar retirada</button>
+            </div>
+            <dl class="metadata-grid mt-3">
+              <div><dt>Fecha de inscripción</dt><dd>{{ entrada.fechaEntrada | date : 'dd/MM/y HH:mm' }}</dd></div>
+              <div><dt>Última actualización</dt><dd>{{ entradaUltimaActualizacion(entrada) | date : 'dd/MM/y HH:mm' }}</dd></div>
+              <div><dt>Asociación</dt><dd>{{ entrada.asociacionNombre || ('Asociación ' + entrada.asociacionId) }}</dd></div>
+              <div><dt>Código de inscripción</dt><dd>{{ entrada.numero }}</dd></div>
+              <div><dt>Título</dt><dd>{{ selectedInscription?.titulo }}</dd></div>
+            </dl>
+            <div class="entrada-participantes-resumen mt-3" *ngIf="(entrada.participantes || []).length">
+              <p class="text-muted small mb-1">Participantes inscritos</p>
+              <p class="mb-1 fw-bold">{{ (entrada.participantes || []).length }}</p>
+              <p class="text-muted small mb-0" *ngIf="entradaParticipantesPorTipo(entrada, 'infantil').length">Infantiles: {{ entradaParticipantesPorTipo(entrada, 'infantil').length }}</p>
+              <p class="text-muted small mb-0" *ngIf="entradaParticipantesPorTipo(entrada, 'adulto').length">Adultos: {{ entradaParticipantesPorTipo(entrada, 'adulto').length }}</p>
+            </div>
+          </aside>
+        </div>
+
+        <section *ngIf="entradaDetalleTab === 'participantes'" id="entrada-detalle-panel-participantes" role="tabpanel" aria-labelledby="entrada-detalle-tab-participantes">
+          <div class="participant-group mb-3" *ngIf="entradaParticipantesPorTipo(entrada, 'adulto').length">
+            <h4 class="h6 mb-2">Adultos ({{ entradaParticipantesPorTipo(entrada, 'adulto').length }})</h4>
+            <div class="participant-list read-only">
+              <div class="participant-item" *ngFor="let persona of entradaParticipantesPorTipo(entrada, 'adulto')">
+                <div class="info"><p class="name mb-0">{{ persona.nombre }} {{ persona.apellidos }}</p><small class="text-muted">{{ persona.cargo || 'Sin cargo' }}</small></div>
+              </div>
+            </div>
+          </div>
+          <div class="participant-group mb-3" *ngIf="entradaParticipantesPorTipo(entrada, 'infantil').length">
+            <h4 class="h6 mb-2">Infantiles ({{ entradaParticipantesPorTipo(entrada, 'infantil').length }})</h4>
+            <div class="participant-list read-only">
+              <div class="participant-item" *ngFor="let persona of entradaParticipantesPorTipo(entrada, 'infantil')">
+                <div class="info"><p class="name mb-0">{{ persona.nombre }} {{ persona.apellidos }}</p><small class="text-muted">{{ persona.cargo || 'Sin cargo' }}</small></div>
+              </div>
+            </div>
+          </div>
+          <p class="text-muted mb-0" *ngIf="!(entrada.participantes || []).length">Esta inscripción no tiene participantes asociados.</p>
+        </section>
+
+        <section *ngIf="entradaDetalleTab === 'documentacion'" id="entrada-detalle-panel-documentacion" role="tabpanel" aria-labelledby="entrada-detalle-tab-documentacion">
+          <label class="ux-btn ux-btn-secondary ux-btn-sm mb-3" for="entradaAdjuntoInput"><i class="bi bi-paperclip me-1"></i>Añadir documentación</label>
+          <input id="entradaAdjuntoInput" class="visually-hidden" type="file" multiple [disabled]="loading" (change)="onAdjuntosEntradaChange($event, entrada)" />
+          <div class="document-list" *ngIf="adjuntosEntrada.length; else noEntryAttachments">
+            <button class="document-item" type="button" *ngFor="let adjunto of adjuntosEntrada" (click)="abrirDocumento(adjunto)">
+              {{ adjunto.mimeType === 'application/pdf' ? 'PDF · ' : (adjunto.mimeType || '').startsWith('image/') ? 'Imagen · ' : 'Archivo · ' }}{{ adjunto.originalName || adjunto.fileName }}
+            </button>
+          </div>
+          <ng-template #noEntryAttachments><p class="text-muted mb-0">No hay adjuntos para esta entrada.</p></ng-template>
+        </section>
+
+        <section *ngIf="entradaDetalleTab === 'historial'" id="entrada-detalle-panel-historial" role="tabpanel" aria-labelledby="entrada-detalle-tab-historial">
+          <ol class="list-group list-group-numbered" *ngIf="entrada.eventos?.length; else sinHistorialEntrada">
+            <li class="list-group-item" *ngFor="let evento of entrada.eventos">
+              <strong>{{ evento.detalle || evento.tipo }}</strong>
+              <small class="d-block text-muted">{{ evento.createdAt | date:'dd/MM/yyyy HH:mm' }} · {{ evento.actor }}</small>
+            </li>
+          </ol>
+          <ng-template #sinHistorialEntrada><p class="text-muted mb-0">Todavía no hay eventos registrados.</p></ng-template>
+        </section>
+
+        <section *ngIf="entradaDetalleTab === 'incidencias'" id="entrada-detalle-panel-incidencias" role="tabpanel" aria-labelledby="entrada-detalle-tab-incidencias">
+          <app-incidencias-panel scope="inscripcion" [scopeId]="entrada.id"></app-incidencias-panel>
+        </section>
+      </div>
+      <footer class="request-detail-footer">
+        <button class="ux-btn ux-btn-secondary" type="button" (click)="cerrarDetalleEntrada()">Cerrar</button>
+      </footer>
+    </ng-container>
+  </section>
+</div>
 
 <app-confirm-dialog
   *ngIf="false"
