@@ -244,6 +244,30 @@ export class IncidenciasPanelComponent implements OnChanges {
   ) {}
 
   ngOnChanges(): void {
+    // 0.43.2#ESMERALDA: este componente se reutiliza sin destruirse al
+    // cambiar de recurso en varios anfitriones (p. ej. Asociados-Gestión al
+    // ver otra solicitud, Registro al abrir otro registro sin salir de la
+    // pestaña de Incidencias): un `*ngIf` que solo comprueba truthiness, no
+    // identidad, no recrea la instancia. Sin este reset, borradores de
+    // adjuntos/texto de la incidencia anterior (`selectedFiles`,
+    // `responseFiles`, `commentFiles`, etc.) sobrevivían y podían acabar
+    // subidos contra un evento de OTRO scope/asociación al enviar. Como
+    // `scope`/`scopeId` son los únicos @Input, cualquier disparo de
+    // ngOnChanges implica que apuntamos a un recurso distinto (o es la carga
+    // inicial, donde este estado ya está vacío), así que resetear siempre es
+    // correcto.
+    this.incidencias = [];
+    this.respuestas = {};
+    this.comentarios = {};
+    this.responseFiles = {};
+    this.commentFiles = {};
+    this.nuevoMensaje = '';
+    this.selectedFiles = [];
+    this.mostrarNuevaIncidencia = false;
+    this.expandedIds = new Set<string>();
+    this.cierrePendiente = null;
+    this.devolucionPendiente = null;
+    this.error = '';
     this.cargar(true);
   }
 
