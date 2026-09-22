@@ -75,7 +75,6 @@ export class SolicitudesComponent implements OnInit {
   campoBusqueda: CampoBusquedaSolicitud = 'numero';
   valorNumero = '';
   valorAsociacionTexto = '';
-  valorAsociacionId: number | null = null;
   valorTipo = 'alta';
   valorEstado = 'enviada';
   valorFechaAlta = '';
@@ -146,9 +145,23 @@ export class SolicitudesComponent implements OnInit {
     return asociacion.nombre || asociacion.name || `Asociación ${asociacion.id}`;
   }
 
-  onAsociacionTextoChange(texto: string): void {
-    const encontrada = this.asociaciones.find(asociacion => this.asociacionNombreCompleto(asociacion) === texto);
-    this.valorAsociacionId = encontrada ? encontrada.id : null;
+  // 0.43.5#ESMERALDA: búsqueda parcial por nombre ("doc", "carol"...), no solo
+  // el valor exacto de una opción del datalist. El nombre de asociación no
+  // vive en secretaria_solicitudes, así que se resuelve aquí, contra la lista
+  // ya cargada, a la lista de ids candidatos que se envía al backend.
+  private asociacionesCoincidentes(texto: string): Asociacion[] {
+    const normalizado = texto.trim().toLowerCase();
+    if (!normalizado) return [];
+    return this.asociaciones.filter(asociacion => this.asociacionNombreCompleto(asociacion).toLowerCase().includes(normalizado));
+  }
+
+  private idsParaFiltroAsociacion(texto: string): number[] {
+    const coincidencias = this.asociacionesCoincidentes(texto).map(asociacion => asociacion.id);
+    // Ninguna coincidencia real: se envía un id imposible para que el
+    // backend devuelva 0 resultados en vez de ignorar el filtro (que
+    // mostraría todas las solicitudes, ocultando que la búsqueda no encontró
+    // ninguna asociación con ese texto).
+    return coincidencias.length ? coincidencias : [-1];
   }
 
   aplicarBusqueda(): void {
@@ -162,10 +175,10 @@ export class SolicitudesComponent implements OnInit {
         const valor = this.valorNumero.trim();
         return valor ? { campo: 'numero', valor, etiqueta: `Nº solicitud: ${valor}` } : null;
       }
-      case 'asociacion':
-        return this.valorAsociacionId
-          ? { campo: 'asociacion', valor: String(this.valorAsociacionId), etiqueta: `Asociación: ${this.valorAsociacionTexto}` }
-          : null;
+      case 'asociacion': {
+        const texto = this.valorAsociacionTexto.trim();
+        return texto ? { campo: 'asociacion', valor: texto, etiqueta: `Asociación: ${texto}` } : null;
+      }
       case 'tipo':
         return { campo: 'tipo', valor: this.valorTipo, etiqueta: `Tipo: ${this.labelTipo(this.valorTipo)}` };
       case 'estado':
@@ -200,7 +213,6 @@ export class SolicitudesComponent implements OnInit {
     this.campoBusqueda = 'numero';
     this.valorNumero = '';
     this.valorAsociacionTexto = '';
-    this.valorAsociacionId = null;
     this.valorTipo = 'alta';
     this.valorEstado = 'enviada';
     this.valorFechaAlta = '';
@@ -238,7 +250,7 @@ export class SolicitudesComponent implements OnInit {
       tipo: filtro?.campo === 'tipo' ? filtro.valor : undefined,
       estado: filtro?.campo === 'estado' ? filtro.valor : undefined,
       busqueda: filtro?.campo === 'numero' ? filtro.valor : undefined,
-      asociacionId: filtro?.campo === 'asociacion' ? Number(filtro.valor) : undefined,
+      asociacionIds: filtro?.campo === 'asociacion' ? this.idsParaFiltroAsociacion(filtro.valor) : undefined,
       fechaAlta: filtro?.campo === 'fecha_alta' ? filtro.valor : undefined,
       ordenCampo: this.ordenCampo,
       ordenDireccion: this.ordenDireccion,

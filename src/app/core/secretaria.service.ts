@@ -212,6 +212,10 @@ export class SecretariaService {
     estado?: string;
     busqueda?: string;
     asociacionId?: number;
+    // 0.43.5#ESMERALDA: búsqueda parcial por nombre de asociación, resuelta
+    // en el frontend (el nombre no vive en secretaria_solicitudes) contra
+    // varios ids candidatos.
+    asociacionIds?: number[];
     fechaAlta?: string;
     ordenCampo?: 'numero' | 'asociacion' | 'registros' | 'tipo' | 'estado' | 'fecha_alta' | 'fecha_entrada';
     ordenDireccion?: 'asc' | 'desc';
@@ -226,6 +230,7 @@ export class SecretariaService {
     if (filters.estado) params = params.set('estado', filters.estado);
     if (filters.busqueda) params = params.set('busqueda', filters.busqueda);
     if (filters.asociacionId) params = params.set('asociacionId', filters.asociacionId);
+    if (filters.asociacionIds?.length) params = params.set('asociacionIds', filters.asociacionIds.join(','));
     if (filters.fechaAlta) params = params.set('fechaAlta', filters.fechaAlta);
     if (filters.ordenCampo) params = params.set('ordenCampo', filters.ordenCampo);
     if (filters.ordenDireccion) params = params.set('ordenDireccion', filters.ordenDireccion);

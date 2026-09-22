@@ -1,6 +1,6 @@
 import { FormBuilder } from '@angular/forms';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { ActivatedRoute, Router } from '@angular/router';
 
 import { AdminAccessService } from '../core/admin-access.service';
@@ -15,7 +15,7 @@ import { InscripcionDraftStateService } from './inscripcion-draft-state.service'
 describe('InscripcionesComponent', () => {
   function createComponent(entrada?: any, routeId: string | null = null, rubiScreenContext?: any, isAdmin = false, overrides: { router?: any } = {}): InscripcionesComponent {
     const secretaria = jasmine.createSpyObj('SecretariaService', [
-      'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion'
+      'getAdjuntosInscripcion', 'getAdjuntos', 'getMiEntradaInscripcion', 'enviarInscripcion', 'subirAdjunto'
     ]);
     secretaria.getAdjuntosInscripcion.and.returnValue(of({ adjuntos: [] }));
     secretaria.getAdjuntos.and.returnValue(of({ adjuntos: [] }));
@@ -73,6 +73,25 @@ describe('InscripcionesComponent', () => {
       expect(component.associationMode).toBe('view');
     });
 
+    it('0.43.5#ESMERALDA: tras ENVIAR una inscripción nueva (sin incidencias todavía), abre el mismo dialog nuevo, nunca la sección plana antigua', () => {
+      const component = createComponent();
+      const inscription = inscriptionWithAllFieldTypes();
+      component.asociados = asociados();
+      component.selectInscription(inscription);
+      fillAllFieldTypes(component, 'creacion');
+      navigateTabsRepeatedly(component);
+
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<any>;
+      const entradaSinIncidencias = { ...entryFromPayload({ asociacionId: 1, formularioId: inscription.id, datos: {}, participantes: [] }), estado: 'recibida' };
+      secretaria.enviarInscripcion.and.returnValue(of(entradaSinIncidencias));
+
+      component.submit();
+
+      expect(component.entradaDetalleDialogOpen).withContext('debe abrir siempre el dialog nuevo, incluso sin incidencias (una entrada recién creada nunca las tiene)').toBeTrue();
+      expect(component.associationMode).toBe('view');
+      expect((component as any).associationMode).not.toBe('summary');
+    });
+
     it('cerrar el dialog en Asociación navega al listado conservando el contexto de filtros', () => {
       const router = jasmine.createSpyObj('Router', ['navigate']);
       router.navigate.and.returnValue(Promise.resolve(true));
@@ -99,6 +118,33 @@ describe('InscripcionesComponent', () => {
       component.modificarMiInscripcion();
       expect(component.entradaDetalleDialogOpen).toBeFalse();
       expect(component.associationMode).toBe('edit');
+    });
+
+    it('0.43.5#ESMERALDA: una subida de adjunto lenta que termina tras cambiar de entrada no pisa la lista de adjuntos de la entrada actual', () => {
+      const entradaA = entradaConIncidencias({ id: 55 });
+      const entradaB = entradaConIncidencias({ id: 77 });
+      const component = createRecoveredComponent(entradaA);
+      const secretaria = (component as any).secretariaService as jasmine.SpyObj<any>;
+
+      const subirSubject = new Subject<any>();
+      secretaria.subirAdjunto.and.returnValue(subirSubject.asObservable());
+      const inputA = { files: [new File(['a'], 'de-A.pdf')], value: 'x' } as unknown as HTMLInputElement;
+      component.onAdjuntosEntradaChange({ target: inputA } as unknown as Event, entradaA);
+
+      // Mientras la subida de A sigue en vuelo, se abre el detalle de OTRA
+      // entrada (B) y su propia lista de adjuntos ya se ha cargado.
+      secretaria.getAdjuntos.calls.reset();
+      component.abrirDetalleEntrada(entradaB);
+      const adjuntosDeB: any[] = [{ id: 999, originalName: 'de-B.pdf', scope: 'inscripcion_entrada', scopeId: '77', fileName: 'de-B.pdf', mimeType: 'application/pdf', sizeBytes: 1, uploadedAt: '2026-01-01', downloadUrl: '' }];
+      secretaria.getAdjuntos.and.returnValue(of({ adjuntos: adjuntosDeB }));
+      (component as any).cargarAdjuntosEntrada(entradaB.id);
+
+      // Ahora responde (tarde) la subida de A.
+      subirSubject.next({});
+      subirSubject.complete();
+
+      expect(component.selectedEntrada?.id).toBe(77);
+      expect(component.adjuntosEntrada).withContext('la respuesta tardía de A no debe sobrescribir los adjuntos de B, que es la entrada abierta ahora').toEqual(adjuntosDeB);
     });
 
     it('categoriaLabel deriva la categoría de tiposPermitidos reales, sin inventar un campo nuevo', () => {

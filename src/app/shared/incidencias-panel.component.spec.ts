@@ -1,5 +1,5 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { of } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { Incidencia } from '../core/models';
 import { IncidenciasPanelComponent } from './incidencias-panel.component';
 import { SecretariaService } from '../core/secretaria.service';
@@ -255,6 +255,90 @@ describe('IncidenciasPanelComponent (0.42.1#ESMERALDA)', () => {
       component.respuestas['1'] = 'segunda respuesta, sin adjuntos';
       component.responder(item);
       expect(secretaria.subirAdjunto).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Condición de carrera al cambiar de recurso con una petición en vuelo (0.43.5#ESMERALDA)', () => {
+    // 0.43.2#ESMERALDA reseteaba el estado en ngOnChanges, pero crear()/
+    // responder()/comentar() releían this.selectedFiles/this.responseFiles/
+    // this.commentFiles DENTRO del switchMap, es decir DESPUÉS del
+    // round-trip HTTP. Con observables síncronos (of(...)) esto nunca se
+    // manifestaba en los tests anteriores porque no hay ninguna ventana real
+    // entre el envío y la respuesta. Aquí se usa un Subject para simular esa
+    // ventana: el recurso cambia (y se empieza un borrador nuevo) MIENTRAS
+    // la petición anterior sigue en vuelo, antes de que responda.
+    it('crear(): una respuesta tardía no sube el adjunto nuevo (del recurso B) contra el evento del recurso A, ni pisa el borrador de B', () => {
+      const { component, secretaria } = createComponent();
+      const crearSubject = new Subject<Incidencia>();
+      secretaria.crearIncidencia.and.returnValue(crearSubject.asObservable());
+      secretaria.subirAdjunto.and.returnValue(of({} as any));
+      secretaria.getIncidencias.and.returnValue(of({ incidencias: [] }));
+
+      const fileA = new File(['a'], 'de-A.pdf');
+      const fileB = new File(['b'], 'de-B.pdf');
+      component.nuevoMensaje = 'Incidencia del recurso A';
+      component.selectedFiles = [fileA];
+      component.mostrarNuevaIncidencia = true;
+      component.crear(); // en vuelo: aún no ha respondido crearSubject
+
+      // Mientras tanto, el admin cambia a OTRO recurso (dispara el reset de
+      // 0.43.2) y empieza un borrador nuevo sin relación con A.
+      component.scope = 'solicitud';
+      component.scopeId = '999';
+      component.ngOnChanges();
+      component.nuevoMensaje = 'Incidencia del recurso B';
+      component.selectedFiles = [fileB];
+      component.mostrarNuevaIncidencia = true;
+
+      // Ahora responde (tarde) la petición de A, con su propio evento.
+      crearSubject.next(incidencia({
+        id: '1', scope: 'inscripcion', scopeId: '10',
+        eventos: [{ id: 42, incidenciaId: 1, tipo: 'creada', actor: 'administracion', mensaje: 'x', createdAt: '2026-01-01', adjuntos: [] }]
+      }));
+      crearSubject.complete();
+
+      // jasmine.toHaveBeenCalledWith compara File por igualdad estructural
+      // (sin propiedades enumerables, dos File distintos "parecen" iguales),
+      // así que se comprueba por referencia exacta sobre calls.allArgs().
+      const llamadas: any[][] = secretaria.subirAdjunto.calls.allArgs();
+      expect(llamadas.some(args => args[0] === 'incidencia_evento' && args[1] === 42 && args[2] === fileA)).withContext('debe subir el adjunto de A contra el evento de A').toBeTrue();
+      expect(llamadas.some(args => args[2] === fileB)).withContext('el adjunto de B nunca debe subirse contra el evento de A').toBeFalse();
+      expect(component.nuevoMensaje).withContext('el borrador de B no debe perderse por la respuesta tardía de A').toBe('Incidencia del recurso B');
+      expect(component.selectedFiles.length).toBe(1);
+      expect(component.selectedFiles[0]).withContext('los adjuntos de B no deben perderse por la respuesta tardía de A').toBe(fileB);
+    });
+
+    it('responder(): una respuesta tardía no sube los adjuntos actuales del composer si el recurso ya cambió', () => {
+      const { component, secretaria } = createComponent();
+      const responderSubject = new Subject<Incidencia>();
+      secretaria.responderIncidencia.and.returnValue(responderSubject.asObservable());
+      secretaria.subirAdjunto.and.returnValue(of({} as any));
+      secretaria.getIncidencias.and.returnValue(of({ incidencias: [] }));
+
+      const fileA = new File(['a'], 'respuesta-A.pdf');
+      const fileC = new File(['c'], 'archivo-ajeno-que-llego-despues.pdf');
+      const item = incidencia({ id: '1' });
+      component.respuestas['1'] = 'Respuesta al recurso A';
+      component.responseFiles['1'] = [fileA];
+      component.responder(item); // en vuelo
+
+      // Cambio de recurso mientras la petición de A sigue pendiente.
+      component.scope = 'registro';
+      component.scopeId = '777';
+      component.ngOnChanges();
+      // Coincidencia de claves: si un composer de OTRA incidencia con el
+      // mismo id '1' se rellenara ahora en el recurso nuevo, no debe verse
+      // afectado por la respuesta tardía de A.
+      component.responseFiles['1'] = [fileC];
+
+      responderSubject.next(incidencia({ id: '1', eventos: [{ id: 55, incidenciaId: 1, tipo: 'respuesta_asociacion', actor: 'asociacion', mensaje: 'x', createdAt: '2026-01-01', adjuntos: [] }] }));
+      responderSubject.complete();
+
+      const llamadas: any[][] = secretaria.subirAdjunto.calls.allArgs();
+      expect(llamadas.some(args => args[0] === 'incidencia_evento' && args[1] === 55 && args[2] === fileA)).withContext('debe subir el adjunto de A contra el evento de A').toBeTrue();
+      expect(llamadas.some(args => args[2] === fileC)).withContext('el adjunto que llegó después nunca debe subirse contra el evento de A').toBeFalse();
+      expect(component.responseFiles['1'].length).toBe(1);
+      expect(component.responseFiles['1'][0]).withContext('el adjunto del nuevo recurso no debe perderse').toBe(fileC);
     });
   });
 
